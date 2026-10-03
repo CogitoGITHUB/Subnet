@@ -880,7 +880,7 @@ Filled by `cyberdeck-emacs--stage-of'; drained by
 
 (defun cyberdeck-emacs--stage-of (stages file line)
   "Normalize STAGES (the S<digit> tags on one headline) to the symbol
-\\='S1' or \\='S2'.
+\\='S1', \\='S2' or \\='S0' (stage zero: loads before S1).
 Anything else — S3, junk, or more than one stage tag — is S1 plus a
 warning naming FILE and LINE. Never throws: a bad stage must degrade
 to the always-safe stage, never fail discovery."
@@ -891,6 +891,7 @@ to the always-safe stage, never fail discovery."
       (cond
        ((string= s "S1") 'S1)
        ((string= s "S2") 'S2)
+        ((string= s "S0") 'S0)
        (t (push (format "%s:%d stage tag %s is not S1/S2 — treated as S1"
                         (file-name-nondirectory file) line s)
                 cyberdeck-emacs--stage-warnings)
@@ -1463,8 +1464,8 @@ later boots skip re-scanning them too.  Never throws."
                            :stage (if (or (null units)
                                           (seq-find (lambda (u)
                                                       (let ((s (plist-get u :stage)))
-                                                        (or (eq s 'S1)
-                                                            (equal s "S1"))))
+                            (not (or (eq s 'S2)
+                                     (equal s "S2")))))
                                                     units))
                                       "S1"
                                     "S2"))
@@ -1515,6 +1516,17 @@ group is unchanged.")
 (defvar cyberdeck-emacs--bootstrap-first-ids '()
   "Unit IDs loading right after the bootstrap path groups, in listed
 order. Empty: path pinning covers the current bootstrap set.")
+
+(defvar cyberdeck-emacs--fundamental-first-paths
+  '("entering-the-machine/cyberdeck-dashboard/"
+    "the-screen/modeline/"
+    "files/aiu-registration/cyberdeck/aiu-frame/"
+    "files/aiu-registration/cyberdeck/biomechanical-input-interface/")
+  "Path fragments ordering S0 (Fundamental) units at boot, in listed
+group order: dashboard, modeline, mindmap frame, keyboard. The screen
+is fully up before anything else loads. Matched with `regexp-quote'
+against the unit's :file, like the bootstrap lists. Relative order
+inside each group is unchanged.")
 
 (defvar cyberdeck-emacs--dashboard-complete-at nil
   "1-based position of the last dashboard-group unit in the current
@@ -1721,23 +1733,42 @@ loop — they carry the keymap and the frame."
            (member (plist-get unit :id) cyberdeck-emacs--bootstrap-first-ids))))
 
 (defun cyberdeck-emacs--partition-stages (ordered)
-  "Split ORDERED into (S1-UNITS . S2-UNITS).  Both halves keep ORDERED's
-relative order, so an S1 boot with no tags is byte-for-byte what it was
-before staging existed.  A bootstrap unit is forced to S1 whatever its
-tag says.  Never throws: any failure degrades to all-S1, which is the
-always-safe stage.
+  "Split ORDERED into boot units and S2 units.  The boot list is S0
+(Fundamental) first in fundamental-group order, then S1; both halves
+keep ORDERED's relative order, so an S1 boot with no tags is
+byte-for-byte what it was before staging existed.  A bootstrap unit
+tagged S2 is forced to S1 whatever its tag says; an S0 tag always wins
+over bootstrap pinning.  Never throws: any failure degrades to all-S1,
+which is the always-safe stage.
 
 Also records `cyberdeck-emacs--units-by-id' so an on-demand S2 load can
 find an ancestor that lives in S1."
   (condition-case nil
-      (let (s1 s2)
+      (let (s0 s1 s2)
         (dolist (u ordered)
-          (if (and (eq (cyberdeck-emacs--stage-of-unit u) 'S2)
+          (let ((stage (cyberdeck-emacs--stage-of-unit u)))
+            (cond
+             ((and (eq stage 'S2)
                    (not (cyberdeck-emacs--bootstrap-unit-p u)))
-              (push u s2)
-            (push u s1)))
-        (setq cyberdeck-emacs--s1-units (nreverse s1)
-              cyberdeck-emacs--s2-units (nreverse s2)
+              (push u s2))
+             ((eq stage 'S0)
+              (push u s0))
+             (t
+              (push u s1)))))
+        (let (f-ordered rest)
+          (setq rest (nreverse s0))
+          (dolist (frag cyberdeck-emacs--fundamental-first-paths)
+            (let (group com)
+              (dolist (u rest)
+                (if (string-match-p (regexp-quote frag)
+                                    (or (plist-get u :file) ""))
+                    (push u group)
+                  (push u com)))
+              (setq f-ordered (nconc f-ordered (nreverse group))
+                    rest (nreverse com))))
+          (setq f-ordered (nconc f-ordered rest))
+          (setq cyberdeck-emacs--s1-units (nconc f-ordered (nreverse s1))
+                cyberdeck-emacs--s2-units (nreverse s2)
               cyberdeck-emacs--units-by-key
               (let (a)
                 (dolist (u ordered)
@@ -1749,7 +1780,7 @@ find an ancestor that lives in S1."
                   (when-let* ((id (plist-get u :id)))
                     (push (cons id u) a)))
                 (nreverse a)))
-        (cons cyberdeck-emacs--s1-units cyberdeck-emacs--s2-units))
+        (cons cyberdeck-emacs--s1-units cyberdeck-emacs--s2-units)))
     (error
      (setq cyberdeck-emacs--s1-units ordered
            cyberdeck-emacs--s2-units nil
@@ -1758,13 +1789,17 @@ find an ancestor that lives in S1."
      (cons ordered nil))))
 
 (defun cyberdeck-emacs--stage-of-unit (unit)
-  "The stage of UNIT: `S1', `S2', or nil when discovery found no tag.
-Never re-reads the file: `cyberdeck-emacs--scan-file-tagged-units' already
-put :stage on the plist, so this is a field read, not a parse."
+  "The stage of UNIT: `S0', `S1', `S2', or nil when discovery found no tag.
+nil means S1.  Never re-reads the file:
+`cyberdeck-emacs--scan-file-tagged-units' already put :stage on the
+plist, so this is a field read, not a parse."
   (let ((s (plist-get unit :stage)))
     (cond ((null s) 'S1)
-          ((stringp s) (if (string= s "S2") 'S2 'S1))
+          ((stringp s) (cond ((string= s "S2") 'S2)
+                             ((string= s "S0") 'S0)
+                             (t 'S1)))
           ((eq s 'S2) 'S2)
+          ((eq s 'S0) 'S0)
           (t 'S1))))
 
 (defun cyberdeck-emacs--s2-dir ()
@@ -3569,6 +3604,8 @@ unit is S1, which is the honest answer, not a failure."
   (interactive "P")
   (let* ((ordered (car (cyberdeck-emacs--ordered-units
                         "[^./]+$" (cyberdeck-emacs-get-org-directory) nil)))
+         (s0 (cl-count 'S0 ordered :key #'cyberdeck-emacs--stage-of-unit
+                       :test #'eq))
          (s1 (cl-count nil ordered :key #'cyberdeck-emacs--stage-of-unit
                        :test #'eq))
          (s2 (- (length ordered) s1))
@@ -3582,8 +3619,8 @@ unit is S1, which is the honest answer, not a failure."
                    (cyberdeck-emacs--stage-of-unit u)
                    (cyberdeck-emacs--unit-loaded-state u)
                    (or (plist-get u :title) "")))
-      (message "cyberdeck-emacs: %d unit(s) — S1 %d, S2 %d (staged %d, loaded on demand %d)"
-               (length ordered) s1 s2 staged on-demand))
+      (message "cyberdeck-emacs: %d unit(s) — S0 %d, S1 %d, S2 %d (staged %d, loaded on demand %d)"
+               (length ordered) s0 s1 s2 staged on-demand))
     (not (zerop s2))))
 
 
