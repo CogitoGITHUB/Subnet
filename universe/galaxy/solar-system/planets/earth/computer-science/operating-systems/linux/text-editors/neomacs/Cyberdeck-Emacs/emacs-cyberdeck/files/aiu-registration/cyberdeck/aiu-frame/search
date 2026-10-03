@@ -20,7 +20,7 @@ Scanning is pure-Lisp (`re-search-forward` on `hl-todo--regexp`) — do NOT use
 and do NOT use `hl-todo--search` for file scanning (it only matches comments/
 strings or text-derived modes, returning nil in a plain temp buffer).
 
-* Engine :EMACS_MECHANISM:S1:
+* Engine :EMACS_MECHANISM:S0:
 :PROPERTIES:
 :ID:       0def1366-f0e0-44f2-8a25-5e3be9a752f3
 :MM_PARENT: none

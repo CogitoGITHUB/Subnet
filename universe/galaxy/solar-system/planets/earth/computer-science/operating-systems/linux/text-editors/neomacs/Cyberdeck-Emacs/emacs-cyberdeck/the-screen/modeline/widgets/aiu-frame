@@ -2,7 +2,7 @@
 #+filetags:   :emacs-package:ui:
 #+property:   header-args:emacs-lisp :lexical t
 
-* Modeline Cyberdeck Status :EMACS_MECHANISM:S1:
+* Modeline Cyberdeck Status :EMACS_MECHANISM:S0:
 :PROPERTIES:
 :ID:       2d2d02eb-50bb-47e3-ac8e-ab26f13ff534
 :MM_PARENT: none

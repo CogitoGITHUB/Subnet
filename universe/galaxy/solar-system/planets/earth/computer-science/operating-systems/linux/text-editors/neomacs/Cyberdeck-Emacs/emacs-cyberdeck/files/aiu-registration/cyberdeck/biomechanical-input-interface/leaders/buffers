@@ -1,6 +1,6 @@
 SPC h: buffers menu.
 
-* SPC h — Buffers :EMACS_MECHANISM:S1:
+* SPC h — Buffers :EMACS_MECHANISM:S0:
 :PROPERTIES:
 :ID:       ce50037c-a066-4cf4-b488-a316fce2a596
 :MM_PARENT: none

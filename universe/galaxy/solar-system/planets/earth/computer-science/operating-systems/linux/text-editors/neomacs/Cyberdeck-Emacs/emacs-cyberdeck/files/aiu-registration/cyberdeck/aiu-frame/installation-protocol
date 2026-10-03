@@ -15,7 +15,7 @@ never by inference. Stage is monotonic in phase 1 — forgetting moves
 dates, never the stage; condition-tracking (fluency, retention,
 current capability vs attainment) belongs to a later phase.
 
-* Require :EMACS_MECHANISM:S1:
+* Require :EMACS_MECHANISM:S0:
 :PROPERTIES:
 :ID:       d91baf8d-8b7a-43c1-b2cb-bd8de89337c2
 :MM_PARENT: none

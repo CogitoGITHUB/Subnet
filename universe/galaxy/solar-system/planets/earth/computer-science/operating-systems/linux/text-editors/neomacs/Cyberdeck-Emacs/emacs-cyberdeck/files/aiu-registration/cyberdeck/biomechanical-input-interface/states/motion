@@ -1,6 +1,6 @@
 Keys specific to the motion state. Shared bindings live in universal.org.
 
-* State definition :EMACS_MECHANISM:S1:
+* State definition :EMACS_MECHANISM:S0:
 :PROPERTIES:
 :ID:       edfd0fba-b586-46a7-bced-8d1abc05489a
 :MM_PARENT: none

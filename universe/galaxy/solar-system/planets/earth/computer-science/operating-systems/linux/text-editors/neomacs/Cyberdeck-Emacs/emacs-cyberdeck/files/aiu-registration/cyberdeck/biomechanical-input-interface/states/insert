@@ -1,6 +1,6 @@
 Keys specific to the insert state. Shared bindings live in universal.org.
 
-* State definition :EMACS_MECHANISM:S1:
+* State definition :EMACS_MECHANISM:S0:
 :PROPERTIES:
 :ID:       f75a9ef7-b1f3-434f-b7ad-064289be489f
 :MM_PARENT: none

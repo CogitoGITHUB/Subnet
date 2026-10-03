@@ -9,7 +9,7 @@ property so it wins over org-aiu-subnet-mode's minor-mode map.
 #+begin_src emacs-lisp
 (defvar aiu-proxy-indent-mode nil)
 #+end_src
-* Vendored aiu-proxy-clone engine :EMACS_MECHANISM:S1:
+* Vendored aiu-proxy-clone engine :EMACS_MECHANISM:S0:
 :PROPERTIES:
 :ID:       5406ae0c-1e28-4765-887f-df24c24c0c1b
 :MM_PARENT: none

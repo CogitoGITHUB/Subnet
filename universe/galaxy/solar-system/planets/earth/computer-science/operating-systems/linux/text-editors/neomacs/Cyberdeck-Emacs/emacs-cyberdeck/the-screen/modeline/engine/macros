@@ -2,7 +2,7 @@
 #+filetags:   :emacs-package:ui:
 #+property:   header-args:emacs-lisp :lexical t
 
-* Modeline Segment DSL :EMACS_MECHANISM:S1:
+* Modeline Segment DSL :EMACS_MECHANISM:S0:
 :PROPERTIES:
 :ID:       af6e44e4-6eb8-46f2-af60-8a6f95e17000
 :MM_PARENT: none

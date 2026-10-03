@@ -2,7 +2,7 @@ Guards file and heading deletion when incoming or outgoing =id:= links exist.
 Guards deletion of untracked files and missing links.
 Provides restore command via Git history.
 Uses native =cyberdeck-db-query-links-to= and =cyberdeck-db-query-links-from= API (v2.1+).
-* Missing Links File :EMACS_MECHANISM:S1:
+* Missing Links File :EMACS_MECHANISM:S0:
 :PROPERTIES:
 :ID:       ac007417-f901-4778-9dd4-751495acb5a9
 :MM_PARENT: none

@@ -1,5 +1,5 @@
 Modal state core: variables, naming, the define-keys binder, initialization, and the 12 state-mode invocations.
-* Buffer-local state variable :EMACS_MECHANISM:S1:
+* Buffer-local state variable :EMACS_MECHANISM:S0:
 :PROPERTIES:
 :ID:       a5c2c9db-dc36-4ebf-81a7-b549cda38758
 :MM_PARENT: none

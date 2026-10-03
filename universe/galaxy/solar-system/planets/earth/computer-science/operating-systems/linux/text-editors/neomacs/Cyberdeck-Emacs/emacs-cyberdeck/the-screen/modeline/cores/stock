@@ -2,7 +2,7 @@
 #+filetags:   :emacs-package:ui:
 #+property:   header-args:emacs-lisp :lexical t
 
-* Modeline Stock Segments :EMACS_MECHANISM:S1:
+* Modeline Stock Segments :EMACS_MECHANISM:S0:
 :PROPERTIES:
 :ID:       c58fb4f6-731a-40c9-ab77-caa0898dc8be
 :MM_PARENT: none

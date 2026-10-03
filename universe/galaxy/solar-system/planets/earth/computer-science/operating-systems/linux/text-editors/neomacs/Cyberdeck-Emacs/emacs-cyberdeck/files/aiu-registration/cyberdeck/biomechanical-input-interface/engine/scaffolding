@@ -13,7 +13,7 @@ A new state needs three things (the creator does #1, you do #2–3):
 A new leader needs only its file (the main =SPC= hub links sub-hydras
 by body symbol at runtime).
 
-* Creators :EMACS_MECHANISM:S1:
+* Creators :EMACS_MECHANISM:S0:
 :PROPERTIES:
 :ID:       6b55e484-d457-4977-aa6c-3554d184c69e
 :MM_PARENT: none

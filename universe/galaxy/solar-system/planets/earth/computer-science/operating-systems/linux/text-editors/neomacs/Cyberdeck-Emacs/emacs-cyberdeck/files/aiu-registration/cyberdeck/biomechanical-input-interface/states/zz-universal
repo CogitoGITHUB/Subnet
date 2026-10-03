@@ -5,7 +5,7 @@ requires — its bindings reference other states' keymaps, so every
 state invocation must have evaluated first. Do not rename without
 moving those references.
 
-* Shared bindings :EMACS_MECHANISM:S1:
+* Shared bindings :EMACS_MECHANISM:S0:
 :PROPERTIES:
 :ID:       d78f35cd-e02a-4d45-83d9-c9a2e9599faf
 :MM_PARENT: none

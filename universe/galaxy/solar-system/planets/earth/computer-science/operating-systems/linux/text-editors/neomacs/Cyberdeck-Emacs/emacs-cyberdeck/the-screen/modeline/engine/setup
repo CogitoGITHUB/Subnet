@@ -2,7 +2,7 @@
 #+filetags:   :emacs-package:ui:
 #+property:   header-args:emacs-lisp :lexical t
 
-* Modeline Composer :EMACS_MECHANISM:S1:
+* Modeline Composer :EMACS_MECHANISM:S0:
 :PROPERTIES:
 :ID:       c45be44e-cab1-4b0b-bde8-3836b5698eb7
 :MM_PARENT: none

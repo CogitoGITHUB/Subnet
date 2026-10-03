@@ -1,6 +1,6 @@
 Shared Boon-extracted editing primitives (https://github.com/jyp/boon, GPL, same terms as upstream): region algebra, highlight engine, syntax predicates. Multi-caller callees live here; bound commands stay in states/ and call in.
 
-* Region algebra core :EMACS_MECHANISM:S1:
+* Region algebra core :EMACS_MECHANISM:S0:
 :PROPERTIES:
 :ID:       e6256f03-9d2b-4b93-a695-c14a0f87123c
 :MM_PARENT: none

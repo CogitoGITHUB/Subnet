@@ -2,7 +2,7 @@
 #+filetags:   :emacs-package:ui:
 #+property:   header-args:emacs-lisp :lexical t
 
-* Modeline Doctor Errors :EMACS_MECHANISM:S1:
+* Modeline Doctor Errors :EMACS_MECHANISM:S0:
 :PROPERTIES:
 :ID:       0288b0e8-2539-4bbb-ae9f-8a41307c7611
 :MM_PARENT: none

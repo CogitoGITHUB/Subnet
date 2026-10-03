@@ -3,7 +3,7 @@
 Sidebar, outline, AIU Proxies, and UI configuration for cyberdeck.
 #+end_comment
 
-* Sidebar :EMACS_MECHANISM:S1:
+* Sidebar :EMACS_MECHANISM:S0:
 :PROPERTIES:
 :ID:       7f6aefe4-628f-47df-9457-df98447c31a0
 :MM_PARENT: none

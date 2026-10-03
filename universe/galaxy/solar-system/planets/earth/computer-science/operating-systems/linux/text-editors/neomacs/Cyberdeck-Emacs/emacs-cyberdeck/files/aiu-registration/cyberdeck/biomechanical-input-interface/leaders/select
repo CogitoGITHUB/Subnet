@@ -1,6 +1,6 @@
 SPC s: select menu.
 
-* SPC s — Select :EMACS_MECHANISM:S1:
+* SPC s — Select :EMACS_MECHANISM:S0:
 :PROPERTIES:
 :ID:       a0c519fe-f802-4ff4-9a68-3b01153f061c
 :MM_PARENT: none

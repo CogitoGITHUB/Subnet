@@ -1,6 +1,6 @@
 Chord detection state machine and definition cluster. Bound definers stay in states/; everything here is shared machinery.
 
-* Chord input engine (key-chord-extracted, ~my/chord-input-method~) :EMACS_MECHANISM:S1:
+* Chord input engine (key-chord-extracted, ~my/chord-input-method~) :EMACS_MECHANISM:S0:
 :PROPERTIES:
 :ID:       29640e29-cf37-4b91-b8d3-76afad352460
 :MM_PARENT: none

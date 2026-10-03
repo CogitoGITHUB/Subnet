@@ -1,6 +1,6 @@
 SPC g: Git menu.
 
-* SPC g — Git :EMACS_MECHANISM:S1:
+* SPC g — Git :EMACS_MECHANISM:S0:
 :PROPERTIES:
 :ID:       8a59e53d-a05b-429d-b87f-bf549b23b539
 :MM_PARENT: none

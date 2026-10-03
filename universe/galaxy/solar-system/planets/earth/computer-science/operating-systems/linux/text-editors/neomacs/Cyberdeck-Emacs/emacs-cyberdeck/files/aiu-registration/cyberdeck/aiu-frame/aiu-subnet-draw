@@ -8,7 +8,7 @@ package fetch. Complements the vault's own aiu-subnet/* topology subsystem
 (aiu-frame/aiu-subnet, order 127): that one owns vault structure,
 this one draws pictures inside AIUs.
 
-* Cyberdeck AIU Subnet — vendored :EMACS_MECHANISM:S1:
+* Cyberdeck AIU Subnet — vendored :EMACS_MECHANISM:S0:
 :PROPERTIES:
 :ID:       378f6ebd-5c88-4fed-8696-ca0b306b0155
 :MM_PARENT: none

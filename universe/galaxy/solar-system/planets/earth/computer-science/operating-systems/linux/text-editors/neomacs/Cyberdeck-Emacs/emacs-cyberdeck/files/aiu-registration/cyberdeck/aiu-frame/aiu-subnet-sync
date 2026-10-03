@@ -6,7 +6,7 @@ directory level up/down); no two map files in one directory; lower
 maps embed fully expanded into upper maps; files are the source of
 truth; secondary membership is derived, never stored.
 
-* AIU Subnet Sync :EMACS_MECHANISM:S1:
+* AIU Subnet Sync :EMACS_MECHANISM:S0:
 :PROPERTIES:
 :ID:       4eb48722-387c-49c4-b875-3842c340fb58
 :MM_PARENT: none

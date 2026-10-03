@@ -1,5 +1,5 @@
 Requires, reload behavior, init state, hooks, modeline, activation.
-* Requires :EMACS_MECHANISM:S1:
+* Requires :EMACS_MECHANISM:S0:
 :PROPERTIES:
 :ID:       ddfb0be6-b927-4ae6-9be7-4a0f04d9de5a
 :MM_PARENT: none

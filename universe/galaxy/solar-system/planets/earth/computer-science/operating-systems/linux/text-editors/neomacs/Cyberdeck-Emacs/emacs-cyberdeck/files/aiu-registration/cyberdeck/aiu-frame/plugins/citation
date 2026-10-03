@@ -1,7 +1,7 @@
 Extracts =[@citekey]= citations from notes into a dedicated SQLite table via
 the cyberdeck v2 plugin system.  After a full sync, citations are queryable
 across the entire vault without re-parsing any files.
-* Schema Bootstrap :EMACS_MECHANISM:S1:
+* Schema Bootstrap :EMACS_MECHANISM:S0:
 :PROPERTIES:
 :ID:       a7e4da39-3bf2-4682-bb55-9098bb7d7949
 :MM_PARENT: none

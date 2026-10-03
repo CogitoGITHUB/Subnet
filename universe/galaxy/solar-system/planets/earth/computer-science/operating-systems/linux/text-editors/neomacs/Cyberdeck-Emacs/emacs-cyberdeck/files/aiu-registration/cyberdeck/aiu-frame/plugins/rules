@@ -24,7 +24,7 @@ Design summary (for anyone debugging this):
   =DRILL_*= / =SCHEDULED= fields live directly on the source heading and
   this plugin never touches heading content — only pointer files.
 
-* State :EMACS_MECHANISM:S1:
+* State :EMACS_MECHANISM:S0:
 :PROPERTIES:
 :ID:       9e476382-9604-4d49-8d53-e3151cd093ba
 :MM_PARENT: none

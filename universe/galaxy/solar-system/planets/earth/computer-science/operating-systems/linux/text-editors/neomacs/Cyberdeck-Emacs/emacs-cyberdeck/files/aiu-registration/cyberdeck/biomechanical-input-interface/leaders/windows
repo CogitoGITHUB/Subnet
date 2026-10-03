@@ -1,6 +1,6 @@
 SPC w: windows menu.
 
-* SPC w — Windows :EMACS_MECHANISM:S1:
+* SPC w — Windows :EMACS_MECHANISM:S0:
 :PROPERTIES:
 :ID:       a4e23a61-f110-433d-b53b-5c979aec30f9
 :MM_PARENT: none

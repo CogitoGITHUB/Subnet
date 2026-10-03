@@ -24,7 +24,7 @@ scope `git add' to these files so unrelated dotfiles never get swept
 into cyberdeck auto-commits.")
 #+end_src
 
-* Push Machinery :EMACS_MECHANISM:S1:
+* Push Machinery :EMACS_MECHANISM:S0:
 :PROPERTIES:
 :ID:       d043ccc0-4355-4b34-a9b6-9a61a622be98
 :MM_PARENT: none

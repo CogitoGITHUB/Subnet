@@ -2,7 +2,7 @@
 #+filetags:   :emacs-package:ui:
 #+property:   header-args:emacs-lisp :lexical t
 
-* Modeline Datetime :EMACS_MECHANISM:S1:
+* Modeline Datetime :EMACS_MECHANISM:S0:
 :PROPERTIES:
 :ID:       4bec5973-0edb-4915-9163-f80a3f847570
 :MM_PARENT: none

@@ -2,7 +2,7 @@
 #+filetags:   :emacs-package:ui:
 #+property:   header-args:emacs-lisp :lexical t
 
-* Modeline Faces :EMACS_MECHANISM:S1:
+* Modeline Faces :EMACS_MECHANISM:S0:
 :PROPERTIES:
 :ID:       5dff5b6b-e40e-48c0-adc2-d32a1f0d9598
 :MM_PARENT: none

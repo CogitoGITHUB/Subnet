@@ -1,6 +1,6 @@
 SPC o: Org tree (org/agenda/tasks/clock/edit/capture/aiu-frame).
 
-* SPC o — Org :EMACS_MECHANISM:S1:
+* SPC o — Org :EMACS_MECHANISM:S0:
 :PROPERTIES:
 :ID:       c3ed0c51-eb22-41b6-b703-a654deef392f
 :MM_PARENT: none

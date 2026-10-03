@@ -1,6 +1,6 @@
 Keys specific to the presentation state. Shared bindings live in universal.org.
 
-* State definition :EMACS_MECHANISM:S1:
+* State definition :EMACS_MECHANISM:S0:
 :PROPERTIES:
 :ID:       03a74f53-c363-4467-85fd-eeae6baf532f
 :MM_PARENT: none

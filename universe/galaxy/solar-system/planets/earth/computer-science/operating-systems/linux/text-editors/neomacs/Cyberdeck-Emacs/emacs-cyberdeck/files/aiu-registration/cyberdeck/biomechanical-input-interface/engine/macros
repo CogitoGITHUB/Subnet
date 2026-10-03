@@ -1,5 +1,5 @@
 Macro definitions: state machine, minor modes, hydra states. Evaluated before everything that invokes them.
-* Requires & group :EMACS_MECHANISM:S1:
+* Requires & group :EMACS_MECHANISM:S0:
 :PROPERTIES:
 :ID:       61a004ff-a822-4516-b2f0-d926c0c60a4b
 :MM_PARENT: none

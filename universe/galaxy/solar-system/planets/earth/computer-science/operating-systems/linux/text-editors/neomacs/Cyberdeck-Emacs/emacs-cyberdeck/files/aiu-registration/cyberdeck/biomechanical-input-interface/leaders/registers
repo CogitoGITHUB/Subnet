@@ -1,6 +1,6 @@
 SPC r: registers menu.
 
-* SPC r — Registers :EMACS_MECHANISM:S1:
+* SPC r — Registers :EMACS_MECHANISM:S0:
 :PROPERTIES:
 :ID:       ef6095e0-17fc-4268-8e7f-178dfd28c3ad
 :MM_PARENT: none

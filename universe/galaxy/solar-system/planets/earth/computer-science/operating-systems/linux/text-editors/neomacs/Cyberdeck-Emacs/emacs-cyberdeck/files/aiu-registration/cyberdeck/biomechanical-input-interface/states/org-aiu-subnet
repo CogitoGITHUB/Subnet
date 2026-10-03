@@ -3,7 +3,7 @@ the vendored aiu-frame/aiu-subnet unit. Separate state from the aiu-subnet/*
 topology chord: that one drives vault structure, this one drives
 pictures inside AIUs. Shared bindings live in universal.org.
 
-* State definition :EMACS_MECHANISM:S1:
+* State definition :EMACS_MECHANISM:S0:
 :PROPERTIES:
 :ID:       918d0975-948c-47f1-9244-17fa381d0031
 :MM_PARENT: none

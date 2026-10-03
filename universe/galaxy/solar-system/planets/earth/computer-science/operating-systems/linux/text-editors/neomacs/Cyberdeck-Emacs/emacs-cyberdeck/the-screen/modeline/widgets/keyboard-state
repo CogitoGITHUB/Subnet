@@ -2,7 +2,7 @@
 #+filetags:   :emacs-package:ui:
 #+property:   header-args:emacs-lisp :lexical t
 
-* Modeline Keyboard State :EMACS_MECHANISM:S1:
+* Modeline Keyboard State :EMACS_MECHANISM:S0:
 :PROPERTIES:
 :ID:       a4a3623d-4a26-4af1-892e-f0a0920184dc
 :MM_PARENT: none

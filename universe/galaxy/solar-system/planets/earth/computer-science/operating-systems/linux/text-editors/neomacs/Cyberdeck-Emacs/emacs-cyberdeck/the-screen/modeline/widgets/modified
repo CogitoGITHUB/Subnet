@@ -2,7 +2,7 @@
 #+filetags:   :emacs-package:ui:
 #+property:   header-args:emacs-lisp :lexical t
 
-* Modeline Modified Letter :EMACS_MECHANISM:S1:
+* Modeline Modified Letter :EMACS_MECHANISM:S0:
 :PROPERTIES:
 :ID:       1e6fbc4c-a23b-4ac6-9d25-ce46c199b445
 :MM_PARENT: none

@@ -1,6 +1,6 @@
 Keys specific to the org state. Shared bindings live in universal.org.
 
-* State definition :EMACS_MECHANISM:S1:
+* State definition :EMACS_MECHANISM:S0:
 :PROPERTIES:
 :ID:       03be9f84-edd7-4000-98cb-1a61631de466
 :MM_PARENT: none

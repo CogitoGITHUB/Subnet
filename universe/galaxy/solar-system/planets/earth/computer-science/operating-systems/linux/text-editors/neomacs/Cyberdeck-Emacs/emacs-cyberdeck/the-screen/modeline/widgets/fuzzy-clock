@@ -2,7 +2,7 @@
 #+filetags:   :emacs-package:ui:
 #+property:   header-args:emacs-lisp :lexical t
 
-* Fuzzy Clock — vendored :EMACS_MECHANISM:S1:
+* Fuzzy Clock — vendored :EMACS_MECHANISM:S0:
 :PROPERTIES:
 :ID:       32593c91-551b-4054-94e7-248c7632bb3c
 :MM_PARENT: none

@@ -1,7 +1,7 @@
 Quickly add a TODO item using org-capture.  Simple mode finishes
 immediately; capture mode opens the buffer with cursor ready.
 
-* Core :EMACS_MECHANISM:S1:
+* Core :EMACS_MECHANISM:S0:
 :PROPERTIES:
 :ID:       cbe0cc2e-7ef9-4cca-a808-0904ea69c27a
 :MM_PARENT: none

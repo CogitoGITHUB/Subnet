@@ -4,7 +4,7 @@ and per-leader menus come from the =my/defhydra-state= spec the files
 already carry (macro emits Transient directly). Add/delete a leader
 file or binding and the menus follow with zero edits here.
 
-* Registry :EMACS_MECHANISM:S1:
+* Registry :EMACS_MECHANISM:S0:
 :PROPERTIES:
 :ID:       f94efe9f-808c-4431-b88b-3fc8203165bc
 :MM_PARENT: none

@@ -1,7 +1,7 @@
 #+TITLE:      AIU Cyberdeck
 #+AIU: The manifolding-aiu-subnet cyberdeck plugin and mind map web package need work
 
-* AIU Cyberdeck Root Dir :EMACS_MECHANISM:S1:
+* AIU Cyberdeck Root Dir :EMACS_MECHANISM:S0:
 :PROPERTIES:
 :ID:       b4480d4d-75a2-488c-afa0-5fb9bbcf2e1e
 :MM_PARENT: none

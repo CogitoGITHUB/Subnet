@@ -1,6 +1,6 @@
 Keys specific to the AIU Subnet state. Shared bindings live in universal.org.
 
-* State definition :EMACS_MECHANISM:S1:
+* State definition :EMACS_MECHANISM:S0:
 :PROPERTIES:
 :ID:       d4827d4b-2087-4303-bb8f-499148542fc7
 :MM_PARENT: none

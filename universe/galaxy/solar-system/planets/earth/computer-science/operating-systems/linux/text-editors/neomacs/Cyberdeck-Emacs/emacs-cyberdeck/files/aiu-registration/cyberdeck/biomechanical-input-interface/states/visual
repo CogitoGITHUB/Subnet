@@ -1,6 +1,6 @@
 Keys specific to the visual state. Shared bindings live in universal.org.
 
-* State definition :EMACS_MECHANISM:S1:
+* State definition :EMACS_MECHANISM:S0:
 :PROPERTIES:
 :ID:       bf4781f5-5e70-4031-a83a-f67dbd6398bb
 :MM_PARENT: none

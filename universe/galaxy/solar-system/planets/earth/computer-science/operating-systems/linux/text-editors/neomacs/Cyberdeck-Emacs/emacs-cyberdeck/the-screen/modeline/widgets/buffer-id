@@ -2,7 +2,7 @@
 #+filetags:   :emacs-package:ui:
 #+property:   header-args:emacs-lisp :lexical t
 
-* Modeline Buffer Name :EMACS_MECHANISM:S1:
+* Modeline Buffer Name :EMACS_MECHANISM:S0:
 :PROPERTIES:
 :ID:       54171912-edb5-4e8a-99dc-b65a64c56fc9
 :MM_PARENT: none

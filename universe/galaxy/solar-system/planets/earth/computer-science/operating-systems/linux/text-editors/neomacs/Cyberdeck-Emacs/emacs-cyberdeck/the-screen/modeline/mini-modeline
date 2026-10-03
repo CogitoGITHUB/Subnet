@@ -2,7 +2,7 @@
 #+identifier: 209a5e73-1e5f-49db-995c-75c66cd123f7
 #+filetags:   :emacs-package:mode-line:
 
-* mini-modeline :EMACS_MECHANISM:S1:
+* mini-modeline :EMACS_MECHANISM:S0:
 :PROPERTIES:
 :ID:       209a5e73-1e5f-49db-995c-75c66cd123f7
 :MM_PARENT: none

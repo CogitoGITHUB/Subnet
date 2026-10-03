@@ -8,7 +8,7 @@ Commands:
 - `my/cyberdeck-recipe-create` — create a new recipe AIU
 - `my/cyberdeck-recipes-edit-servings` — rescale ingredient quantities
 
-* State :EMACS_MECHANISM:S1:
+* State :EMACS_MECHANISM:S0:
 :PROPERTIES:
 :ID:       99af7a1d-ed28-47f6-bec8-aefa275c7932
 :MM_PARENT: none

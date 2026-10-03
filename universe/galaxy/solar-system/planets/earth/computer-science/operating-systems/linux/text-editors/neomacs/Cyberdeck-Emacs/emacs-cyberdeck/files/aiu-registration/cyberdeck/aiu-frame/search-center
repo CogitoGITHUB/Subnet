@@ -17,7 +17,7 @@ The locked invariants, enforced in code below rather than docs:
 - Extensibility: a new subsystem registers a provider; the Center
   never gets rewritten per subsystem.
 
-* Candidate contract and registry :EMACS_MECHANISM:S1:
+* Candidate contract and registry :EMACS_MECHANISM:S0:
 :PROPERTIES:
 :ID:       581ba524-eb9f-4bfb-ae22-534dcd08db90
 :MM_PARENT: none

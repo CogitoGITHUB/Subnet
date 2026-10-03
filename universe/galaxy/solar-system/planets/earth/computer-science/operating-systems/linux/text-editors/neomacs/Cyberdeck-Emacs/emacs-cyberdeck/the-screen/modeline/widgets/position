@@ -2,7 +2,7 @@
 #+filetags:   :emacs-package:ui:
 #+property:   header-args:emacs-lisp :lexical t
 
-* Modeline Position :EMACS_MECHANISM:S1:
+* Modeline Position :EMACS_MECHANISM:S0:
 :PROPERTIES:
 :ID:       5a40f897-0f92-4840-b5b3-d64b86207efc
 :MM_PARENT: none

@@ -2,7 +2,7 @@
 #+filetags:   :emacs-package:ui:
 #+property:   header-args:emacs-lisp :lexical t
 
-* Modeline VC Branch :EMACS_MECHANISM:S1:
+* Modeline VC Branch :EMACS_MECHANISM:S0:
 :PROPERTIES:
 :ID:       31d95a97-a8b9-400c-bbd3-aafc2e23ec5d
 :MM_PARENT: none
