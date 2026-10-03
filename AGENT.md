@@ -443,3 +443,8 @@ git -C $VAULT diff --stat
 more of the previous", not a literal `+`. `grep -c '^#\+begin_src'` silently
 matches nothing, because the line is `#+begin_src`. Use `rg`, or `[+]`, or a
 plain `+` in BRE.
+
+## Warnings/errors: fix everything observed
+- Fix every error/warning seen this session (boot, *Warnings*, byte-compile).
+  Never defer, never silently suppress. Third-party causes need a durable
+  in-scope workaround or an explicit user decision.
