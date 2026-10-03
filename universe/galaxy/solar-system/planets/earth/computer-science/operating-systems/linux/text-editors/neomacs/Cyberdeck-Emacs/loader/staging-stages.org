@@ -69,14 +69,16 @@ find an ancestor that lives in S1."
   (condition-case nil
       (let (s0 s1 s2)
         (dolist (u ordered)
-          (let ((stage (if cyberdeck-emacs--boot-ignore-stages
-                           'S1
-                         (cyberdeck-emacs--stage-of-unit u))))
+          ;; Full mode ignores S2 (everything loads) but NEVER ignores
+          ;; S0: Fundamental leads in every mode, so the screen is up
+          ;; before the rest reads and compiles.
+          (let ((true (cyberdeck-emacs--stage-of-unit u)))
             (cond
-             ((and (eq stage 'S2)
+             ((and (eq true 'S2)
+                   (not cyberdeck-emacs--boot-ignore-stages)
                    (not (cyberdeck-emacs--bootstrap-unit-p u)))
               (push u s2))
-             ((eq stage 'S0)
+             ((eq true 'S0)
               (push u s0))
              (t
               (push u s1)))))
