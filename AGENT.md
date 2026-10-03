@@ -1,4 +1,8 @@
-# AGENT.md — Operating guide for this Emacs configuration
+## Herdr + neomacs: run it, watch it, get pinged
+- Open neomacs in a spare pane/tab: `herdr pane run <pane> 'bash -c "neomacs -nw ... 2>&1 | tee <log>; echo DONE-MARKER=\${PIPESTATUS[0]} >> <log>"'`. Output streams (watchable) AND lands in a file.
+- Read it live anytime: `herdr pane read <pane>` — progress, errors, backtraces — without touching the session.
+- Notify on done: background watcher polls for the exit marker; the harness pings on completion. Never sleep-loop in foreground.
+- Safety, learned the hard way: verify a pane is an idle shell BEFORE sending anything (typed into the user's live Emacs twice); never use your own pane; one boot at a time (unit-times.log/module-el race); plain `-nw` never exits — read results, then kill it; batch probes that hang get `timeout`, batch `read`/`with-temp-buffer` flakiness is real.# AGENT.md — Operating guide for this Emacs configuration
 
 **Read this before touching anything.** It exists because the setup has rules
 that are not visible from any single file, several of them are silent when
