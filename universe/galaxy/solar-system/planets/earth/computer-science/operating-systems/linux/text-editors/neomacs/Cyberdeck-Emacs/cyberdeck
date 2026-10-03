@@ -2135,6 +2135,7 @@ files are never read, loaded, or compiled — by any caller."
             ;; or index-apply for them. Stage comes from the index record;
             ;; new files (no record) fall through to S1 and are scanned.
             (setq cyberdeck-emacs--s2-boot-files nil)
+            (setq cyberdeck-emacs--discovery-listed (length all))
             (let ((s1f nil) (s2f nil))
               (dolist (f all)
                 (if (and (not cyberdeck-emacs--boot-ignore-stages)
@@ -2185,7 +2186,7 @@ files are never read, loaded, or compiled — by any caller."
                cyberdeck-emacs--s2-boot-files table)
               (setq cyberdeck-emacs--s2-boot-files nil))
             (cyberdeck-emacs--report-discovery
-             from-index rescanned (null table) reason))
+             from-index rescanned (null table) reason cyberdeck-emacs--discovery-listed))
          (setq tagged (nreverse tagged))
          (let ((skipped (- total (length tagged)))
                (units (cyberdeck-emacs--collect-units tagged)))
@@ -2209,10 +2210,14 @@ trusted.  Computed once per boot, never persisted.")
   "One-line discovery summary for this boot, set by
 `cyberdeck-emacs--report-discovery'.")
 
-(defun cyberdeck-emacs--report-discovery (from-index rescanned fallback reason)
+(defvar cyberdeck-emacs--discovery-listed 0
+  "Files walked this boot, before the S1/S2 split.")
+
+(defun cyberdeck-emacs--report-discovery (from-index rescanned fallback reason listed)
   "Record and print this boot's one-line discovery summary."
   (setq cyberdeck-emacs--discovery-report
-        (format "discovery: from-index=%d rescanned=%d fallback=%s mode=%s%s"
+        (format "discovery: listed=%d from-index=%d rescanned=%d fallback=%s mode=%s%s"
+                listed
                 from-index rescanned
                 (if fallback "yes" "no")
                 (if cyberdeck-emacs--boot-ignore-stages "full" "staged")
