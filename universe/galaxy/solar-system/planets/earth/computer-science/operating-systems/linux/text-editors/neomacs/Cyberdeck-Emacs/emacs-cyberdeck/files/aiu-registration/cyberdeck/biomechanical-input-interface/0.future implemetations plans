@@ -1,0 +1,33 @@
+Plans for the input layer beyond the current keyboard. Prose only; loads on demand.
+
+* Future Implementation Plans :EMACS_MECHANISM:S2:
+:PROPERTIES:
+:ID:       5da8ac26-a1fc-44a0-a075-948d931c5898
+:MM_PARENT: none
+:END:
+** Input Layer — Keyboard, Pen, and the End of Lateral Travel
+Everything is keyboard-driven as a deliberate constraint that enforces
+intentionality. Dvorak reduces friction at the physical layer. Keybindings
+eliminate the context switch between thinking and doing. When the hands never
+leave the home row, thought and execution stop feeling separate.
+
+** The Deliberate Exception — Pen
+The deliberate exception is the **Wacom Intuos Pro (2025)** with Pro Pen 3:
+- 8192 pressure levels, ±60° tilt, 5080 lpi, battery-free EMR
+- 4 mm thin, Bluetooth 5.3, dual-machine pairing
+- remappable ExpressKeys and mechanical dials that map directly into Emacs
+
+The pen is not a mouse substitute. It is a categorically different input
+mode: continuous physical intent for annotation, spatial reasoning,
+atlas-style documentation, handwritten capture into the knowledge graph, and
+sketching at the speed of thought. Capabilities outside the keyboard's
+discrete symbolic domain.
+
+Dials and ExpressKeys keep the tablet inside the keyboard-first model even
+when the hand holding the pen is not.
+
+** Next Coordinate — Svalboard
+The **Svalboard** — per-finger cluster device where each finger actuates keys
+in five directions without leaving its resting position. No lateral travel.
+No repositioning. The logical conclusion of keyboard-first: not a better
+keyboard, but a redefinition of what a keyboard is allowed to be.
