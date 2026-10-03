@@ -2730,14 +2730,25 @@ keeps log-and-continue fast boots. Read lazily at boot time.")
                "")
            "\0" (symbol-name cyberdeck-emacs-lexical-binding))))
 
-(defun cyberdeck-emacs--cache-read (path)
-  (condition-case nil
-      (car (read-from-string
-            (with-temp-buffer
-              (insert-file-contents path)
-              (buffer-string))))
-    (error nil)))
+(defvar cyberdeck-emacs--state-cache (make-hash-table :test 'equal)
+  "PATH -> cached file content for this boot (`:absent' when the read
+failed).  Unit state files never change except through
+`cyberdeck-emacs--cache-write', which drops the key, so a warm boot
+reads each state file once instead of once per validation.  Never
+persisted; gone with the session.")
 
+(defun cyberdeck-emacs--cache-read (path)
+  (let ((hit (gethash path cyberdeck-emacs--state-cache :absent)))
+    (if (eq hit :absent)
+        (let ((fresh (condition-case nil
+                         (car (read-from-string
+                               (with-temp-buffer
+                                 (insert-file-contents path)
+                                 (buffer-string))))
+                       (error :absent))))
+          (puthash path fresh cyberdeck-emacs--state-cache)
+          (unless (eq fresh :absent) fresh))
+      (unless (eq hit :absent) hit))))
 (defun cyberdeck-emacs--cache-write (path data)
   (make-directory (file-name-directory path) t)
   ;; print-length/print-level MUST be nil here: a bound value would
@@ -2750,7 +2761,10 @@ keeps log-and-continue fast boots. Read lazily at boot time.")
     (with-temp-file tmp
       (insert ";; cyberdeck-emacs module cache\n"
               (prin1-to-string data)))
-    (rename-file tmp path t)))
+    (rename-file tmp path t)
+    ;; The on-disk content changed: whatever a previous read memoised
+    ;; for PATH is stale now.
+    (remhash path cyberdeck-emacs--state-cache)))
 #+end_src
 
 ** Compiler — parts extraction & evaluation
