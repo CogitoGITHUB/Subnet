@@ -69,7 +69,7 @@ Commands:
                :kill-buffer t
                :unnarrowed t)))
           (org-capture-use-indirect-buffer nil))
-      (when-let ((buf (get-file-buffer file)))
+      (when-let* ((buf (get-file-buffer file)))
         (when (eq buf (current-buffer))
           (switch-to-buffer (other-buffer))))
       (org-capture nil "v"))))

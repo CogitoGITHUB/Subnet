@@ -137,7 +137,7 @@ faces to visually differentiate them."
 #+begin_src emacs-lisp
 (defun aiu-proxy-clone-post-command-h ()
   "Delete all the aiu-proxy-clone overlays when any one is non-existent."
-  (when-let ((ovs aiu-proxy-clone-overlays))
+  (when-let* ((ovs aiu-proxy-clone-overlays))
     (let ((deleted nil))
       (dolist (ov ovs)
         (unless (or deleted
@@ -1340,7 +1340,7 @@ off (removed)."
                      (org-element-property :key (org-element-at-point)))
         ;; #+wormhole: keyword exists.
         ;; Further checking the value
-        (when-let ((str (org-element-property :value (org-element-at-point))))
+        (when-let* ((str (org-element-property :value (org-element-at-point))))
           (dolist (fn aiu-proxy-keyword-value-functions) plist
                   (setq plist (append plist (funcall fn str)))))
         plist))))
@@ -2081,7 +2081,7 @@ is non-nil."
 
 #+begin_src emacs-lisp
 (defun aiu-proxy-content-filter-org-only-contents-function (obj plist)
-  (when-let ((only-contents (plist-get plist :only-contents)))
+  (when-let* ((only-contents (plist-get plist :only-contents)))
     (org-element-map obj org-element-all-elements
       #'aiu-proxy-content-filter-org-only-contents
       nil nil 'section nil)))
@@ -2391,7 +2391,7 @@ changes, the logic in this function will need to reviewed."
         (m))
     (unless parent
       (save-excursion
-        (when-let ((match (or (text-property-search-forward
+        (when-let* ((match (or (text-property-search-forward
                                ':parent)
                               (text-property-search-backward
                                ':parent))))

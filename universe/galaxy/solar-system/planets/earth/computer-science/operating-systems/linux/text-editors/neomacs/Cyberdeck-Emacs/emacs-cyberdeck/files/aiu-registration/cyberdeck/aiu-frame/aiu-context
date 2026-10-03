@@ -83,7 +83,7 @@ unique per parent so per-file AIUs don't leak."
                                  (plist-get my/cyberdeck-org-prompt--session :note))
                             (ignore-errors (my/cyberdeck--aiu-at-point))
                             (ignore-errors
-                              (when-let ((m (and (boundp 'my/cyberdeck-links--deleted-id)
+                              (when-let* ((m (and (boundp 'my/cyberdeck-links--deleted-id)
                                                  my/cyberdeck-links--deleted-id))
                                          (note (ignore-errors (cyberdeck-db-get-by-id m))))
                                 note))))
@@ -253,11 +253,11 @@ plain AIU Proxy drawer entries. AIU Proxies are created explicitly only.
 *** Link and type predicates
 #+begin_src emacs-lisp :lexical t
 (defun my/cyberdeck--id-from-link (link)
-  (when-let ((m (my/cyberdeck--aiu-context-link-value link)))
+  (when-let* ((m (my/cyberdeck--aiu-context-link-value link)))
     (car m)))
 
 (defun my/cyberdeck--aiu-context-of-type-p (property-type id)
-  (when-let ((file (org-id-find-id-file id)))
+  (when-let* ((file (org-id-find-id-file id)))
     (string-prefix-p
      (expand-file-name (format "admin/unfoldings/%s/" property-type)
                        (my/cyberdeck-root-dir))
@@ -390,7 +390,7 @@ AIU Proxy rendering is stripped first so the drawer edits see raw
 (defun my/cyberdeck--apply-state-post (property-type drawer-value aiu-context-id note)
   "Post-apply wrapper for an unfolding state.
 Navigates by AIU's own path, so it works from any buffer."
-  (when-let ((file (cyberdeck-aiu-path note)))
+  (when-let* ((file (cyberdeck-aiu-path note)))
     (with-current-buffer (find-file-noselect file)
       (let ((re-render (bound-and-true-p aiu-proxy-mode))
             removed)
@@ -503,7 +503,7 @@ replacing it.
              :unnarrowed t)))
          (org-capture-use-indirect-buffer nil)
          (org-capture-window-setup (quote other-window)))
-    (when-let ((buf (get-file-buffer file)))
+    (when-let* ((buf (get-file-buffer file)))
       (when (eq buf (current-buffer))
         (switch-to-buffer (other-buffer))))
     (org-capture nil "v")))
@@ -831,7 +831,7 @@ capture finalizes. Set when RET opens an unfolding; consumed by
 Syncs the origin link description to the unfolding's current title
 and reverts origin windows so edits show immediately. No-op unless
 such a capture just finalized. Fully error-isolated."
-  (when-let ((p my/cyberdeck--pending-aiu-context-refresh))
+  (when-let* ((p my/cyberdeck--pending-aiu-context-refresh))
     (setq my/cyberdeck--pending-aiu-context-refresh nil)
     (let ((uid (car p)) (ofile (cdr p)))
       (condition-case err

@@ -254,7 +254,7 @@ Captured before deletion so the file can be scanned while it still exists.")
 
 (defun my/cyberdeck-links--aiu-context-id-p (id)
   "Non-nil when ID names an AIU Context AIU under admin/unfoldings/."
-  (when-let ((note (cyberdeck-db-get-by-id id)))
+  (when-let* ((note (cyberdeck-db-get-by-id id)))
     (let ((path (cyberdeck-aiu-path note)))
       (and path
            (file-in-directory-p path
@@ -317,7 +317,7 @@ falls back to full vault scan."
 
 (defun my/cyberdeck-links--aiu-context-rel-path (aiu-context-id)
   "Return relative path (from vault root) of the AIU Context AIU UNFOLDING-ID."
-  (when-let ((note (cyberdeck-db-get-by-id aiu-context-id)))
+  (when-let* ((note (cyberdeck-db-get-by-id aiu-context-id)))
     (let ((path (cyberdeck-aiu-path note)))
       (and path
            (file-relative-name path (my/cyberdeck-root-dir))))))
@@ -334,7 +334,7 @@ notes that share the same closed-vocab AIU Context.
         orphans)
     (dolist (aiu-context-id unfoldings)
       (when (my/cyberdeck-links--aiu-context-orphaned-p aiu-context-id deleted-file)
-        (when-let ((rel (my/cyberdeck-links--aiu-context-rel-path aiu-context-id)))
+        (when-let* ((rel (my/cyberdeck-links--aiu-context-rel-path aiu-context-id)))
           (push rel orphans))))
     (delete-dups orphans)))
 #+end_src
@@ -364,7 +364,7 @@ notes that share the same closed-vocab AIU Context.
   "Append a TODO entry to Missing Links.
 DIRECTION is either incoming or outgoing — recorded in the entry."
   (let* ((path (my/cyberdeck-links--ensure-broken-links-file))
-         (src-path (when-let ((note (cyberdeck-db-get-by-id source-id)))
+         (src-path (when-let* ((note (cyberdeck-db-get-by-id source-id)))
                      (cyberdeck-aiu-path note)))
          (link (if src-path
                    (format "[[file:%s::*%s][%s]]" src-path source-title source-title)
@@ -534,7 +534,7 @@ Lives in `my/cyberdeck-root-dir'. Auto-created if missing.")
 (defun my/cyberdeck-links--write-broken-aiu-context-todo (source-id source-title unfolding deleted-title deleted-id direction)
   "Append a TODO entry to Broken AIU Contexts."
   (let* ((path (my/cyberdeck-links--ensure-broken-aiu-contexts-file))
-         (src-path (when-let ((note (cyberdeck-db-get-by-id source-id)))
+         (src-path (when-let* ((note (cyberdeck-db-get-by-id source-id)))
                      (cyberdeck-aiu-path note)))
          (link (if src-path
                    (format "[[file:%s::*%s][%s]]" src-path source-title source-title)
@@ -562,7 +562,7 @@ Lives in `my/cyberdeck-root-dir'. Auto-created if missing.")
 
 (defun my/cyberdeck-links--aiu-path-of (id)
   "Return vault path for AIU ID, or nil."
-  (when-let ((note (ignore-errors (cyberdeck-db-get-by-id id))))
+  (when-let* ((note (ignore-errors (cyberdeck-db-get-by-id id))))
     (ignore-errors (cyberdeck-aiu-path note))))
 
 (defun my/cyberdeck-links--family-of-path (path)

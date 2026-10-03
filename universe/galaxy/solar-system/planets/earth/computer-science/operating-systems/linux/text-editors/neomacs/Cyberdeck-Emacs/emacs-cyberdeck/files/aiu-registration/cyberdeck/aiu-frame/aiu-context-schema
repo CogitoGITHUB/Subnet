@@ -971,7 +971,7 @@ Violations are intentionally silent here — they surface in
 admin/Static AIU Contexts via the reinforcement sweeps."
   (setq my/cyberdeck-reinforce--guard-timer nil)
   (unless (active-minibuffer-window)
-    (when-let ((id (my/cyberdeck-links--current-aiu-id))
+    (when-let* ((id (my/cyberdeck-links--current-aiu-id))
                (note (cyberdeck-db-get-by-id id)))
       (cyberdeck-aiu-context-aiu-violations note))))
 

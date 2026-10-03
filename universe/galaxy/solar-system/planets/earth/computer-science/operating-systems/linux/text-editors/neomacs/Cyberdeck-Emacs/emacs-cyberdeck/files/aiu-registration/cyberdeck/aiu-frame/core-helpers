@@ -25,7 +25,7 @@ Prefers the AIU under the cursor, falls back to the deepest AIU at or before poi
 (defun my/cyberdeck--buffer-aiu ()
   "Return the AIU for the current buffer, or nil."
   (or (my/cyberdeck--aiu-at-point)
-      (when-let ((file (buffer-file-name))
+      (when-let* ((file (buffer-file-name))
                  (notes (cyberdeck-db-query-by-file-path (file-truename file))))
         (let ((pos-point (point)))
           (or (let ((best nil))
@@ -63,7 +63,7 @@ Finds the property drawer of the heading at point without org's own strict parsi
 #+begin_src emacs-lisp
 (defun my/cyberdeck--drawer-get (key)
   (save-excursion
-    (when-let ((r (my/cyberdeck--drawer-region)))
+    (when-let* ((r (my/cyberdeck--drawer-region)))
       (goto-char (car r))
       (or (when (re-search-forward
                  (format "^:%s:[[:blank:]]+\\(.*\\)$" (regexp-quote key))
@@ -109,7 +109,7 @@ Finds the property drawer of the heading at point without org's own strict parsi
 #+begin_src emacs-lisp
 (defun my/cyberdeck--drawer-delete (key)
   (save-excursion
-    (when-let ((r (my/cyberdeck--drawer-region)))
+    (when-let* ((r (my/cyberdeck--drawer-region)))
       (goto-char (car r))
       (when (re-search-forward
              (format "^:%s:[[:blank:]]*\\(.*\\)$" (regexp-quote key))
@@ -132,7 +132,7 @@ Finds the property drawer of the heading at point without org's own strict parsi
     (upcase (string-replace " " "_" (match-string-no-properties 1 label)))))
 
 (defun my/cyberdeck--drawer-insert-point ()
-  (when-let ((r (my/cyberdeck--drawer-region)))
+  (when-let* ((r (my/cyberdeck--drawer-region)))
     (cdr r)))
 #+end_src
 

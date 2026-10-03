@@ -1273,7 +1273,7 @@ stats; quitting leaves no trace. Returns nil (never grades)."
   "Prefill attest evidence from TYPING_LAST at point, or nil.
 Below-floor accuracy is flagged [low-acc N%] so a sloppy run never
 presents as a clean claim. Editable either way."
-  (when-let ((raw (my/cyberdeck--drawer-get "TYPING_LAST"))
+  (when-let* ((raw (my/cyberdeck--drawer-get "TYPING_LAST"))
              (st (my/cyberdeck-installation-protocol--parse-typing-last raw)))
     (let ((acc (plist-get st :acc)))
       (format "%styped %s at %dwpm/%d%% on %s"

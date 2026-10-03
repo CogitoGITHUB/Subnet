@@ -861,7 +861,7 @@ Reads the schedule row (fast, indexed); falls back to the drawer."
                         tag
                         aiu-id))
         (dolist (h-row headings)
-          (when-let ((h-aiu (cyberdeck-db-get-by-id (car h-row))))
+          (when-let* ((h-aiu (cyberdeck-db-get-by-id (car h-row))))
             (insert (format "%s %s [%s]  [[id:%s]]\n"
                             (make-string (1+ level) ?*)
                             (cyberdeck-aiu-title h-aiu)
@@ -968,7 +968,7 @@ Default: <aius-dir>/cyberdeck-map.json"
   "Build list of heading alists for FILE-NOTE-ID's group."
   (let (headings)
     (dolist (row (aiu-subnet/headings-of file-aiu-id))
-      (when-let ((h-aiu (cyberdeck-db-get-by-id (car row))))
+      (when-let* ((h-aiu (cyberdeck-db-get-by-id (car row))))
         (push `((id       . ,(car row))
                 (title    . ,(cyberdeck-aiu-title h-aiu))
                 (type     . "heading")

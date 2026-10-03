@@ -298,7 +298,6 @@ Preserves existing :RULE: t if set (dual-mark)."
   (let* ((already-proto (equal (org-entry-get nil "PROTOCOL") "t"))
          (current-topics (org-entry-get nil "PROTOCOL_TOPICS"))
          (topics-str (my/cyberdeck-protocols--prompt-topics current-topics))
-         (topics (split-string topics-str " " t))
          (order (read-number "Order: " 1))
          (level (completing-read "Level: " '("L1" "L2" "L3" "L4" "L5"
                                              "L6" "L7" "L8" "L9" "L10")
@@ -310,7 +309,7 @@ Preserves existing :RULE: t if set (dual-mark)."
     (org-entry-put nil "PROTOCOL_ORDER" (number-to-string order))
     (org-entry-put nil "PROTOCOL_LEVEL" level)
     (save-buffer)
-    (when-let ((note (my/cyberdeck--buffer-aiu)))
+    (when-let* ((note (my/cyberdeck--buffer-aiu)))
       (my/cyberdeck-protocols--route-aiu note))
     (message "%s as protocol step." (if already-proto "Updated" "Marked"))))
 #+end_src
@@ -419,7 +418,7 @@ AIU Proxy pointer under the parent in the protocol file.
 (defun my/cyberdeck-protocols--install-step
     (id heading-title order level topics-str parent-id file)
   "Mark source heading ID as step ORDER/LEVEL and AIU Proxy it under PARENT-ID."
-  (when-let ((marker (org-id-find id t)))
+  (when-let* ((marker (org-id-find id t)))
     (with-current-buffer (marker-buffer marker)
       (goto-char marker)
       (org-entry-put nil "PROTOCOL" "t")
@@ -625,7 +624,7 @@ Parents are PROTOCOL=t headings with PROTOCOL_ORDER 0."
 Anchor becomes today; next occurrence is stamped as PROTOCOL_ANCHOR,
 PROTOCOL_NEXT and the SCHEDULED planning line. Cadence-less parents
 are left alone. Return the next ISO date, or nil."
-  (when-let ((marker (org-id-find id t)))
+  (when-let* ((marker (org-id-find id t)))
     (prog1
         (with-current-buffer (marker-buffer marker)
           (goto-char marker)
@@ -696,7 +695,7 @@ PROTOCOL_INTERVAL/DAYS stamps its next occurrence from the anchor."
                         [:select [aiu-id] :from protocols])))
         (count 0))
     (dolist (id ids)
-      (when-let ((marker (org-id-find id t)))
+      (when-let* ((marker (org-id-find id t)))
         (with-current-buffer (marker-buffer marker)
           (goto-char marker)
           (org-todo "TODO"))
@@ -718,7 +717,7 @@ PROTOCOL_LAST_RUN / PROTOCOL_LAST_ELAPSED.
 (defun my/cyberdeck-protocols--parent-steps (parent-id)
   "Return step IDs from the wormhole lines under protocol PARENT-ID,
 in document order."
-  (when-let ((marker (org-id-find parent-id t)))
+  (when-let* ((marker (org-id-find parent-id t)))
     (prog1
         (with-current-buffer (marker-buffer marker)
           (save-excursion
@@ -829,7 +828,7 @@ summary is stamped on the parent. Reset stays the recurrence hook."
             ('skip (cl-incf skipped))
             (_ (cl-incf skipped)))))
       (let ((elapsed (cyberdeck-timer-stopwatch-elapsed t0)))
-        (when-let ((marker (org-id-find pid t)))
+        (when-let* ((marker (org-id-find pid t)))
           (with-current-buffer (marker-buffer marker)
             (goto-char marker)
             (org-entry-put nil "PROTOCOL_LAST_RUN"

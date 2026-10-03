@@ -297,7 +297,7 @@ via the prompt registry in unfoldings/rules/."
     (my/cyberdeck-rules--apply-rule-aiu-contexts topics-str file-override)
     (my/cyberdeck-rules--apply-rule-tags scope-tag level-tags)
     (save-buffer)
-    (when-let ((note (my/cyberdeck--buffer-aiu)))
+    (when-let* ((note (my/cyberdeck--buffer-aiu)))
       (my/cyberdeck-rules--route-aiu note))
     (message "%s as rule." (if already-rule "Updated" "Marked"))))
 #+end_src

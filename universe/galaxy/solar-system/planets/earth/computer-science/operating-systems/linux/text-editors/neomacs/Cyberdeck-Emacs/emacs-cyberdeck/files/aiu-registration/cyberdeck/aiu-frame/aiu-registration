@@ -457,7 +457,7 @@ existing KEY. Registers the prompt when the capture finalizes."
 
 (defun my/cyberdeck--register-pending-aiu-context ()
   "Register the pending new aiu-context file, if it was saved."
-  (when-let ((p my/cyberdeck--pending-aiu-context-register))
+  (when-let* ((p my/cyberdeck--pending-aiu-context-register))
     (setq my/cyberdeck--pending-aiu-context-register nil)
     (when (file-exists-p p)
       (my/cyberdeck-org-prompt--register-file p nil)
@@ -2111,7 +2111,7 @@ inside the hook — finalize already restored windows/kills first."
   ;; Tripwire (temporary): proves the hook ran and shows arm state.
   (message "open-offer hook: pending=%s"
            my/cyberdeck--pending-open-after-capture)
-  (when-let ((f my/cyberdeck--pending-open-after-capture))
+  (when-let* ((f my/cyberdeck--pending-open-after-capture))
     (let ((origin my/cyberdeck--pending-open-origin)
           (note my/cyberdeck--pending-open-aiu))
       (setq my/cyberdeck--pending-open-after-capture nil
@@ -3684,7 +3684,7 @@ Why: Implementation of ~my/cyberdeck--finish-heading-capture~.
   "Tail of heading captures: open NOTE per FAST mode.
 Level 3 skips the body editor and asks to open the file instead."
   (if (= fast 3)
-      (when-let ((file (cyberdeck-aiu-path note)))
+      (when-let* ((file (cyberdeck-aiu-path note)))
         (when (y-or-n-p (format "Open %s? " (file-name-nondirectory file)))
           (find-file file)))
     (when skip-open-prompt
@@ -5112,7 +5112,7 @@ and re-mark to change the selection. RET advances only when something
 is marked; C-q quits, C-l makes live, C-e edits the AIU Context file."
   (let ((exit-loop nil))
     (while (and (not exit-loop) (buffer-live-p buf))
-      (when-let ((win (get-buffer-window buf)))
+      (when-let* ((win (get-buffer-window buf)))
         (with-selected-window win
           (let ((ks-all-windows nil))
             (condition-case nil
@@ -5669,7 +5669,7 @@ Why: Implementation of ~my/cyberdeck-org-prompt--session-open~.
     (with-current-buffer buf
       (when (fboundp 'modaled-set-state)
         (modaled-set-state "cyberdeck-pick")))
-    (when-let ((win (get-buffer-window buf)))
+    (when-let* ((win (get-buffer-window buf)))
       (with-selected-window win
         (ignore-errors (recenter-top-bottom))))
     (message "%s — letters jump+mark · RET advance · C-q quit · C-l AIU Context · C-e edit"
@@ -5774,7 +5774,7 @@ Why: Implementation of ~my/cyberdeck-org-prompt--apply-to-aiu~.
              (cyberdeck-aiu-level note)
              unfoldings tags todo remove-aiu-contexts))
       (save-buffer))
-    (when-let ((win (get-buffer-window buf t)))
+    (when-let* ((win (get-buffer-window buf t)))
       (set-window-point win (or view-target (point-min)))
       (set-window-start win (max (point-min) (- (or view-target (point-min)) 200)) t))))
 #+end_src
@@ -6754,10 +6754,10 @@ Why: Implementation of ~my/cyberdeck-collect--merge-list-channels~.
 #+begin_src emacs-lisp
 (defun my/cyberdeck-collect--merge-list-channels (result frag)
   "Append FRAG's :tags and :post-apply onto RESULT."
-  (when-let ((v (plist-get frag :tags)))
+  (when-let* ((v (plist-get frag :tags)))
     (setq result (plist-put result :tags
                             (append (plist-get result :tags) v))))
-  (when-let ((v (plist-get frag :post-apply)))
+  (when-let* ((v (plist-get frag :post-apply)))
     (setq result (plist-put result :post-apply
                             (append (plist-get result :post-apply) v))))
   result)
@@ -6775,18 +6775,18 @@ Why: Implementation of ~my/cyberdeck-collect--merge-fragment~.
   "Merge FRAG into accumulating RESULT per the collector's channels."
   (setq result (my/cyberdeck-collect--merge-list-channels
                 result frag))
-  (when-let ((v (plist-get frag :unfoldings)))
+  (when-let* ((v (plist-get frag :unfoldings)))
     (setq result (plist-put result :unfoldings
                             (append (plist-get result :unfoldings)
                                     (cl-remove-if (lambda (p) (or (null (cdr p))
                                                                   (string-empty-p (cdr p))))
                                                   v)))))
-  (when-let ((v (plist-get frag :body)))
+  (when-let* ((v (plist-get frag :body)))
     (setq result (plist-put result :body
                             (concat (or (plist-get result :body) "") v))))
-  (when-let ((v (plist-get frag :after)))
+  (when-let* ((v (plist-get frag :after)))
     (setq result (plist-put result :after v)))
-  (when-let ((v (plist-get frag :file-name)))
+  (when-let* ((v (plist-get frag :file-name)))
     (setq result (plist-put result :file-name v)))
   (when (plist-member frag :todo)
     (setq result (plist-put result :todo (plist-get frag :todo)))

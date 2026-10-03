@@ -1692,7 +1692,7 @@ buffer, else undo ends up in an infinite loop.
 
 `buffer-undo-list' is per buffer which is why point is synced in
 content-buffer manually if there is a add-extra-word-function."
-  (when-let ((add-word-fn speed-type--add-extra-word-content-fn)
+  (when-let* ((add-word-fn speed-type--add-extra-word-content-fn)
              (orig-end (cdr (get-text-property (1- (point-max)) 'speed-type-orig-pos))))
     (with-current-buffer speed-type--content-buffer (goto-char orig-end)))
   (remove-overlays start end 'face 'speed-type-correct-face)
@@ -1705,13 +1705,13 @@ content-buffer manually if there is a add-extra-word-function."
                                         (or (and (eq speed-type-point-motion-on-error 'point-stay) (not (eq (get-text-property (1+ pos0) 'speed-type-char-status) 'error))) ;; staying, no movement, check current
                                             (and (> pos0 0) (eq speed-type-point-motion-on-error 'point-move) (not (eq (get-text-property pos0 'speed-type-char-status) 'error))))))
            (char-status (get-text-property pos 'speed-type-char-status)))
-      (when-let (f (cond ((eq char-status 'correct) 'speed-type-correct-face)
+      (when-let* ((f (cond ((eq char-status 'correct) 'speed-type-correct-face)
                          ((eq char-status 'error)
                           (if non-consecutive-error-p 'speed-type-error-face 'speed-type-consecutive-error-face))
                          (t nil)))
         (let ((overlay (make-overlay pos (1+ pos))))
           (overlay-put overlay 'priority 1)
-          (overlay-put overlay 'face f))))))
+          (overlay-put overlay 'face f)))))))
 #+end_src
 
 #+begin_src emacs-lisp

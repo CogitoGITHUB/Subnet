@@ -581,7 +581,7 @@ It can be convenient to bind variables in conjunction with using a conditional. 
         (do-something result2)))))
 Since this is a very common pattern, Emacs provides a number of macros to make this easier and more readable. The above can be written the following way instead:
 
-(when-let ((result1 (do-computation))
+(when-let* ((result1 (do-computation))
            (result2 (do-more result1)))
   (do-something result2))
 There’s a number of variations on this theme, and they’re briefly described below.

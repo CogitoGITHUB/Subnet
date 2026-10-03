@@ -48,7 +48,7 @@ and retries once if a save landed mid-flight.
 
 (defun my/cyberdeck-git--refresh (file)
   "Refresh git-gutter for FILE after push."
-  (when-let ((buf (get-file-buffer file)))
+  (when-let* ((buf (get-file-buffer file)))
     (with-current-buffer buf
       (when (and buffer-file-name (not (buffer-modified-p)))
         (git-gutter)))))
@@ -101,13 +101,13 @@ Saving or opening a watched-tree file without a repo is blocked loudly.
 (defun my/cyberdeck-git--check-repo (&optional file)
   "Block if FILE is in a watched tree but no git repo exists."
   (let ((f (or file buffer-file-name)))
-    (when-let ((root (and f (my/cyberdeck-git--root-for f))))
+    (when-let* ((root (and f (my/cyberdeck-git--root-for f))))
       (unless (my/cyberdeck-git--repo-top root)
         (user-error "No git repo above %s" root)))))
 
 (add-hook 'find-file-hook
           (lambda ()
-            (when-let ((root (and buffer-file-name
+            (when-let* ((root (and buffer-file-name
                                   (my/cyberdeck-git--root-for
                                    buffer-file-name))))
               (unless (my/cyberdeck-git--repo-top root)
@@ -139,7 +139,7 @@ cyberdeck config dir) schedules a debounced add+commit+push in its repo.
 FILE defaults to `buffer-file-name'. Per-repo timers so rapid writes
 in both trees commit independently."
   (let ((f (or file (buffer-file-name))))
-    (when-let ((root (and f (my/cyberdeck-git--root-for f))))
+    (when-let* ((root (and f (my/cyberdeck-git--root-for f))))
       (unless (string= root (my/cyberdeck-root-dir))
         (let ((cell (assoc root my/cyberdeck-git--pending-files)))
           (if cell (cl-pushnew f (cdr cell) :test #'string=)
