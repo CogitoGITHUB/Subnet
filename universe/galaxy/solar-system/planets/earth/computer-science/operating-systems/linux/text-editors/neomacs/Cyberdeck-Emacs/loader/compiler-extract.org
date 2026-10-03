@@ -1,0 +1,110 @@
+* Loader — compiler-extract
+Module of the Cyberdeck-Emacs loader. No :EMACS_MECHANISM: tags here: this directory is outside the discovery root and never loads as units. Tangled together with the other modules, in listed order, into a single cyberdeck-emacs.el.
+
+** Compiler — block extraction
+The engine.  Packages are read and eval'd ONE AT A TIME (never
+concatenated into one blob) — that's what makes per-package isolation
+possible at all.
+#+begin_src emacs-lisp
+(defcustom cyberdeck-emacs-lexical-binding t
+  "When non-nil, every module block/package is evaluated with lexical
+binding.  Lexical compilation makes closures capture their environment
+correctly and drastically reduces interpreter stack depth
+\(max-lisp-eval-depth pressure).  Set to nil only to roll back to the
+legacy dynamic-binding behavior."
+  :type 'boolean)
+
+(defun cyberdeck-emacs--line-in-unit-p (line unit)
+  "Non-nil when absolute LINE falls inside UNIT range (START . END-or-nil).
+Nil UNIT means the whole file."
+  (or (null unit)
+      (and (>= line (car unit))
+           (or (null (cdr unit)) (<= line (cdr unit))))))
+
+(defun cyberdeck-emacs-concatenate-source-blocks (file &optional unit)
+  "Populate `cyberdeck-emacs-packages' from FILE.  Return the list of
+loose (non-package) top-level statements as validated, trimmed
+strings, in file order.
+UNIT is an optional (START-LINE . END-LINE-or-nil) cons restricting
+all three passes to one tagged heading's subtree; absolute line
+numbers in errors stay correct because nothing is narrowed."
+  (with-temp-buffer
+    (insert-file-contents file)
+    (let (org-mode-hook) (org-mode))
+    (let ((keywords (cyberdeck-emacs-package-keywords))
+          (results '()))
+      ;; Pass 1: headline PROPERTY keywords, e.g. :STRAIGHT:, :DISABLED:
+      (org-map-entries
+       (lambda ()
+         (let ((package-name (cyberdeck-emacs-find-package)))
+           (dolist (key keywords)
+             (when-let* ((body (cyberdeck-emacs-find-property-string key)))
+               (when (and (cyberdeck-emacs--line-in-unit-p
+                           (line-number-at-pos) unit)
+                          (or (not (eq key :straight))
+                              (cyberdeck-emacs-validate-straight-recipe
+                               body package-name file (line-number-at-pos))))
+                 (cyberdeck-emacs-put-package-parameter
+                  package-name key
+                  `((:body ,body :line ,(line-number-at-pos))))))))))
+      ;; Pass 2: fold a :DEPENDS: property into the :straight recipe
+      (org-map-entries
+       (lambda ()
+         (when (cyberdeck-emacs--line-in-unit-p
+                (line-number-at-pos) unit)
+           (when-let* ((package-name (cyberdeck-emacs-find-package))
+                     (depends-body (cyberdeck-emacs-find-property-string :depends))
+                     (straight-entry (plist-get
+                                      (plist-get cyberdeck-emacs-packages
+                                                 package-name)
+                                      :straight))
+                     (straight-body (plist-get (car straight-entry) :body)))
+           (condition-case err
+               (let ((recipe (read straight-body))
+                     (depends (read depends-body)))
+                 (when (listp depends)
+                   (cyberdeck-emacs-put-package-parameter
+                    package-name :straight
+                    `((:body ,(prin1-to-string
+                               (append recipe (list :depends depends)))
+                             :line ,(plist-get (car straight-entry)
+                                               :line))))))
+              (error
+               (cyberdeck-emacs-record-error
+                :level 'package :file file :package package-name
+                :keyword :depends :line (line-number-at-pos)
+                :message (format "failed to parse :DEPENDS: %s"
+                                 (error-message-string err)))))))))
+      ;; Pass 3: emacs-lisp source blocks -> package keyword body, or a
+      ;; loose top-level statement
+      (org-babel-map-src-blocks nil
+        (let* ((element (org-element-context))
+               (body (org-element-property :value element))
+               (line (line-number-at-pos
+                      (org-element-property :begin element)))
+               (language (org-element-property :language element))
+               (params (org-element-property :parameters element))
+               (tangle (when params
+                         (cdr (assq :tangle
+                                    (org-babel-parse-header-arguments
+                                     params))))))
+           (when (and (string= language "emacs-lisp")
+                      (not (equal tangle "no"))
+                      (cyberdeck-emacs--line-in-unit-p line unit))
+            (if-let* ((package
+                       (cyberdeck-emacs-get-use-package-package keywords)))
+                (let* ((package-name (car package))
+                       (parameter (intern (concat ":" (cadr package))))
+                       (previous (plist-get
+                                  (plist-get cyberdeck-emacs-packages
+                                             package-name)
+                                  parameter)))
+                  (cyberdeck-emacs-put-package-parameter
+                   package-name parameter
+                   (append previous `((:body ,body :line ,line)))))
+              (when (stringp body)
+                (push (cyberdeck-emacs-validate-loose-block
+                       file (list :body body :line line))
+                      results))))))
+      (nreverse results))))
+#+end_src

@@ -1,0 +1,249 @@
+* Loader — splash
+Module of the Cyberdeck-Emacs loader. No :EMACS_MECHANISM: tags here: this directory is outside the discovery root and never loads as units. Tangled together with the other modules, in listed order, into a single cyberdeck-emacs.el.
+
+** Splash — constants & state
+Pure renderer: reads the error/warnings lists, never mutates them.
+#+begin_src emacs-lisp
+(defconst cyberdeck-emacs-splash--redraw-interval 0.1
+  "Seconds between live progress updates (throttle).")
+(defconst cyberdeck-emacs-splash--history-length 24
+  "How many past boot durations the sparkline remembers.")
+
+
+(defvar cyberdeck-emacs-splash--history-file
+  (expand-file-name ".local/cache/manifolding-boot-times"
+                    user-emacs-directory))
+
+(defvar cyberdeck-emacs--last-boot-seconds nil
+  "Duration of the most recent boot, set by the boot finish handoff
+and displayed by the dashboard's Cyberdeck status widget.")
+
+(defvar cyberdeck-emacs--unit-times nil
+  "Per-unit durations this boot: ((SECONDS FILE STATUS) ...), recent first.
+STATUS is loaded (compiled cache hit), compiled (fresh byte-compile),
+eval (interpreted fallback), or error.  Written to unit-times.log by
+`cyberdeck-emacs--write-unit-times'.")
+
+(defun cyberdeck-emacs--unit-times-file ()
+  "Where per-unit durations land.  Under ~/.config/emacs, never the vault."
+  (locate-user-emacs-file "unit-times.log"))
+
+(defun cyberdeck-emacs--write-unit-times ()
+  "Persist per-unit durations and load statuses, slowest first, with a
+total line plus loaded/compiled/eval/error counts — so the next boot
+shows exactly what recompiled and what replayed from .elc.
+Overwrites the previous boot's log (latest only).  Never throws:
+timing must never break a boot."
+  (condition-case nil
+      (let ((rows (sort (copy-sequence cyberdeck-emacs--unit-times)
+                        (lambda (a b) (> (car a) (car b)))))
+            (total 0.0)
+            (loaded 0) (compiled 0) (ev 0) (err 0))
+        (dolist (r cyberdeck-emacs--unit-times)
+          (setq total (+ total (car r)))
+          (pcase (nth 2 r)
+            ('loaded (setq loaded (1+ loaded)))
+            ('compiled (setq compiled (1+ compiled)))
+            ('eval (setq ev (1+ ev)))
+            (_ (setq err (1+ err)))))
+        (with-temp-file (cyberdeck-emacs--unit-times-file)
+          (insert (format ";; unit-times %.1fs total, %d units (%d loaded %d compiled %d eval %d error), %s\n"
+                          total (length rows) loaded compiled ev err
+                          (current-time-string)))
+          (dolist (r rows)
+            (insert (format "%8.2f %-9s %s\n"
+                            (car r) (or (nth 2 r) 'unknown) (cadr r))))))
+    (error nil)))
+
+(defun cyberdeck-emacs-splash--record-duration (seconds)
+  (make-directory
+   (file-name-directory cyberdeck-emacs-splash--history-file) t)
+  (let ((times (append (cyberdeck-emacs-splash--read-history)
+                       (list seconds))))
+    (when (> (length times) cyberdeck-emacs-splash--history-length)
+      (setq times (nthcdr (- (length times)
+                              cyberdeck-emacs-splash--history-length)
+                          times)))
+    (with-temp-file cyberdeck-emacs-splash--history-file
+      (insert (prin1-to-string times)))))
+
+(defun cyberdeck-emacs-splash--read-history ()
+  (condition-case nil
+      (let ((raw (when (file-exists-p
+                          cyberdeck-emacs-splash--history-file)
+                   (car (read-from-string
+                         (with-temp-buffer
+                           (insert-file-contents
+                            cyberdeck-emacs-splash--history-file)
+                           (buffer-string)))))))
+        (if (listp raw) raw nil))
+    (error nil)))
+#+end_src
+
+** Splash — sparkline (kept: dashboard status widget)
+#+begin_src emacs-lisp
+(defun cyberdeck-emacs-splash--sparkline ()
+  "Render recent boot durations as a one-line block sparkline."
+  (let* ((times (cyberdeck-emacs-splash--read-history))
+         (chars ["▁" "▂" "▃" "▄" "▅" "▆" "▇" "█"]))
+    (if (< (length times) 2)
+        ""
+      (let* ((mn (apply #'min times))
+             (mx (apply #'max times))
+             (span (max (- mx mn) 0.001)))
+        (concat "  "
+                (mapconcat
+                 (lambda (s)
+                   (let ((idx (floor (* (- (length chars) 1)
+                                        (/ (- s mn) span)))))
+                     (aref chars (min (1- (length chars))
+                                      (max 0 idx)))))
+                  times ""))))))
+#+end_src
+
+
+** Progress messages plus dashboard counts
+#+begin_src emacs-lisp
+(defun cyberdeck-emacs-splash--missing-prompts-count ()
+  (condition-case nil
+      (let ((path (expand-file-name
+                   "admin/MISSING PROMPTS"
+                    (if (fboundp 'my/cyberdeck-root-dir)
+                        (my/cyberdeck-root-dir)
+                      (expand-file-name "~")))))
+        (if (not (file-exists-p path))
+            0
+          (with-temp-buffer
+            (insert-file-contents path)
+            (count-matches "^\\* TODO"))))
+    (error 0)))
+
+(defun cyberdeck-emacs-splash--aius-count ()
+  (condition-case nil
+      (if (fboundp 'cyberdeck-db-query)
+          (length (cyberdeck-db-query))
+        0)
+    (error 0)))
+
+
+
+(defvar cyberdeck-emacs--progress-state nil
+  "Live progress state: (:t0 :count :last-render :last-count :last-status).")
+
+(defvar cyberdeck-emacs--dashboard-progress-opened nil
+  "Non-nil once this boot opened the dashboard for live progress.
+Manual reloads never steal the frame: only boots open it.")
+
+(defun cyberdeck-emacs--progress-line (current total file status)
+  "One-line progress text for *Messages*."
+  (let ((label (pcase status
+                 ('loaded "Cached")
+                 (_ (pcase cyberdeck-emacs--boot-phase
+                      (:compiling "Compiling") (:loading "Loading")
+                      (:reading "Reading")
+                      (_ "Processing"))))))
+    (concat (format "AIU Cyberdeck %d/%d · %s: " current total label)
+            (or (and file (cyberdeck-emacs-file-title file)) "?")
+            (pcase status
+              ('compiled " [no cache — compiling fresh]")
+              (_ ""))
+            (let ((e (length (cyberdeck-emacs-errors-list)))
+                  (w (length (cyberdeck-emacs-warnings-list))))
+              (if (and (zerop e) (zerop w))
+                  ""
+                (format " · %d errors · %d warnings" e w))))))
+
+(defun cyberdeck-emacs--progress-tick (current total file &optional status)
+  "Log progress to *Messages*. Opens the dashboard once it is live
+(boots only — never on manual reload). Throttled to
+redraw-interval. Never throws: a progress tick must never break
+compilation."
+  (condition-case nil
+      (let* ((now (float-time))
+             (st cyberdeck-emacs--progress-state)
+             (first-call (zerop (or (plist-get st :count) 0)))
+             (changed (or (/= current (or (plist-get st :last-count) -1))
+                          (not (equal status (plist-get st :last-status))))))
+        (when first-call
+          (setq cyberdeck-emacs--progress-state
+                (list :t0 now :count 0 :last-render 0
+                      :last-count -1 :last-status nil))
+          (setq st cyberdeck-emacs--progress-state))
+        (plist-put cyberdeck-emacs--progress-state :count current)
+        (let* ((since (and (not first-call)
+                           (- now (or (plist-get cyberdeck-emacs--progress-state
+                                                 :last-render)
+                                      0))))
+               (finished (>= current total)))
+          (when (or first-call finished changed
+                    (null since)
+                    (>= since cyberdeck-emacs-splash--redraw-interval))
+            (plist-put cyberdeck-emacs--progress-state :last-render now)
+            (plist-put cyberdeck-emacs--progress-state :last-count current)
+            (plist-put cyberdeck-emacs--progress-state :last-status status)
+            (message "%s" (cyberdeck-emacs--progress-line
+                           current total file status))
+             (when (and cyberdeck-emacs--booting
+                        (not cyberdeck-emacs--dashboard-progress-opened)
+                        (or (null cyberdeck-emacs--dashboard-complete-at)
+                            (>= current
+                                cyberdeck-emacs--dashboard-complete-at))
+                        (fboundp 'dashboard-open)
+                        (featurep 'dashboard))
+               (setq cyberdeck-emacs--dashboard-progress-opened t)
+               (condition-case nil
+                   (progn
+                     (dashboard-open)
+                     ;; Fullscreen first: the dashboard owns the frame
+                     ;; while units load behind it.
+                     (when-let ((win (get-buffer-window "*dashboard*" t)))
+                       (select-window win)
+                       (delete-other-windows win)))
+                 (error nil)))
+            (redisplay t))))
+    (error nil)))
+#+end_src
+
+** Splash — module todos & vault git info
+#+begin_src emacs-lisp
+(defun cyberdeck-emacs-splash--module-todos ()
+  "Return list of (FILE-BASE . TITLE) TODO headings from mechanism files.
+Driven by the discovery index: only files with tagged units are read,
+so non-mechanism files are never touched."
+  (condition-case nil
+      (let (results)
+        (cyberdeck-emacs--index-load)
+        (maphash (lambda (f entry)
+                   (when (and (plist-get entry :units) (file-exists-p f))
+                     (let ((base (cyberdeck-emacs-file-title f)))
+                       (with-temp-buffer
+                         (insert-file-contents f)
+                         (goto-char (point-min))
+                         (while (re-search-forward
+                                 "^\\*+[ \t]+TODO[ \t]+\\(.*?\\)[ \t]*$" nil t)
+                           (push (cons base (match-string 1)) results))))))
+                 cyberdeck-emacs--discovery-index)
+        (nreverse results))
+    (error nil)))
+
+(defun cyberdeck-emacs-splash--vault-git-info ()
+  "One-line git summary of the vault, or nil when unavailable."
+  (condition-case nil
+      (when (fboundp 'magit-git-lines)
+         (let ((root (if (fboundp 'my/cyberdeck-root-dir)
+                         (my/cyberdeck-root-dir)
+                       (expand-file-name "~"))))
+          (let* ((branch (car (magit-git-lines "-C" root
+                                               "rev-parse" "--abbrev-ref"
+                                               "HEAD")))
+                 (last (car (magit-git-lines "-C" root
+                                             "log" "-1" "--format=%cr")))
+                 (ahead (car (magit-git-lines "-C" root
+                                              "rev-list" "--count"
+                                              "@{upstream}..HEAD"))))
+            (concat (or branch "?")
+                    (if last (format " · %s" last) " · no commits")
+                    (when (and ahead (not (string= ahead "0")))
+                      (format " · ↑%s" ahead))))))
+    (error nil)))
+#+end_src

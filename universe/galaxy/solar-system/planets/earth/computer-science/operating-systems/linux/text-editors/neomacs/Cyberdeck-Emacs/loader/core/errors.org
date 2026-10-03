@@ -1,0 +1,510 @@
+* Loader — core/errors
+Module of the Cyberdeck-Emacs loader. No :EMACS_MECHANISM: tags here: this directory is outside the discovery root and never loads as units. Tangled together with the other modules, in listed order, into a single cyberdeck-emacs.el.
+
+** Errors — data shape
+Three isolation tiers all report through this file:
+part / package / file.  See upstream commentary for the model.
+#+begin_src emacs-lisp
+(cl-defstruct (cyberdeck-emacs-error-entry
+               (:constructor cyberdeck-emacs--make-error-entry))
+  level file line package keyword message time)
+
+(defvar cyberdeck-emacs--boot-errors '()
+  "List of `cyberdeck-emacs-error-entry', most recent first.")
+
+(defvar cyberdeck-emacs--boot-warnings '()
+  "List of (:type TYPE :message MESSAGE :time TIME), most recent first.")
+
+(defvar cyberdeck-emacs--package-status
+    (make-hash-table :test 'equal)
+  "PACKAGE-NAME (string) -> plist (:status 'ok|'error :file F :message M
+:time TIME).  Persists across boots this session; only ever updated
+per-package, never mass-cleared, so a partial reload doesn't erase
+status for files it didn't touch.")
+
+(defvar cyberdeck-emacs--inside-tier2-eval nil
+  "Bound to t only during the synchronous per-package eval in the
+compiler.  Prevents double-recording of synchronous part failures.")
+#+end_src
+
+** Errors — recording
+All problems surface through the standard *Warnings* buffer (one
+place to scan): `display-warning' logs and echoes; the foundation
+advice counts them into the boot lists without double-recording.
+#+begin_src emacs-lisp
+(cl-defun cyberdeck-emacs-record-error
+    (&key level file line package keyword message)
+  "Record a failure and surface it via display-warning (the standard
+*Warnings* buffer). *Messages* is never touched."
+  (let ((entry (cyberdeck-emacs--make-error-entry
+                :level level :file file :line line :package package
+                :keyword keyword :message message :time (float-time))))
+    (push entry cyberdeck-emacs--boot-errors)
+    (when package
+      (cyberdeck-emacs-record-status package 'error file message))
+    (display-warning
+     'cyberdeck-emacs
+     (format "%s%s%s: %s"
+             (or file "") (if line (format ":%s" line) "")
+             (if package (format " [%s]" package) "") message)
+     :error)
+    entry))
+
+(defcustom cyberdeck-emacs-deferred-variables '(dashboard-agenda-files)
+  "Variables a unit may legitimately assign before its owning package is
+loaded, because that package is deferred.
+
+`byte-compile-free-vars-warn' warns unless the symbol is `boundp' at
+compile time, and a deferred package has not defined its variables yet,
+so a correct `setq' reads as a free-variable assignment.  The loader
+binds these names for the duration of the compile only
+(`cyberdeck-emacs--with-deferred-variables'), so no unit's parts change
+and no parts-hash or .elc cache id moves: adding a name here recompiles
+nothing.
+
+Each name is left void again afterwards, so when the owning package does
+load, its own `defcustom' still installs its own default."
+  :type '(repeat symbol)
+  :group 'cyberdeck-emacs)
+
+(defun cyberdeck-emacs--with-deferred-variables (body)
+  "Run BODY with `cyberdeck-emacs-deferred-variables' temporarily bound.
+Bound, not valued: the byte compiler only asks `boundp'.  Anything this
+binds is made void again on the way out, including on error."
+  (let (was-void)
+    (dolist (sym cyberdeck-emacs-deferred-variables)
+      (unless (boundp sym)
+        (set sym nil)
+        (push sym was-void)))
+    (unwind-protect
+        (funcall body)
+      (dolist (sym was-void)
+        (makunbound sym)))))
+
+(defvar cyberdeck-emacs--third-party-warning-count 0
+  "Third-party package warnings deliberately NOT recorded this boot.
+Always reported in the boot summary, so filtering is never silent.")
+
+(defun cyberdeck-emacs--third-party-warning-p (type _message)
+  "Non-nil when TYPE is upstream package noise this vault must not own.
+Deliberately ONE case: a missing `lexical-binding' cookie in a file under
+straight's build directory.  Those are third-party git sources we do not
+edit, and straight leaves them uncompiled, so the warning would otherwise
+reappear on every single boot.  Nothing else is filtered: every other
+type, and every cookie warning inside the vault, still records."
+  (and (consp type)
+       (eq (car type) 'files)
+       (eq (cadr type) 'missing-lexbind-cookie)
+       (let ((path (caddr type)))
+         (and (stringp path)
+              (string-match-p "/straight/build/" path)))))
+
+(defun cyberdeck-emacs-record-warning (type message)
+  (if (cyberdeck-emacs--third-party-warning-p type message)
+      (setq cyberdeck-emacs--third-party-warning-count
+            (1+ cyberdeck-emacs--third-party-warning-count))
+    (push (list :type type :message message :time (float-time)
+                :file (and (boundp 'cyberdeck-emacs--current-unit-file)
+                           cyberdeck-emacs--current-unit-file))
+          cyberdeck-emacs--boot-warnings)))
+
+(defvar cyberdeck-emacs--current-unit-file nil
+  "Source file of the unit currently compiling/loading, or nil.
+Bound dynamically by `cyberdeck-emacs--unit-load' so captured
+byte-compile warnings attribute to their unit file instead of
+grouping under \"unknown\".  Declared here so the binding is
+special (dynamic) even if the loader ever gains lexical-binding.")
+
+(defun cyberdeck-emacs-record-status (package-name status
+                                        &optional file message)
+  (puthash (format "%s" package-name)
+           (list :status status :file file :message message
+                 :time (float-time))
+           cyberdeck-emacs--package-status))
+#+end_src
+
+** Errors — accessors & clearing
+#+begin_src emacs-lisp
+(defun cyberdeck-emacs-errors-list () cyberdeck-emacs--boot-errors)
+(defun cyberdeck-emacs-warnings-list () cyberdeck-emacs--boot-warnings)
+
+(defun cyberdeck-emacs-package-status (package-name)
+  (gethash (format "%s" package-name) cyberdeck-emacs--package-status))
+
+(defun cyberdeck-emacs-all-package-statuses ()
+  (let (result)
+    (maphash (lambda (k v) (push (cons k v) result))
+             cyberdeck-emacs--package-status)
+    result))
+
+(defun cyberdeck-emacs-errors-clear-boot-state ()
+  "Clear the transient per-boot lists. Fresh *Warnings*/*Compile-Log*
+per run (killed below in compile-directory).  Does NOT touch
+`cyberdeck-emacs--package-status'."
+  (setq cyberdeck-emacs--boot-errors '()
+        cyberdeck-emacs--boot-warnings '()
+        cyberdeck-emacs--third-party-warning-count 0))
+
+(defun cyberdeck-emacs-errors-clear-all-status ()
+  "Wipe all recorded package statuses.  Manual escape hatch for when
+your module set has changed enough that stale entries are more
+confusing than useful."
+  (interactive)
+  (clrhash cyberdeck-emacs--package-status)
+  (message "cyberdeck-emacs: cleared all package status history"))
+#+end_src
+
+** Errors — warning capture
+#+begin_src emacs-lisp
+(defun cyberdeck-emacs--warning-advice (type message &rest _)
+  (cyberdeck-emacs-record-warning type message))
+
+(defmacro cyberdeck-emacs-with-warning-capture (&rest body)
+  "Run BODY with `display-warning' captured into
+`cyberdeck-emacs--boot-warnings' instead of shown immediately."
+  `(unwind-protect
+       (progn (advice-add 'display-warning :before
+                          #'cyberdeck-emacs--warning-advice)
+              ,@body)
+     (advice-remove 'display-warning
+                    #'cyberdeck-emacs--warning-advice)))
+#+end_src
+
+** Errors — safe reading
+#+begin_src emacs-lisp
+(defun cyberdeck-emacs--first-bad-line (string)
+  "Locate the first syntactically broken s-expression in STRING.
+Uses only built-in motion (`forward-sexp', `forward-comment').
+Returns (REL-LINE TEXT) of the offender, or nil when STRING reads
+clean.  REL-LINE is 1-based relative to the start of STRING."
+  (with-temp-buffer
+    (delay-mode-hooks (emacs-lisp-mode))
+    (insert string)
+    (goto-char (point-min))
+    (condition-case nil
+        (progn
+          (while (not (eobp))
+            (forward-comment (point-max))
+            (unless (eobp) (forward-sexp)))
+          nil)
+       (scan-error
+        (list (line-number-at-pos (point))
+              (string-trim
+               (buffer-substring (line-beginning-position)
+                                 (line-end-position))))))))
+
+#+end_src
+
+** Block paren validation
+
+Validates code blocks for balanced parens BEFORE attempting to read.
+Provides extreme detail: exact counts, error location, context.
+
+#+begin_src emacs-lisp
+(defun cyberdeck-emacs--validate-block-parens (string file line)
+  "Validate STRING for balanced parens, strings, and comments.
+Returns nil if valid, or a detailed error plist with:
+  :file    - source file path
+  :line    - block starting line number
+  :type    - error type (unbalanced-parens, unterminated-string, etc.)
+  :opens   - total open parens (outside strings/comments)
+  :closes  - total close parens (outside strings/comments)
+  :diff    - difference (opens - closes)
+  :depth   - paren depth at point of failure
+  :context - text around the error location"
+  (let ((opens 0) (closes 0) (max-depth 0) (depth 0)
+        (in-string nil) (string-char nil) (in-comment nil)
+        (pos 0) (error-pos nil) (error-depth nil) (error-context nil)
+        type)
+    (cl-block nil
+      (while (< pos (length string))
+        (let ((char (aref string pos)))
+          (cond
+           (in-comment
+            (when (eq char ?\n) (setq in-comment nil)))
+           (in-string
+            (cond ((eq char ?\\) (setq pos (1+ pos)))
+                  ((eq char string-char)
+                   (setq in-string nil string-char nil))))
+           ((and (eq char ?\;) (not in-string))
+            (setq in-comment t))
+           ((and (eq char ?\") (not in-string))
+            (setq in-string t string-char ?\"))
+           ((eq char ?\()
+            (setq depth (1+ depth))
+            (setq max-depth (max max-depth depth))
+            (setq opens (1+ opens)))
+           ((eq char ?\))
+            (setq closes (1+ closes))
+            (setq depth (1- depth))
+            (when (< depth 0)
+              (setq error-pos pos)
+              (setq error-depth depth)
+              (setq type 'unbalanced-close)
+              (setq error-context
+                    (string-trim
+                     (substring string
+                      (max 0 (- pos 40))
+                      (min (length string) (+ pos 40)))))
+              (cl-return nil))))
+          (setq pos (1+ pos))))
+    (cond
+     (in-string
+      (list :file file :line line :type 'unterminated-string
+            :opens opens :closes closes :diff (- opens closes)
+            :depth depth
+            :context (string-trim
+                      (substring string
+                       (max 0 (- (length string) 40))
+                       (length string)))
+            :message (format "Unterminated string starting with %c" string-char)))
+     ((> opens closes)
+      (list :file file :line line :type 'unbalanced-parens
+            :opens opens :closes closes :diff (- opens closes)
+            :depth depth
+            :context (string-trim
+                      (substring string
+                       (max 0 (- (length string) 40))
+                       (length string)))
+            :message (format "Missing %d closing paren(s)" (- opens closes))))
+     ((< opens closes)
+      (list :file file :line line :type 'unbalanced-parens
+            :opens opens :closes closes :diff (- opens closes)
+            :depth depth
+            :context (string-trim
+                      (substring string
+                       (max 0 (- (length string) 40))
+                       (length string)))
+            :message (format "Extra %d closing paren(s)" (- closes opens))))
+     (t nil)))))
+#+end_src
+
+** Safe read with error context
+
+#+begin_src emacs-lisp
+(defun cyberdeck-emacs-safe-read (string file &optional line)
+  "Read STRING, tagging any read error with FILE/LINE for context.
+Pre-validates block for balanced parens with extreme detail.
+Read failures pinpoint the exact location, show context, and display
+the problematic code block."
+  ;; First: detailed paren validation
+  (when-let ((err (cyberdeck-emacs--validate-block-parens string file line)))
+    (let* ((msg (format "PAREN ERROR in %s:%s\n  Type: %s\n  Opens: %d  Closes: %d  Diff: %d\n  Depth: %d\n  Context: %s\n  Message: %s"
+                        (file-name-nondirectory file)
+                        (or line "?")
+                        (plist-get err :type)
+                        (plist-get err :opens)
+                        (plist-get err :closes)
+                        (plist-get err :diff)
+                        (plist-get err :depth)
+                        (plist-get err :context)
+                        (plist-get err :message)))
+           ;; Extract the actual code block content for display
+           (code-snippet (cyberdeck-emacs--extract-error-code string file line)))
+      (signal 'error (list (concat msg "\n\n--- CODE BLOCK ---\n" code-snippet)))))
+  ;; Then: safe read with error context
+  (condition-case err
+      (read string)
+    (error
+     (let* ((base (concat (if line
+                              (format "Read error in %s:%s" file line)
+                            (format "Read error in %s" file))
+                          ": "
+                          (error-message-string err)))
+            (scan (and (memq (car err)
+                             '(end-of-file invalid-read-syntax scan-error))
+                       (cyberdeck-emacs--first-bad-line string)))
+            (code-snippet (cyberdeck-emacs--extract-error-code string file line))
+            (msg (concat base
+                        (when scan (format " — bad form at +%d: %s"
+                                           (nth 0 scan) (nth 1 scan)))
+                        "\n\n--- CODE BLOCK ---\n" code-snippet)))
+       (signal 'error (list msg))))))
+#+end_src
+
+** Extract error code helper
+
+#+begin_src emacs-lisp
+(defun cyberdeck-emacs--extract-error-code (string file line)
+  "Extract the problematic code block from FILE at LINE for display.
+Returns a string with the code block content, truncated if very long."
+  (condition-case nil
+      (with-temp-buffer
+        (insert string)
+        (goto-char (point-min))
+        ;; Truncate very long blocks for readability
+        (if (> (buffer-size) 500)
+            (progn
+              (goto-char 500)
+              (buffer-substring (point-min) (point)))
+          (buffer-string)))
+    (error "Could not extract code block")))
+#+end_src
+
+** Error navigation helper
+
+When an error occurs, use ~cyberdeck-emacs-jump-to-error~ to open the
+file and jump to the problematic code block.
+
+#+begin_src emacs-lisp
+(defun cyberdeck-emacs-jump-to-error (file line)
+  "Open FILE at LINE to jump to the problematic code block.
+If FILE is nil, prompt for the file. If LINE is nil, search for
+the last error location."
+  (interactive
+   (list (read-file-name "File: ")
+         (read-number "Line: ")))
+  (when file
+    (find-file file)
+    (when line
+      (goto-char (point-min))
+      (forward-line (1- line)))
+    (recenter)))
+
+(defun cyberdeck-emacs--find-block-at-line (file line)
+  "Find the begin_src block containing LINE in FILE.
+Returns (START . END) of the block, or nil if not found."
+  (with-temp-buffer
+    (insert-file-contents file)
+    (goto-char (point-min))
+    (let ((start nil)
+          (end nil)
+          (current-line 1))
+      (while (and (not end) (<= current-line line))
+        (cond
+         ((looking-at "^#+begin_src")
+          (setq start current-line))
+         ((looking-at "^#+end_src")
+          (when start
+            (setq end current-line))))
+        (forward-line 1)
+        (setq current-line (1+ current-line)))
+      (when start
+        (cons start (or end line))))))
+#+end_src
+
+** Errors — part-level wrapping
+#+begin_src emacs-lisp
+(defun cyberdeck-emacs-wrap-in-condition (file part
+                                             &optional package keyword)
+  "Wrap PART's body in `condition-case', baked into the returned code so
+protection travels with it through deferred execution.  Used only for
+:config/:init parts — loose top-level statements never need this since
+they always run synchronously and the caller's own handler is enough."
+  (let* ((body (plist-get part :body))
+         (line (plist-get part :line))
+         (expression-string (string-trim-right body))
+         (expression (cyberdeck-emacs-safe-read
+                      (format "(progn\n%s\n)" expression-string) file line)))
+    (if cyberdeck-emacs-wrap-statements-in-condition
+        (pp-to-string
+         `(condition-case err
+              ,expression
+            (error
+             (unless cyberdeck-emacs--inside-tier2-eval
+               (cyberdeck-emacs-record-error
+                :level 'part :file ,(format "%s" file) :line ,line
+                :package ,(and package (format "%s" package))
+                :keyword ,keyword
+                :message (error-message-string err)))
+             (signal (car err) (cdr err)))))
+      expression-string)))
+
+(defun cyberdeck-emacs-validate-loose-block (file part)
+  "Validate a loose (non-package) block's syntax at build time and
+return its trimmed body string."
+  (let* ((body (plist-get part :body))
+         (line (plist-get part :line))
+         (expression-string (string-trim-right body)))
+    (cyberdeck-emacs-safe-read
+     (format "(progn\n%s\n)" expression-string) file line)
+    expression-string))
+#+end_src
+
+** Errors — TODO filing
+#+begin_src emacs-lisp
+(defun cyberdeck-emacs--error-heading (entry)
+  (format "** TODO Fix: %s%s"
+          (if (cyberdeck-emacs-error-entry-file entry)
+              (car (last (split-string
+                          (cyberdeck-emacs-error-entry-file entry)
+                          "/")))
+            "(no file)")
+          (if (cyberdeck-emacs-error-entry-package entry)
+              (format " (%s)" (cyberdeck-emacs-error-entry-package entry))
+            "")))
+
+(defun cyberdeck-emacs-add-error-to-todo (entry)
+  "Append ENTRY to `cyberdeck-emacs-todo-file' as a TODO item."
+  (unless (file-exists-p cyberdeck-emacs-todo-file)
+    (user-error "TODO file not found at %s" cyberdeck-emacs-todo-file))
+  (with-current-buffer (find-file-noselect cyberdeck-emacs-todo-file)
+    (widen)
+    (goto-char (point-max))
+    (insert (format "\n%s\n" (cyberdeck-emacs--error-heading entry)))
+    (insert (format "Error from cyberdeck-emacs boot (%s), level %s:\n"
+                    (format-time-string "%Y-%m-%d")
+                    (cyberdeck-emacs-error-entry-level entry)))
+    (when (cyberdeck-emacs-error-entry-file entry)
+      (insert (format "[[file:%s::%s][%s:%s]]\n"
+                       (cyberdeck-emacs-error-entry-file entry)
+                       (or (cyberdeck-emacs-error-entry-line entry) 1)
+                       (cyberdeck-emacs-error-entry-file entry)
+                       (or (cyberdeck-emacs-error-entry-line entry) 1))))
+    (insert (format "%s\n"
+                    (cyberdeck-emacs-error-entry-message entry)))
+    (save-buffer)))
+#+end_src
+
+** Errors — under-point lookup & splash actions
+#+begin_src emacs-lisp
+(defun cyberdeck-emacs-error-under-point ()
+  "Return the error entry linked at point in a splash/doctor buffer."
+  (save-excursion
+    (beginning-of-line)
+    (when (looking-at "^[[:space:]]*\u231e")
+      (forward-line -1) (beginning-of-line))
+    (when (looking-at "^\\[\\[file:\\([^]]+\\)::\\([0-9]+\\)")
+      (let ((file (match-string-no-properties 1))
+            (line (string-to-number (match-string-no-properties 2))))
+        (cl-find-if (lambda (e)
+                      (and (equal (cyberdeck-emacs-error-entry-file e)
+                                  file)
+                           (eql (cyberdeck-emacs-error-entry-line e)
+                                line)))
+                    cyberdeck-emacs--boot-errors)))))
+#+end_src
+
+** Errors — persistence
+#+begin_src emacs-lisp
+(defun cyberdeck-emacs--entry-to-plist (entry)
+  (list :level (cyberdeck-emacs-error-entry-level entry)
+        :file (cyberdeck-emacs-error-entry-file entry)
+        :line (cyberdeck-emacs-error-entry-line entry)
+        :package (cyberdeck-emacs-error-entry-package entry)
+        :keyword (cyberdeck-emacs-error-entry-keyword entry)
+        :message (cyberdeck-emacs-error-entry-message entry)
+        :time (cyberdeck-emacs-error-entry-time entry)))
+
+(defun cyberdeck-emacs-errors-save-log ()
+  "Persist this session's errors/warnings/status as one readable form."
+  (interactive)
+  (let ((data (list :errors (mapcar #'cyberdeck-emacs--entry-to-plist
+                                    cyberdeck-emacs--boot-errors)
+                     :warnings cyberdeck-emacs--boot-warnings
+                     :status (cyberdeck-emacs-all-package-statuses)
+                     :saved-at (current-time-string))))
+    (with-temp-file cyberdeck-emacs-error-log-file
+      (insert ";; -*- lisp-data -*-\n;; cyberdeck-emacs error log. Read, don't hand-edit.\n")
+      (pp data (current-buffer)))))
+
+(defun cyberdeck-emacs-errors-load-log ()
+  "Read back the persisted log, or nil if there isn't one yet."
+  (when (file-exists-p cyberdeck-emacs-error-log-file)
+    (with-temp-buffer
+      (insert-file-contents cyberdeck-emacs-error-log-file)
+      (goto-char (point-min))
+      (condition-case nil
+          (progn (forward-line 2) (read (current-buffer)))
+        (error nil)))))
+#+end_src

@@ -1,0 +1,294 @@
+* Loader — staging-stages
+Module of the Cyberdeck-Emacs loader. No :EMACS_MECHANISM: tags here: this directory is outside the discovery root and never loads as units. Tangled together with the other modules, in listed order, into a single cyberdeck-emacs.el.
+
+** Staging — S1 boot units vs S2 on-demand units
+A unit's stage comes from its `:stage' tag (see `cyberdeck-emacs--stage-of');
+no tag means S1.  S1 units are exactly what boots today: compiled and
+loaded by the boot loop in chain order.  S2 units are not compiled and not
+loaded at boot; instead each of their top-level function symbols gets a
+genuine `autoload' pointing at a generated file, so the first use of a
+symbol loads that unit and nothing else.  The generated file ensures the
+unit's not-yet-loaded `:MM_PARENT:' ancestors before its own code runs, so
+a cross-stage call needs no user action.
+
+Nothing here runs when no unit is tagged: the partition is then the identity,
+no file is generated, and no autoload is defined.
+
+The stage tags themselves live in unit files, which this vault does not let
+the loader edit.  So the partition is computed from what discovery already
+read (`:stage' on each unit plist) and never written back.
+#+begin_src emacs-lisp
+(defvar cyberdeck-emacs--s1-units nil
+  "Units the boot loop compiles and loads, in chain order.  Nil until
+`cyberdeck-emacs--partition-stages' runs.")
+
+(defvar cyberdeck-emacs--s2-units nil
+  "S2 units from this boot's partition, in their discovery order.  They
+are deliberately NOT in `cyberdeck-emacs--s1-units'.")
+
+(defvar cyberdeck-emacs--units-by-id nil
+  "Alist of :ID: . unit plist over ALL units of this boot's discovery,
+S1 and S2 alike, so an on-demand load can walk a parent chain that
+crosses the stage boundary.")
+
+(defvar cyberdeck-emacs--units-by-key nil
+  "Alist of unit-key . unit plist over ALL units of this boot's discovery,
+S1 and S2 alike, so an on-demand load can walk its own parent chain.")
+
+(defvar cyberdeck-emacs--s2-on-demand nil
+  "Alist of unit-key . t for S2 units already loaded on demand.")
+
+(defvar cyberdeck-emacs--s2-clobber-skips nil
+  "S2 symbols deliberately left WITHOUT an autoload because a real
+function already owns the name.  An autoload there would shadow working
+code.  Reported at boot, never silent.")
+
+(defun cyberdeck-emacs--bootstrap-unit-p (unit)
+  "Non-nil when UNIT is pinned bootstrap and therefore always S1.
+Mirrors the path/id lists `cyberdeck-emacs--pin-bootstrap-units' uses, so
+a `:stage:' tag can never move keyboard or dashboard out of the boot
+loop — they carry the keymap and the frame."
+  (or (cl-some (lambda (frag)
+                (string-match-p (regexp-quote frag)
+                                (or (plist-get unit :file) "")))
+              cyberdeck-emacs--bootstrap-first-paths)
+      (and (plist-get unit :id)
+           (member (plist-get unit :id) cyberdeck-emacs--bootstrap-first-ids))))
+
+(defun cyberdeck-emacs--partition-stages (ordered)
+  "Split ORDERED into boot units and S2 units.  The boot list is S0
+(Fundamental) first in fundamental-group order, then S1; both halves
+keep ORDERED's relative order, so an S1 boot with no tags is
+byte-for-byte what it was before staging existed.  A bootstrap unit
+tagged S2 is forced to S1 whatever its tag says; an S0 tag always wins
+over bootstrap pinning.  Never throws: any failure degrades to all-S1,
+which is the always-safe stage.
+
+Also records `cyberdeck-emacs--units-by-id' so an on-demand S2 load can
+find an ancestor that lives in S1."
+  (condition-case nil
+      (let (s0 s1 s2)
+        (dolist (u ordered)
+          (let ((stage (if cyberdeck-emacs--boot-ignore-stages
+                           'S1
+                         (cyberdeck-emacs--stage-of-unit u))))
+            (cond
+             ((and (eq stage 'S2)
+                   (not (cyberdeck-emacs--bootstrap-unit-p u)))
+              (push u s2))
+             ((eq stage 'S0)
+              (push u s0))
+             (t
+              (push u s1)))))
+        (let (f-ordered rest)
+          (setq rest (nreverse s0))
+          (dolist (frag cyberdeck-emacs--fundamental-first-paths)
+            (let (group com)
+              (dolist (u rest)
+                (if (string-match-p (regexp-quote frag)
+                                    (or (plist-get u :file) ""))
+                    (push u group)
+                  (push u com)))
+              (setq f-ordered (nconc f-ordered (nreverse group))
+                    rest (nreverse com))))
+          (setq f-ordered (nconc f-ordered rest))
+          (setq cyberdeck-emacs--s1-units (nconc f-ordered (nreverse s1))
+                cyberdeck-emacs--s2-units (nreverse s2)
+              cyberdeck-emacs--units-by-key
+              (let (a)
+                (dolist (u ordered)
+                  (push (cons (cyberdeck-emacs--unit-key u) u) a))
+                (nreverse a))
+              cyberdeck-emacs--units-by-id
+              (let (a)
+                (dolist (u ordered)
+                  (when-let* ((id (plist-get u :id)))
+                    (push (cons id u) a)))
+                (nreverse a)))
+        (cons cyberdeck-emacs--s1-units cyberdeck-emacs--s2-units)))
+    (error
+     (setq cyberdeck-emacs--s1-units ordered
+           cyberdeck-emacs--s2-units nil
+           cyberdeck-emacs--units-by-id nil
+           cyberdeck-emacs--units-by-key nil)
+     (cons ordered nil))))
+
+(defun cyberdeck-emacs--stage-of-unit (unit)
+  "The stage of UNIT: `S0', `S1', `S2', or nil when discovery found no tag.
+nil means S1.  Never re-reads the file:
+`cyberdeck-emacs--scan-file-tagged-units' already put :stage on the
+plist, so this is a field read, not a parse."
+  (let ((s (plist-get unit :stage)))
+    (cond ((null s) 'S1)
+          ((stringp s) (cond ((string= s "S2") 'S2)
+                             ((string= s "S0") 'S0)
+                             (t 'S1)))
+          ((eq s 'S2) 'S2)
+          ((eq s 'S0) 'S0)
+          (t 'S1))))
+
+(defun cyberdeck-emacs--s2-dir ()
+  "Directory holding generated S2 on-demand files."
+  (expand-file-name "s2/" (cyberdeck-emacs--unit-elc-dir)))
+
+(defun cyberdeck-emacs--s2-feature (unit)
+  "Feature symbol naming UNIT's generated on-demand file."
+  (intern (format "cyberdeck-s2-%s"
+                  (substring (secure-hash 'sha256
+                                          (format "%s"
+                                                  (cyberdeck-emacs--unit-key
+                                                   unit)))
+                             0 16))))
+
+(defun cyberdeck-emacs--s2-el-path (unit)
+  "Path of the generated on-demand file for UNIT.
+Keyed by unit-key only, NOT by parts hash: an S2 unit is interpreted
+when first used, so there is no .elc to keep in step, and rewriting the
+same path is what makes a second load a no-op."
+  (expand-file-name (format "%s.el" (cyberdeck-emacs--s2-feature unit))
+                    (cyberdeck-emacs--s2-dir)))
+
+(defun cyberdeck-emacs--unit-loaded-p (unit)
+  "Non-nil when UNIT is already in memory.
+An S1 unit is in memory once the boot loop has passed it; an S2 unit is
+in memory only after its on-demand file ran.  Never throws."
+  (let ((key (cyberdeck-emacs--unit-key unit)))
+    (or (assq key cyberdeck-emacs--s2-on-demand)
+        (memq unit cyberdeck-emacs--s1-units))))
+
+(defun cyberdeck-emacs--s2-load-ancestor (unit)
+  "Load ancestor UNIT, which the boot loop left behind because it is S2.
+Its generated file ensures ITS ancestors first, so the chain walks
+upwards correctly however deep it goes."
+  (let ((el (cyberdeck-emacs--s2-el-path unit)))
+    (when (file-exists-p el)
+      (load el nil t))
+    (push (cons (cyberdeck-emacs--unit-key unit) t)
+          cyberdeck-emacs--s2-on-demand)))
+
+(defun cyberdeck-emacs--s2-ensure-ancestors (key)
+  "Make sure every `:MM_PARENT:' ancestor of unit KEY is in memory.
+Called from the head of each generated on-demand file, before that unit's
+own code.  An S1 ancestor is already there and costs one lookup; an S2
+ancestor is loaded, and ITS generated file ensures its own ancestors
+first, so the chain walks upwards correctly however deep it goes.
+
+Cycle-guarded twice over, and never throws: `cyberdeck-emacs--collect-units'
+already broke parent cycles during discovery, and the `seen' list plus the
+iteration cap make a hand-edited or stale chain safe as well.  Failing to
+resolve an ancestor must not stop the unit from loading."
+  (condition-case nil
+      (let ((cur key) (seen nil) (steps 0))
+        (while (and cur (< (cl-incf steps) 200))
+          (let* ((unit (cdr (assoc cur cyberdeck-emacs--units-by-key)))
+                 (pid (and unit (plist-get unit :parent))))
+            (cond
+             ((null unit) (setq cur nil))
+             ((or (null pid) (string= (format "%s" pid) "none"))
+              (setq cur nil))
+             ((member pid seen) (setq cur nil))
+             (t
+              (push pid seen)
+              ;; #'equal as the THIRD argument: `(assoc K A :test #'equal)'
+              ;; is four arguments and assoc takes at most three.  It
+              ;; signalled wrong-number-of-arguments, which the
+              ;; condition-case above swallowed, so an S2 unit loaded with
+              ;; its ancestors silently missing.  `equal' is already
+              ;; assoc's default test.
+              (let ((next (cdr (assoc pid cyberdeck-emacs--units-by-id))))
+                (unless next (setq cur nil))
+                (when next
+                  (unless (cyberdeck-emacs--unit-loaded-p next)
+                    (cyberdeck-emacs--s2-load-ancestor next))
+                  (setq cur pid)))))))
+        nil)
+    (error nil)))
+
+(defun cyberdeck-emacs--s2-index-entry (unit)
+  "The index's :symbols entry for UNIT: (:code ((NAME KIND INT)...) :data ...).
+Found by start line, the key `:symbols' is stored under.  Returns nil when
+the index has no entry, which means no autoload for this unit rather than
+a guessed one."
+  (let ((file (plist-get unit :file))
+        (line (plist-get unit :start-line))
+        (hit nil))
+    (when (file-exists-p file)
+      (let ((entry (cyberdeck-emacs--index-lookup file)))
+        (when entry
+          (dolist (p (plist-get entry :symbols))
+            (when (equal (car p) line)
+              (setq hit (cdr p)))))))
+    hit))
+
+(defun cyberdeck-emacs--s2-write-on-demand (unit symbols)
+  "Write UNIT's generated on-demand file, with SYMBOLS' `autoload' calls.
+The file's head ensures the parent chain, then the unit's own parts are
+evaluated exactly as the boot loop would have evaluated them.  The whole
+body sits behind its own `provide', so loading the file a second time —
+which happens when a second symbol of the same unit is first used — does
+nothing at all.
+
+The unit is evaluated, never byte-compiled: an S2 unit that never gets
+used must leave no .elc behind, so adding a `:stage:' tag cannot change
+the compile set."
+  (let ((el (cyberdeck-emacs--s2-el-path unit))
+        (feat (cyberdeck-emacs--s2-feature unit))
+        (key (cyberdeck-emacs--unit-key unit))
+        (parts (car (cyberdeck-emacs--compile-unit-parts
+                     (plist-get unit :file) unit))))
+    (condition-case nil
+        (progn
+          (make-directory (cyberdeck-emacs--s2-dir) t)
+          (with-temp-file el
+            (insert (format ";;; cyberdeck-emacs S2 unit -*- lexical-binding: %s -*-\n"
+                            (if cyberdeck-emacs-lexical-binding "t" "nil"))
+                    ";; Generated on demand. Do not edit; regenerated each boot.\n"
+                    (format ";; unit: %s:%s %s\n"
+                            (file-name-nondirectory (plist-get unit :file))
+                            (or (plist-get unit :start-line) 1)
+                            (or (plist-get unit :title) ""))
+                    ";; Stage: S2 — loaded by first use, never at boot.\n\n")
+            (insert (format "(unless (featurep '%s)\n" feat))
+            ;; %S, not '%s: a unit key is usually an :ID: UUID, a STRING,
+            ;; and `'11111111-1111-...' does not even read — the generated
+            ;; file would fail to load and every symbol in it would stay a
+            ;; dead autoload.
+            (insert (format "  (cyberdeck-emacs--s2-ensure-ancestors %S)\n" key))
+            (dolist (p parts)
+              (insert "  " (plist-get p :body) "\n\n"))
+            (insert (format "  (provide '%s))\n" feat)))
+          (dolist (sym symbols)
+            (autoload (car sym) el nil (and (nth 2 sym) t)))
+          t)
+      (error
+       (message "cyberdeck-emacs: could not stage S2 unit %s:%s"
+                (file-name-nondirectory (or (plist-get unit :file) "?"))
+                (or (plist-get unit :start-line) 1))
+       nil))))
+
+(defun cyberdeck-emacs--register-s2-autoloads (s2-units)
+  "Stage every unit in S2-UNITS for first-use loading.
+A symbol already bound to a REAL function is left alone and recorded in
+`cyberdeck-emacs--s2-clobber-skips': an autoload there would shadow
+working code, so skipping is the only safe move and it is never silent.
+Returns the number of units staged."
+  (let (staged)
+    (dolist (unit s2-units)
+      (let* ((entry (cyberdeck-emacs--s2-index-entry unit))
+             (code (and entry (plist-get entry :code))))
+        (when code
+          (let (syms)
+            (dolist (rec code)
+              (let ((sym (car rec)))
+                (cond
+                 ((fboundp sym)
+                  ;; Already an autoload: leave whoever installed it.
+                  (unless (autoloadp sym)
+                    (push (cons sym unit) cyberdeck-emacs--s2-clobber-skips)))
+                 (t (push rec syms)))))
+            (when (and syms
+                       (cyberdeck-emacs--s2-write-on-demand
+                        unit (nreverse syms)))
+              (push unit staged))))))
+    (length staged)))
+#+end_src

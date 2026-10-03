@@ -1,0 +1,336 @@
+* Loader — entry
+Module of the Cyberdeck-Emacs loader. No :EMACS_MECHANISM: tags here: this directory is outside the discovery root and never loads as units. Tangled together with the other modules, in listed order, into a single cyberdeck-emacs.el.
+
+** Entry — reload, current-buffer, preview
+#+begin_src emacs-lisp
+(defun cyberdeck-emacs-reload (&optional force)
+  "Reload every Org file.
+Unchanged units load from their compiled .elc; changed units
+recompile.  With FORCE (prefix argument) recompile everything."
+  (interactive "P")
+  (cyberdeck-emacs-compile-directory nil force))
+
+(defun cyberdeck-emacs-reload-current-buffer ()
+  "Compile (downloading first if needed) the current Org file."
+  (interactive)
+  (let ((remote-file-plist
+         (cyberdeck-emacs-file-remote
+          (buffer-file-name (current-buffer)))))
+    (when remote-file-plist
+      (cyberdeck-emacs-pull-remote-file remote-file-plist)
+      (let ((cyberdeck-emacs-compiling-remote t))
+        (cyberdeck-emacs-compile-file
+         (cyberdeck-emacs-remote-plist-to-org-file remote-file-plist)))))
+  (cyberdeck-emacs-compile-file (buffer-file-name (current-buffer))))
+
+(defun cyberdeck-emacs-preview ()
+  "Show what the current buffer would expand to, without evaluating it."
+  (interactive)
+  (let* ((buffer (get-buffer-create "*cyberdeck-emacs preview*"))
+         (_ (display-buffer buffer))
+         (cyberdeck-emacs-wrap-statements-in-condition nil)
+         (file (buffer-file-name (current-buffer)))
+         (cyberdeck-emacs-packages nil)
+         (loose-forms (cyberdeck-emacs-concatenate-source-blocks file))
+         (output (concat (mapconcat #'identity loose-forms "\n") "\n"
+                         (cyberdeck-emacs-build-packages file))))
+    (with-current-buffer buffer
+      (emacs-lisp-mode) (read-only-mode 1)
+      (let ((inhibit-read-only t))
+        (erase-buffer) (insert output)
+        (goto-char (point-min))))))
+
+(define-minor-mode cyberdeck-emacs-preview-mode
+  "Keep the *cyberdeck-emacs preview* buffer in sync on save."
+  :lighter " cyberdeck-emacs-preview"
+  (if cyberdeck-emacs-preview-mode
+      (add-hook 'after-save-hook #'cyberdeck-emacs-preview nil t)
+    (remove-hook 'after-save-hook #'cyberdeck-emacs-preview t)))
+
+#+end_src
+
+** Boot — mode prompt
+#+begin_src emacs-lisp
+(defcustom cyberdeck-emacs-boot-mode 'full
+  "Boot mode when no prompt answer applies: `full' or `staged'.
+Full ignores stage tags for the boot (every unit loads as S1); the
+index keeps its :stage values untouched."
+  :type '(choice (const full) (const staged)) :group 'cyberdeck-emacs)
+
+(defcustom cyberdeck-emacs-boot-prompt-timeout 4
+  "Seconds to wait for a boot-mode key.  Nil means never ask."
+  :type '(choice (integer :tag "Seconds") (const :tag "Never ask" nil))
+  :group 'cyberdeck-emacs)
+
+(defvar cyberdeck-emacs--boot-ignore-stages nil
+  "Non-nil when this boot ignores stage tags (full mode).  Set once by
+`cyberdeck-emacs--prompt-boot-mode' before discovery; read by the file
+partition and the unit partition.  Never persisted.")
+
+(defun cyberdeck-emacs--prompt-boot-mode ()
+  "Ask staged/full/rescan unless this boot must not be interrupted.
+Skips (uses the default) in batch, on daemons, when the timeout is
+nil, and on restart-emacs reboots (see the advice below, which passes
+a sentinel through the re-exec environment).  Returns the mode and
+records it for the boot."
+  (setq cyberdeck-emacs--boot-ignore-stages nil)
+  (let ((mode cyberdeck-emacs-boot-mode))
+    (unless (or noninteractive (daemonp)
+                (null cyberdeck-emacs-boot-prompt-timeout)
+                (getenv "CYBERDECK_RESTART"))
+      (let ((k (read-char-exclusive
+                (format "Boot: [s]taged / [f]ull (%ss, default %s)"
+                        cyberdeck-emacs-boot-prompt-timeout
+                        cyberdeck-emacs-boot-mode)
+                nil cyberdeck-emacs-boot-prompt-timeout)))
+        (cond ((eq k ?s) (setq mode 'staged))
+              ((eq k ?f) (setq mode 'full))
+              ((eq k ?r)
+               (cyberdeck-emacs-stage-rescan)
+               (setq mode 'full)))))
+    (when (getenv "CYBERDECK_RESTART")
+      (setenv "CYBERDECK_RESTART" nil))
+    (when (eq mode 'full)
+      (setq cyberdeck-emacs--boot-ignore-stages t))
+    mode))
+
+(with-eval-after-load 'restart-emacs
+  (advice-add 'restart-emacs :before
+              (lambda (&rest _)
+                (setenv "CYBERDECK_RESTART" "1"))))
+#+end_src
+
+
+** Entry — boot
+Progress goes to *Messages* and the dashboard header; the dashboard
+opens at the end, with or without file arguments.
+#+begin_src emacs-lisp
+ (defvar fatal nil "Non-nil when boot throws an error.")
+
+ (defvar cyberdeck-emacs--boot-t0 nil "Boot start time for dashboard.")
+
+ (defun cyberdeck-emacs-boot ()
+   "Compile every Org file, with progress in *Messages* and the
+ dashboard header line, structured error tracking, an idle sweep to
+ surface deferred-load errors early, and (optionally) an automatic
+ version freeze if the boot was clean. The dashboard opens at the end,
+ whether or not files were passed on the command line."
+   (interactive)
+   (let ((cyberdeck-emacs--booting t)
+         (boot-t0 (float-time)))
+     (setq cyberdeck-emacs--boot-t0 boot-t0)
+     (setq fatal nil)
+    (setq cyberdeck-emacs--progress-state nil)
+    (setq cyberdeck-emacs--dashboard-progress-opened nil)
+    (cyberdeck-emacs-errors-clear-boot-state)
+    (when cyberdeck-emacs-mode-line-indicator
+      (cyberdeck-emacs-doctor-indicator-mode 1))
+    (cyberdeck-emacs--prompt-boot-mode)
+    (message "AIU Cyberdeck: reading modules/ …")
+    (condition-case err
+        ;; Warning capture during boot comes from the foundation
+        ;; `display-warning' advice alone: wrapping here too recorded
+        ;; every warning twice.
+        (let ((cyberdeck-emacs--boot-phase :compiling))
+           (cyberdeck-emacs-compile-directory
+            #'cyberdeck-emacs--progress-tick))
+      (error (setq fatal err)
+             ;; Strict mode must abort with a backtrace, not melt into
+             ;; `fatal': re-signal after recording state.
+             (when my/loader-strict-p
+               (signal (car err) (cdr err)))))
+    (cyberdeck-emacs-errors-save-log)
+    (unless fatal
+      (cyberdeck-emacs-maybe-freeze-on-clean-boot)
+      (cyberdeck-emacs-doctor-schedule-idle-sweep))
+    (let ((errn (length (cyberdeck-emacs-errors-list)))
+          (warnn (length (cyberdeck-emacs-warnings-list))))
+      (message "cyberdeck-emacs: %s%d error(s), %d warning(s)%s%s"
+               (if fatal "BOOT THREW - " "")
+               errn warnn
+               (if (and (not (zerop (+ errn warnn))) (not fatal))
+                   " — details in *Warnings*" "")
+               ;; Filtering is never silent: say what was dropped.
+               (if (zerop cyberdeck-emacs--third-party-warning-count)
+                   ""
+                 (format " (%d third-party package warning(s) filtered)"
+                         cyberdeck-emacs--third-party-warning-count))))
+    ;; Void-defun sweep: verify critical functions actually exist.
+    ;; Diagnostic only: when one is void the message names the check
+    ;; (sweep), the defining unit's file, its tier this boot, its cache id
+    ;; and whether its source has emacs-lisp blocks.  The file search below
+    ;; runs only on failure, never on a clean boot.  No behaviour change:
+    ;; still a warning, same type, same conditions.
+    (dolist (check
+             '(("my/cyberdeck-org-prompt--ask" . "org-prompts.org")
+               ("my/cyberdeck-collect-prompts" . "prompt-engine.org")
+               ("my/cyberdeck-aiu-runs-run" . "AIU Runs.org")
+                               ("biomechanical-input-interface-define-keys" . "engine/state-machine.org")))
+      (unless (fboundp (intern (car check)))
+        (let* ((name (car check))
+               (found nil)
+               (tier "?"))
+          (catch 'hit
+            (dolist (u (append cyberdeck-emacs--s1-units
+                              cyberdeck-emacs--s2-units))
+              (let ((f (plist-get u :file)))
+                (when (and f (stringp f))
+                  (let ((parts (condition-case nil
+                                   (car (cyberdeck-emacs--compile-unit-parts
+                                         f u))
+                                 (error nil))))
+                    (when (and parts
+                               (catch 'has
+                                 (dolist (p parts)
+                                   (let ((b (plist-get p :body)))
+                                     (when (and b (string-match-p (concat "(defun " (regexp-quote name)) b))
+                                       (throw 'has t))))
+                                 nil))
+                      (setq found u)
+                      (throw 'hit t)))))))
+          (when found
+            (let ((f (plist-get found :file)))
+              (dolist (t3 cyberdeck-emacs--unit-times)
+                (when (equal (nth 1 t3) f)
+                  (setq tier (nth 2 t3))))))
+          (display-warning
+           'cyberdeck-emacs
+           (format "[sweep] CRITICAL: %s is VOID — file:%s tier:%s id:%s src-blocks:%s — check %s for paren/nesting issues"
+                   name
+                   (or (and found (plist-get found :file)) "?")
+                   tier
+                   (if found
+                       (condition-case nil
+                           (cyberdeck-emacs--unit-elc-id
+                            (plist-get found :file) found)
+                         (error "?"))
+                     "?")
+                   (if found "yes" "unknown")
+                   (cdr check))
+           :warning)))))
+    ;; Paren-issue detector.
+    (dolist (e (cyberdeck-emacs-errors-list))
+      (when (and (cyberdeck-emacs-error-entry-p e)
+                 (cyberdeck-emacs-error-entry-message e)
+                 (string-match-p
+                  "UNBALANCED PARENS\\|End of file during parsing"
+                  (cyberdeck-emacs-error-entry-message e)))
+        (display-warning
+         'cyberdeck-emacs
+         "UNBALANCED PARENS — *Warnings* shows the exact function and position. Fix the extra/missing closer and reload."
+         :warning)))
+    ;; Always land on the dashboard: normal opens and file opens alike.
+    ;; Errors and warnings live in the errors buffer and the status widget.
+    (let ((secs (- (float-time) (or cyberdeck-emacs--boot-t0 (float-time)))))
+      (unless fatal
+        (cyberdeck-emacs-splash--record-duration secs)
+        (setq cyberdeck-emacs--last-boot-seconds secs))
+      (when fatal
+        (message "cyberdeck-emacs: BOOT THREW: %s"
+                 (error-message-string fatal)))
+      (condition-case dash-err
+          (if (and (fboundp 'dashboard-open)
+                   (fboundp 'dashboard-refresh-buffer))
+              (progn
+                (dashboard-open)
+                (run-with-idle-timer
+                 5 nil (lambda ()
+                         ;; Never refresh mid-boot (units still load
+                         ;; behind the dashboard) and never let a
+                         ;; refresh error near the debugger: a 5s
+                         ;; timer firing mid-loop once froze a boot.
+                         (let ((debug-on-error nil)
+                               (debug-on-quit nil))
+                           (when (and (get-buffer "*dashboard*")
+                                      (not (and (boundp 'cyberdeck-emacs--booting)
+                                                cyberdeck-emacs--booting)))
+                             (condition-case nil
+                                 (dashboard-refresh-buffer)
+                               (error nil))))))
+                ;; Land fullscreen on the dashboard and stay there.
+                ;; Nothing auto-displays at boot end, ever: errors and
+                ;; warnings live in *Warnings* plus the Errors button
+                ;; and the cyberdeck-status widget, on demand.
+                (condition-case nil
+                    (progn
+                      (when-let ((win (get-buffer-window "*dashboard*" t)))
+                        (select-window win)
+                        (delete-other-windows win)))
+                  (error nil)))
+            (message "cyberdeck-emacs: dashboard unavailable — see *Messages*"))
+        (error
+         (message "cyberdeck-emacs: dashboard error %s — see *Messages*"
+                  (error-message-string dash-err))))
+      ;; Done: say so in the echo area.  This comes BEFORE the cosmetic
+      ;; modeline switch below, deliberately: mini-modeline-mode 1 has been
+      ;; observed ending the load outright, and a boot that has already
+      ;; loaded every unit must say so before anything optional runs.  That
+      ;; ordering bug is why "AIU Contexts complete" had not printed, and
+      ;; boot-times.log had not been written, since 2026-10-01.
+      (message "AIU Cyberdeck: AIU Contexts complete — %d units, %d error(s), %d warning(s)%s"
+               (length cyberdeck-emacs--unit-times)
+               (length (cyberdeck-emacs-errors-list))
+               (length (cyberdeck-emacs-warnings-list))
+               (if fatal " (BOOT THREW — see *Warnings*)" ""))
+      ;; Status moves to the minibuffer now that boot logging is done:
+      ;; enabling here (never in a unit) keeps *Messages* complete
+      ;; through the whole boot, and the done message above shows
+      ;; inline in the new stacked bar.  Cosmetic only, and the last
+      ;; thing boot does.
+      ;; Handler is `t', NOT `error'.  A cosmetic modeline must never be
+      ;; able to end the boot, and `error' does not cover every way that
+      ;; can happen: a `quit', a non-error value thrown as a signal, or an
+      ;; error raised from a C-level caller all escape it.  Observed
+      ;; effect of that escape: the load stopped here, `after-init-hook'
+      ;; never fired, and so my/boot-report never wrote boot-times.log
+      ;; (frozen since 2026-10-01).  Catching everything here costs
+      ;; nothing — the only thing after this point is redisplay.
+      (condition-case nil
+          (when (fboundp 'mini-modeline-mode)
+            (mini-modeline-mode 1))
+        (t nil))))
+#+end_src
+
+** Entry — provide
+#+begin_src emacs-lisp
+(provide 'cyberdeck-emacs)
+#+end_src
+
+** Self-check — the loader scans itself
+A broken tangle once shipped a balanced-but-incomplete loader (the
+whole Errors-recording block silently dropped): every boot then died
+void on its first record call, with zero recorded errors. This runs
+at load, after every definition, and shouts when the artifact is
+incomplete. Costs nothing (fboundp checks only, builtins only, never
+throws), so it stays on every boot. Paren balance needs no check
+here: an unbalanced artifact already fails `load' loudly with the
+file name attached.
+#+begin_src emacs-lisp
+(defun cyberdeck-emacs--self-check ()
+  "Verify the loaded artifact defines its own load-bearing functions.
+Catches silent tangle drops. Uses only builtins so it works even
+when half the loader is missing. Never throws."
+  (condition-case nil
+      (let ((missing (cl-remove-if #'fboundp
+                                   '(cyberdeck-emacs-record-error
+                                     cyberdeck-emacs-record-warning
+                                     cyberdeck-emacs-record-status
+                                     cyberdeck-emacs--collect-units
+                                     cyberdeck-emacs--ordered-units
+                                     cyberdeck-emacs--compile-unit-parts
+                                     cyberdeck-emacs--check-unit-parens
+                                     cyberdeck-emacs--org-nesting-problems
+                                     cyberdeck-emacs--unit-load
+                                     cyberdeck-emacs-compile-directory
+                                     cyberdeck-emacs--progress-tick
+                                     cyberdeck-emacs-boot
+                                     cyberdeck-emacs-verify-cache))))
+        (when missing
+          (let ((msg (format "cyberdeck-emacs: LOADER INCOMPLETE — missing: %s (re-tangle cyberdeck-emacs in org-mode)"
+                             (mapconcat #'symbol-name missing " "))))
+            (message "%s" msg)
+            (display-warning 'cyberdeck-emacs msg :error))))
+    (error nil)))
+
+(cyberdeck-emacs--self-check)
+#+end_src

@@ -1,0 +1,239 @@
+* Loader — packages
+Module of the Cyberdeck-Emacs loader. No :EMACS_MECHANISM: tags here: this directory is outside the discovery root and never loads as units. Tangled together with the other modules, in listed order, into a single cyberdeck-emacs.el.
+
+** Package builder — keyword resolution
+#+begin_src emacs-lisp
+(defun cyberdeck-emacs-package-keywords ()
+  "Return the ordered keyword list for the active package macro.
+Preserves the macro's own canonical order — this matters, because leaf
+relies on that order for correctness (e.g. `:disabled' has to stay
+first to short-circuit everything after it).  Extras from
+`cyberdeck-emacs-package-keywords-extra' the macro doesn't already
+know about are appended at the end, never interleaved."
+  (let ((base (pcase cyberdeck-emacs-package-method
+                ('leaf (when (and (require 'leaf nil t)
+                                  (fboundp 'leaf-available-keywords))
+                         (leaf-available-keywords)))
+                ((or 'use-package 'use-package!)
+                 (when (and (require 'use-package-core nil t)
+                            (boundp 'use-package-keywords))
+                   use-package-keywords))
+                (_ '()))))
+    (append base
+            (cl-remove-if (lambda (k) (memq k base))
+                          cyberdeck-emacs-package-keywords-extra))))
+
+(defun cyberdeck-emacs-put-package-parameter (package-name parameter value)
+  (setq cyberdeck-emacs-packages
+        (plist-put cyberdeck-emacs-packages package-name
+                   (plist-put (plist-get cyberdeck-emacs-packages
+                                         package-name)
+                              parameter value))))
+
+(defun cyberdeck-emacs-merge-bodies (file xs)
+  "Merge the :body entries of XS (a list of (:body S :line N)) into one form."
+  (let (result)
+    (dolist (x xs)
+      (when-let* ((parsed (cyberdeck-emacs-safe-read
+                           (plist-get x :body) file (plist-get x :line))))
+        (setq result (append result parsed))))
+    (when result (prin1-to-string result))))
+#+end_src
+
+** Package builder — straight recipe validation
+#+begin_src emacs-lisp
+(defun cyberdeck-emacs-validate-straight-recipe (recipe-string
+                                                   package-name file line)
+  "Return t for allowed :type (built-in, local, file, git, or anything
+with explicit :host/:repo); record an error and return nil otherwise."
+  (condition-case err
+      (let* ((recipe (read recipe-string))
+             (recipe-type (plist-get (cdr recipe) :type)))
+        (cond
+         ((memq recipe-type '(built-in file local git)) t)
+         (recipe-type
+          (cyberdeck-emacs-record-error
+           :level 'package :file file :line line :package package-name
+           :keyword :straight
+           :message (format ":type %s is not allowed (use git, file, local, or built-in)" recipe-type))
+          nil)
+         ((or (plist-get (cdr recipe) :host) (plist-get (cdr recipe) :repo)) t)
+         (t
+          (cyberdeck-emacs-record-error
+           :level 'package :file file :line line :package package-name
+           :keyword :straight
+           :message "recipe has no :type and no :host/:repo (would default to MELPA)")
+          nil)))
+    (error
+     (cyberdeck-emacs-record-error
+      :level 'package :file file :line line :package package-name
+      :keyword :straight
+      :message (format "error reading straight recipe: %s"
+                       (error-message-string err)))
+     nil)))
+#+end_src
+
+** Package builder — string building
+Atomic upstream — kept whole.
+#+begin_src emacs-lisp
+(defun cyberdeck-emacs--straight-preface (body)
+  "Turn a `:STRAIGHT:' recipe body into a `straight-use-package' call.
+The recipe is a melpa-style list, e.g.
+  (interleave :type git :host github :repo \"llcc/interleave\")
+which becomes
+  (straight-use-package \'interleave :type git :host github :repo \"llcc/interleave\")
+
+leaf-keywords' `:straight' keyword is NOT this: it maps every element of
+its value to `(straight-use-package \'ELM)', so it wants a list of package
+NAMES.  Handing it a recipe emitted one call per recipe element —
+(straight-use-package \'interleave), (straight-use-package \':type),
+(straight-use-package \'git) — and the block died in leaf's
+`:leaf-protect' handler, which is exactly the \"Error in `interleave'
+block: void: lambda\" warning, once per such unit.  Returns nil when the
+body does not read as a recipe, so a malformed one is skipped rather
+than emitted."
+  (condition-case nil
+      (let ((form (car (read-from-string body))))
+        (when (and (consp form) (symbolp (car form)) (cdr form))
+          (format "(straight-use-package '%s %s)"
+                  (car form)
+                  (mapconcat #'prin1-to-string (cdr form) " "))))
+    (error nil)))
+
+(defun cyberdeck-emacs-build-package-string (package-name package file)
+  (let* ((package-macro (pcase cyberdeck-emacs-package-method
+                          ('leaf "leaf") ('use-package! "use-package!")
+                          (_ "use-package")))
+         (keys (cyberdeck-emacs-package-keywords))
+         (body-parts
+          (delq nil
+                (mapcar
+                 (lambda (key)
+                   (unless (eq key :package)
+                     (when-let* ((entry (plist-get package key)))
+                       ;; :STRAIGHT: holds a recipe, not a leaf keyword
+                       ;; value: emit it as a :preface straight call.
+                       (if (eq key :straight)
+                           (let ((pf (mapcar #'cyberdeck-emacs--straight-preface
+                                             (mapcar (lambda (part)
+                                                       (plist-get part :body))
+                                                     entry))))
+                             (when pf
+                               (format "\n  :preface\n%s"
+                                       (cyberdeck-emacs-indent
+                                        (string-join (delq nil pf) "\n") 2))))
+                         (format "\n  %s\n%s" key
+                                 (cyberdeck-emacs-indent
+                                  (string-join
+                                   (mapcar (lambda (part)
+                                             (if (member key
+                                                       cyberdeck-emacs-condition-case-keywords)
+                                               (cyberdeck-emacs-wrap-in-condition
+                                                file part package key)
+                                             (plist-get part :body)))
+                                           entry)
+                                   "\n")
+                                  2))))))
+                 keys))))
+    (string-trim-right
+     (concat (format "(%s %s" package-macro package-name)
+             (apply #'concat body-parts) ")\n\n"))))
+
+(defun cyberdeck-emacs--package-has-defer-keyword-p (package)
+  (cl-some (lambda (k) (plist-get package k))
+           '(:bind :bind* :hook :mode :interpreter :magic :magic-fallback
+                   :commands :after)))
+
+(defun cyberdeck-emacs--should-force-require (package)
+  (pcase cyberdeck-emacs-leaf-force-require
+    ('t t)
+    ('nil nil)
+    (_ (and (not (plist-get package :require))
+            (not (cyberdeck-emacs--package-has-defer-keyword-p package))))))
+
+(defun cyberdeck-emacs--append-require-t (package-string)
+  (let* ((trimmed (string-trim-right package-string))
+         (pos (1- (length trimmed))))
+    (concat (substring trimmed 0 pos) "\n  :require t)\n\n")))
+
+(defun cyberdeck-emacs-build-package (file package-name)
+  (when-let* ((package (plist-get cyberdeck-emacs-packages package-name)))
+    (unless (equal package-name (intern "nil"))
+      (let ((package-string
+             (cyberdeck-emacs-build-package-string
+              package-name package file)))
+        (when (cyberdeck-emacs-safe-read package-string file)
+          (if (and (eq cyberdeck-emacs-package-method 'leaf)
+                   (cyberdeck-emacs--should-force-require package))
+              (cyberdeck-emacs--append-require-t package-string)
+            package-string))))))
+
+(defun cyberdeck-emacs-build-packages (file)
+  "Build every package's string and concatenate them.  Used only by
+`cyberdeck-emacs-preview'."
+  (mapconcat (lambda (name)
+               (or (cyberdeck-emacs-build-package file name) ""))
+             (cyberdeck-emacs-plist-keys cyberdeck-emacs-packages) ""))
+#+end_src
+
+** Remote — paths & fetch
+#+begin_src emacs-lisp
+(defun cyberdeck-emacs-remote-plist-to-org-file (remote-file-plist)
+  (file-name-concat
+   (file-name-as-directory
+    (expand-file-name cyberdeck-emacs-remote-org-directory))
+   (format "%s" (plist-get remote-file-plist :repo))
+   (format "%s" (plist-get remote-file-plist :file))))
+
+(defun cyberdeck-emacs-remote-plist-to-output-file (remote-file-plist)
+  (file-name-concat
+   (file-name-as-directory
+    (expand-file-name cyberdeck-emacs-remote-output-directory))
+   (format "%s" (plist-get remote-file-plist :repo))
+   (concat (file-name-sans-extension
+            (format "%s" (plist-get remote-file-plist :file)))
+           ".el")))
+
+(defun cyberdeck-emacs--url-retrieve-callback (status remote-file-plist)
+  (if (plist-get status :error)
+      (cyberdeck-emacs-record-error
+       :level 'remote
+       :file (format "%s/%s" (plist-get remote-file-plist :repo)
+                     (plist-get remote-file-plist :file))
+       :message (format "download failed: %s"
+                        (car (last (plist-get status :error)))))
+    (goto-char url-http-end-of-headers)
+    (let ((response-body (buffer-substring-no-properties
+                          (point) (point-max)))
+          (file-path (cyberdeck-emacs-remote-plist-to-org-file
+                      remote-file-plist)))
+      (make-directory (file-name-directory file-path) t)
+      (with-temp-file file-path (insert response-body)))))
+
+(defun cyberdeck-emacs-pull-remote-file (remote-file-plist)
+  "Download REMOTE-FILE-PLIST's file if missing or if a refresh is forced."
+  (when (or (not (file-exists-p
+                  (cyberdeck-emacs-remote-plist-to-org-file
+                   remote-file-plist)))
+            cyberdeck-emacs-force-download)
+    (message "cyberdeck-emacs: downloading %s:%s"
+             (plist-get remote-file-plist :repo)
+             (plist-get remote-file-plist :file))
+    (let ((repo (plist-get remote-file-plist :repo))
+          (branch (or (plist-get remote-file-plist :branch) "master"))
+          (file (plist-get remote-file-plist :file)))
+      (url-retrieve
+       (format "https://raw.githubusercontent.com/%s/refs/heads/%s/%s"
+               repo branch file)
+       #'cyberdeck-emacs--url-retrieve-callback
+       (list remote-file-plist)))))
+
+(defun cyberdeck-emacs-download-all-remote-files ()
+  "Force re-download of every #+REMOTE: file in the local Org directory."
+  (interactive)
+  (let ((cyberdeck-emacs-force-download t))
+    (dolist (file (cyberdeck-emacs-get-files
+                   "[^./]+$" (cyberdeck-emacs-get-org-directory)))
+      (when-let* ((remote-file-plist (cyberdeck-emacs-file-remote file)))
+        (cyberdeck-emacs-pull-remote-file remote-file-plist)))))
+#+end_src

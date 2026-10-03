@@ -1,0 +1,35 @@
+* Loader — compiler-eval
+Module of the Cyberdeck-Emacs loader. No :EMACS_MECHANISM: tags here: this directory is outside the discovery root and never loads as units. Tangled together with the other modules, in listed order, into a single cyberdeck-emacs.el.
+
+** Compiler — per-package eval isolation
+#+begin_src emacs-lisp
+(defun cyberdeck-emacs--eval-package-string (package-name package-string file)
+  "Read and eval PACKAGE-STRING in isolation: a failure marks
+PACKAGE-NAME as errored instead of propagating to its siblings.
+On failure, records the exact error, the file, and a snippet of the
+failing code so you never have to guess."
+  (condition-case err
+      (progn
+        (let ((cyberdeck-emacs--inside-tier2-eval t))
+          (eval (cyberdeck-emacs-safe-read
+                 (format "(progn\n%s\n)" package-string) file)
+                cyberdeck-emacs-lexical-binding))
+        (cyberdeck-emacs-record-status package-name 'ok file))
+    (error
+     (let ((snippet (if (> (length package-string) 200)
+                          (concat (substring package-string 0 200) "…")
+                        package-string)))
+       (cyberdeck-emacs-record-error
+        :level 'package :file file :package package-name
+        :message (format "%s\n  Code: %s"
+                         (error-message-string err) snippet))))))
+
+(defun cyberdeck-emacs-compile-packages (file)
+  "Build and individually eval every package currently known."
+  (dolist (package-name
+             (cyberdeck-emacs-plist-keys cyberdeck-emacs-packages))
+    (when-let* ((package-string
+                 (cyberdeck-emacs-build-package file package-name)))
+      (cyberdeck-emacs--eval-package-string package-name
+                                              package-string file))))
+#+end_src

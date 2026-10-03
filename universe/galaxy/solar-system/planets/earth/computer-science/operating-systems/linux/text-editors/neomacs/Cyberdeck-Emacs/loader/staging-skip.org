@@ -1,0 +1,115 @@
+* Loader — staging-skip
+Module of the Cyberdeck-Emacs loader. No :EMACS_MECHANISM: tags here: this directory is outside the discovery root and never loads as units. Tangled together with the other modules, in listed order, into a single cyberdeck-emacs.el.
+
+** S2 boot skip — index-only autoloads, lazy validation
+#+begin_src emacs-lisp
+(defvar cyberdeck-emacs--s2-dirty-files nil
+  "Walked paths whose S2 index record differs from the single find listing.
+Rescanned lazily on first use, never at boot.")
+
+(defvar cyberdeck-emacs--s2-boot-files nil
+  "S2 files skipped this boot, for index-only autoload registration.")
+
+(defun cyberdeck-emacs--s2-load-unit-code (key)
+  "Load S2 unit KEY on first use. Validates, rescans if dirty or changed,
+reports clearly if gone. Never throws: first use reports, it never breaks."
+  (condition-case err
+      (let* ((unit (cdr (assoc key cyberdeck-emacs--units-by-key)))
+             (file (and unit (plist-get unit :file))))
+        (cond
+         ((or (null unit) (null file))
+          (message "cyberdeck-emacs: S2 unit gone (no record for key): %S" key)
+          nil)
+         ((not (file-exists-p file))
+          (message "cyberdeck-emacs: S2 file deleted: %s" file)
+          (lwarn 'cyberdeck-emacs :warning "S2 file deleted: %s" file)
+          nil)
+         (t
+          (when (member file cyberdeck-emacs--s2-dirty-files)
+            (cyberdeck-emacs--index-ensure file)
+            (setq cyberdeck-emacs--s2-dirty-files
+                  (delete file cyberdeck-emacs--s2-dirty-files)))
+          (let ((entry (cyberdeck-emacs--index-lookup file)))
+            (when (null entry)
+              (cyberdeck-emacs--index-ensure file)
+              (setq entry (cyberdeck-emacs--index-lookup file))))
+          (cyberdeck-emacs--s2-ensure-ancestors key)
+          (let* ((entry2 (cyberdeck-emacs--s2-index-entry unit))
+                 (code (and entry2 (plist-get entry2 :code))))
+            (if (null code)
+                (progn
+                  (message "cyberdeck-emacs: S2 unit has no symbols: %s" file)
+                  nil)
+              (when (cyberdeck-emacs--s2-write-on-demand unit code)
+                (let ((el (cyberdeck-emacs--s2-el-path unit)))
+                  (load el nil t)
+                  (push (cons key t) cyberdeck-emacs--s2-on-demand)
+                  t)))))))
+    (error
+     (message "cyberdeck-emacs: S2 first-use load failed for %S: %s"
+              key (error-message-string err))
+     nil)))
+
+(defun cyberdeck-emacs--register-s2-from-index (s2-files table)
+  "Register autoloads for S2-FILES from index records only.
+No file-exists-p, file-truename, file-attributes, read or hash for them,
+and no index-apply: units, stage and symbols come straight from the index
+record. TABLE is the single find listing (path -> (mtime . size)), used
+only in memory to mark changed files dirty for lazy rescan on first use.
+Deleted S2 files (in the index but absent from TABLE) still get autoloads,
+so first use reports them gone instead of failing silently.
+Returns units staged."
+  (let ((staged 0))
+    (dolist (f s2-files)
+      (let ((entry (gethash f cyberdeck-emacs--discovery-index)))
+        (when (and entry (plist-get entry :units))
+          (let* ((sig (and table (gethash f table)))
+                 (match (and sig
+                             (equal (plist-get entry :mtime) (car sig))
+                             (equal (plist-get entry :size) (cdr sig)))))
+            (unless match
+              (push f cyberdeck-emacs--s2-dirty-files))
+            (let ((syms-by-line (plist-get entry :symbols)))
+              (dolist (u0 (plist-get entry :units))
+                (let* ((u (copy-sequence u0)))
+                  (plist-put u :file f)
+                  (let ((key (cyberdeck-emacs--unit-key u)))
+                    (unless (assoc key cyberdeck-emacs--units-by-key)
+                      (push (cons key u) cyberdeck-emacs--units-by-key))
+                    (let ((id (plist-get u :id)))
+                      (when (and id (not (assoc id cyberdeck-emacs--units-by-id)))
+                        (push (cons id u) cyberdeck-emacs--units-by-id)))
+                    (let* ((line (plist-get u :start-line))
+                           (hit nil))
+                      (dolist (p syms-by-line)
+                        (when (equal (car p) line)
+                          (setq hit (cdr p))))
+                      (let ((code (and hit (plist-get hit :code))))
+                        (when code
+                          (let ((el (cyberdeck-emacs--s2-el-path u))
+                                (feat (cyberdeck-emacs--s2-feature u)))
+                            (make-directory (cyberdeck-emacs--s2-dir) t)
+                            (with-temp-file el
+                              (insert (format ";;; cyberdeck-emacs S2 stub -*- lexical-binding: t -*-\n;; unit: %s:%s\n" (file-name-nondirectory f) (or line 1)))
+                              (insert (format "(cyberdeck-emacs--s2-load-unit-code %S)\n" key))
+                              (insert (format "(provide '%s)\n" feat)))
+                            (dolist (rec code)
+                              (let ((sym (car rec))
+                                    (interactive (nth 2 rec)))
+                                (cond
+                                 ((fboundp sym)
+                                  (unless (autoloadp sym)
+                                    (push (cons sym u) cyberdeck-emacs--s2-clobber-skips)))
+                                 (t
+                                  (autoload sym el nil (and interactive t))
+                                  (setq staged (1+ staged))))))))))))))))))
+    (maphash
+     (lambda (k entry)
+       (when (and (equal (plist-get entry :stage) "S2")
+                  (plist-get entry :units)
+                  (or (null table) (null (gethash k table)))
+                  (not (member k s2-files)))
+         (push k cyberdeck-emacs--s2-dirty-files)))
+     cyberdeck-emacs--discovery-index)
+    staged))
+#+end_src

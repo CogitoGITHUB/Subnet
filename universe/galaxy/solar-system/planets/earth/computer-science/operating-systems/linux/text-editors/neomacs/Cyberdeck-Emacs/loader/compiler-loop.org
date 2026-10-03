@@ -1,0 +1,310 @@
+* Loader — compiler-loop
+Module of the Cyberdeck-Emacs loader. No :EMACS_MECHANISM: tags here: this directory is outside the discovery root and never loads as units. Tangled together with the other modules, in listed order, into a single cyberdeck-emacs.el.
+
+** Compiler — directory loop & summary
+#+begin_src emacs-lisp
+;; *Compile-Log* never takes the frame: one pointer in the log buffer,
+;; not 280 popups (the end-of-loop bury below already did this; this
+;; makes it total, boot and reload alike). Dashboard display is
+;; unaffected: only the compile log is matched here.
+(add-to-list 'display-buffer-alist
+             '("\\*Compile-Log\\*" display-buffer-no-window))
+
+(defun cyberdeck-emacs-compile-directory (&optional progress-fn force)
+  "Compile every tagged heading unit under the active Org directory.
+Units from all files order parents-first via `cyberdeck-emacs--collect-units'.
+If PROGRESS-FN is given, call it with (CURRENT TOTAL FILE &optional
+STATUS) per unit — used to drive a splash screen without this file
+knowing anything about UI.  STATUS is `loaded' when the unit will
+replay from cache, `compiled' when it has no cache and compiles
+fresh; discovery passes nil.  PROGRESS-FN also fires per file
+during discovery (phase `:reading'), so the splash names each file
+while it is read.
+Each unit loads from its compiled .elc on an exact parts-hash match
+— nothing recompiles, nothing re-evaluates from source.  Changed
+units byte-compile fresh; compile failures fall back to interpreted
+eval.  FORCE recompiles and reloads everything.  Per-unit durations
+and statuses land in `cyberdeck-emacs--unit-times' and
+`unit-times.log', so slow units are measured, never guessed.
+Artifacts of deleted units are pruned.  Returns the files that
+compiled, in completion order."
+  (setq cyberdeck-emacs--boot-phase :reading)
+  (setq cyberdeck-emacs--unit-times nil)
+  (setq cyberdeck-emacs--unit-elc-live-ids nil)
+  ;; Fresh signal every run: boot and reload both start clean, so stale
+  ;; entries and stale log buffers can never mix into this run's report.
+  (cyberdeck-emacs-errors-clear-boot-state)
+  (dolist (b '("*Warnings*" "*Compile-Log*"))
+    (when (get-buffer b) (kill-buffer b)))
+  (let* ((discovered (cyberdeck-emacs--ordered-units
+                      "[^./]+$" (cyberdeck-emacs-get-org-directory)
+                      progress-fn))
+         ;; Staging: split once, here, so every count below covers only
+         ;; what actually runs. With no :stage: tag anywhere the S1 half is
+         ;; `discovered' unchanged and nothing downstream can tell.
+         (partition (and discovered
+                         (or (cyberdeck-emacs--partition-stages
+                              (car discovered))
+                             (cons nil nil))))
+         (units (or (car partition) '()))
+         (s2 (cdr partition))
+         (compiled '()) (pulled '())
+         (current 0) (total (length units))
+         (paren-errors 0) (void-errors 0))
+    ;; Refuse to come up empty.  A scanner that stops seeing
+    ;; `:EMACS_MECHANISM:' yields an empty unit list, and an empty list
+    ;; would otherwise boot a silently bare Emacs: no error, no warning,
+    ;; nothing but missing keymaps.  Anything found empty, or a batch of
+    ;; fresh scans that lost units, stops here where the cause is visible.
+    (when (or (null discovered)
+              (null (car discovered))
+              cyberdeck-emacs--scan-regressions)
+      (let ((why (cond ((null discovered) "discovery returned nothing")
+                       ((null (car discovered))
+                        "discovery found zero units")
+                       (t (format "%d file(s) lost units on a fresh scan: %s"
+                                  (length cyberdeck-emacs--scan-regressions)
+                                  (mapconcat
+                                   (lambda (r)
+                                     (format "%s (%d->%d)"
+                                             (file-name-nondirectory (car r))
+                                             (nth 1 r) (nth 2 r)))
+                                   cyberdeck-emacs--scan-regressions
+                                   ", "))))))
+        (setq cyberdeck-emacs--scan-regressions nil)
+        (signal 'error
+                (format "cyberdeck-emacs: refusing to boot on a broken scan — %s. Tag headlines with :EMACS_MECHANISM: and re-run." why))))
+    ;; Discovery is done: the unit loop below is compilation.
+    (setq cyberdeck-emacs--boot-phase :compiling)
+    ;; Position of the last dashboard-group unit: the dashboard opens
+    ;; only past it (full render, never staged).
+    (setq cyberdeck-emacs--dashboard-complete-at
+          (let ((i 0) (last nil))
+            (dolist (u units)
+              (setq i (1+ i))
+              (when (string-match-p "cyberdeck-dashboard/"
+                                     (or (plist-get u :file) ""))
+                (setq last i)))
+            last))
+    ;; *Warnings* must not steal the dashboard frame mid-loop: bury it
+    ;; until the loop is done. Real problems still pop at the sweep
+    ;; (after the loop) and stay listed for the Errors button.
+    (let ((display-buffer-alist
+           (cons '("\\*Warnings\\*" display-buffer-no-window)
+                 display-buffer-alist)))
+     (dolist (u units)
+      (let ((file (plist-get u :file))
+            (t0 (float-time))
+            ;; Active-development units skip every cache: fresh parse
+            ;; plus fresh compile, so edits are live on load.
+            (fresh (or (and (plist-get u :id)
+                            (member (plist-get u :id)
+                                    cyberdeck-emacs--always-recompile-ids))
+                       (cl-some (lambda (frag)
+                                  (string-match-p
+                                   (regexp-quote frag)
+                                   (or (plist-get u :file) "")))
+                                cyberdeck-emacs--always-recompile-paths))))
+        (setq current (1+ current))
+        (when progress-fn (funcall progress-fn current total file))
+        (unless (member file pulled)
+          (push file pulled)
+          (when-let* ((remote-plist (cyberdeck-emacs-file-remote file)))
+            (cyberdeck-emacs-pull-remote-file remote-plist)))
+        (condition-case err
+            (pcase-let* ((`(,parts . ,profile)
+                          (cyberdeck-emacs--compile-unit-parts
+                           file u (or force fresh))))
+              ;; Announce cached vs fresh before the (possibly slow)
+              ;; load, so the splash tells no-cache apart live.
+              (when progress-fn
+                (funcall progress-fn current total file
+                         (if (or force fresh
+                                 (not (cyberdeck-emacs--unit-cached-p
+                                       file u parts)))
+                             'compiled 'loaded)))
+              (let ((status (cyberdeck-emacs--unit-load
+                             file u parts profile (or force fresh))))
+                (unless (member file compiled)
+                  (push file compiled))
+                (push (list (- (float-time) t0) file status)
+                      cyberdeck-emacs--unit-times)))
+          (error
+           (let ((msg (error-message-string err)))
+             (when (string-match-p "End of file\\|Unbalanced\\|parsing" msg)
+               (setq paren-errors (1+ paren-errors)))
+             (when (string-match-p "VOID" msg)
+               (setq void-errors (1+ void-errors)))
+              (cyberdeck-emacs-record-error
+               :level 'file :file file :message msg))
+           (when my/loader-strict-p
+             (signal (car err) (cdr err)))
+            (push (list (- (float-time) t0) file 'error)
+                  cyberdeck-emacs--unit-times))))))
+     ;; S1 is done: everything below is on-demand work. Mark the moment
+     ;; so boot time splits into discovery, the S1 loop, and the rest.
+     (when (fboundp 'my/boot-mark) (my/boot-mark "s1-end"))
+     (when (> (length s2) 0)
+       (let* ((staged (cyberdeck-emacs--register-s2-autoloads s2))
+              (skipped (length cyberdeck-emacs--s2-clobber-skips)))
+         (message "cyberdeck-emacs: %d unit(s) staged S2 for first use (%s)"
+                  staged
+                  (if (zerop skipped)
+                      "no symbol collisions"
+                    (format "%d symbol(s) left alone: a real function already owns the name"
+                            skipped)))
+         (dolist (pair cyberdeck-emacs--s2-clobber-skips)
+           (message "cyberdeck-emacs:   %s keeps its real function (declared by %s:%s)"
+                    (car pair)
+                    (file-name-nondirectory (or (plist-get (cdr pair) :file) "?"))
+                    (or (plist-get (cdr pair) :start-line) 1)))
+         (setq cyberdeck-emacs--s2-clobber-skips nil)))
+     (cyberdeck-emacs--prune-elc-cache)
+     (when-let ((log (get-buffer "*Compile-Log*")))
+       ;; One pointer in the warnings list, not an error: warnings live
+       ;; in the log buffer. Never pops anything; the Errors button and
+       ;; the cyberdeck-status widget surface it on demand.
+       (cyberdeck-emacs-record-warning
+        'bytecomp "warnings emitted — see *Compile-Log*")
+       (bury-buffer log))
+    (cyberdeck-emacs--write-unit-times)
+    (cond
+     ((> paren-errors 0)
+      (display-warning
+       'cyberdeck-emacs
+       (format "%d paren error(s) — see *Warnings* for exact positions"
+               paren-errors)
+       :warning))
+      ((> void-errors 0)
+       (display-warning
+        'cyberdeck-emacs
+        (format "%d void function(s) — check nesting in listed files"
+                void-errors)
+        :warning)))
+      ;; The loop kills *Warnings* at start; on a clean run nothing
+      ;; recreates it and the buffer looks "gone". Always leave one
+      ;; behind so it is switchable.  The bill covers the UNIT LOOP only:
+      ;; timers, dashboard and straight report afterwards, below this line,
+      ;; so a whole-boot "clean" here reads as a lie the moment they do.
+      (unless (get-buffer "*Warnings*")
+        (with-current-buffer (get-buffer-create "*Warnings*")
+          (let ((inhibit-read-only t))
+            (insert "cyberdeck-emacs: unit loop clean \u2014 no errors, no warnings recorded during unit loading.\nPost-boot phases (timers, dashboard, straight) report below this line.\n"))))
+     (nreverse compiled)))
+
+(defun cyberdeck-emacs--unit-loaded-state (unit)
+  "How UNIT is (or is not) in memory: \\='s2-pending, \\='s2-loaded or \\='s1."
+  (cond ((assq (cyberdeck-emacs--unit-key unit) cyberdeck-emacs--s2-on-demand)
+         's2-loaded)
+        ((eq (cyberdeck-emacs--stage-of-unit unit) 'S2) 's2-pending)
+        (t 's1)))
+
+(cl-defun cyberdeck-emacs-s2-status (&optional (verbose nil))
+  "Report the stage split and whether each unit is in memory.
+Non-interactive with VERBOSE nil: a summary.  Interactive, or VERBOSE
+non-nil: one line per unit as \\='FILE:LINE  STAGE  STATE  TITLE'.
+Only meaningful after a boot; with no :stage: tag this prints that every
+unit is S1, which is the honest answer, not a failure."
+  (interactive "P")
+  (let* ((ordered (car (cyberdeck-emacs--ordered-units
+                        "[^./]+$" (cyberdeck-emacs-get-org-directory) nil)))
+         (s0 (cl-count 'S0 ordered :key #'cyberdeck-emacs--stage-of-unit
+                       :test #'eq))
+         (s1 (cl-count nil ordered :key #'cyberdeck-emacs--stage-of-unit
+                       :test #'eq))
+         (s2 (- (length ordered) s1))
+         (staged (length cyberdeck-emacs--s2-units))
+         (on-demand (length cyberdeck-emacs--s2-on-demand)))
+    (if verbose
+        (dolist (u ordered)
+          (message "%s:%s  %s  %s  %s"
+                   (file-name-nondirectory (or (plist-get u :file) "?"))
+                   (or (plist-get u :start-line) 1)
+                   (cyberdeck-emacs--stage-of-unit u)
+                   (cyberdeck-emacs--unit-loaded-state u)
+                   (or (plist-get u :title) "")))
+      (message "cyberdeck-emacs: %d unit(s) — S0 %d, S1 %d, S2 %d (staged %d, loaded on demand %d)"
+               (length ordered) s0 s1 s2 staged on-demand))
+    (not (zerop s2))))
+
+
+(defun cyberdeck-emacs-aggregate-directory (output-file)
+  "Concatenate every tagged file's raw contents into OUTPUT-FILE."
+  (let (result)
+    (dolist (file (cyberdeck-emacs-get-files
+                   "[^./]+$" (cyberdeck-emacs-get-org-directory)))
+      (push (with-temp-buffer
+              (insert-file-contents file) (buffer-string))
+            result))
+    (with-temp-file output-file
+      (insert (mapconcat #'identity (nreverse result) "\n")))))
+
+(defun cyberdeck-emacs-output-file-name (file)
+  "The .el path FILE would tangle to, if you ever wanted to tangle to
+disk instead of eval'ing directly."
+  (if (string-prefix-p (cyberdeck-emacs-get-org-directory)
+                       (expand-file-name file))
+      (expand-file-name
+       (concat (file-name-as-directory
+                (cyberdeck-emacs-get-output-directory))
+               (file-name-sans-extension
+                (substring (expand-file-name file)
+                           (length (cyberdeck-emacs-get-org-directory))))
+               ".el"))
+    (error "File is not under the active Org directory")))
+#+end_src
+
+** Lockfile — freeze/thaw
+#+begin_src emacs-lisp
+(declare-function straight-freeze-versions "straight")
+(declare-function straight-thaw-versions "straight")
+
+(defcustom cyberdeck-emacs-freeze-after-clean-boot nil
+  "If non-nil, run `straight-freeze-versions' at the end of
+`cyberdeck-emacs-boot', but only when that boot recorded zero
+errors.  Off by default: freezing is a deliberate act, not something
+that should happen silently just because nothing broke today."
+  :type 'boolean :group 'cyberdeck-emacs)
+
+(defun cyberdeck-emacs-freeze-versions ()
+  "Freeze package versions for all configured straight profiles."
+  (interactive)
+  (if (not (fboundp 'straight-freeze-versions))
+      (user-error "straight.el is not loaded")
+    (when (yes-or-no-p "Freeze package versions for all straight profiles? ")
+      (straight-freeze-versions)
+      (message "cyberdeck-emacs: froze package versions"))))
+
+(defun cyberdeck-emacs-thaw-versions ()
+  "Thaw (restore) package versions from the straight lockfiles."
+  (interactive)
+  (if (not (fboundp 'straight-thaw-versions))
+      (user-error "straight.el is not loaded")
+    (when (yes-or-no-p "Thaw package versions from lockfiles? This can downgrade packages. ")
+      (straight-thaw-versions)
+      (message "cyberdeck-emacs: thawed package versions"))))
+
+(defun cyberdeck-emacs-maybe-freeze-on-clean-boot ()
+  "Call `straight-freeze-versions' if enabled and this boot was clean."
+  (when (and cyberdeck-emacs-freeze-after-clean-boot
+             (fboundp 'straight-freeze-versions)
+             (null (cyberdeck-emacs-errors-list)))
+    (straight-freeze-versions)
+    (message "cyberdeck-emacs: boot was clean, froze package versions")))
+
+(defun cyberdeck-emacs-list-profiles ()
+  "Show which #+PROFILE: each module file declares, in a report buffer."
+  (interactive)
+  (let ((files (cyberdeck-emacs-get-files
+                "[^./]+$" (cyberdeck-emacs-get-org-directory)))
+        (buf (get-buffer-create "*cyberdeck-emacs profiles*")))
+    (with-current-buffer buf
+      (erase-buffer)
+      (insert "Profile  ->  File\n" (make-string 40 ?-) "\n")
+      (dolist (file files)
+        (insert (format "%-8s %s\n"
+                        (or (cyberdeck-emacs-file-profile file)
+                            "(default)")
+                        file))))
+    (display-buffer buf)))
+#+end_src

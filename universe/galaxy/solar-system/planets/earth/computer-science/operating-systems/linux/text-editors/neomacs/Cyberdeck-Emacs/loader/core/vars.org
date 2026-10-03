@@ -1,0 +1,241 @@
+
+* Cyberdeck Emacs
+
+#+begin_src emacs-lisp
+;;; -*- lexical-binding: t -*-
+#+end_src
+
+The loader itself, as Org.  This file IS the package manager —
+evaluated directly by init.el (see ~my/load-literate-loader~ there).
+Now tangles to .el for fast loading, with a lexical-binding cookie.
+
+Failures here are LOUD on purpose: this code is too critical to be
+loaded silently.  A broken block fails the boot visibly.
+
+The old lisp/cyberdeck-emacs/*.el files were converted verbatim
+into the sections below and then retired.  Sections follow the old
+require chain so dependencies always precede their users.
+
+* Loader — core/vars
+Module of the Cyberdeck-Emacs loader. No :EMACS_MECHANISM: tags here: this directory is outside the discovery root and never loads as units. Tangled together with the other modules, in listed order, into a single cyberdeck-emacs.el.
+
+** Prologue — requirements
+#+begin_src emacs-lisp
+(require 'cl-lib)
+(require 'seq)
+(require 'subr-x)
+(require 'org)
+(require 'org-element)
+(require 'ob-core)
+(require 'url)
+(require 'recentf)
+(require 'ffap)
+(setq recentf-auto-cleanup 'never)
+
+(defvar straight-current-profile)
+#+end_src
+
+** Vars — group & package macro configuration
+#+begin_src emacs-lisp
+(defgroup cyberdeck-emacs nil
+  "A literate, org-based Emacs package manager built on leaf and straight."
+  :group 'emacs
+  :prefix "cyberdeck-emacs-")
+
+(defcustom cyberdeck-emacs-package-method 'leaf
+  "Method to use for package management."
+  :type '(choice (const :tag "use-package" use-package)
+                 (const :tag "use-package!" use-package!)
+                 (const :tag "leaf" leaf))
+  :group 'cyberdeck-emacs)
+
+(defcustom cyberdeck-emacs-wrap-statements-in-condition t
+  "Wrap :config/:init bodies in `condition-case', baked into the
+generated code itself.  This is what lets one broken package fail
+without taking the rest of your config down with it, and what lets
+that protection still work even when the body runs later via
+`:leaf-defer' — long after boot's own error handling has gone out of
+scope.  Disable only for debugging; `cyberdeck-emacs-preview' does
+this locally so the expansion it shows is easier to read."
+  :type 'boolean
+  :group 'cyberdeck-emacs)
+
+(defcustom cyberdeck-emacs-package-keywords-extra
+  '(:straight :general :ghook :gfhook :general-config)
+  "Extra keywords beyond the active macro's own canonical set.
+Keywords already present in that canonical set are ignored here (see
+`cyberdeck-emacs-package-keywords' in the package-builder section)
+— this is only for keywords the macro doesn't already know about."
+  :type '(repeat symbol)
+  :group 'cyberdeck-emacs)
+
+(defcustom cyberdeck-emacs-condition-case-keywords
+  '(:config :init)
+  "Keywords whose body gets wrapped in `condition-case'."
+  :type '(repeat symbol)
+  :group 'cyberdeck-emacs)
+
+(defcustom cyberdeck-emacs-leaf-force-require 'auto
+  "Whether to force `:require t' onto every leaf package.
+
+- t     Always append it (the old, unconditional behavior).
+- nil   Never append it; trust leaf's own deferral entirely.
+- auto  Append it only when the package has no deferring keyword of
+        its own (:bind :bind* :hook :mode :interpreter :magic
+        :magic-fallback :commands :after) and no explicit :require
+        already — i.e. only when nothing else would ever load it.
+
+`auto' is the default because unconditionally forcing :require t
+silently defeats `:leaf-defer' for every single package, which is the
+single biggest lever leaf gives you for boot-time cost."
+  :type '(choice (const t) (const nil) (const auto))
+  :group 'cyberdeck-emacs)
+#+end_src
+
+** Vars — directories
+Derived from the loader's own location (vault), except generated
+artifacts which stay under user-emacs-directory (~/.config/emacs).
+#+begin_src emacs-lisp
+(defvar cyberdeck-emacs-loader-dir
+  (file-name-directory (or load-file-name buffer-file-name default-directory))
+  "Directory holding the loader. Derived, never hardcoded.")
+
+(defvar cyberdeck-emacs-vault-root
+  (let ((start (or (and (boundp 'manifold--foundation-org)
+                        manifold--foundation-org)
+                   (and (boundp 'cyberdeck--foundation-org)
+                        cyberdeck--foundation-org)
+                   (and (boundp 'my/emacs-root) my/emacs-root)
+                   load-file-name buffer-file-name default-directory)))
+    (let ((d (if (file-directory-p start) start (file-name-directory start))))
+      (catch 'found
+        (while (and d (not (string= d (file-name-directory
+                                       (directory-file-name d)))))
+          (when (file-directory-p (expand-file-name ".git" d))
+            (throw 'found (directory-file-name d)))
+          (setq d (file-name-directory (directory-file-name d))))
+        nil)))
+  "Vault root: nearest ancestor containing .git/, searched upward from
+the Foundation file (deep inside the vault) — never from the loader's
+own directory, which lives under a different git tree (.config).
+No name literal.")
+
+(defcustom cyberdeck-emacs-org-directory
+  (expand-file-name "emacs-cyberdeck" cyberdeck-emacs-loader-dir)
+  "Directory where the Org files are stored."
+  :type 'string :group 'cyberdeck-emacs)
+
+(defcustom cyberdeck-emacs-output-directory
+  (expand-file-name "cyberdeck-emacs" user-emacs-directory)
+  "Directory where tangled/aggregated output is written."
+  :type 'string :group 'cyberdeck-emacs)
+
+(defcustom cyberdeck-emacs-remote-org-directory
+  (expand-file-name "remote-org" user-emacs-directory)
+  "Directory where downloaded remote Org files are cached."
+  :type 'string :group 'cyberdeck-emacs)
+
+(defcustom cyberdeck-emacs-remote-output-directory
+  (expand-file-name "remote-cyberdeck-emacs" user-emacs-directory)
+  "Directory where remote-file output is written."
+  :type 'string :group 'cyberdeck-emacs)
+
+(defcustom cyberdeck-emacs-todo-file
+  (expand-file-name "emacs-cyberdeck/TODO" cyberdeck-emacs-loader-dir)
+  "Org file that boot errors get filed to by
+`cyberdeck-emacs-add-error-to-todo'."
+  :type 'string :group 'cyberdeck-emacs)
+
+(defcustom cyberdeck-emacs-error-log-file
+  (expand-file-name "cyberdeck-emacs-errors.log.el" user-emacs-directory)
+  "Where the structured boot error/warning/status log is persisted, as
+a single readable Elisp form (not human prose) so it can be read back
+with `read' next session."
+  :type 'string :group 'cyberdeck-emacs)
+#+end_src
+
+** Vars — behavior toggles
+#+begin_src emacs-lisp
+(defcustom cyberdeck-emacs-force-compile nil
+  "Force recompilation even if output looks up to date."
+  :type 'boolean :group 'cyberdeck-emacs)
+
+(defcustom cyberdeck-emacs-force-download nil
+  "Force re-download of remote Org files even if already present."
+  :type 'boolean :group 'cyberdeck-emacs)
+
+(defcustom cyberdeck-emacs-default-profile nil
+  "Straight profile symbol used for files with no #+PROFILE: property.
+Only meaningful if you've configured `straight-profiles' yourself;
+cyberdeck-emacs never defines profiles, it only tells straight which
+one is active while a given file's packages register."
+  :type '(choice (const nil) symbol) :group 'cyberdeck-emacs)
+
+(defcustom cyberdeck-emacs-idle-sweep-enabled nil
+  "If non-nil, force-require every known package a few seconds after
+boot finishes, so a deferred-load error surfaces immediately instead
+of whenever you happen to trigger that package.
+Off by default for boot speed: the sweep requires every package at
+once, which pegs the CPU right when the editor should become usable.
+Run `cyberdeck-emacs-doctor-sweep-now' manually when you want the
+same check."
+  :type 'boolean :group 'cyberdeck-emacs)
+
+(defcustom cyberdeck-emacs-idle-sweep-delay 8
+  "Idle seconds to wait after boot before the doctor sweep runs.  Kept
+out of the critical boot path on purpose: this only affects when
+errors get discovered, never how fast Emacs starts."
+  :type 'number :group 'cyberdeck-emacs)
+
+(defcustom cyberdeck-emacs-mode-line-indicator t
+  "If non-nil, show a package-health segment in the mode line."
+  :type 'boolean :group 'cyberdeck-emacs)
+#+end_src
+
+** Vars — dynamic / working state
+#+begin_src emacs-lisp
+(defvar cyberdeck-emacs-packages nil
+  "Working plist of package-name -> keyword-plist for whatever is
+currently being compiled.  Always dynamically `let'-bound around a
+compile pass; never meaningful at top level.")
+
+(defvar cyberdeck-emacs-compiling-remote nil
+  "Non-nil while compiling a file pulled from
+`cyberdeck-emacs-remote-org-directory'; changes which directory pair
+`cyberdeck-emacs-get-org-directory'/`cyberdeck-emacs-get-output-directory'
+resolve to.")
+
+(defvar cyberdeck-emacs--booting nil
+  "Non-nil for the duration of `cyberdeck-emacs-boot'.")
+
+(defvar cyberdeck-emacs--boot-phase :loading
+  "Current boot phase, `:compiling' or `:loading', for splash labeling.")
+#+end_src
+
+** Vars — generic utilities
+#+begin_src emacs-lisp
+(defun cyberdeck-emacs-indent (string n)
+  "Indent every line of STRING by N spaces."
+  (let ((indentation (make-string n ?\s)))
+    (replace-regexp-in-string "^" indentation string)))
+
+(defun cyberdeck-emacs-plist-keys (plist)
+  "Return the keys of PLIST, in order."
+  (let (keys)
+    (while plist
+      (push (car plist) keys)
+      (setq plist (cddr plist)))
+    (nreverse keys)))
+
+(defun cyberdeck-emacs-get-org-directory ()
+  "Return the active Org source directory."
+  (if cyberdeck-emacs-compiling-remote
+      (expand-file-name cyberdeck-emacs-remote-org-directory)
+    (expand-file-name cyberdeck-emacs-org-directory)))
+
+(defun cyberdeck-emacs-get-output-directory ()
+  "Return the active output directory."
+  (if cyberdeck-emacs-compiling-remote
+      (expand-file-name cyberdeck-emacs-remote-output-directory)
+    (expand-file-name cyberdeck-emacs-output-directory)))
+#+end_src

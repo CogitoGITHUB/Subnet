@@ -1,0 +1,206 @@
+* Loader — compiler-validate
+Module of the Cyberdeck-Emacs loader. No :EMACS_MECHANISM: tags here: this directory is outside the discovery root and never loads as units. Tangled together with the other modules, in listed order, into a single cyberdeck-emacs.el.
+
+** Compiler — cache validation & compile entries
+#+begin_src emacs-lisp
+(defun cyberdeck-emacs--cache-validate (data)
+  "Return t when DATA is a well-formed cache entry."
+  (and (listp data)
+       (plist-get data :parts)
+       (consp (plist-get data :parts))
+       (stringp cyberdeck-emacs-cache-salt)
+       (equal (plist-get data :version) cyberdeck-emacs-cache-salt)
+       (cl-every
+        (lambda (p)
+          (and (listp p)
+               (plist-get p :kind)
+               (plist-get p :body)
+               (stringp (plist-get p :body))
+               (> (length (plist-get p :body)) 0)))
+         (plist-get data :parts))))
+
+(defun cyberdeck-emacs--cache-id (file start-line)
+  "Stable cache id for FILE's unit starting at START-LINE.
+Includes the salt, package method, truename, and unit start, so loader
+changes, method switches, renames, and unit-boundary moves all miss."
+  (secure-hash 'sha256
+               (concat cyberdeck-emacs-cache-salt "\0"
+                       (symbol-name cyberdeck-emacs-package-method) "\0"
+                       (file-truename file) "\0"
+                       (format "%s" (or start-line 1)))))
+
+(defun cyberdeck-emacs--cache-content-hash (file)
+  "SHA256 of FILE's literal contents, or nil when unreadable."
+  (condition-case nil
+      (with-temp-buffer
+        (insert-file-contents-literally file)
+        (secure-hash 'sha256 (buffer-string)))
+    (error nil)))
+
+(defun cyberdeck-emacs--cache-lookup (file start-line)
+  "Return (PARTS . PROFILE) from cache, or nil on any miss/staleness.
+Fast path trusts mtime+size (no hashing for unchanged files); changed
+stats fall back to a content-hash check so timestamp-only touches still
+hit; anything else re-extracts.  Never throws."
+  (when (file-exists-p file)
+    (condition-case nil
+        (let ((data (cyberdeck-emacs--cache-read
+                     (cyberdeck-emacs-cache-path
+                      (cyberdeck-emacs--cache-id file start-line)))))
+          (when (and (cyberdeck-emacs--cache-validate data)
+                     (equal (plist-get data :method)
+                            cyberdeck-emacs-package-method))
+            (let ((sig (cyberdeck-emacs--file-sig file)))
+              (cond
+               ((and sig
+                     (equal (plist-get data :mtime) (nth 0 sig))
+                     (equal (plist-get data :size) (nth 1 sig)))
+                (cons (plist-get data :parts) (plist-get data :profile)))
+               ((let ((h (cyberdeck-emacs--cache-content-hash file)))
+                  (and h (equal h (plist-get data :content-hash))))
+                ;; Timestamp-only change: refresh stored stat, replay parts.
+                (cyberdeck-emacs--cache-write
+                 (cyberdeck-emacs-cache-path
+                  (cyberdeck-emacs--cache-id file start-line))
+                 (plist-put (plist-put (copy-sequence data)
+                                       :mtime (nth 0 sig))
+                            :size (nth 1 sig)))
+                (cons (plist-get data :parts) (plist-get data :profile)))
+               (t nil)))))
+      (error nil))))
+
+(defun cyberdeck-emacs--cache-store (file start-line parts profile)
+  "Persist PARTS/PROFILE for FILE's unit.  Never throws: a cache failure
+must never break a boot."
+  (condition-case nil
+      (let ((sig (cyberdeck-emacs--file-sig file))
+            (h (cyberdeck-emacs--cache-content-hash file)))
+        (when (and sig h parts)
+          (cyberdeck-emacs--cache-write
+           (cyberdeck-emacs-cache-path
+            (cyberdeck-emacs--cache-id file start-line))
+            (list :version cyberdeck-emacs-cache-salt
+                  :method cyberdeck-emacs-package-method
+                  :mtime (nth 0 sig) :size (nth 1 sig)
+                  :content-hash h :profile profile :parts parts))))
+    (error nil)))
+
+(defvar cyberdeck-emacs--unit-elc-live-ids nil
+  "Unit elc-ids seen this boot.  Prune orphans against this set.")
+
+(defun cyberdeck-emacs--unit-elc-dir ()
+  "Directory for per-unit compiled artifacts (.el/.elc/.state.el).
+Under ~/.config/emacs, never the vault: binaries must not pollute
+the vault repo, trip its watcher, or churn git."
+  (expand-file-name "module-el/"
+                    (expand-file-name ".local/cache/" user-emacs-directory)))
+
+(defun cyberdeck-emacs--unit-elc-id (file unit)
+  "Stable artifact id for UNIT in FILE.
+Salt + package method + binding mode + the drawer's :ID: UUID, so
+renames, moves, and unit-boundary shifts keep the cache while the
+extracted content is identical.  Units without an :ID: fall back to
+truename + start line (they miss on moves, like the old parts cache
+— still correct, just one recompile)."
+  (secure-hash 'sha256
+               (concat cyberdeck-emacs-cache-salt "\0"
+                       (symbol-name cyberdeck-emacs-package-method) "\0"
+                       (symbol-name cyberdeck-emacs-lexical-binding) "\0"
+                       (or (plist-get unit :id)
+                           (concat (file-truename file) "\0"
+                                   (format "%s"
+                                           (or (plist-get unit :start-line)
+                                               1)))))))
+
+(defun cyberdeck-emacs--unit-parts-hash (parts)
+  "SHA256 over PARTS (kind+name+body).  The load/compile key: an exact
+match means the .elc on disk was built from precisely these parts, so
+loading it is provably identical to evaluating them fresh."
+  (secure-hash 'sha256
+               (mapconcat (lambda (p)
+                            (concat (symbol-name (plist-get p :kind)) "\0"
+                                    (format "%s" (or (plist-get p :name) ""))
+                                    "\0"
+                                    (plist-get p :body) "\0"))
+                          parts "")))
+
+(defun cyberdeck-emacs--unit-elc-paths (id)
+  "Return (EL ELC STATE) artifact paths for unit id ID."
+  (let ((dir (cyberdeck-emacs--unit-elc-dir)))
+    (list (expand-file-name (concat id ".el") dir)
+          (expand-file-name (concat id ".elc") dir)
+          (expand-file-name (concat id ".state.el") dir))))
+
+(defun cyberdeck-emacs--unit-write-el (el parts)
+  "Write PARTS bodies to EL with a lexical-binding header matching
+`cyberdeck-emacs-lexical-binding'.  Never throws."
+  (condition-case nil
+      (progn
+        (make-directory (file-name-directory el) t)
+        (with-temp-file el
+          (insert (format ";;; cyberdeck-emacs unit -*- lexical-binding: %s -*-\n"
+                          (if cyberdeck-emacs-lexical-binding "t" "nil"))
+                  ";; Generated: re-created on any parts change.  Do not edit.\n\n")
+          (dolist (p parts)
+            (insert (plist-get p :body) "\n\n")))
+        t)
+    (error nil)))
+
+(defun cyberdeck-emacs--unit-state-write (state-path mode parts-hash)
+  "Record MODE (`compiled' or `eval') and PARTS-HASH for a unit.
+Never throws."
+  (condition-case nil
+      (cyberdeck-emacs--cache-write
+       state-path
+       (list :version cyberdeck-emacs-cache-salt
+             :method cyberdeck-emacs-package-method
+             :mode mode :parts-hash parts-hash))
+    (error nil)))
+
+(defun cyberdeck-emacs--unit-state-ok-p (state parts-hash)
+  "Non-nil when STATE validates this boot's PARTS-HASH.
+Salt, method, and exact parts must all match: this is the guarantee
+that a loaded .elc equals freshly evaluated source."
+  (and (listp state)
+       (equal (plist-get state :version) cyberdeck-emacs-cache-salt)
+       (equal (plist-get state :method) cyberdeck-emacs-package-method)
+       (equal (plist-get state :parts-hash) parts-hash)))
+
+(defun cyberdeck-emacs--unit-cached-p (file unit parts)
+  "Non-nil when UNIT's PARTS would load from .elc right now: exact
+parts-hash match and the artifact exists.  Pure peek, no side
+effects — the splash uses it to announce cached vs fresh *before*
+the (possibly slow) load, and `--unit-load' uses it as the match."
+  (let* ((id (cyberdeck-emacs--unit-elc-id file unit))
+         (ph (cyberdeck-emacs--unit-parts-hash parts))
+         (paths (cyberdeck-emacs--unit-elc-paths id)))
+    (and (file-exists-p (nth 1 paths))
+         (cyberdeck-emacs--unit-state-ok-p
+          (cyberdeck-emacs--cache-read (nth 2 paths)) ph)
+          t)))
+
+(defun cyberdeck-emacs--unit-aiu-loaded (file parts &optional unit tier)
+  "Record package statuses + DEFINED-but-VOID checks after a compiled
+load, mirroring `cyberdeck-emacs--eval-parts' diagnostics so loaded
+units report exactly like evaluated ones.
+UNIT and TIER are diagnostic only: when a VOID fires the message names
+the check (unit-load), the file, the tier, the cache id and whether the
+source has emacs-lisp blocks.  No behaviour change."
+  (dolist (part parts)
+    (let ((body (plist-get part :body)))
+      (when (eq (plist-get part :kind) 'package)
+        (cyberdeck-emacs-record-status
+         (plist-get part :name) 'ok file))
+      (when (and (string-match "^(defun[ \t]+\\([^ \t\n)+]+\\)" body)
+                 (not (fboundp (intern (match-string 1 body)))))
+        (cyberdeck-emacs-record-error
+         :level 'part :file file
+         :message (format "[unit-load] %s defined but VOID — file:%s tier:%s id:%s src-blocks:%s"
+                          (match-string 1 body) file (or tier "?")
+                          (if unit
+                              (condition-case nil
+                                  (cyberdeck-emacs--unit-elc-id file unit)
+                                (error "?"))
+                            "?")
+                          (if parts "yes" "no")))))))
+#+end_src

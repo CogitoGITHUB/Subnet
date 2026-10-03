@@ -1,0 +1,76 @@
+* Loader — compiler-parts
+Module of the Cyberdeck-Emacs loader. No :EMACS_MECHANISM: tags here: this directory is outside the discovery root and never loads as units. Tangled together with the other modules, in listed order, into a single cyberdeck-emacs.el.
+
+** Compiler — parts extraction & evaluation
+#+begin_src emacs-lisp
+(defun cyberdeck-emacs--extract-parts (file &optional unit)
+  "Return (PARTS . PROFILE) mirroring compile-file's eval units.
+PARTS is an ordered list of (:kind part|package [:name N] :body S):
+all loose forms in document order, followed by package bodies.
+UNIT is an optional (START-LINE . END-LINE-or-nil) cons from
+`cyberdeck-emacs-file-tagged-units'; nil means the whole file."
+  (let* ((cyberdeck-emacs-packages nil)
+         (profile (cyberdeck-emacs-file-profile file))
+         (straight-current-profile
+          (or profile (and (boundp 'straight-current-profile)
+                           straight-current-profile)))
+         (loose-forms (cyberdeck-emacs-concatenate-source-blocks
+                       file unit))
+         (parts (mapcar (lambda (s) (list :kind 'part :body s))
+                        loose-forms))
+         (package-parts nil))
+    (dolist (package-name
+               (cyberdeck-emacs-plist-keys cyberdeck-emacs-packages))
+      (when-let* ((package-string
+                   (cyberdeck-emacs-build-package file package-name)))
+        (push (list :kind 'package :name package-name
+                    :body package-string)
+              package-parts)))
+    (cons (append parts (nreverse package-parts)) profile)))
+
+(defun cyberdeck-emacs--eval-parts (file parts profile
+                                      &optional signal-error)
+  "Evaluate PARTS with isolation. Reports failures with full context:
+file, detected function name, exact error message, code snippet.
+Detects silent swallowing: if PARTS is empty for a non-trivial file,
+something broke during extraction."
+  (when (and (null parts)
+             (> (or (nth 7 (file-attributes file)) 0) 10)
+             (string-match-p "/infra/\\|/domains/" file))
+    (cyberdeck-emacs-record-error
+     :level 'file :file file
+     :message "ZERO forms extracted — likely paren imbalance or nested begin_src markers"))
+  (let ((straight-current-profile
+         (or profile (and (boundp 'straight-current-profile)
+                          straight-current-profile))))
+    (dolist (part parts)
+      (let* ((is-package (eq (plist-get part :kind) 'package))
+             (body (plist-get part :body))
+             (fn-name (and (string-match "^(defun[ \t]+\\([^ \t\n)+]+\\)"
+                                         body)
+                           (match-string 1 body)))
+              (label (or fn-name
+                        (and is-package (plist-get part :name))
+                        "anonymous")))
+        (condition-case err
+            (progn
+              (let ((cyberdeck-emacs--inside-tier2-eval t))
+                (eval (cyberdeck-emacs-safe-read
+                       (format "(progn\n%s\n)" body) file)
+                      cyberdeck-emacs-lexical-binding))
+              (when is-package
+                (cyberdeck-emacs-record-status
+                 (plist-get part :name) 'ok file))
+              (when (and fn-name (not (fboundp (intern fn-name))))
+                (cyberdeck-emacs-record-error
+                 :level 'part :file file
+                 :message (format "%s defined but VOID — nested inside another form" fn-name))))
+          (error
+           (cyberdeck-emacs-record-error
+            :level (if is-package 'package 'part)
+            :file file
+            :package (and is-package (plist-get part :name))
+            :message (format "%s: %s" label (error-message-string err)))
+           (when signal-error
+             (signal (car err) (cdr err)))))))))
+#+end_src

@@ -1,0 +1,56 @@
+* Loader — compiler-cache
+Module of the Cyberdeck-Emacs loader. No :EMACS_MECHANISM: tags here: this directory is outside the discovery root and never loads as units. Tangled together with the other modules, in listed order, into a single cyberdeck-emacs.el.
+
+** Compiler — cache salt, dir, key
+#+begin_src emacs-lisp
+(defconst cyberdeck-emacs-cache-salt "5"
+  "Bump to invalidate every cached module after loader changes.
+5: per-unit .elc pipeline (compiled loads replace interpreted eval).")
+
+(defvar my/loader-strict-p nil
+  "When non-nil, per-unit eval errors re-signal instead of logging.
+Set via --eval before init loads for strict test boots. Default nil
+keeps log-and-continue fast boots. Read lazily at boot time.")
+
+(defun cyberdeck-emacs-cache-dir ()
+  (expand-file-name "module-cache/"
+                    (expand-file-name ".local/cache/" user-emacs-directory)))
+
+(defun cyberdeck-emacs-cache-path (key)
+  (expand-file-name (concat key ".cache.el")
+                    (cyberdeck-emacs-cache-dir)))
+
+(defun cyberdeck-emacs-cache-key (file)
+  (secure-hash
+   'sha256
+   (concat cyberdeck-emacs-cache-salt "\0"
+           (or (condition-case nil
+                   (with-temp-buffer
+                     (insert-file-contents-literally file)
+                     (buffer-string))
+                 (error ""))
+               "")
+           "\0" (symbol-name cyberdeck-emacs-lexical-binding))))
+
+(defun cyberdeck-emacs--cache-read (path)
+  (condition-case nil
+      (car (read-from-string
+            (with-temp-buffer
+              (insert-file-contents path)
+              (buffer-string))))
+    (error nil)))
+
+(defun cyberdeck-emacs--cache-write (path data)
+  (make-directory (file-name-directory path) t)
+  ;; print-length/print-level MUST be nil here: a bound value would
+  ;; truncate the serialized parts and silently corrupt the entry.
+  ;; Atomic tmp+rename: a killed boot never leaves a half-written cache
+  ;; (readers validate and fall back to rescan on any corruption).
+  (let ((print-length nil)
+        (print-level nil)
+        (tmp (concat path ".tmp")))
+    (with-temp-file tmp
+      (insert ";; cyberdeck-emacs module cache\n"
+              (prin1-to-string data)))
+    (rename-file tmp path t)))
+#+end_src

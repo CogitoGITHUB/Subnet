@@ -1,0 +1,372 @@
+* Loader — compiler-gates
+Module of the Cyberdeck-Emacs loader. No :EMACS_MECHANISM: tags here: this directory is outside the discovery root and never loads as units. Tangled together with the other modules, in listed order, into a single cyberdeck-emacs.el.
+
+** Pre-flight gates — parens and block nesting
+Cheap whole-unit checks that run on every unit every boot, before any
+load/compile/eval. One reader pass plus one line scan: microseconds,
+never worth cache-gating. They catch breakage with exact positions
+instead of confusing downstream backtraces. The paren gate uses
+scan-sexps (the check-parens mechanism); the nesting gate catches the
+db/307 shape (a missing #+end_src silently dropping later code from
+babel extraction). Both log-and-continue by default and re-signal in
+strict mode, exactly like every other unit failure.
+#+begin_src emacs-lisp
+(defun cyberdeck-emacs--check-unit-parens (file unit parts)
+  "Scan UNIT's concatenated PARTS text with scan-sexps.
+On imbalance, record FILE, unit title, and the exact line from the
+scan-error data; re-signal in strict mode. Runs every boot, cached
+or not. Returns t when clean."
+  (let ((text (mapconcat (lambda (p) (or (plist-get p :body) "")) parts "\n"))
+        (title (or (and unit (plist-get unit :title))
+                   (and file (file-name-nondirectory file))
+                   "?")))
+    (if (string-empty-p (string-trim text))
+        t
+      (condition-case err
+          (with-temp-buffer
+            (insert text)
+            (goto-char (point-min))
+            (while (progn (forward-comment (point-max)) (not (eobp)))
+              ;; scan-sexps returns nil (no signal) on lone punctuation
+              ;; such as a trailing "." ending a comment line: step over
+              ;; it instead of crashing goto-char with nil.
+              (let ((next (scan-sexps (point) 1)))
+                (if (and (integerp next) (> next (point)))
+                    (goto-char next)
+                  (forward-char 1))))
+            t)
+        ;; scan-error covers unbalanced opens; invalid-read-syntax
+        ;; covers misordered closes (which paren counting misses);
+        ;; end-of-file covers truncation. Re-signal the original.
+        ((scan-error invalid-read-syntax end-of-file)
+         (let ((line (condition-case nil
+                         (with-temp-buffer
+                           (insert text)
+                           (goto-char (max (point-min)
+                                           (min (let ((p (nth 2 err)))
+                                                  (if (integerp p) p (point-max)))
+                                                (point-max))))
+                           (line-number-at-pos))
+                       (error nil))))
+           (cyberdeck-emacs-record-error
+            :level 'file :file file
+            :message (format "unit %s: paren scan failed%s: %s"
+                             title
+                             (if line (format " at line %d" line) "")
+                             (error-message-string err)))
+           (when my/loader-strict-p
+             (signal (car err) (cdr err)))
+           nil))))))
+
+
+(defun cyberdeck-emacs--org-nesting-problems (file)
+  "List block-structure problems in FILE (pure: no recording).
+Flags headings inside open #+begin_src ranges, mismatched end
+markers, unclosed opens at EOF, typeless #+begin/#+end markers,
+languageless src blocks holding code, and uppercase src languages.
+Lowercase non-emacs-lisp languages (org/scheme/shell) are
+intentional here (docs, Guix recipes), as are commented-out doc
+examples, and are never flagged. Returns nil when clean."
+  (when (and file (file-exists-p file))
+    (with-temp-buffer
+      (insert-file-contents-literally file)
+      (goto-char (point-min))
+      (let ((stack nil)
+            (problems nil)
+            (lnum 0))
+        (while (not (eobp))
+          (setq lnum (1+ lnum))
+          (let ((line (buffer-substring-no-properties
+                       (line-beginning-position)
+                       (line-end-position))))
+            (cond
+             ((string-match "^[ \t]*#\\+begin[ \t]*$" line)
+              (push (format "line %d: typeless #+begin marker (never forms a block)" lnum)
+                    problems))
+             ((string-match "^[ \t]*#\\+end[ \t]*$" line)
+              (push (format "line %d: typeless #+end marker (never closes a block)" lnum)
+                    problems))
+             ((string-match "^[ \t]*#\\+begin_\\([A-Za-z0-9_]+\\)\\(.*\\)$" line)
+              (let ((typ (downcase (match-string 1 line)))
+                    (rest (match-string 2 line)))
+                (push (cons typ lnum) stack)
+                (when (string= typ "src")
+                  (dolist (f (cyberdeck-emacs--nesting--src-flags rest lnum))
+                    (push f problems)))))
+             ((string-match "^[ \t]*#\\+end_\\([A-Za-z0-9_]+\\)" line)
+              (let ((typ (downcase (match-string 1 line))))
+                (cond ((null stack)
+                       (push (format "line %d: end_%s without any open block" lnum typ)
+                             problems))
+                      ((string= typ (caar stack))
+                       (pop stack))
+                      (t
+                       (push (format "line %d: end_%s closes open %s (opened line %d); expected end_%s"
+                                     lnum typ (caar stack) (cdar stack) (caar stack))
+                             problems)
+                       (pop stack)))))
+             ((and stack
+                   (string= "src" (caar stack))
+                   (string-match "^\\*+ " line))
+              (push (format "line %d: heading inside open src block (opened line %d)"
+                            lnum (cdar stack))
+                    problems))))
+          (forward-line 1))
+        (dolist (s stack)
+          (push (format "unclosed begin_%s at line %d" (car s) (cdr s)) problems))
+        (nreverse problems)))))
+(defun cyberdeck-emacs--nesting--src-flags (rest lnum)
+  "Return problem strings for a src begin line with REST (text after
+the marker). Point must be at the begin line (for body lookahead)."
+  (let ((lang (and (string-match "^[ \t]*\\([^ \t]+\\)" rest)
+                   (match-string 1 rest)))
+        (out nil))
+    (when (null lang)
+      (let ((bodystart (save-excursion (forward-line 1) (point)))
+            (bodyend (save-excursion
+                       (if (re-search-forward "^[ \t]*#\\+end_src" nil t)
+                           (match-beginning 0)
+                         (point-max)))))
+        (when (string-match-p "(" (buffer-substring-no-properties
+                                   bodystart bodyend))
+          (push (format "line %d: src block without language holds code (dropped from extraction)" lnum)
+                out))))
+    (when (and lang (not (string= lang (downcase lang))))
+      (push (format "line %d: src language has uppercase (extraction matches exact lowercase emacs-lisp)" lnum)
+            out))
+    (nreverse out)))
+
+(defun cyberdeck-emacs--check-org-nesting (file unit)
+  "Run the nesting check on FILE with unit context. Records problems
+with FILE and unit title; re-signals in strict mode. Runs every boot.
+Returns t when clean."
+  (let ((problems (cyberdeck-emacs--org-nesting-problems file)))
+    (if (null problems)
+        t
+      (let ((msg (format "unit %s: block-nesting problems: %s"
+                         (or (and unit (plist-get unit :title))
+                             (and file (file-name-nondirectory file))
+                             "?")
+                         (mapconcat #'identity problems "; "))))
+        (cyberdeck-emacs-record-error :level 'file :file file :message msg)
+        (when my/loader-strict-p
+          (signal 'error (list msg)))
+        nil))))
+
+(defun cyberdeck-emacs--tangle-nesting-gate (file &rest _)
+  "Org-nesting gate at tangle time: message problems, never block the
+tangle. Catches heading-inside-block breakage in any tangled source."
+  (let ((problems (and (stringp file) (file-exists-p file)
+                       (cyberdeck-emacs--org-nesting-problems file))))
+    (when problems
+      (message "cyberdeck-emacs: nesting problems in %s: %s"
+               (file-name-nondirectory file)
+               (mapconcat #'identity problems "; ")))))
+
+(advice-add 'org-babel-tangle-file :before #'cyberdeck-emacs--tangle-nesting-gate)
+#+end_src
+#+begin_src emacs-lisp
+
+(defun cyberdeck-emacs--unit-load (file unit parts profile &optional force)
+  "Load UNIT's PARTS, compiling only on change.  Returns the status
+symbol `loaded', `compiled', or `eval'.
+- `loaded': state validates the exact parts-hash and the .elc exists:
+  load it, nothing compiled, nothing evaluated from source.
+- `compiled': parts changed (or FORCE): write .el, byte-compile, load.
+- `eval': compilation impossible (write/compile/load failure):
+  interpreted eval fallback, today's behavior.
+FORCE skips the state match and recompiles (explicit user touch).
+Never throws: every failure records an error and falls through to the
+next tier, so one bad unit can't break a boot. (Strict mode re-signals
+instead — see eval fallback.)
+Pre-flight gates run in `cyberdeck-emacs--compile-unit-parts',
+before any load/compile/eval."
+  (let* ((id (cyberdeck-emacs--unit-elc-id file unit))
+         (ph (cyberdeck-emacs--unit-parts-hash parts))
+         (paths (cyberdeck-emacs--unit-elc-paths id))
+         (el (nth 0 paths)) (elc (nth 1 paths)) (statep (nth 2 paths))
+         (cyberdeck-emacs--current-unit-file file)
+         (straight-current-profile
+          (or profile (and (boundp 'straight-current-profile)
+                           straight-current-profile)))
+         (load-it (lambda (tier)
+                    (load elc nil t)
+                    (cyberdeck-emacs--unit-aiu-loaded file parts unit tier))))
+    (push id cyberdeck-emacs--unit-elc-live-ids)
+    (cond
+     ((and (not force)
+           (cyberdeck-emacs--unit-cached-p file unit parts))
+      (condition-case err
+          (progn (funcall load-it 'loaded) 'loaded)
+        (error
+         (cyberdeck-emacs-record-error
+          :level 'file :file file
+          :message (format "compiled load failed (%s), recompiling"
+                           (error-message-string err)))
+         ;; Corrupt .elc: drop it and recompile exactly once (force
+         ;; prevents looping back into this branch).
+         (ignore-errors (delete-file elc))
+         (cyberdeck-emacs--unit-load file unit parts profile t))))
+     (t
+      (if (cyberdeck-emacs--unit-write-el el parts)
+          (progn
+            (ignore-errors (delete-file elc))
+            (if (and (condition-case nil
+                         ;; Cross-unit calls resolve at load (all units
+                         ;; share one session), so unknown-function
+                         ;; noise is always false-positive here.
+                         ;; Free-variable, callargs, and unused
+                         ;; warnings still fire.
+                         (let ((byte-compile-warnings '(not unresolved)))
+                           (cyberdeck-emacs--with-deferred-variables
+                             (lambda () (byte-compile-file el))) t)
+                       (error nil))
+                     (file-exists-p elc))
+                (condition-case err
+                    (progn
+                      (cyberdeck-emacs--unit-state-write
+                       statep 'compiled ph)
+                      (funcall load-it 'compiled)
+                      'compiled)
+                  (error
+                   (cyberdeck-emacs-record-error
+                    :level 'file :file file
+                    :message (format "fresh .elc failed to load (%s), eval fallback"
+                                     (error-message-string err)))
+                   (ignore-errors (delete-file elc))
+                   (cyberdeck-emacs--eval-parts file parts profile my/loader-strict-p)
+                   (cyberdeck-emacs--unit-state-write statep 'eval ph)
+                   'eval))
+              (cyberdeck-emacs-record-error
+               :level 'file :file file
+               :message "byte-compile failed, eval fallback")
+              (cyberdeck-emacs--eval-parts file parts profile my/loader-strict-p)
+              (cyberdeck-emacs--unit-state-write statep 'eval ph)
+              'eval))
+        (cyberdeck-emacs-record-error
+         :level 'file :file file :message ".el write failed, eval fallback")
+        (cyberdeck-emacs--eval-parts file parts profile my/loader-strict-p)
+        'eval)))))
+
+(defun cyberdeck-emacs--prune-elc-cache ()
+  "Delete .el/.elc/.state.el artifacts for units not seen this boot.
+Added/deleted code churn leaves no stale binaries behind: a removed
+unit's artifacts vanish on the next boot.  Never throws."
+  (condition-case nil
+      (let ((dir (cyberdeck-emacs--unit-elc-dir)))
+        (when (file-directory-p dir)
+          (dolist (f (directory-files dir nil "\\.elc\\'"))
+            (let ((id (file-name-sans-extension f)))
+              (unless (member id cyberdeck-emacs--unit-elc-live-ids)
+                (dolist (ext '(".elc" ".el" ".state.el"))
+                  (ignore-errors
+                    (delete-file (expand-file-name (concat id ext)
+                                                   dir)))))))))
+    (error nil)))
+
+(defun cyberdeck-emacs-verify-cache ()
+  "Prove the .elc cache holds no stale entries. Checks duplicate unit
+IDs (two units sharing artifacts means silent wrong code), orphan
+artifacts prune would remove, and dry-runs every peek. Reports
+problems via messages; modifies nothing except warming the parts
+cache on miss (what the next boot would do anyway). Never throws."
+  (interactive)
+  (condition-case err
+      (let* ((discovered (cyberdeck-emacs--ordered-units
+                          "[^./]+$" (cyberdeck-emacs-get-org-directory) nil))
+             (units (car discovered))
+             (seen (make-hash-table :test 'equal))
+             (dups nil) (live 0) (rebuild 0) (n 0))
+        (dolist (u units)
+          (setq n (1+ n))
+          (let ((id (cyberdeck-emacs--unit-elc-id
+                     (plist-get u :file) u)))
+            (if (gethash id seen)
+                (push (list id (plist-get u :file) (gethash id seen)) dups)
+              (puthash id (plist-get u :file) seen))
+            (pcase-let ((`(,parts . ,_profile)
+                         (cyberdeck-emacs--compile-unit-parts
+                          (plist-get u :file) u nil)))
+              (if (cyberdeck-emacs--unit-cached-p
+                   (plist-get u :file) u parts)
+                  (setq live (1+ live))
+                (setq rebuild (1+ rebuild))))))
+        (let ((orphans
+               (let ((dir (cyberdeck-emacs--unit-elc-dir))
+                     (out nil))
+                 (when (file-directory-p dir)
+                   (dolist (f (directory-files dir nil "\\.elc\\'") out)
+                     (let ((id (file-name-sans-extension f)))
+                       (unless (gethash id seen)
+                         (push id out))))))))
+          (message "cyberdeck-emacs: cache verify: %d units, %d would load, %d would rebuild, %d duplicate ids, %d orphans"
+                   n live rebuild (length dups) (length orphans))
+          (dolist (d dups)
+            (message "cyberdeck-emacs: DUPLICATE unit id %s: %s and %s"
+                     (nth 0 d) (nth 1 d) (nth 2 d)))
+          (dolist (o orphans)
+            (message "cyberdeck-emacs: orphan artifact %s (prune removes it next boot)" o))
+          (list :units n :load live :rebuild rebuild
+                :duplicates dups :orphans orphans)))
+    (error (message "cyberdeck-emacs: verify failed: %s"
+                    (error-message-string err))
+           nil)))
+
+(defun cyberdeck-emacs--compile-unit-parts (file unit &optional force)
+  "Return (PARTS . PROFILE) for UNIT in FILE, via cache unless FORCE.
+On a miss, extract fresh and refresh the cache entry — so an explicit
+`cyberdeck-emacs-compile-file' touch warms the next boot, and the
+next boot replays unchanged files without re-parsing or re-hashing.
+Pre-flight gates (parens, block nesting) run here on every call —
+before any load/compile/eval, cached or not."
+  (let ((start (plist-get unit :start-line)))
+    (let ((res (or (and (not force) (cyberdeck-emacs--cache-lookup file start))
+                   (pcase-let ((`(,parts . ,profile)
+                                (cyberdeck-emacs--extract-parts
+                                 file (cons start (plist-get unit :end-line)))))
+                     (cyberdeck-emacs--cache-store file start parts profile)
+                     (cons parts profile)))))
+      ;; Pre-flight gates run here on every call — hits included —
+      ;; before any load/compile/eval downstream.
+      (cyberdeck-emacs--check-unit-parens file unit (car res))
+      (cyberdeck-emacs--check-org-nesting file unit)
+      res)))
+
+(defun cyberdeck-emacs-compile-file (file)
+  "Compile FILE, one tagged heading unit at a time.  Returns FILE.
+Bypasses the cache for reading (this entry point means \"the user just
+touched this file\") but refreshes the cache entry, warming the next
+boot."
+  (unless (file-exists-p file)
+    (error "File to compile does not exist: %s" file))
+  (message "cyberdeck-emacs: compiling %s"
+           (cyberdeck-emacs-file-title file))
+  (let ((units (cyberdeck-emacs-file-tagged-units file)))
+    (unless units
+      (error "No tagged unit in %s" file))
+    (dolist (u units)
+      (pcase-let* ((`(,parts . ,profile)
+                    (cyberdeck-emacs--compile-unit-parts file u t)))
+        (cyberdeck-emacs--unit-load file u parts profile t)))
+    file))
+
+(defun cyberdeck-emacs-recompile-package (file package-name)
+  "Re-extract the unit holding PACKAGE-NAME in FILE and (re-)eval only
+it, leaving every other unit untouched.  Used by the doctor."
+  (interactive)
+  (catch 'done
+    (dolist (u (cyberdeck-emacs-file-tagged-units file))
+      (let ((cyberdeck-emacs-packages nil))
+        (cyberdeck-emacs-concatenate-source-blocks
+         file (cons (plist-get u :start-line) (plist-get u :end-line)))
+        (when-let* ((package-string
+                     (cyberdeck-emacs-build-package file package-name)))
+          (cyberdeck-emacs--eval-package-string package-name
+                                                  package-string file)
+          (message "cyberdeck-emacs: retried %s -> %s" package-name
+                   (plist-get (cyberdeck-emacs-package-status
+                               package-name)
+                              :status))
+          (throw 'done t))))
+    (user-error "No such package `%s' in %s" package-name file)))
+#+end_src

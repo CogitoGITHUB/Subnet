@@ -1,0 +1,358 @@
+* Loader — discovery-index
+Module of the Cyberdeck-Emacs loader. No :EMACS_MECHANISM: tags here: this directory is outside the discovery root and never loads as units. Tangled together with the other modules, in listed order, into a single cyberdeck-emacs.el.
+
+** Discovery index — on-disk, hash-verified
+Warm boots must not re-parse 300 files to learn nothing changed.  The
+index lives under ~/.config/emacs/.local/cache (never the
+vault): truename -> (:mtime :size :hash :units :props :title).
+Lookup verifies by stat first (no I/O), then one literal read + hash.
+Any miss, corruption, salt bump, or explicit sync falls back to a full
+scan for that file — the index is a pure accelerator, never load-bearing.
+#+begin_src emacs-lisp
+(defvar cyberdeck-emacs--discovery-index (make-hash-table :test 'equal)
+  "TRUENAME -> (:mtime M :size S :hash H :units U :props P :title T).
+Warm-boot accelerator: verified entries skip all per-file parsing.")
+
+(defvar cyberdeck-emacs--discovery-dirty nil
+  "Non-nil when the index gained entries this session and needs saving.")
+
+(defvar cyberdeck-emacs--discovery-loaded nil
+  "Non-nil once the on-disk index has been read this session.")
+
+(defvar cyberdeck-emacs--index-verified nil
+  "Truenames hash-verified this session.  `cyberdeck-emacs--index-ensure'
+skips members: their entries are current by construction.")
+
+(defconst cyberdeck-emacs-discovery-index-version "4"
+  "Format version of the on-disk discovery index, tracked SEPARATELY
+from `cyberdeck-emacs-cache-salt'.
+
+The salt guards the per-unit .elc artifacts and their state files; the
+index only caches per-file discovery (units/props/title).  Bumping the
+salt to invalidate the index would also invalidate every compiled unit
+and force a full recompile, which is exactly what an index-only format
+change must never do.  Bump this instead; a mismatch is treated as
+absent, so the index is rebuilt by one full scan and never misread.
+2: per-entry :symbols (:code NAME/KIND/INTERACTIVE, :data var names).
+3: per-entry :stage, the per-FILE stage (\"S1\" unless every unit in the
+   file is S2).  Boot reads it to skip S2 files outright: no stat, no
+   read, no hash, no file-truename, no index-apply.  A version mismatch
+   is treated as an absent index, so this costs exactly one full rebuild
+    on the first boot after the bump and then nothing.
+4: per-entry :stage, corrected to compare stage SYMBOLS (S1/S2, what
+   `stage-of` returns).  Version 3 compared against the string S1, matched
+   nothing, and marked every file S2 -- the boot then skipped the whole tree
+   (0 units, BOOT THREW).  Bumping discards the poisoned v3 index; one full
+   rebuild, then nothing.")
+
+(defun cyberdeck-emacs-discovery-index-file ()
+  "On-disk discovery index.  Under ~/.config/emacs, never the vault."
+  (expand-file-name "discovery-index.el"
+                    (expand-file-name ".local/cache/" user-emacs-directory)))
+
+(defun cyberdeck-emacs--index-load ()
+  "Read the on-disk index once per session.  Never throws: a missing or
+version-mismatched index just means one full-scan boot.  The version
+compared here is `cyberdeck-emacs-discovery-index-version', NOT the
+cache salt, so a format change to the index never costs a recompile."
+  (unless cyberdeck-emacs--discovery-loaded
+    (setq cyberdeck-emacs--discovery-loaded t)
+    (condition-case nil
+        (let ((data (cyberdeck-emacs--cache-read
+                     (cyberdeck-emacs-discovery-index-file))))
+          (when (and (listp data)
+                     (equal (plist-get data :version)
+                            cyberdeck-emacs-discovery-index-version))
+            (dolist (pair (plist-get data :files))
+              (when (and (consp pair) (stringp (car pair)))
+                (puthash (car pair) (cdr pair)
+                         cyberdeck-emacs--discovery-index)))))
+      (error nil))))
+
+(defun cyberdeck-emacs--index-save ()
+  "Persist the index when dirty.  Never throws."
+  (when cyberdeck-emacs--discovery-dirty
+    (setq cyberdeck-emacs--discovery-dirty nil)
+    (condition-case nil
+        (let (pairs)
+          (maphash (lambda (k v)
+                     ;; Prune entries for deleted files on every save.
+                     ;; Also purge WIP entries: forbidden territory is never
+                     ;; indexed, even if an older boot recorded it.
+                     (when (and (file-exists-p k)
+                                (not (string-match-p "/WIP/" k)))
+                       (push (cons k v) pairs)))
+                   cyberdeck-emacs--discovery-index)
+          ;; One previous generation kept: if this write ever corrupts,
+          ;; the last-known-good index is one rename away.
+          (let ((idx (cyberdeck-emacs-discovery-index-file)))
+            (when (file-exists-p idx)
+              (copy-file idx (concat idx ".prev") t))
+            (cyberdeck-emacs--cache-write
+             idx (list :version cyberdeck-emacs-discovery-index-version
+                       :files pairs))))
+      (error nil))))
+
+(defun cyberdeck-emacs--index-lookup (file)
+  "Stat-trusted index entry for FILE, or nil.
+mtime+size match is the trust: no file I/O on hits, so warm boots
+skip re-reading the whole vault.  Safety comes from the per-unit
+parts-hash guarding every compiled load — a stale entry can only
+cost a re-extract, never load stale code.  Hash mismatches still
+re-verify through `--index-ensure'.  Hits are marked
+session-verified; misses read nothing.
+TRUENAME and SIG are memoised for the boot, so the three sites that
+need them (here, `index-apply', and the scanner) cost one syscall
+between them rather than one each."
+  (cyberdeck-emacs--index-load)
+  (when (file-exists-p file)
+    (let* ((truename (cyberdeck-emacs--truename file))
+           (entry (gethash truename cyberdeck-emacs--discovery-index)))
+      (when entry
+        (let ((sig (cyberdeck-emacs--file-sig file)))
+          (when (and sig
+                     (equal (plist-get entry :mtime) (nth 0 sig))
+                     (equal (plist-get entry :size) (nth 1 sig)))
+            (push truename cyberdeck-emacs--index-verified)
+            entry))))))
+
+(defun cyberdeck-emacs--index-apply (file entry)
+  "Fill all three session memos from verified ENTRY.  Returns the units
+(nil for untagged files — a real answer, not a miss).
+KEY and SIG come from the per-boot memos, so a warm pass never re-stats
+or re-resolves a path it has already seen."
+  (let* ((key (cyberdeck-emacs--truename file))
+         (sig (cyberdeck-emacs--file-sig file))
+         (units (plist-get entry :units))
+         (props (plist-get entry :props))
+         (title (plist-get entry :title)))
+    (puthash key (list sig units) cyberdeck-emacs--units-cache)
+    (when props
+      (puthash key (list sig props) cyberdeck-emacs--props-cache))
+    (when title
+      (puthash key (list sig title) cyberdeck-emacs--title-cache))
+    units))
+
+(defun cyberdeck-emacs--index-forget (file)
+  "Drop FILE's session-verified mark (post-edit path).  Never throws."
+  (let ((key (ignore-errors (file-truename file))))
+    (when key
+      (setq cyberdeck-emacs--index-verified
+            (delete key cyberdeck-emacs--index-verified)))))
+
+(defconst cyberdeck-emacs--defun-kinds
+  '(("defun" . defun) ("cl-defun" . defun)
+    ("defsubst" . defsubst) ("cl-defsubst" . defsubst)
+    ("defmacro" . defmacro) ("cl-defmacro" . defmacro)
+    ("define-minor-mode" . mode) ("define-globalized-minor-mode" . mode)
+    ("define-derived-mode" . mode)
+    ("defalias" . alias) ("cl-defmethod" . method)
+    ("cl-defgeneric" . method)
+    ("transient-define-prefix" . transient)
+    ("transient-define-suffix" . transient))
+  "Macro symbol -> normalized KIND for index extraction.
+Kinds: defun defsubst defmacro mode alias method transient.")
+
+(defconst cyberdeck-emacs--varform-kinds
+  '("defvar" "defconst" "defcustom" "defface" "define-derived-mode-var")
+  "Definition macros whose SYMBOL is data, not code.  Recorded for
+REPORTING only (the void-variable limit), never autoloaded.")
+
+(defconst cyberdeck-emacs--symbol-warnings '()
+  "Forms that failed to read during symbol extraction.  Never fatal.")
+
+(defun cyberdeck-emacs--form-interactive (form)
+  "Non-nil when the real FORM carries an (interactive ...) spec.
+
+Read from the form's own sub-forms, position by position: drop NAME and
+ARGLIST, then a docstring if present, then test whether what remains is a
+literal (interactive ...) form.  Never guesses from the name and never
+returns a body form by accident."
+  (let ((tail (nthcdr 3 form)))               ; past NAME and ARGLIST
+    (when (stringp (car tail)) (setq tail (cdr tail)))  ; past docstring
+    (and (consp (car tail)) (eq (car (car tail)) 'interactive)
+         (car tail))))
+
+(defun cyberdeck-emacs--form-symbol (form)
+  "Return (NAME KIND INTERACTIVE) when FORM is a symbol definition.
+
+KIND is one of the values in `cyberdeck-emacs--defun-kinds'.  INTERACTIVE
+is t for the mode and transient macros (they always define a command)
+and otherwise comes from `cyberdeck-emacs--form-interactive'.  Returns
+nil for anything else, including plain calls.  Only the head of FORM is
+inspected, so a definition nested deeper (inside when, eval-after-load, a
+leaf :config body) is deliberately NOT found -- the boot report counts
+them."
+  (when (consp form)
+    (let* ((head (car form))
+           (rest (cdr form))
+           (mac (and (symbolp head)
+                      (cdr (assoc-string (symbol-name head)
+                                         cyberdeck-emacs--defun-kinds)))))
+      (when mac
+        ;; Everything names its symbol first; defalias may quote it
+        ;; literally, as in (defalias 'foo 'bar), so unwrap one `quote'.
+        (let ((name (and rest (car rest))))
+          (when (and (consp name) (eq (car name) 'quote)
+                     (symbolp (cadr name)))
+            (setq name (cadr name)))
+          (when (symbolp name)
+            (list name mac
+                  (if (memq mac '(mode transient))
+                      t
+                    (and (memq head '(defun cl-defun defsubst defmacro
+                                      cl-defmacro defalias cl-defmethod
+                                      cl-defgeneric))
+                         (and (cyberdeck-emacs--form-interactive form)
+                              t))))))))))
+
+(defun cyberdeck-emacs--extract-symbols (parts file)
+  "Per-unit symbol records from PARTS (the extracted unit parts).
+Two lists: (:code ((NAME KIND INTERACTIVE) ...)) and
+(:data (SYMBOL ...)) for defvar/defconst/defcustom/defface.
+
+Every top-level form of every part is read, because a package part holds
+a whole package.  A top-level progn is opened and its elements counted
+individually; anything deeper is not reached.  Forms are read with
+`read-eval' bound to nil and NOTHING is ever evaluated.  A part that
+fails to read is skipped whole, with one warning, never fatal."
+  (let (code data)
+    (dolist (p parts)
+      (with-temp-buffer
+        (insert (or (plist-get p :body) ""))
+        (goto-char (point-min))
+        (let ((read-eval nil) (form nil) (done nil))
+          (while (and (not done) (not (eobp)))
+            (condition-case err
+                (setq form (read (current-buffer)))
+              (end-of-file
+               ;; Ran off the end of the part: that is the normal exit,
+               ;; not a failure, so it must not be reported.
+               (setq done t))
+              (error
+               (push (format "%s: unreadsable part skipped (%s)"
+                             (file-name-nondirectory file)
+                             (error-message-string err))
+                     cyberdeck-emacs--symbol-warnings)
+               (setq done t)))
+            (unless done
+              (dolist (f (if (and (consp form) (eq (car form) 'progn))
+                             (cdr form)
+                           (list form)))
+                (let ((info (and (consp f) (symbolp (car f))
+                                 (cyberdeck-emacs--form-symbol f))))
+                  (when info (push info code))
+                  (when (and (consp f) (symbolp (car f))
+                             (member (symbol-name (car f))
+                                     cyberdeck-emacs--varform-kinds)
+                             (symbolp (cadr f)))
+                    (push (cadr f) data)))))))))
+    (list :code (nreverse code) :data (nreverse data))))
+
+(defvar cyberdeck-emacs--scan-regressions nil
+  "Fresh scans that found FEWER units than the previous index recorded.
+Each entry is (FILE WAS NOW).  Non-empty after the walk means discovery
+is broken and the boot must NOT continue on a nearly empty unit list: a
+scanner that stops seeing `:EMACS_MECHANISM:' turns every file untagged,
+and the symptom is a silently empty Emacs, not an error.")
+
+(defun cyberdeck-emacs--scan-regression-p (file previous now)
+  "Non-nil when a fresh scan of FILE dropped from PREVIOUS units to NOW.
+Compares only when the index already held an entry, so a file's FIRST
+ever scan can never regress and is let through; that first scan is the
+one case nothing on disk can vouch for.  Losing every unit is always a
+regression; losing more than half is treated as one too, because a real
+edit removes a unit or two, while a scanner bug removes all of them."
+  (let ((was (and previous (length previous)))
+        (now-len (length (or now nil))))
+    (and was
+         (or (zerop now-len)
+             (< now-len (/ was 2))))))
+
+(defun cyberdeck-emacs--index-ensure (file)
+  "Refresh FILE's index entry from session memos, scanning on miss.
+Skips session-verified files.  Untagged files get a nil-units entry so
+later boots skip re-scanning them too.  Never throws."
+  (condition-case nil
+      (when (and (file-exists-p file)
+                 (not (member (file-truename file)
+                              cyberdeck-emacs--index-verified)))
+        (let* ((key (cyberdeck-emacs--truename file))
+               (entry (gethash key cyberdeck-emacs--discovery-index))
+               (sig0 (cyberdeck-emacs--file-sig file))
+               ;; Unchanged means the stored entry already describes this
+               ;; file exactly.  Say so here and skip the read, the content
+               ;; hash and the symbol extraction: those are the bulk of the
+               ;; reading phase, and without this test they were paid again
+               ;; on every boot for every unit file in the tree.
+               (unchanged (and entry sig0
+                               (equal (plist-get entry :mtime) (nth 0 sig0))
+                               (equal (plist-get entry :size) (nth 1 sig0))))
+               ;; The previous UNIT LIST, not the entry plist: comparing a
+               ;; plist's element count against a unit count reports a
+               ;; regression on every re-scan of an untagged file, which
+               ;; would refuse the boot for a file that was never tagged.
+               (previous (and entry (plist-get entry :units)))
+               (units (and (not unchanged)
+                           (cyberdeck-emacs-file-tagged-units file)))
+               (props (and units (not unchanged)
+                          (cyberdeck-emacs-file-properties file)))
+               (title (and units (not unchanged)
+                           (cyberdeck-emacs-file-title file)))
+               (sig (or sig0 (cyberdeck-emacs--file-sig file)))
+               (h (and (not unchanged) (cyberdeck-emacs--cache-content-hash file)))
+               ;; Extraction only: record what each unit defines so a later
+               ;; step can decide. Nothing is autoloaded and no load order
+               ;; changes here. Costs one read pass per CHANGED file, so
+               ;; warm boots never pay it.
+               (syms
+                (and units (not unchanged)
+                     (let ((cybers nil))
+                       (dolist (u units)
+                         (let* ((parts (car (cyberdeck-emacs--compile-unit-parts
+                                             file u))))
+                           (push (cons (plist-get u :start-line)
+                                       (cyberdeck-emacs--extract-symbols
+                                        parts file))
+                                 cybers)))
+                       (nreverse cybers)))))
+          ;; Loud, not silent: a scan that suddenly sees fewer units is a
+          ;; scanner bug until proven otherwise, and the boot below must
+          ;; refuse to continue rather than come up empty.
+          (when (and (not unchanged)
+                     (cyberdeck-emacs--scan-regression-p file previous units))
+            (let ((was (length previous))
+                  (now-len (length (or units nil))))
+              (push (list (file-truename file) was now-len)
+                    cyberdeck-emacs--scan-regressions)
+              (cyberdeck-emacs-record-error
+               :level 'file :file file
+               :message (format "unit scan regression: %d unit(s) before, %d now — scanner or tags changed"
+                                was now-len))))
+          (when (and sig h)
+            (puthash (file-truename file)
+                     (list :mtime (nth 0 sig) :size (nth 1 sig)
+                           :hash h :units units :props props :title title
+                           :symbols syms
+                           ;; Per-FILE stage, so boot can skip an S2 file
+                           ;; without opening, statting or truenaming it.
+                           ;; S1 wins: a file holding even one S1 unit must
+                           ;; be walked and scanned like any other.
+                           ;; Compare SYMBOLS: `stage-of' normalizes to 'S1
+                           ;; / 'S2 (see its docstring).  Comparing against
+                           ;; the string "S1" matched nothing, marked every
+                           ;; file S2, and the boot skipped the whole tree.
+                           :stage (if (or (null units)
+                                          (seq-find (lambda (u)
+                                                      (let ((s (plist-get u :stage)))
+                            (not (or (eq s 'S2)
+                                     (equal s "S2")))))
+                                                    units))
+                                      "S1"
+                                    "S2"))
+                     cyberdeck-emacs--discovery-index)
+            (push key cyberdeck-emacs--index-verified)
+            (unless unchanged
+              (setq cyberdeck-emacs--discovery-dirty t)))))
+    (error nil)))
+#+end_src

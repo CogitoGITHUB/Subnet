@@ -1,0 +1,373 @@
+* Loader — core/parse
+Module of the Cyberdeck-Emacs loader. No :EMACS_MECHANISM: tags here: this directory is outside the discovery root and never loads as units. Tangled together with the other modules, in listed order, into a single cyberdeck-emacs.el.
+
+** Org parse — property readers
+Pure readers over Org buffers/files — nothing here mutates state.
+#+begin_src emacs-lisp
+(defun cyberdeck-emacs-find-property (property)
+  "Find PROPERTY on the current Org element or nearest ancestor."
+  (save-excursion
+    (condition-case nil
+        (progn
+          (while (not (org-element-property property (org-element-context)))
+            (org-up-element))
+          (intern (org-element-property property (org-element-context))))
+      (error nil))))
+
+(defun cyberdeck-emacs-find-tags ()
+  (save-excursion
+    (condition-case nil
+        (progn
+          (while (not (org-element-property :tags
+                          (org-element-lineage (org-element-context)
+                                               '(headline) t)))
+            (org-up-element))
+          (org-element-property :tags
+              (org-element-lineage (org-element-context) '(headline) t)))
+      (error nil))))
+
+(defun cyberdeck-emacs-find-tag (keywords)
+  "KEYWORDS is the active macro's ordered keyword list."
+  (let ((tag (car (seq-filter
+                   (lambda (tag)
+                     (member (intern (concat ":" tag)) keywords))
+                   (cyberdeck-emacs-find-tags)))))
+    (when tag
+      (replace-regexp-in-string "_" "-"
+        (replace-regexp-in-string "_$" "*" tag)))))
+
+(defun cyberdeck-emacs-find-package ()
+  (or (cyberdeck-emacs-find-property :PACKAGE)
+      (cyberdeck-emacs-find-property :USE_PACKAGE)
+      (cyberdeck-emacs-find-property :USE-PACKAGE)
+      (cyberdeck-emacs-find-property :LEAF)))
+
+(defun cyberdeck-emacs-find-property-string (key)
+  (when-let* ((value (or (cyberdeck-emacs-find-property
+                          (intern (downcase (format "%s" key))))
+                         (cyberdeck-emacs-find-property
+                          (intern (upcase (format "%s" key))))))
+              (str (and value (symbol-name value))))
+    (prin1-to-string (read str))))
+
+(defun cyberdeck-emacs-find-keyword ()
+  (when-let* ((keyword (cyberdeck-emacs-find-property :KEYWORD)))
+    (replace-regexp-in-string "^:" "" (symbol-name keyword))))
+
+(defun cyberdeck-emacs-get-use-package-package (keywords)
+  "Return (PACKAGE-NAME PARAMETER) for the current source block, or nil."
+  (when-let* ((package (cyberdeck-emacs-find-package)))
+    (list package (or (cyberdeck-emacs-find-keyword)
+                      (cyberdeck-emacs-find-tag keywords)
+                      "config"))))
+#+end_src
+
+** Org parse — file-level properties
+#+begin_src emacs-lisp
+(defvar cyberdeck-emacs--props-cache (make-hash-table :test 'equal)
+  "FILE truename -> (SIG PROPS). Same stat-invalidation as the units cache.")
+
+(defun cyberdeck-emacs-file-properties (file)
+  "Return the #+KEY: value file-level properties of FILE.
+Stat-cached, then hash-verified on-disk index: at most one full
+regex read per changed file per session, shared by
+`cyberdeck-emacs-file-remote', `-profile', and `-lexical-binding'."
+  (when (file-exists-p file)
+    (let* ((key (cyberdeck-emacs--truename file))
+           (sig (cyberdeck-emacs--file-sig file))
+           (hit (gethash key cyberdeck-emacs--props-cache)))
+      (cond
+       ((and hit sig (equal (car hit) sig)) (cadr hit))
+       (t (let ((entry (cyberdeck-emacs--index-lookup file)))
+            (if entry
+                (progn (cyberdeck-emacs--index-apply file entry)
+                       (cadr (gethash key cyberdeck-emacs--props-cache)))
+              (cyberdeck-emacs--index-forget file)
+              (let ((properties
+                     ;; No Org init here: this scan is pure `re-search-forward'
+                     ;; regex over #+KEY lines.  Starting Org mode per file was
+                     ;; the single most expensive part of boot discovery.
+                     (with-temp-buffer
+                       (insert-file-contents file)
+                       (let (props)
+                   (goto-char (point-min))
+                   (while (re-search-forward
+                           "^\\(?:;;[ \t]*\\)?#\\+\\([A-Za-z0-9_]+\\):[ \t]*\\(.*\\)$"
+                           nil t)
+                     (push (cons (intern (downcase (match-string 1)))
+                                 (match-string 2))
+                           props))
+                   props))))
+          (puthash key (list sig properties) cyberdeck-emacs--props-cache)
+          properties))))))))
+
+(defun cyberdeck-emacs-file-remote (file)
+  (when-let* ((remote (alist-get 'remote
+                                 (cyberdeck-emacs-file-properties file))))
+    (read remote)))
+
+(defun cyberdeck-emacs-file-profile (file)
+  "Return FILE's #+PROFILE: as a symbol, or `cyberdeck-emacs-default-profile'."
+  (let ((profile (alist-get 'profile
+                            (cyberdeck-emacs-file-properties file))))
+    (if profile (intern (string-trim profile))
+      cyberdeck-emacs-default-profile)))
+
+(defun cyberdeck-emacs-file-package-names (file)
+  "Distinct package names declared anywhere in FILE."
+  (with-temp-buffer
+    (insert-file-contents file)
+    (let (org-mode-hook) (org-mode))
+    (let (names)
+      (org-map-entries
+       (lambda ()
+         (when-let* ((name (cyberdeck-emacs-find-package)))
+           (cl-pushnew name names))))
+      (nreverse names))))
+
+(defvar cyberdeck-emacs--stage-warnings '()
+  "Stage-tag problems collected during discovery, reported once at boot.
+Filled by `cyberdeck-emacs--stage-of'; drained by
+`cyberdeck-emacs--report-stage-warnings'.")
+
+(defun cyberdeck-emacs--stage-of (stages file line)
+  "Normalize STAGES (the S<digit> tags on one headline) to the symbol
+\\='S1', \\='S2' or \\='S0' (stage zero: loads before S1).
+Anything else — S3, junk, or more than one stage tag — is S1 plus a
+warning naming FILE and LINE. Never throws: a bad stage must degrade
+to the always-safe stage, never fail discovery."
+  (cond
+   ((null stages) 'S1)
+   ((null (cdr stages))
+    (let ((s (car stages)))
+      (cond
+       ((string= s "S1") 'S1)
+       ((string= s "S2") 'S2)
+        ((string= s "S0") 'S0)
+       (t (push (format "%s:%d stage tag %s is not S1/S2 — treated as S1"
+                        (file-name-nondirectory file) line s)
+                cyberdeck-emacs--stage-warnings)
+          'S1))))
+   (t (push (format "%s:%d multiple stage tags (%s) — treated as S1"
+                    (file-name-nondirectory file) line
+                    (mapconcat #'identity stages " "))
+            cyberdeck-emacs--stage-warnings)
+      'S1)))
+
+(defun cyberdeck-emacs--report-stage-warnings ()
+  "Print collected stage-tag warnings once, then clear them."
+  (when cyberdeck-emacs--stage-warnings
+    (dolist (w (nreverse cyberdeck-emacs--stage-warnings))
+      (message "cyberdeck-emacs: %s" w))
+    (setq cyberdeck-emacs--stage-warnings nil)))
+
+(defun cyberdeck-emacs--scan-file-tagged-units (file)
+  "Raw scan: list of load units in FILE, one plist per :EMACS_MECHANISM: level-1.
+Callers must use `cyberdeck-emacs-file-tagged-units' (stat-cached),
+never this directly — a full line scan per call is the old slow path.
+Each unit: (:file :title :tags :id :parent :order :start-line :end-line).
+:start-line is absolute (1-based); :end-line nil means EOF. The first
+unit starts at line 1 so preamble blocks attach to it. Only level-1
+headlines bound units; deeper headings are content. Untagged level-1s
+absorb into the preceding unit, never skipped."
+  (when (file-exists-p file)
+    (with-temp-buffer
+      (insert-file-contents file)
+      (goto-char (point-min))
+      (let (heads insrc)
+        (while (not (eobp))
+          (let ((line (buffer-substring-no-properties
+                       (line-beginning-position) (line-end-position)))
+                (lnum (line-number-at-pos)))
+            (cond
+             ((string-match-p "^[ \t]*#\\+begin_" line) (setq insrc t))
+             ((string-match-p "^[ \t]*#\\+end_" line) (setq insrc nil))
+              ((and (not insrc) (string-match "^\\* \\(.*\\)$" line))
+               (let* ((text (match-string 1 line))
+                      ;; Tag run allows ":" inside (org drops empty
+                      ;; segments, so :A::B: tags A and B — the old
+                      ;; pattern rejected every :: headline and such
+                      ;; files silently never loaded). Hyphen included:
+                      ;; org tags like :aiu-subnet: are legal.
+                      ;; The trailing tag RUN, whitespace between tags
+                      ;; allowed.  The old pattern could only match a run
+                      ;; with no space in it, so a headline tagged
+                      ;; ":EMACS_MECHANISM: :S2:" captured ":S2:" alone and
+                      ;; DROPPED :EMACS_MECHANISM: — the file then looked
+                      ;; untagged and silently never loaded.  Both spellings
+                      ;; must work, since stage tags are hand-written:
+                      ;; ":EMACS_MECHANISM:S2:" and ":EMACS_MECHANISM: :S2:".
+                      (tags (and (string-match
+                                  "\\(\\(?:[[:alnum:]_@:-]*:\\s-*\\)+\\)\\s-*$"
+                                  text)
+                                 (match-string 1 text)))
+                      ;; Turn the run's whitespace into colons, then split
+                      ;; on colons exactly as before, so ":A:B:" still yields
+                      ;; A and B and a single tag is unchanged.
+                      (names (and tags
+                                  (split-string
+                                   (string-trim
+                                    (replace-regexp-in-string "[[:space:]]" ":"
+                                                                tags)
+                                    ":" ":")
+                                   ":" t)))
+                      (stages (cl-remove-if-not
+                               (lambda (n) (string-match-p "\\`S[0-9]+\\'" n))
+                               names)))
+                 (push (list :line lnum :text text :names names :stages stages
+                             :tagged (and (member "EMACS_MECHANISM" names) t))
+                       heads)))))
+          (forward-line 1))
+        (setq heads (nreverse heads))
+        (let (units current)
+          (dolist (h heads)
+            (when (plist-get h :tagged)
+              (let ((lnum (plist-get h :line)))
+                (when current
+                  (plist-put current :end-line (1- lnum))
+                  (setq current nil))
+                (setq current
+                      (list :file file
+                            :start-line (if units lnum 1)
+                            :end-line nil :title nil
+                            ;; :tags is the full tag list; :stage is the
+                            ;; normalized load stage (S1 or S2), defaulted
+                            ;; here so every consumer can read it blind.
+                            :tags (plist-get h :names)
+                            :stage (cyberdeck-emacs--stage-of
+                                    (plist-get h :stages) file lnum)
+                            :id nil :parent nil :order nil))
+                 (plist-put current :title
+                            (string-trim
+                             (replace-regexp-in-string
+                              ;; Same org-compatible tag run as above.
+                              "\\s-+:[[:alnum:]_@:-]*:\\s-*$"
+                              "" (plist-get h :text))))
+                (save-excursion
+                  (goto-char (point-min))
+                  (forward-line (1- lnum))
+                  (forward-line 1)
+                  (when (looking-at-p "^[ \t]*:PROPERTIES:[ \t]*$")
+                    (forward-line 1)
+                    (while (and (not (eobp))
+                                (not (looking-at-p "^[ \t]*:END:[ \t]*$")))
+                      (cond
+                       ((looking-at "^[ \t]*:ID:[ \t]*\\(\\S-+\\)")
+                        (plist-put current :id (match-string 1)))
+                       ((looking-at "^[ \t]*:MM_PARENT:[ \t]*\\(\\S-+\\)")
+                        (plist-put current :parent (match-string 1)))
+                       ((looking-at "^[ \t]*:MM_ORDER:[ \t]*\\(\\S-+\\)")
+                        (let ((v (match-string 1)))
+                          (plist-put current :order
+                                     (and (string-match-p "^-?[0-9.]+$" v)
+                                          (string-to-number v))))))
+                      (forward-line 1))))
+                (push current units))))
+          (nreverse units))))))
+
+(defvar cyberdeck-emacs--units-cache (make-hash-table :test 'equal)
+  "FILE truename -> (SIG UNITS). Stat-validated memo so discovery,
+ordering, and compilation share one line scan per unchanged file.")
+
+(defvar cyberdeck-emacs--truename-cache (make-hash-table :test 'equal)
+  "Path string -> its `file-truename', for this boot.  The warm discovery
+pass used to ask for the same truename three times per file (`index-lookup'
+twice, `index-apply' once); through proot each is a syscall round trip, so
+the repeats were pure latency.  Same lifetime as the sibling memos above:
+one boot, never persisted, never written to the index.")
+
+(defvar cyberdeck-emacs--sig-cache (make-hash-table :test 'equal)
+  "Path string -> stat signature `(MTIME SIZE)' for this boot.  Same
+lifetime and rationale as `cyberdeck-emacs--truename-cache':
+`cyberdeck-emacs--file-sig' was computed once in
+`cyberdeck-emacs-file-tagged-units', again in `cyberdeck-emacs--index-lookup',
+and again in `cyberdeck-emacs--index-apply' — three `file-attributes'
+calls per file for one answer.  Never persisted: the index still stores
+mtime+size per entry, so the trust model is unchanged.")
+
+(defun cyberdeck-emacs--truename (file)
+  "`file-truename' of FILE, computed at most once per boot.
+Memoised per path string.  Falls back to the plain call when the memo is
+unavailable, so behaviour never depends on caching being present."
+  (if cyberdeck-emacs--truename-cache
+      (let ((hit (gethash file cyberdeck-emacs--truename-cache)))
+        (if hit
+            hit
+          (let ((v (file-truename file)))
+            (puthash file v cyberdeck-emacs--truename-cache)
+            v)))
+    (file-truename file)))
+
+(defun cyberdeck-emacs--file-sig (file)
+  "Stat signature (MTIME SIZE) of FILE, or nil when stat fails.
+Memoised per path string for the boot; one `file-attributes' call per
+file instead of one per call site.  A nil signature is a real answer and
+is memoised too, so a missing or unreadable file is not re-statted at
+every call site -- hence the ABSENT sentinel rather than a bare nil test."
+  (if cyberdeck-emacs--sig-cache
+      (let ((hit (gethash file cyberdeck-emacs--sig-cache :absent)))
+        (if (eq hit :absent)
+            (let* ((a (file-attributes file))
+                   (v (and a (list (nth 5 a) (nth 7 a)))))
+              (puthash file v cyberdeck-emacs--sig-cache)
+              v)
+          hit))
+    (let ((a (file-attributes file)))
+      (and a (list (nth 5 a) (nth 7 a))))))
+
+(defun cyberdeck-emacs-file-tagged-units (file)
+  "Stat-cached wrapper around `cyberdeck-emacs--scan-file-tagged-units'.
+ Consults the session memo, then the hash-verified on-disk index (which
+ also fills the props/title memos), and re-scans only on a full miss."
+  (when (file-exists-p file)
+    (let* ((key (cyberdeck-emacs--truename file))
+           (sig (cyberdeck-emacs--file-sig file))
+           (hit (gethash key cyberdeck-emacs--units-cache)))
+      (cond
+       ((and hit sig (equal (car hit) sig)) (cadr hit))
+       (t (let ((entry (cyberdeck-emacs--index-lookup file)))
+            (if entry
+                (cyberdeck-emacs--index-apply file entry)
+              (cyberdeck-emacs--index-forget file)
+              (let ((units (cyberdeck-emacs--scan-file-tagged-units file)))
+                (puthash key (list sig units)
+                         cyberdeck-emacs--units-cache)
+                units))))))))
+
+(defun cyberdeck-emacs-file-loadable-p (file)
+  "Non-nil when FILE has any :EMACS_MECHANISM: level-1.
+No tag = not loaded, by design."
+  (and (cyberdeck-emacs-file-tagged-units file) t))
+
+(defvar cyberdeck-emacs--title-cache (make-hash-table :test 'equal)
+  "FILE truename -> (SIG TITLE). Splash calls titles per progress tick.")
+
+(defun cyberdeck-emacs-file-title (file)
+  "FILE's own #+title:, falling back to its basename. Display only.
+Stat-cached, then hash-verified on-disk index: at most one 4K read per
+changed file per session."
+  (if (not (file-exists-p file))
+      (file-name-nondirectory file)
+    (let* ((key (cyberdeck-emacs--truename file))
+           (sig (cyberdeck-emacs--file-sig file))
+           (hit (gethash key cyberdeck-emacs--title-cache)))
+      (cond
+       ((and hit sig (equal (car hit) sig)) (cadr hit))
+       (t (let ((entry (cyberdeck-emacs--index-lookup file)))
+            (if entry
+                (progn (cyberdeck-emacs--index-apply file entry)
+                       ;; Untagged files have no stored title: fall back to
+                       ;; basename (never nil — the splash propertizes this).
+                       (or (cadr (gethash key cyberdeck-emacs--title-cache))
+                           (file-name-nondirectory file)))
+              (cyberdeck-emacs--index-forget file)
+              (let ((title
+                     (or (with-temp-buffer
+                           (insert-file-contents file nil 0 4096)
+                           (goto-char (point-min))
+                           (when (re-search-forward "^#\\+title:[ \t]*\\(.+\\)$" nil t)
+                             (string-trim (match-string 1))))
+                         (file-name-nondirectory file))))
+                (puthash key (list sig title) cyberdeck-emacs--title-cache)
+                title))))))))
+#+end_src

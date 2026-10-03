@@ -1,0 +1,204 @@
+* Loader — discovery-order
+Module of the Cyberdeck-Emacs loader. No :EMACS_MECHANISM: tags here: this directory is outside the discovery root and never loads as units. Tangled together with the other modules, in listed order, into a single cyberdeck-emacs.el.
+
+** Discovery order — topology
+#+begin_src emacs-lisp
+(defun cyberdeck-emacs--state< (a b)
+  "Order two file states: numeric :MM_ORDER: first, path second."
+  (let ((oa (or (plist-get a :order) 1e18))
+        (ob (or (plist-get b :order) 1e18)))
+    (or (< oa ob)
+        (and (= oa ob) (string< (plist-get a :file) (plist-get b :file))))))
+
+(defun cyberdeck-emacs--parent-dangling-p (par by-id)
+  "Non-nil when PAR names a parent that resolves to no known id."
+  (and (stringp par) (not (string-empty-p par))
+       (not (string= (downcase par) "none"))
+       (not (assoc par by-id))))
+
+(defun cyberdeck-emacs--unit-key (u)
+  "Unique walk key for unit U: its id, else file+start."
+  (or (plist-get u :id)
+      (list (plist-get u :file) (plist-get u :start-line))))
+#+end_src
+
+** Bootstrap order — keyboard first, dashboard second
+Explicit load pinning, straight in the loader: the keyboard block
+loads before everything, the dashboard right after, then the normal
+topology. Path pinning (not ID lists) survives the user's add/delete
+churn inside keyboard dirs.
+
+NEXT UP after the dashboard: custom modeline.  (TODO)
+
+#+begin_src emacs-lisp
+(defvar cyberdeck-emacs--bootstrap-first-paths '("biomechanical-input-interface/"
+                                                   "cyberdeck-dashboard/")
+  "Path fragments whose units load before everything else, group by
+group in listed order (keyboard, then dashboard). Matched with
+`regexp-quote' against the unit's :file. Relative order inside each
+group is unchanged.")
+
+(defvar cyberdeck-emacs--bootstrap-first-ids '()
+  "Unit IDs loading right after the bootstrap path groups, in listed
+order. Empty: path pinning covers the current bootstrap set.")
+
+(defvar cyberdeck-emacs--fundamental-first-paths
+  '("entering-the-machine/cyberdeck-dashboard/"
+    "the-screen/modeline/"
+    "files/aiu-registration/cyberdeck/aiu-frame/"
+    "files/aiu-registration/cyberdeck/biomechanical-input-interface/")
+  "Path fragments ordering S0 (Fundamental) units at boot, in listed
+group order: dashboard, modeline, mindmap frame, keyboard. The screen
+is fully up before anything else loads. Matched with `regexp-quote'
+against the unit's :file, like the bootstrap lists. Relative order
+inside each group is unchanged.")
+
+(defvar cyberdeck-emacs--dashboard-complete-at nil
+  "1-based position of the last dashboard-group unit in the current
+boot order. The dashboard opens only once its own units are all
+loaded (full render, never staged). Set per boot by
+`cyberdeck-emacs-compile-directory'; nil means unknown.")
+
+(defvar cyberdeck-emacs--always-recompile-paths '("cyberdeck-dashboard/")
+  "Path fragments whose units recompile fresh every boot, skipping
+every cache. Active-development escape hatch while the dashboard is
+being reworked: edits are live the moment a unit loads. Empty in
+steady state.")
+
+(defvar cyberdeck-emacs--always-recompile-ids '()
+  "Unit IDs that recompile fresh every boot, skipping the .elc.
+Empty: the path rule covers the current set.")
+
+(defun cyberdeck-emacs--pin-bootstrap-units (ordered)
+  "Move bootstrap units to the front of ORDERED: path groups first in
+listed group order (relative order inside each group kept), then
+listed IDs in listed order. Missing IDs are ignored, so deleting a
+pinned unit can never break a boot; pinned units keep their
+parent-before-child guarantee against the rest (their own parents
+are inside the pinned block or parentless).  Never throws."
+  (condition-case nil
+      (let (pinned rest)
+        (setq rest ordered)
+        (dolist (frag cyberdeck-emacs--bootstrap-first-paths)
+          (let (group com)
+            (dolist (u rest)
+              (if (string-match-p (regexp-quote frag)
+                                  (or (plist-get u :file) ""))
+                  (push u group)
+                (push u com)))
+            (setq pinned (nconc pinned (nreverse group))
+                  rest (nreverse com))))
+        (let (id-pinned)
+          (dolist (id cyberdeck-emacs--bootstrap-first-ids)
+            (let ((found (cl-find id rest
+                                  :key (lambda (u) (plist-get u :id))
+                                  :test #'equal)))
+              (when found
+                (setq rest (delq found rest))
+                (setq id-pinned (nconc id-pinned (list found))))))
+          (nconc pinned id-pinned rest)))
+    (error ordered)))
+#+end_src
+
+** Ordering — chain topology
+#+begin_src emacs-lisp
+(defun cyberdeck-emacs--collect-units (files)
+  "Order tagged heading units across FILES: chained parents-first via a
+cycle-guarded walk (siblings by :MM_ORDER:), chainless units appended
+after by file and position.  Returns ordered unit plists.
+
+Refuses to pass a file through whose index record claims units but whose
+extracted parts are empty.  That combination is impossible for a real
+file and is the exact signature of the memo-not-populated bug: the unit
+then writes a code-less .el and every `defun' in it reports VOID at load,
+which is a silent, whole-unit code loss.  Signalling loudly here is
+deliberate -- this function is on the boot path and must not swallow it."
+  (let* ((states (mapcan (lambda (f)
+                           (let ((units (cyberdeck-emacs-file-tagged-units f)))
+                             (when (and (null units)
+                                        (plist-get (gethash f cyberdeck-emacs--discovery-index)
+                                                   :units))
+                               (error "cyberdeck-emacs: REFUSING empty parts for %s -- \
+index record claims units but extraction produced none; memo not \
+populated, writing it would drop the unit's code silently"
+                                      f))
+                             (mapcar (lambda (u)
+                                       (plist-put (copy-sequence u)
+                                                  :file f))
+                                     units)))
+                         files))
+         (chained (seq-filter (lambda (s) (or (plist-get s :parent)
+                                              (plist-get s :order)))
+                              states))
+         (free (sort (seq-remove (lambda (s) (or (plist-get s :parent)
+                                                 (plist-get s :order)))
+                                 states)
+                     (lambda (a b)
+                       (or (string< (plist-get a :file) (plist-get b :file))
+                           (and (string= (plist-get a :file) (plist-get b :file))
+                                (< (plist-get a :start-line)
+                                   (plist-get b :start-line)))))))
+         (by-id nil)
+         (children (make-hash-table :test #'equal))
+         (roots nil)
+         (dangling 0)
+         (ordered nil)
+         (visiting nil)
+         (done (make-hash-table :test #'equal))
+         (cycles 0))
+    (dolist (s chained)
+      (when-let* ((id (plist-get s :id)))
+        (if (assoc id by-id)
+            (message "cyberdeck-emacs: duplicate unit id %s (%s) — keeping first"
+                     id (plist-get s :file))
+          (push (cons id s) by-id))))
+    (setq by-id (nreverse by-id))
+    (dolist (s chained)
+      (let ((par (plist-get s :parent)))
+        (if (and par (not (string-empty-p par))
+                 (not (string= (downcase par) "none"))
+                 (assoc par by-id))
+            (push s (gethash par children))
+          (progn
+            (when (cyberdeck-emacs--parent-dangling-p par by-id)
+              (setq dangling (1+ dangling)))
+            (push s roots)))))
+    (setq roots (sort roots #'cyberdeck-emacs--state<))
+    (maphash (lambda (k v) (puthash k (sort v #'cyberdeck-emacs--state<) children)) children)
+    (cl-labels ((walk (s)
+                  (let ((k (cyberdeck-emacs--unit-key s)))
+                    (cond
+                     ((gethash k done) nil)
+                     ((member k visiting) (setq cycles (1+ cycles)) nil)
+                     (t (push k visiting)
+                        (push s ordered)
+                        (puthash k t done)
+                        (dolist (c (gethash (plist-get s :id) children))
+                          (walk c))
+                        (setq visiting (delq k visiting)))))))
+      (dolist (r roots) (walk r)))
+    (setq ordered (nreverse ordered))
+    (dolist (s free)
+      (setq ordered (nconc ordered (list s))))
+    (when (> cycles 0)
+      (message "cyberdeck-emacs: %d parent cycle(s) broken (kept as roots)"
+               cycles))
+    (when (> dangling 0)
+      (message "cyberdeck-emacs: %d unit(s) with dangling parent loaded as roots"
+               dangling))
+    (when (> (length free) 0)
+      (message "cyberdeck-emacs: %d chainless unit(s) appended after chain"
+               (length free)))
+    (cyberdeck-emacs--pin-bootstrap-units ordered)))
+
+(defun cyberdeck-emacs--units-files (units)
+  "Unique files of ordered UNITS, in order."
+  (let (out seen)
+    (dolist (u units)
+      (let ((f (plist-get u :file)))
+        (unless (member f seen)
+          (push f seen)
+          (push f out))))
+    (nreverse out)))
+
+#+end_src

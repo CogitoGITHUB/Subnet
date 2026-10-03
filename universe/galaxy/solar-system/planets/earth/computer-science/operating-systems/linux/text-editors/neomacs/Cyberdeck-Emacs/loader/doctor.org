@@ -1,0 +1,146 @@
+* Loader — doctor
+Module of the Cyberdeck-Emacs loader. No :EMACS_MECHANISM: tags here: this directory is outside the discovery root and never loads as units. Tangled together with the other modules, in listed order, into a single cyberdeck-emacs.el.
+
+** Doctor — known packages & rows
+Answers "is everything actually OK?" without triggering every package
+by hand.
+#+begin_src emacs-lisp
+(defun cyberdeck-emacs-doctor--known-packages ()
+  "Alist of (package-name . file) for every package declared anywhere
+under the active Org directory."
+  (let (result)
+    (dolist (file (cyberdeck-emacs-get-files
+                   "[^./]+$" (cyberdeck-emacs-get-org-directory)))
+      (dolist (name (cyberdeck-emacs-file-package-names file))
+        (push (cons name file) result)))
+    (nreverse result)))
+
+(defun cyberdeck-emacs-doctor--collect-rows ()
+  (let (rows)
+    (dolist (pair (cyberdeck-emacs-doctor--known-packages))
+      (let* ((name (car pair)) (file (cdr pair))
+             (status (cyberdeck-emacs-package-status name)))
+        (push (list name
+                    (vector (format "%s" name)
+                            (if status (format "%s"
+                                             (plist-get status :status))
+                              "never-attempted")
+                            (or (and status (plist-get status :file))
+                                (format "%s" file))
+                            (or (and status (plist-get status :message))
+                                "")))
+              rows)))
+    (dolist (e (cyberdeck-emacs-errors-list))
+      (unless (cyberdeck-emacs-error-entry-package e)
+        (push (list nil
+                    (vector (format "(%s)"
+                                    (cyberdeck-emacs-error-entry-level e))
+                            "error"
+                            (or (cyberdeck-emacs-error-entry-file e) "")
+                            (cyberdeck-emacs-error-entry-message e)))
+              rows)))
+    (nreverse rows)))
+#+end_src
+
+** Doctor — mode & commands
+#+begin_src emacs-lisp
+(defvar cyberdeck-emacs-doctor-mode-map
+  (let ((map (make-sparse-keymap)))
+    (set-keymap-parent map tabulated-list-mode-map)
+    (define-key map "g" #'cyberdeck-emacs-doctor-refresh)
+    (define-key map "r" #'cyberdeck-emacs-doctor-retry-at-point)
+    map))
+
+(define-derived-mode cyberdeck-emacs-doctor-mode tabulated-list-mode
+  "Cyberdeck-Doctor"
+  "Major mode listing every known package's load status."
+  (setq tabulated-list-format [("Package" 28 t) ("Status" 16 t)
+                               ("File" 40 t) ("Message" 0 nil)])
+  (setq tabulated-list-sort-key (cons "Status" nil))
+  (tabulated-list-init-header))
+
+(defun cyberdeck-emacs-doctor-refresh ()
+  (interactive)
+  (setq tabulated-list-entries (cyberdeck-emacs-doctor--collect-rows))
+  (tabulated-list-print t))
+
+(defun cyberdeck-emacs-doctor-retry-at-point ()
+  "Recompile just the package at point and refresh the table."
+  (interactive)
+  (let ((name (tabulated-list-get-id)))
+    (if (not name)
+        (user-error "This row isn't a retriable package")
+      (let ((file (alist-get name
+                             (cyberdeck-emacs-doctor--known-packages)
+                             nil nil #'equal)))
+        (if (not file)
+            (user-error "Can't find the source file for %s" name)
+          (cyberdeck-emacs-recompile-package file name)
+          (cyberdeck-emacs-doctor-refresh))))))
+
+;;;###autoload
+(defun cyberdeck-emacs-doctor ()
+  "Open the package health dashboard."
+  (interactive)
+  (let ((buf (get-buffer-create "*Cyberdeck-Doctor*")))
+    (with-current-buffer buf
+      (cyberdeck-emacs-doctor-mode)
+      (cyberdeck-emacs-doctor-refresh))
+    (switch-to-buffer buf)))
+#+end_src
+
+** Doctor — mode-line indicator
+#+begin_src emacs-lisp
+(defun cyberdeck-emacs-doctor--mode-line-string ()
+  (let ((broken (cl-count-if (lambda (p)
+                               (eq (plist-get (cdr p) :status) 'error))
+                             (cyberdeck-emacs-all-package-statuses))))
+    (if (zerop broken) ""
+      (propertize (format " \u26a0%d" broken) 'face 'error
+                  'help-echo "cyberdeck-emacs: packages with load errors - M-x cyberdeck-emacs-doctor"
+                  'mouse-face 'mode-line-highlight
+                  'local-map (make-mode-line-mouse-map
+                              'mouse-1 #'cyberdeck-emacs-doctor)))))
+
+(define-minor-mode cyberdeck-emacs-doctor-indicator-mode
+  "Global minor mode showing a package-health segment in the mode line."
+  :global t :group 'cyberdeck-emacs
+  (let ((segment '(:eval (cyberdeck-emacs-doctor--mode-line-string))))
+    (setq global-mode-string
+          (if cyberdeck-emacs-doctor-indicator-mode
+              (append (remove segment global-mode-string) (list segment))
+            (remove segment global-mode-string)))))
+#+end_src
+
+** Doctor — idle sweep
+#+begin_src emacs-lisp
+(defvar cyberdeck-emacs-doctor--idle-timer nil)
+
+(defun cyberdeck-emacs-doctor--force-require-one (package-name)
+  "Force-`require' PACKAGE-NAME so a deferred load error surfaces now."
+  (condition-case err
+      (progn (require (intern (format "%s" package-name)) nil t)
+             (cyberdeck-emacs-record-status package-name 'ok))
+    (error (cyberdeck-emacs-record-error
+            :level 'package :package package-name
+            :message (format "idle sweep: %s"
+                             (error-message-string err))))))
+
+(defun cyberdeck-emacs-doctor-sweep-now ()
+  "Force-require every known package immediately (not on a timer)."
+  (interactive)
+  (dolist (pair (cyberdeck-emacs-doctor--known-packages))
+    (cyberdeck-emacs-doctor--force-require-one (car pair)))
+  (message "cyberdeck-emacs: idle sweep complete"))
+
+(defun cyberdeck-emacs-doctor-schedule-idle-sweep ()
+  "Run the sweep once, after the idle delay, if enabled."
+  (when (and cyberdeck-emacs-idle-sweep-enabled
+             (not cyberdeck-emacs-doctor--idle-timer))
+    (setq cyberdeck-emacs-doctor--idle-timer
+          (run-with-idle-timer cyberdeck-emacs-idle-sweep-delay nil
+                               (lambda ()
+                                 (setq cyberdeck-emacs-doctor--idle-timer
+                                       nil)
+                                 (cyberdeck-emacs-doctor-sweep-now))))))
+#+end_src
