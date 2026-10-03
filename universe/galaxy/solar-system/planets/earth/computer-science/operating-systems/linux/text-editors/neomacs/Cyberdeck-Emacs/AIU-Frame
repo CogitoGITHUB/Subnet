@@ -345,40 +345,66 @@ live in the vault.
        load-file-name buffer-file-name))
   "Directory holding the AIU Frame org. Derived, never hardcoded.")
 
-(defun my/tangle-loader-visited (file)
-  "Tangle FILE with Org parsing forced, then verify nothing was dropped.
+(defvar my/loader-modules
+  '("core/vars" "core/errors" "core/parse"
+    "discovery-index" "discovery-order"
+    "staging-stages" "staging-skip" "discovery-units"
+    "packages"
+    "compiler-extract" "compiler-eval" "compiler-cache" "compiler-parts"
+    "compiler-validate" "compiler-gates" "compiler-loop"
+    "splash" "doctor" "entry")
+  "Loader modules in tangle order.  Tangle order IS load order: the
+concatenated artifact must read exactly as the old single file did.")
 
-The loader is extensionless (`cyberdeck`, not `cyberdeck.org`), so
-`org-babel-tangle-file' on the bare path does NOT Org-parse it and
-silently skips one src block -- historically the Errors-recording
-block, which cost `cyberdeck-emacs-record-error' and made every
-later error report die void.  Visiting the file and switching it to
-`org-mode' first is what makes the block count come out right.
+(defun my/loader-module-dir ()
+  "Directory holding the loader modules."
+  (expand-file-name "loader" my/emacs-root))
 
-Returns the number of emacs-lisp blocks tangled.  Never throws on a
-count mismatch: it signals via `lwarn' so boot continues."
+(defun my/tangle-loader-files (files target)
+  "Tangle FILES (Org, in order) and write the concatenation to TARGET.
+Each file tangles to its own temp file with an explicit target, so no
+file-level tangle property can redirect a block elsewhere; the temps
+are concatenated in order and TARGET is replaced by rename, never
+partially written.  Readers never see a half artifact.  Returns the
+total number of emacs-lisp blocks tangled."
   (require 'ob-tangle)
-  (let* ((buf (find-file-noselect file))
-         (already (get-buffer-window buf))
-         (expected 0)
-         (got nil))
+  (let ((total 0)
+        (tmp-target (make-temp-file "cyberdeck-loader-")))
     (unwind-protect
-        (with-current-buffer buf
-          (org-mode)
-          (goto-char (point-min))
-          ;; Count what the source actually contains, straight from the
-          ;; regexp Org will use: begin/end pairs must balance.
-          (let ((n 0))
-            (while (re-search-forward
-                    "^\\([ \t]*\\)#\\+begin_src\\(?:[ \t]+\\([^ \t\n]+\\)[ \t]*\\)?\\([ \t\n]*\\([^ \t\n]+\\)[ \t]*\\)?\\(\\(?:.\\|\n\\)*?\\)#\\+end_src[ \t]*$"
-                    nil t)
-              (when (equal (match-string 2) "emacs-lisp")
-                (setq n (1+ n))))
-            (setq expected n))
-          (setq got (org-babel-tangle)))
-      ;; Leave no window and no dangling buffer behind: this runs at boot
-      ;; and the loader file is nobody's business afterwards.
-      (unless already (delete-windows-on buf) (kill-buffer buf)))))
+        (let ((parts nil))
+          (dolist (f files)
+            (let ((tmp (make-temp-file "cyberdeck-module-")))
+              (unwind-protect
+                  (progn
+                    ;; Explicit target: this Org ignores dynamically bound
+                    ;; default header args, so the target goes on the call.
+                    (org-babel-tangle-file f tmp)
+                    (push (with-temp-buffer
+                            (insert-file-contents tmp)
+                            (buffer-string))
+                          parts))
+                (ignore-errors (delete-file tmp)))))
+          (setq parts (nreverse parts))
+          ;; Join rule, matching org-babel-tangle exactly: blocks are
+          ;; separated by one blank line, the file ends with one newline.
+          (with-temp-file tmp-target
+            (let ((first t))
+              (dolist (p parts)
+                (unless first
+                  (insert "\n"))
+                (setq first nil)
+                (insert (replace-regexp-in-string "\n+\\'" "\n" p)))))
+          (rename-file tmp-target target t)
+          (dolist (f files)
+            (with-temp-buffer
+              (insert-file-contents f)
+              (goto-char (point-min))
+              (while (re-search-forward
+                      "^#\\+begin_src[ \t]+emacs-lisp[ \t]*$"
+                      nil t)
+                (setq total (1+ total))))))
+      (ignore-errors (delete-file tmp-target)))
+    total))
 
 (defun my/load-literate-loader (&optional file)
   "Tangle the loader org to ~/.config/emacs/cyberdeck-emacs.el, then load it."
@@ -393,22 +419,29 @@ count mismatch: it signals via `lwarn' so boot continues."
                        (expand-file-name "cyberdeck-emacs.org" dir)))))
   (unless (file-exists-p file)
     (error "[init] literate loader missing: %s" file))
-  (let ((el (locate-user-emacs-file "cyberdeck-emacs.el")))
+  (let ((el (locate-user-emacs-file "cyberdeck-emacs.el"))
+        (mods (mapcar (lambda (m)
+                        (expand-file-name (concat m ".org")
+                                          (my/loader-module-dir)))
+                      my/loader-modules)))
     ;; (my/init-aiu "[init] tangling loader…")
     ;; Guarded like the AIU Frame tangle: with explicit sync allowed,
     ;; re-tangling an up-to-date loader every boot is pure waste.
-    (when (or (not (file-exists-p el)) (file-newer-than-file-p file el))
+    ;; Freshness compares the NEWEST module against the artifact.
+    (when (or (not (file-exists-p el))
+              (cl-some (lambda (m) (file-newer-than-file-p m el)) mods))
       (with-demoted-errors "[init] tangle failed: %s"
-        (let ((tangled (my/tangle-loader-visited file))
-              (source  (with-temp-buffer
-                         (insert-file-contents file)
-                         (goto-char (point-min))
-                         (let ((n 0))
-                           (while (re-search-forward
-                                   "^#\\+begin_src[ \t]+emacs-lisp[ \t]*$"
-                                   nil t)
-                             (setq n (1+ n)))
-                           n)))))
+        (let ((tangled (my/tangle-loader-files mods el))
+              (source  (let ((n 0))
+                         (dolist (m mods)
+                           (with-temp-buffer
+                             (insert-file-contents m)
+                             (goto-char (point-min))
+                             (while (re-search-forward
+                                     "^#\\+begin_src[ \t]+emacs-lisp[ \t]*$"
+                                     nil t)
+                               (setq n (1+ n)))))
+                         n))))
           (when (and tangled (= source 0))
             (lwarn 'foundation :warning
                    "loader tangle produced nothing from %s" file))
