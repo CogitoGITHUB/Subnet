@@ -2,7 +2,9 @@
 - Open neomacs in a spare pane/tab: `herdr pane run <pane> 'bash -c "neomacs -nw ... 2>&1 | tee <log>; echo DONE-MARKER=\${PIPESTATUS[0]} >> <log>"'`. Output streams (watchable) AND lands in a file.
 - Read it live anytime: `herdr pane read <pane>` — progress, errors, backtraces — without touching the session.
 - Notify on done: background watcher polls for the exit marker; the harness pings on completion. Never sleep-loop in foreground.
-- Safety, learned the hard way: verify a pane is an idle shell BEFORE sending anything (typed into the user's live Emacs twice); never use your own pane; one boot at a time (unit-times.log/module-el race); plain `-nw` never exits — read results, then kill it; batch probes that hang get `timeout`, batch `read`/`with-temp-buffer` flakiness is real.# AGENT.md — Operating guide for this Emacs configuration
+- Safety, learned the hard way: verify a pane is an idle shell BEFORE sending anything (typed into the user's live Emacs twice); never use your own pane; one boot at a time (unit-times.log/module-el race); plain `-nw` never exits — read results, then kill it; batch probes that hang get `timeout`, batch `read`/`with-temp-buffer` flakiness is real.
+
+# AGENT.md — Operating guide for this Emacs configuration
 
 **Read this before touching anything.** It exists because the setup has rules
 that are not visible from any single file, several of them are silent when
@@ -452,3 +454,19 @@ plain `+` in BRE.
 - Fix every error/warning seen this session (boot, *Warnings*, byte-compile).
   Never defer, never silently suppress. Third-party causes need a durable
   in-scope workaround or an explicit user decision.
+
+## Session 2026-10-03 — staging, S0, modular loader, renames, db repair
+- Two-stage boot shipped (S1 at boot, S2 on first use) + S0 Fundamental stage loading
+  dashboard, modeline, aiu-frame, keyboard first (`e16950b`, `1c11d2b`); discovery
+  via one find call with mtime+size trust; boot-mode prompt staged/full/rescan (`4add153`).
+- Loader split from 1×4384-line file into 19 `loader/*.org` modules, byte-identical
+  artifact gate (`84db23b`, `8973681`); tangle is temp-file + atomic rename.
+- Renames: `cyberdeck-keyboard` → `biomechanical-input-interface`,
+  dashboard → AIU Cyber Desk; upstream symbols untouched.
+- DB: paths stored vault-relative, reads resolved at access; 393 quoted rows repaired;
+  query now reports dropped-row counts (`d70f18c`, `3ad3bbb`).
+- Warnings killed same-session: when-let→when-let* (54 sites), dead topics var, db
+  nesting/`?\"` validator blinds, speed-type binding-list paren, scoped clean-bill message.
+- Hard lessons (see rules above): verify probes before trusting them; balanced file can
+  still be mis-nested — only evaluation exposes it; never tangle from batch with the
+  bare-path call (drops blocks); one boot at a time; test in this environment, report.
