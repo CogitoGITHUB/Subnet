@@ -88,8 +88,13 @@ Returns units staged."
                         (when code
                           (let ((el (cyberdeck-emacs--s2-el-path u))
                                 (feat (cyberdeck-emacs--s2-feature u)))
-                            (make-directory (cyberdeck-emacs--s2-dir) t)
-                            (with-temp-file el
+                            ;; Stub content is a pure function of the unit
+                            ;; key, so an existing stub is current: skip the
+                            ;; write and turn ~200 writes into cheap exists
+                            ;; checks.  Deleted stubs regenerate on demand.
+                            (unless (file-exists-p el)
+                              (make-directory (cyberdeck-emacs--s2-dir) t)
+                              (with-temp-file el
                               (insert (format ";;; cyberdeck-emacs S2 stub -*- lexical-binding: t -*-\n;; unit: %s:%s\n" (file-name-nondirectory f) (or line 1)))
                               (insert (format "(cyberdeck-emacs--s2-load-unit-code %S)\n" key))
                               (insert (format "(provide '%s)\n" feat)))
@@ -102,7 +107,7 @@ Returns units staged."
                                     (push (cons sym u) cyberdeck-emacs--s2-clobber-skips)))
                                  (t
                                   (autoload sym el nil (and interactive t))
-                                  (setq staged (1+ staged))))))))))))))))))
+                                  (setq staged (1+ staged)))))))))))))))))))
     (maphash
      (lambda (k entry)
        (when (and (equal (plist-get entry :stage) "S2")

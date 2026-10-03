@@ -4,7 +4,7 @@ Module of the Cyberdeck-Emacs loader. No :EMACS_MECHANISM: tags here: this direc
 ** Splash — constants & state
 Pure renderer: reads the error/warnings lists, never mutates them.
 #+begin_src emacs-lisp
-(defconst cyberdeck-emacs-splash--redraw-interval 0.1
+(defconst cyberdeck-emacs-splash--redraw-interval 0.5
   "Seconds between live progress updates (throttle).")
 (defconst cyberdeck-emacs-splash--history-length 24
   "How many past boot durations the sparkline remembers.")
@@ -175,7 +175,11 @@ compilation."
                                                  :last-render)
                                       0))))
                (finished (>= current total)))
-          (when (or first-call finished changed
+          ;; `changed' used to be in this list, but it is true for
+          ;; every file (count and name always move), so the throttle
+          ;; never engaged and every tick paid message+redisplay.
+          ;; Time/count only: ~0.5 s between redraws, always on finish.
+          (when (or first-call finished
                     (null since)
                     (>= since cyberdeck-emacs-splash--redraw-interval))
             (plist-put cyberdeck-emacs--progress-state :last-render now)
