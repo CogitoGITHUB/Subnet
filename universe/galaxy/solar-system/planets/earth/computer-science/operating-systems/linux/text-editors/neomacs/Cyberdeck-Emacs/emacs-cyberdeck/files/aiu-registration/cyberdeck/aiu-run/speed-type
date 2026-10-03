@@ -1708,10 +1708,10 @@ content-buffer manually if there is a add-extra-word-function."
       (when-let* ((f (cond ((eq char-status 'correct) 'speed-type-correct-face)
                          ((eq char-status 'error)
                           (if non-consecutive-error-p 'speed-type-error-face 'speed-type-consecutive-error-face))
-                         (t nil)))
+                         (t nil))))
         (let ((overlay (make-overlay pos (1+ pos))))
           (overlay-put overlay 'priority 1)
-          (overlay-put overlay 'face f)))))))
+          (overlay-put overlay 'face f))))))
 #+end_src
 
 #+begin_src emacs-lisp
