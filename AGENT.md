@@ -127,10 +127,10 @@ say whose stock; `setup` and `macros` say nothing at all; and `dashboard` in
 1. **A filename says what it orders or configures, not which module reads it.**
    `admin/order/dashboard widgets`, `admin/order/modeline widgets`,
    `admin/order/headings aiu-context drawer`. Never `order`, never `drawer`.
-2. **Directories say which module owns them.** `cyberdeck-dashboard/`,
+2. **Directories say which module owns them.** `aiu-cyber-desk/`,
    `biomechanical-input-interface/`, `cyberdeck/`. Never a bare `engine/`,
    `core/`, or `aiu-contexts/` at a shared level.
-3. **Function and variable names carry their module.** `cyberdeck-dashboard--…`,
+3. **Function and variable names carry their module.** `aiu-cyber-desk--…`,
    `my/cyberdeck--…`, `manifolding-modeline--…`. A name that could
    belong to two modules belongs to neither.
 4. **Never name a file after the module that reads it** when the file means
@@ -182,7 +182,7 @@ minutes each. See §7 for the loop that finds them in seconds.
    `',name` splices the *symbol as datum* (right for an `assq` key). And
    `add-hook` wants a variable's **name**, so it needs `',hook` — a bare `,hook`
    passes the value, usually `nil`, giving `Attempt to set a constant symbol`.
-   Reference: `cyberdeck-dashboard/engine/macros`.
+   Reference: `aiu-cyber-desk/engine/macros`.
 2. **Nested quasiquotes.** Choosing inside the template (`` `(add-hook (if ,slow
    …)) ``) escapes `,slow` to the wrong depth and splices the *unexpanded* form
    in as data. Compute the value in the macro body and interpolate it.
@@ -251,7 +251,7 @@ All paths relative to `Cyberdeck-Emacs/emacs-cyberdeck/`.
 
 | Directory | MM_ORDER lane | Role |
 |---|---|---|
-| `entering-the-machine/cyberdeck-dashboard/` | 78.3–78.5 | dashboard: `engine/`, `cores/` (vendored emacs-dashboard), `widgets/`, `banner/`, `faces`. Its order file lives in `admin/`. |
+| `entering-the-machine/aiu-cyber-desk/` | 78.3–78.5 | dashboard: `engine/`, `cores/` (vendored emacs-dashboard), `widgets/`, `banner/`, `faces`. Its order file lives in `admin/`. |
 | `the-screen/modeline/` | 80.1–80.11 | multi-row mode line: `engine/`, `cores/stock`, `faces`, `widgets/`, `header`. Its order file lives in `admin/`. |
 | `files/aiu-registration/cyberdeck/` | 100+ | the Cyberdeck — see §5 |
 | `…/cyberdeck/biomechanical-input-interface/` | 2.x–4.x | modal key system: `engine/` (state machine, macros, scaffolding), `states/` (15), `leaders/` (19) |
@@ -324,7 +324,7 @@ grep -o ':status [a-z-]*' ~/.config/emacs/cyberdeck-emacs-errors.log.el | sort |
 ```
 
 `:status ok` is the health metric. `:level part` entries carry the failing
-file, line and package. The three gates — `cyberdeck-dashboard-validate`,
+file, line and package. The three gates — `aiu-cyber-desk-validate`,
 `biomechanical-input-interface-validate`, `manifolding-modeline-audit` — should all be
 empty.
 

@@ -1,4 +1,4 @@
-* Dashboard Widget DSL :EMACS_MECHANISM:S0:
+* AIU Cyber Desk Widget DSL :EMACS_MECHANISM:S0:
 :PROPERTIES:
 :ID:       aa22d145-ead7-4293-a7c8-e5230a7da69c
 :MM_PARENT: none
@@ -13,7 +13,7 @@ manifest). Depends only on builtins.
 
 ** Registry
 #+begin_src emacs-lisp
-(defvar cyberdeck-dashboard--widget-registry nil
+(defvar aiu-cyber-desk--widget-registry nil
   "Manifold widget keys registered this boot, in load order.
 Fresh process plus file-drop files: only present files register.
 Entries are (KEY . LENGTH).")
@@ -22,7 +22,7 @@ Entries are (KEY . LENGTH).")
 
 ** Define-widget macro
 #+begin_src emacs-lisp
-(defmacro cyberdeck-dashboard-define-widget (name &rest spec)
+(defmacro aiu-cyber-desk-define-widget (name &rest spec)
   "Declare dashboard widget NAME (unprefixed symbol, e.g. clock).
 SPEC keys: :length (default 1), :doc, :helpers (extra top-level
 forms: vars, timers, hooks), :generate (body forms rendering the
@@ -42,13 +42,13 @@ entry, and a registry push."
          ,@(and doc (list doc))
          ,@gen)
        (add-to-list 'dashboard-item-generators ',(cons key fn))
-       (unless (assq ',key cyberdeck-dashboard--widget-registry)
-         (push ',(cons key len) cyberdeck-dashboard--widget-registry)))))
+       (unless (assq ',key aiu-cyber-desk--widget-registry)
+         (push ',(cons key len) aiu-cyber-desk--widget-registry)))))
 #+end_src
 
 ** Skeleton writer
 #+begin_src emacs-lisp
-(defvar cyberdeck-dashboard--module-dir
+(defvar aiu-cyber-desk--module-dir
   (file-name-as-directory
    (directory-file-name
     (expand-file-name
@@ -66,12 +66,12 @@ entry, and a registry push."
           load-file-name
           buffer-file-name
           default-directory)))))
-  "Absolute path of the cyberdeck-dashboard/ module directory.
+  "Absolute path of the aiu-cyber-desk/ module directory.
 
 A variable, not a defun, so it is read as one. Renames above this file
 never break it, and a full vault move needs no edit.")
 
-(defun cyberdeck-dashboard-new-widget (name)
+(defun aiu-cyber-desk-new-widget (name)
   "Create widgets/<NAME> from the widget skeleton. Mirrors the
 keyboard scaffolding writers: file-drop registration, one wanted-list
 line in engine/setup. Errors loudly when the file already exists."
@@ -80,7 +80,7 @@ line in engine/setup. Errors loudly when the file already exists."
     (user-error "Widget name must not be empty"))
   (let ((path (expand-file-name
                (format "widgets/%s" name)
-               cyberdeck-dashboard--module-dir)))
+               aiu-cyber-desk--module-dir)))
     (when (file-exists-p path)
       (user-error "Widget file exists: %s" path))
     (with-temp-file path
@@ -90,7 +90,7 @@ line in engine/setup. Errors loudly when the file already exists."
       ;; template emits no #+title:, #+filetags: or #+property: — the
       ;; first two are ignored, and the third falsely implies a
       ;; per-file lexical-binding control that does not exist.
-      (insert (format "* Cyberdeck %s Widget :EMACS_MECHANISM:\n:PROPERTIES:\n:ID:       %s\n:MM_PARENT: none\n:MM_ORDER:  78.4\n:END:\n\nDescribe the widget here.\n\n** Widget\n#+begin_src emacs-lisp\n(cyberdeck-dashboard-define-widget %s\n  :doc \"What this section shows.\"\n  :generate\n  ((insert \"\\n\")\n   (insert \"hello\")))\n#+end_src\n"
+      (insert (format "* Cyberdeck %s Widget :EMACS_MECHANISM:\n:PROPERTIES:\n:ID:       %s\n:MM_PARENT: none\n:MM_ORDER:  78.4\n:END:\n\nDescribe the widget here.\n\n** Widget\n#+begin_src emacs-lisp\n(aiu-cyber-desk-define-widget %s\n  :doc \"What this section shows.\"\n  :generate\n  ((insert \"\\n\")\n   (insert \"hello\")))\n#+end_src\n"
                       (capitalize name) (org-id-uuid) name)))
     (find-file path)
     (message "Widget created: %s (add one wanted-list line in engine/setup)" path)))
@@ -98,13 +98,13 @@ line in engine/setup. Errors loudly when the file already exists."
 
 ** Validator
 #+begin_src emacs-lisp
-(defun cyberdeck-dashboard--widget-files ()
+(defun aiu-cyber-desk--widget-files ()
   "Files in the module's widgets/ directory. Nil when it does not exist."
-  (let ((dir (expand-file-name "widgets" cyberdeck-dashboard--module-dir)))
+  (let ((dir (expand-file-name "widgets" aiu-cyber-desk--module-dir)))
     (and (file-directory-p dir)
          (directory-files dir nil "[^./]+$" t))))
 
-(defun cyberdeck-dashboard-validate ()
+(defun aiu-cyber-desk-validate ()
   "Check the widget registry against reality. Mirrors the keyboard
 validator: generator defined? item-generators entry present? wanted
 entries resolvable? Every widget has a file? No file without a widget?
@@ -119,7 +119,7 @@ never implemented. They sat there looking load-bearing because the old
 validator only checked that every *widget* had an aiu-context, never that
 anything *consumed* one. An orphan check is what catches that class."
   (let (problems)
-    (dolist (pair cyberdeck-dashboard--widget-registry)
+    (dolist (pair aiu-cyber-desk--widget-registry)
       (let* ((key (car pair))
              (len (cdr pair))
              (fn (cdr (assq key dashboard-item-generators))))
@@ -135,13 +135,13 @@ anything *consumed* one. An orphan check is what catches that class."
         (let ((file (expand-file-name
                      (format "widgets/%s" (string-remove-prefix "cyberdeck-"
                                                               (format "%s" key)))
-                     cyberdeck-dashboard--module-dir)))
+                     aiu-cyber-desk--module-dir)))
           (unless (file-exists-p file)
             (push (format "widget %s: registered but no file at %s" key file)
                   problems)))))
-    (dolist (name (cyberdeck-dashboard--order-file-keys))
+    (dolist (name (aiu-cyber-desk--order-file-keys))
       (when (and (string-prefix-p "cyberdeck-" (format "%s" name))
-                 (not (assq name cyberdeck-dashboard--widget-registry))
+                 (not (assq name aiu-cyber-desk--widget-registry))
                  (not (cdr (assq name dashboard-item-generators))))
         (push (format "order file %s: no widget file registers it" name) problems)))
     ;; The inverse: a file in widgets/ that no widget claims. This is the
@@ -149,14 +149,14 @@ anything *consumed* one. An orphan check is what catches that class."
     ;; they were added, instead of months later.
     (let ((claimed (mapcar (lambda (key)
                              (string-remove-prefix "cyberdeck-" (format "%s" key)))
-                           (mapcar #'car cyberdeck-dashboard--widget-registry))))
-      (dolist (file (cyberdeck-dashboard--widget-files))
+                           (mapcar #'car aiu-cyber-desk--widget-registry))))
+      (dolist (file (aiu-cyber-desk--widget-files))
         (unless (member (file-name-nondirectory file) claimed)
           (push (format "orphan file widgets/%s: no widget registers it"
                         (file-name-nondirectory file))
                 problems))))
     (when problems
-      (message "cyberdeck-dashboard: %d problem(s): %s"
+      (message "aiu-cyber-desk: %d problem(s): %s"
                (length problems) (mapconcat #'identity problems "; ")))
     problems))
 #+end_src

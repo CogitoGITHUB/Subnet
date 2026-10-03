@@ -32,7 +32,7 @@ NEXT UP after the dashboard: custom modeline.  (TODO)
 
 #+begin_src emacs-lisp
 (defvar cyberdeck-emacs--bootstrap-first-paths '("biomechanical-input-interface/"
-                                                   "cyberdeck-dashboard/")
+                                                   "aiu-cyber-desk/")
   "Path fragments whose units load before everything else, group by
 group in listed order (keyboard, then dashboard). Matched with
 `regexp-quote' against the unit's :file. Relative order inside each
@@ -43,7 +43,7 @@ group is unchanged.")
 order. Empty: path pinning covers the current bootstrap set.")
 
 (defvar cyberdeck-emacs--fundamental-first-paths
-  '("entering-the-machine/cyberdeck-dashboard/"
+  '("entering-the-machine/aiu-cyber-desk/"
     "the-screen/modeline/"
     "files/aiu-registration/cyberdeck/aiu-frame/"
     "files/aiu-registration/cyberdeck/biomechanical-input-interface/")
@@ -59,7 +59,7 @@ boot order. The dashboard opens only once its own units are all
 loaded (full render, never staged). Set per boot by
 `cyberdeck-emacs-compile-directory'; nil means unknown.")
 
-(defvar cyberdeck-emacs--always-recompile-paths '("cyberdeck-dashboard/")
+(defvar cyberdeck-emacs--always-recompile-paths '("aiu-cyber-desk/")
   "Path fragments whose units recompile fresh every boot, skipping
 every cache. Active-development escape hatch while the dashboard is
 being reworked: edits are live the moment a unit loads. Empty in

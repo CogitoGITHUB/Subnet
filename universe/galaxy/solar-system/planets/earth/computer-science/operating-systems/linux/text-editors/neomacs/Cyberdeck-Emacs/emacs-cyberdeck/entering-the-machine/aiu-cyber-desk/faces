@@ -1,4 +1,4 @@
-* Cyberdeck Dashboard Faces :EMACS_MECHANISM:S0:
+* AIU Cyber Desk Faces :EMACS_MECHANISM:S0:
 :PROPERTIES:
 :ID:       1069b25a-f16b-4095-a688-061d0aebaa8a
 :MM_PARENT: none
@@ -11,7 +11,7 @@ Pure-red face tuning plus apply. Edit freely. Two-decimal order keeps the group 
 ** Faces — Banner & Title
 
 #+begin_src emacs-lisp
-(defun cyberdeck/pure-red--dashboard-banner ()
+(defun cyberdeck/pure-red--aiu-cyber-desk-banner ()
   (with-eval-after-load 'dashboard
     (dolist (face '(dashboard-banner-logo-title dashboard-text-banner))
       (when (facep face)
@@ -22,7 +22,7 @@ Pure-red face tuning plus apply. Edit freely. Two-decimal order keeps the group 
 ** Faces — Headings
 
 #+begin_src emacs-lisp
-(defun cyberdeck/pure-red--dashboard-headings ()
+(defun cyberdeck/pure-red--aiu-cyber-desk-headings ()
   (with-eval-after-load 'dashboard
     (when (facep 'dashboard-heading)
       (set-face-attribute 'dashboard-heading nil
@@ -32,7 +32,7 @@ Pure-red face tuning plus apply. Edit freely. Two-decimal order keeps the group 
 ** Faces — Items
 
 #+begin_src emacs-lisp
-(defun cyberdeck/pure-red--dashboard-items ()
+(defun cyberdeck/pure-red--aiu-cyber-desk-items ()
   (with-eval-after-load 'dashboard
     (when (facep 'dashboard-items-face)
       (set-face-attribute 'dashboard-items-face nil
@@ -42,7 +42,7 @@ Pure-red face tuning plus apply. Edit freely. Two-decimal order keeps the group 
 ** Faces — Footer
 
 #+begin_src emacs-lisp
-(defun cyberdeck/pure-red--dashboard-footer ()
+(defun cyberdeck/pure-red--aiu-cyber-desk-footer ()
   (with-eval-after-load 'dashboard
     (dolist (face '(dashboard-footer dashboard-footer-icon-face))
       (when (facep face)
@@ -53,13 +53,13 @@ Pure-red face tuning plus apply. Edit freely. Two-decimal order keeps the group 
 ** Faces — Apply
 
 #+begin_src emacs-lisp
-(defun cyberdeck/pure-red--dashboard ()
-  (cyberdeck/pure-red--dashboard-banner)
-  (cyberdeck/pure-red--dashboard-headings)
-  (cyberdeck/pure-red--dashboard-items)
-  (cyberdeck/pure-red--dashboard-footer))
+(defun cyberdeck/pure-red--aiu-cyber-desk ()
+  (cyberdeck/pure-red--aiu-cyber-desk-banner)
+  (cyberdeck/pure-red--aiu-cyber-desk-headings)
+  (cyberdeck/pure-red--aiu-cyber-desk-items)
+  (cyberdeck/pure-red--aiu-cyber-desk-footer))
 
-(cyberdeck/pure-red--dashboard)
-(advice-add 'load-theme :after (lambda (&rest _) (cyberdeck/pure-red--dashboard)))
-(add-hook 'after-make-frame-functions (lambda (_frame) (cyberdeck/pure-red--dashboard)))
+(cyberdeck/pure-red--aiu-cyber-desk)
+(advice-add 'load-theme :after (lambda (&rest _) (cyberdeck/pure-red--aiu-cyber-desk)))
+(add-hook 'after-make-frame-functions (lambda (_frame) (cyberdeck/pure-red--aiu-cyber-desk)))
 #+end_src

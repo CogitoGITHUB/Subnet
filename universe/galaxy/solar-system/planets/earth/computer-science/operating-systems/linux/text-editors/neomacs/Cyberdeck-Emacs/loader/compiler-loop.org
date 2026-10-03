@@ -82,7 +82,7 @@ compiled, in completion order."
           (let ((i 0) (last nil))
             (dolist (u units)
               (setq i (1+ i))
-              (when (string-match-p "cyberdeck-dashboard/"
+              (when (string-match-p "aiu-cyber-desk/"
                                      (or (plist-get u :file) ""))
                 (setq last i)))
             last))

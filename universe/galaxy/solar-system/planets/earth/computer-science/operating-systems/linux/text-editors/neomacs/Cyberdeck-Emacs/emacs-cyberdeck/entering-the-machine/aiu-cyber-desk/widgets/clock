@@ -10,7 +10,7 @@ Live clock plus per-second updater.
 
 ** Widget
 #+begin_src emacs-lisp
-(cyberdeck-dashboard-define-widget clock
+(aiu-cyber-desk-define-widget clock
   :doc "Live clock plus per-second updater."
   :helpers
   ((defvar cyberdeck/clock-timer nil)

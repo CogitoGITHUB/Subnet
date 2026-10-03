@@ -17,7 +17,7 @@ section before every use.
 (defvar my/cyberdeck-org-prompt--specs)
 (defvar my/cyberdeck-prompt-registry)
 (defvar my/cyberdeck-template-registry)
-(defvar my/cyberdeck-dashboard-key-files)
+(defvar my/aiu-cyber-desk-key-files)
 ;; Session state, defined further down.
 (defvar my/cyberdeck-org-prompt--session)
 (defvar my/cyberdeck-org-prompt--session-p)
@@ -4424,7 +4424,7 @@ No directories anywhere: templates resolve by KEY tag scan.
   (interactive)
   (setq my/cyberdeck-aiu-context-key-files nil
         my/cyberdeck-template-registry nil
-        my/cyberdeck-dashboard-key-files nil)
+        my/aiu-cyber-desk-key-files nil)
   (message "aiu-context discovery cache cleared"))
 
 (defun my/cyberdeck-aiu-context-key-files ()
@@ -4511,12 +4511,12 @@ Dashboard widgets declared as `* KEY :…:DASHBOARD_AIU_CONTEXT:' files
 registry: drawer prompt machinery never sees these files (no shared
 alist, no kind fork, no template-registry).
 #+begin_src emacs-lisp
-(defvar my/cyberdeck-dashboard-key-files nil
+(defvar my/aiu-cyber-desk-key-files nil
   "Cached alist (KEY . FILE) from the :DASHBOARD_AIU_CONTEXT: tag scan.")
 
-(defvar my/cyberdeck-dashboard-specs (make-hash-table :test 'equal)
+(defvar my/aiu-cyber-desk-specs (make-hash-table :test 'equal)
   "Dashboard widget specs by downcased key symbol. Rebuilt wholesale
-by `my/cyberdeck-dashboard-register-all' — no diff, no
+by `my/aiu-cyber-desk-register-all' — no diff, no
 known-keys.")
 
 (defun my/cyberdeck--file-dashboard-keys (file)
@@ -4531,11 +4531,11 @@ known-keys.")
           (push (match-string 1) keys)))
       (nreverse keys))))
 
-(defun my/cyberdeck-dashboard-key-files ()
+(defun my/aiu-cyber-desk-key-files ()
   "Alist (KEY . FILE) for every :DASHBOARD_AIU_CONTEXT: level-1 KEY.
 Own walk, own cache: drawer prompt discovery is untouched."
-  (or my/cyberdeck-dashboard-key-files
-      (setq my/cyberdeck-dashboard-key-files
+  (or my/aiu-cyber-desk-key-files
+      (setq my/aiu-cyber-desk-key-files
             (let (out)
               (when (fboundp 'my/cyberdeck-root-dir)
                 (let ((root (my/cyberdeck-root-dir)))
@@ -4549,7 +4549,7 @@ Own walk, own cache: drawer prompt discovery is untouched."
                             (push (cons k f) out))))))))
               (nreverse out)))))
 
-(defun my/cyberdeck-dashboard-register-file (file)
+(defun my/aiu-cyber-desk-register-file (file)
   "Parse FILE into dashboard specs (KEY OPTIONS PLIST + :file).
 No kind fork, no prompt registration: dashboard declaration only.
 Failures message instead of aborting. Returns registered count."
@@ -4561,26 +4561,26 @@ Failures message instead of aborting. Returns registered count."
                                :options (nth 1 spec)
                                :plist (nth 2 spec)
                                :file file)
-                     my/cyberdeck-dashboard-specs)
+                     my/aiu-cyber-desk-specs)
             (setq count (1+ count))))
       (error (message "cyberdeck: dashboard aiu-context %s: %s"
                       (file-name-nondirectory file)
                       (error-message-string err))))
     count))
 
-(defun my/cyberdeck-dashboard-spec (name)
+(defun my/aiu-cyber-desk-spec (name)
   "Dashboard spec plist for NAME (string/symbol, any case), or nil."
   (when name
     (gethash (intern (downcase (if (symbolp name) (symbol-name name) name)))
-             my/cyberdeck-dashboard-specs)))
+             my/aiu-cyber-desk-specs)))
 
-(defun my/cyberdeck-dashboard-register-all ()
+(defun my/aiu-cyber-desk-register-all ()
   "Register every dashboard aiu-context. Rebuilds wholesale (clrhash
 first): no diff, no known-keys. Returns registered count."
-  (clrhash my/cyberdeck-dashboard-specs)
+  (clrhash my/aiu-cyber-desk-specs)
   (let ((count 0))
-    (dolist (pair (my/cyberdeck-dashboard-key-files))
-      (setq count (+ count (my/cyberdeck-dashboard-register-file (cdr pair)))))
+    (dolist (pair (my/aiu-cyber-desk-key-files))
+      (setq count (+ count (my/aiu-cyber-desk-register-file (cdr pair)))))
     count))
 #+end_src
 
@@ -4632,7 +4632,7 @@ aborting the whole batch.  Returns number of prompts registered."
               failures)))
      ;; Dashboard aiu-contexts: separate registry, same batch. Count
      ;; stays prompts-only (contract); dashboard reports for itself.
-     (let ((dash (my/cyberdeck-dashboard-register-all)))
+     (let ((dash (my/aiu-cyber-desk-register-all)))
        (when (> dash 0)
          (message "cyberdeck: %d dashboard aiu-context(s) registered"
                   dash)))

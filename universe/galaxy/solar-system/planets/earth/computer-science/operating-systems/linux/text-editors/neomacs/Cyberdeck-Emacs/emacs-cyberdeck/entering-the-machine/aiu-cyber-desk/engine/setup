@@ -1,4 +1,4 @@
-* Dashboard Setup :EMACS_MECHANISM:S0:
+* AIU Cyber Desk Setup :EMACS_MECHANISM:S0:
 :PROPERTIES:
 :ID:       797e199d-e94f-4e23-b316-d07a0694270f
 :MM_PARENT: none
@@ -17,33 +17,33 @@ from it, reconciles it on boot (append new, prune dead cyberdeck-*),
 and re-applies on manual save. The banner is structural and always
 renders first — it never belongs here.
 #+begin_src emacs-lisp
-(defvar cyberdeck-dashboard--default-items
+(defvar aiu-cyber-desk--default-items
   '((cyberdeck-clock . 1) (cyberdeck-commands . 1)
     (recents . 10) (bookmarks . 10) (registers . 10) (projects . 10)
     (cyberdeck-status . 1) (cyberdeck-todos . 1) (cyberdeck-sartre . 1))
   "Seed and empty-file fallback for the section order. Mirrors the
 aiu-context default key list.")
 
-(defvar cyberdeck-dashboard--stock-items
+(defvar aiu-cyber-desk--stock-items
   '((recents . 10) (bookmarks . 10) (registers . 10) (projects . 10)
     (agenda . 5))
   "Upstream sections and their lengths. Never pruned from the order file.")
 
-(defun cyberdeck-dashboard--order-file ()
+(defun aiu-cyber-desk--order-file ()
   "Absolute path of the section order file.
 Lives in admin/order/, beside the modeline's, so both bars' layouts are
 in one place. Anchored on the vault root rather than the module
 directory: this file is read and written at runtime (see
-`cyberdeck-dashboard--reconcile-order-file' and the widget
+`aiu-cyber-desk--reconcile-order-file' and the widget
 scaffolder), and admin/ is excluded from unit discovery, so the loader
 will never compile it — which is what a data file wants."
   (expand-file-name "admin/order/dashboard widgets"
                    cyberdeck-emacs-vault-root))
 
-(defun cyberdeck-dashboard--order-file-keys ()
+(defun aiu-cyber-desk--order-file-keys ()
   "Item keys top-down from the order file (symbols), or nil when the
 file is missing or holds no headings."
-  (let ((f (cyberdeck-dashboard--order-file)))
+  (let ((f (aiu-cyber-desk--order-file)))
     (when (file-exists-p f)
       (with-temp-buffer
         (insert-file-contents f)
@@ -55,10 +55,10 @@ file is missing or holds no headings."
                 (push k keys))))
           (nreverse keys))))))
 
-(defun cyberdeck-dashboard--entry-length (name)
+(defun aiu-cyber-desk--entry-length (name)
   "Length for item NAME: the widget registry first, then stock, else 1.
 The registry is authoritative, and it is the widget's own
-`cyberdeck-dashboard-define-widget' :length — declared in the file that
+`aiu-cyber-desk-define-widget' :length — declared in the file that
 renders the section, next to the code that decides how tall it is.
 
 There was an aiu-context-file step ahead of this, and it was worse than
@@ -66,49 +66,49 @@ redundant: every widget aiu-context declared `:LENGTH: 1` while the
 sections they claimed to measure rendered 2 to 6 lines, and one of them
 (`todos') has no fixed height at all. So the step was both wrong and
 unread, and removing it changed no rendering at all."
-  (or (cdr (assq name cyberdeck-dashboard--widget-registry))
-      (cdr (assq name cyberdeck-dashboard--stock-items))
+  (or (cdr (assq name aiu-cyber-desk--widget-registry))
+      (cdr (assq name aiu-cyber-desk--stock-items))
       1))
 
-(defun cyberdeck-dashboard--apply-order ()
+(defun aiu-cyber-desk--apply-order ()
   "Compose `dashboard-items' from the order file: file order first,
 then any present-but-unlisted items in current order. Unknown file
 keys are skipped (audit warns). Returns the items."
-  (let* ((file-keys (cyberdeck-dashboard--order-file-keys))
-         (names (or file-keys (mapcar #'car cyberdeck-dashboard--default-items)))
+  (let* ((file-keys (aiu-cyber-desk--order-file-keys))
+         (names (or file-keys (mapcar #'car aiu-cyber-desk--default-items)))
          (have (mapcar #'car dashboard-item-generators))
          (out nil))
     (dolist (name names)
       (when (memq name have)
-        (push (cons name (cyberdeck-dashboard--entry-length name)) out)))
+        (push (cons name (aiu-cyber-desk--entry-length name)) out)))
     ;; Unlisted cyberdeck widgets append (registry-driven, never stock:
     ;; stock sections appear only when the order file lists them).
     (setq out (nreverse out))
     (let (extra)
-      (dolist (pair (reverse cyberdeck-dashboard--widget-registry))
+      (dolist (pair (reverse aiu-cyber-desk--widget-registry))
         (unless (assq (car pair) out)
           (push pair extra)))
       (setq dashboard-items (nconc out (nreverse extra))))
     dashboard-items))
 
-(defun cyberdeck-dashboard--reconcile-order-file ()
+(defun aiu-cyber-desk--reconcile-order-file ()
   "Append registry widgets missing from the order file at EOF; prune
 `cyberdeck-*' headings with no registered widget and no generator;
 seed the file when missing. Never reorders, never touches stock.
 Mirrors the aiu-context boot reconcile. Returns t when the file changed."
-  (let* ((f (cyberdeck-dashboard--order-file))
+  (let* ((f (aiu-cyber-desk--order-file))
          (changed nil))
     (if (not (file-exists-p f))
         (progn
           (with-temp-file f
-            (insert "* Dashboard Section Order\n\n")
-            (dolist (pair cyberdeck-dashboard--default-items)
+            (insert '"* AIU Cyber Desk Section Order\n\n")
+            (dolist (pair aiu-cyber-desk--default-items)
               (insert (format "** %s\n" (car pair)))))
           t)
       (let ((have (mapcar #'car dashboard-item-generators))
-            (keys (cyberdeck-dashboard--order-file-keys)))
+            (keys (aiu-cyber-desk--order-file-keys)))
         ;; Append new registry widgets in load order.
-        (dolist (pair (reverse cyberdeck-dashboard--widget-registry))
+        (dolist (pair (reverse aiu-cyber-desk--widget-registry))
           (let ((name (car pair)))
             (unless (memq name keys)
               (setq keys (nconc keys (list name)))
@@ -118,7 +118,7 @@ Mirrors the aiu-context boot reconcile. Returns t when the file changed."
               (kept nil))
           (dolist (k keys)
             (unless (and (string-prefix-p "cyberdeck-" (format "%s" k))
-                         (not (assq k cyberdeck-dashboard--widget-registry))
+                         (not (assq k aiu-cyber-desk--widget-registry))
                          (not (memq k have)))
               (push k kept)))
           (setq keys (nreverse kept))
@@ -126,48 +126,48 @@ Mirrors the aiu-context boot reconcile. Returns t when the file changed."
             (setq changed t)))
         (when changed
           (with-temp-file f
-            (insert "* Dashboard Section Order\n\n")
+            (insert '"* AIU Cyber Desk Section Order\n\n")
             (dolist (k keys)
               (insert (format "** %s\n" k)))))
         changed))))
 
-(defun cyberdeck-dashboard--audit-order-file ()
+(defun aiu-cyber-desk--audit-order-file ()
   "Warn about order-file keys matching neither registry nor stock
 generators. Passive audit, never modifies — mirrors the aiu-context
 reinforce audit."
   (let ((have (mapcar #'car dashboard-item-generators)))
-    (dolist (name (cyberdeck-dashboard--order-file-keys))
+    (dolist (name (aiu-cyber-desk--order-file-keys))
       (unless (or (memq name have)
-                  (assq name cyberdeck-dashboard--stock-items))
-        (message "cyberdeck-dashboard: order file %s matches no widget" name)))))
+                  (assq name aiu-cyber-desk--stock-items))
+        (message "aiu-cyber-desk: order file %s matches no widget" name)))))
 
-(defun cyberdeck-dashboard--order-after-save ()
+(defun aiu-cyber-desk--order-after-save ()
   "Re-apply the order file when the user saves it; refresh the live
 dashboard. Mirrors the aiu-context drawer-order save hook."
   (when (and buffer-file-name
              (equal (expand-file-name buffer-file-name)
-                    (cyberdeck-dashboard--order-file)))
-    (cyberdeck-dashboard--apply-order)
+                    (aiu-cyber-desk--order-file)))
+    (aiu-cyber-desk--apply-order)
     (when (and (get-buffer "*dashboard*")
                (fboundp 'dashboard-refresh-buffer))
       (with-current-buffer "*dashboard*"
         (dashboard-refresh-buffer)))))
 
-(defun cyberdeck-dashboard--order-find-file-hook ()
+(defun aiu-cyber-desk--order-find-file-hook ()
   "Install the order save hook buffer-locally. Mirrors the aiu-context
 find-file installer."
   (when (and buffer-file-name
              (equal (expand-file-name buffer-file-name)
-                    (cyberdeck-dashboard--order-file)))
+                    (aiu-cyber-desk--order-file)))
     (add-hook 'after-save-hook
-              #'cyberdeck-dashboard--order-after-save nil t)))
+              #'aiu-cyber-desk--order-after-save nil t)))
 
-(add-hook 'find-file-hook #'cyberdeck-dashboard--order-find-file-hook)
+(add-hook 'find-file-hook #'aiu-cyber-desk--order-find-file-hook)
 
 ;; Registry is full (setup loads last): reconcile, compose, audit.
-(cyberdeck-dashboard--reconcile-order-file)
-(cyberdeck-dashboard--apply-order)
-(cyberdeck-dashboard--audit-order-file)
+(aiu-cyber-desk--reconcile-order-file)
+(aiu-cyber-desk--apply-order)
+(aiu-cyber-desk--audit-order-file)
 #+end_src
 
 ** Mode hook & keys

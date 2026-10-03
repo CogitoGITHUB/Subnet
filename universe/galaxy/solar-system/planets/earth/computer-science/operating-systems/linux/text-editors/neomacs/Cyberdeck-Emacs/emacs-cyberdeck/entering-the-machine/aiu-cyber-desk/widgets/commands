@@ -10,15 +10,15 @@ Command index plus dashboard keys.
 
 ** Widget
 #+begin_src emacs-lisp
-(cyberdeck-dashboard-define-widget commands
+(aiu-cyber-desk-define-widget commands
   :doc "Command index plus dashboard keys."
   :helpers
-  ((defun cyberdeck/dashboard-keys ()
+  ((defun aiu-cyber-desk/dashboard-keys ()
      (setq-local mode-line-format nil)
      (local-set-key (kbd "S") (lambda () (interactive) (cyberdeck-emacs-doctor)))
      (local-set-key (kbd "D") (lambda () (interactive) (dired (cyberdeck-emacs-get-org-directory)))))
 
-   (add-hook 'dashboard-mode-hook #'cyberdeck/dashboard-keys))
+   (add-hook 'dashboard-mode-hook #'aiu-cyber-desk/dashboard-keys))
   :generate
   ((insert "\n")
    (insert "Cyberdeck")

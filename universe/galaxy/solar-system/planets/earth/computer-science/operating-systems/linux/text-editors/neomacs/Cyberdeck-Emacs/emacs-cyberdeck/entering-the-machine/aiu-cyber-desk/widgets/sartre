@@ -10,7 +10,7 @@ Random Sartre quote.
 
 ** Widget
 #+begin_src emacs-lisp
-(cyberdeck-dashboard-define-widget sartre
+(aiu-cyber-desk-define-widget sartre
   :doc "Random Sartre quote."
   :helpers
   ((defvar cyberdeck/sartre-quotes

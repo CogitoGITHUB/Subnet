@@ -1,4 +1,7 @@
 * Loader — core/errors
+:PROPERTIES:
+:AIU: TODO
+:END:
 Module of the Cyberdeck-Emacs loader. No :EMACS_MECHANISM: tags here: this directory is outside the discovery root and never loads as units. Tangled together with the other modules, in listed order, into a single cyberdeck-emacs.el.
 
 ** Errors — data shape

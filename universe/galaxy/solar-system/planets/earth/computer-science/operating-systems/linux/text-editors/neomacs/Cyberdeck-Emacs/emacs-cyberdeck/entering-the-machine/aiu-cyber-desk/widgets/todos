@@ -10,7 +10,7 @@ Module TODOs from every .org in Cyberdeck-Emacs/modules/.
 
 ** Widget
 #+begin_src emacs-lisp
-(cyberdeck-dashboard-define-widget todos
+(aiu-cyber-desk-define-widget todos
   :doc "Module TODOs section."
   :generate
   ((let ((todos (cyberdeck-emacs-splash--module-todos)))

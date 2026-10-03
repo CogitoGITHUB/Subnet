@@ -12,7 +12,7 @@ which always evaluates before modules do).
 
 ** Widget
 #+begin_src emacs-lisp
-(cyberdeck-dashboard-define-widget status
+(aiu-cyber-desk-define-widget status
   :doc "Loader boot stats as a dashboard section."
   :generate
   ((let* ((errors (length (cyberdeck-emacs-errors-list)))
