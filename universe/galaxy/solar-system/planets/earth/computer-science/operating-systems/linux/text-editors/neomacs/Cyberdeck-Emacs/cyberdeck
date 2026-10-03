@@ -1746,7 +1746,9 @@ find an ancestor that lives in S1."
   (condition-case nil
       (let (s0 s1 s2)
         (dolist (u ordered)
-          (let ((stage (cyberdeck-emacs--stage-of-unit u)))
+          (let ((stage (if cyberdeck-emacs--boot-ignore-stages
+                           'S1
+                         (cyberdeck-emacs--stage-of-unit u))))
             (cond
              ((and (eq stage 'S2)
                    (not (cyberdeck-emacs--bootstrap-unit-p u)))
@@ -2130,7 +2132,8 @@ files are never read, loaded, or compiled — by any caller."
             (setq cyberdeck-emacs--s2-boot-files nil)
             (let ((s1f nil) (s2f nil))
               (dolist (f all)
-                (if (equal (plist-get (gethash f cyberdeck-emacs--discovery-index) :stage) "S2")
+                (if (and (not cyberdeck-emacs--boot-ignore-stages)
+                         (equal (plist-get (gethash f cyberdeck-emacs--discovery-index) :stage) "S2"))
                     (push f s2f)
                   (push f s1f)))
               (setq all (nreverse s1f))
@@ -2204,9 +2207,10 @@ trusted.  Computed once per boot, never persisted.")
 (defun cyberdeck-emacs--report-discovery (from-index rescanned fallback reason)
   "Record and print this boot's one-line discovery summary."
   (setq cyberdeck-emacs--discovery-report
-        (format "discovery: from-index=%d rescanned=%d fallback=%s%s"
+        (format "discovery: from-index=%d rescanned=%d fallback=%s mode=%s%s"
                 from-index rescanned
                 (if fallback "yes" "no")
+                (if cyberdeck-emacs--boot-ignore-stages "full" "staged")
                 (if (and fallback reason) (format " (%s)" reason) "")))
   (message "cyberdeck-emacs: %s" cyberdeck-emacs--discovery-report))
 
@@ -4145,6 +4149,58 @@ recompile.  With FORCE (prefix argument) recompile everything."
 
 #+end_src
 
+** Boot — mode prompt
+#+begin_src emacs-lisp
+(defcustom cyberdeck-emacs-boot-mode 'full
+  "Boot mode when no prompt answer applies: `full' or `staged'.
+Full ignores stage tags for the boot (every unit loads as S1); the
+index keeps its :stage values untouched."
+  :type '(choice (const full) (const staged)) :group 'cyberdeck-emacs)
+
+(defcustom cyberdeck-emacs-boot-prompt-timeout 4
+  "Seconds to wait for a boot-mode key.  Nil means never ask."
+  :type '(choice (integer :tag "Seconds") (const :tag "Never ask" nil))
+  :group 'cyberdeck-emacs)
+
+(defvar cyberdeck-emacs--boot-ignore-stages nil
+  "Non-nil when this boot ignores stage tags (full mode).  Set once by
+`cyberdeck-emacs--prompt-boot-mode' before discovery; read by the file
+partition and the unit partition.  Never persisted.")
+
+(defun cyberdeck-emacs--prompt-boot-mode ()
+  "Ask staged/full/rescan unless this boot must not be interrupted.
+Skips (uses the default) in batch, on daemons, when the timeout is
+nil, and on restart-emacs reboots (see the advice below, which passes
+a sentinel through the re-exec environment).  Returns the mode and
+records it for the boot."
+  (setq cyberdeck-emacs--boot-ignore-stages nil)
+  (let ((mode cyberdeck-emacs-boot-mode))
+    (unless (or noninteractive (daemonp)
+                (null cyberdeck-emacs-boot-prompt-timeout)
+                (getenv "CYBERDECK_RESTART"))
+      (let ((k (read-char-exclusive
+                (format "Boot: [s]taged / [f]ull (%ss, default %s)"
+                        cyberdeck-emacs-boot-prompt-timeout
+                        cyberdeck-emacs-boot-mode)
+                nil cyberdeck-emacs-boot-prompt-timeout)))
+        (cond ((eq k ?s) (setq mode 'staged))
+              ((eq k ?f) (setq mode 'full))
+              ((eq k ?r)
+               (cyberdeck-emacs-stage-rescan)
+               (setq mode 'full)))))
+    (when (getenv "CYBERDECK_RESTART")
+      (setenv "CYBERDECK_RESTART" nil))
+    (when (eq mode 'full)
+      (setq cyberdeck-emacs--boot-ignore-stages t))
+    mode))
+
+(with-eval-after-load 'restart-emacs
+  (advice-add 'restart-emacs :before
+              (lambda (&rest _)
+                (setenv "CYBERDECK_RESTART" "1"))))
+#+end_src
+
+
 ** Entry — boot
 Progress goes to *Messages* and the dashboard header; the dashboard
 opens at the end, with or without file arguments.
@@ -4169,6 +4225,7 @@ opens at the end, with or without file arguments.
     (cyberdeck-emacs-errors-clear-boot-state)
     (when cyberdeck-emacs-mode-line-indicator
       (cyberdeck-emacs-doctor-indicator-mode 1))
+    (cyberdeck-emacs--prompt-boot-mode)
     (message "AIU Cyberdeck: reading modules/ …")
     (condition-case err
         ;; Warning capture during boot comes from the foundation
