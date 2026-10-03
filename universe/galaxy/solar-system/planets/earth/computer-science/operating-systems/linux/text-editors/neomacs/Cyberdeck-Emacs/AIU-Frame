@@ -441,14 +441,14 @@ total number of emacs-lisp blocks tangled."
                                      "^#\\+begin_src[ \t]+emacs-lisp[ \t]*$"
                                      nil t)
                                (setq n (1+ n)))))
-                         n))))
+                         n)))
           (when (and tangled (= source 0))
             (lwarn 'foundation :warning
                    "loader tangle produced nothing from %s" file))
           (when (< source (or tangled 0))
             (lwarn 'foundation :warning
                    "loader tangle dropped blocks: %d of %d emacs-lisp src blocks from %s"
-                   (or tangled 0) source (file-name-nondirectory file)))))
+                   (or tangled 0) source (file-name-nondirectory file))))))
     ;; (my/init-aiu "[init] loading literate loader…")
     (load el nil t)))
 
