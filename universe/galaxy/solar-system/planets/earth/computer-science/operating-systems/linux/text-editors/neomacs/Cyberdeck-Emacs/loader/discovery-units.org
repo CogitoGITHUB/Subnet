@@ -37,7 +37,6 @@ files are never read, loaded, or compiled — by any caller."
          ;; failed, and NIL means "trust nothing": every file then falls
          ;; through to the per-file stat+scan path, i.e. today's exact
          ;; behaviour.
-          (cyberdeck-emacs--index-load)
           (let* ((stats (cyberdeck-emacs--stat-table directory))
                  (table (car stats))
                  (reason (cdr stats))
@@ -51,8 +50,7 @@ files are never read, loaded, or compiled — by any caller."
             (setq cyberdeck-emacs--discovery-listed (length all))
             (let ((s1f nil) (s2f nil))
               (dolist (f all)
-                (if (and (not cyberdeck-emacs--boot-ignore-stages)
-                         (equal (plist-get (gethash f cyberdeck-emacs--discovery-index) :stage) "S2"))
+                (if (equal (plist-get (gethash f cyberdeck-emacs--discovery-index) :stage) "S2")
                     (push f s2f)
                   (push f s1f)))
               (setq all (nreverse s1f))
@@ -114,6 +112,55 @@ files are never read, loaded, or compiled — by any caller."
              directory)
     nil))
 
+(defvar cyberdeck-emacs--refresh-listed nil
+  "Walked absolute paths from the last refresh.  Stage selection
+intersects this with index :stages, so no per-file syscalls.")
+
+(defun cyberdeck-emacs--refresh-changed-entries (directory &optional extension)
+  "Walk DIRECTORY once; refresh index entries for new/changed files only.
+Unchanged files (listing sig matches index mtime/size AND :stages
+present) are never read.  Entries missing :stages are rebuilt even on
+a sig match (one-time v4->v5 cost).  Nil listing means trust nothing:
+every file is ensured.  Returns (LISTED REFRESHED)."
+  (cyberdeck-emacs--index-load)
+  (if (not (file-directory-p directory))
+      (list 0 0)
+    (let* ((ext (or extension "[^./]+$"))
+           (all (seq-remove (lambda (f) (or (string-match-p "/\\.git/" f)
+                                            (string-match-p "/admin/" f)
+                                            (string-match-p "/WIP/" f)
+                                            (string-match-p
+                                             "\\." (file-name-nondirectory f))))
+                            (directory-files-recursively directory ext)))
+           (stats (cyberdeck-emacs--stat-table directory))
+           (table (car stats))
+           (refreshed 0))
+      (setq cyberdeck-emacs--refresh-listed all)
+      (setq cyberdeck-emacs--discovery-listed (length all))
+      (dolist (f all)
+        (let* ((entry (and table (gethash f cyberdeck-emacs--discovery-index)))
+               (sig (and table (gethash f table)))
+               (ok (and entry sig
+                        (equal (plist-get entry :mtime) (car sig))
+                        (equal (plist-get entry :size) (cdr sig))
+                        (plist-get entry :stages))))
+          (unless ok
+            (setq refreshed (1+ refreshed))
+            (when entry
+              (remhash f cyberdeck-emacs--discovery-index))
+            (cyberdeck-emacs--index-ensure f))))
+      (list (length all) refreshed))))
+
+(defun cyberdeck-emacs--files-for-stage (stage)
+  "Absolute paths from the last refresh whose index :stages contain STAGE.
+STAGE is a string (\"S0\", \"S1\", \"S2\").  In-memory only: no file I/O."
+  (let (out)
+    (dolist (f (or cyberdeck-emacs--refresh-listed '()))
+      (let ((entry (gethash f cyberdeck-emacs--discovery-index)))
+        (when (and entry (member stage (plist-get entry :stages)))
+          (push f out))))
+    (nreverse out)))
+
 (defvar cyberdeck-emacs--stat-table nil
   "ABSOLUTE PATH -> (MTIME . SIZE) for every file under the vault, from ONE
 `find -printf' call.  NIL means the call was unusable and nothing may be
@@ -133,7 +180,7 @@ trusted.  Computed once per boot, never persisted.")
                 listed
                 from-index rescanned
                 (if fallback "yes" "no")
-                (if cyberdeck-emacs--boot-ignore-stages "full" "staged")
+                (if (and (boundp 'cyberdeck-emacs--boot-mode-current) (eq cyberdeck-emacs--boot-mode-current 'full)) "full" "staged")
                 (if (and fallback reason) (format " (%s)" reason) "")))
   (message "cyberdeck-emacs: %s" cyberdeck-emacs--discovery-report))
 

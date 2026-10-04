@@ -53,8 +53,8 @@ recompile.  With FORCE (prefix argument) recompile everything."
 #+begin_src emacs-lisp
 (defcustom cyberdeck-emacs-boot-mode 'full
   "Boot mode when no prompt answer applies: `full' or `staged'.
-Full ignores stage tags for the boot (every unit loads as S1); the
-index keeps its :stage values untouched."
+Stages always run; mode only decides S2: `full' runs S0, S1, S2 as
+pipelines at boot, `staged' runs S0, S1 then defers S2 to first use."
   :type '(choice (const full) (const staged)) :group 'cyberdeck-emacs)
 
 (defcustom cyberdeck-emacs-boot-prompt-timeout 4
@@ -63,17 +63,19 @@ index keeps its :stage values untouched."
   :group 'cyberdeck-emacs)
 
 (defvar cyberdeck-emacs--boot-ignore-stages nil
-  "Non-nil when this boot ignores stage tags (full mode).  Set once by
-`cyberdeck-emacs--prompt-boot-mode' before discovery; read by the file
-partition and the unit partition.  Never persisted.")
+  "Obsolete: always nil.  Stages run on every boot; mode only decides S2.")
+
+(defvar cyberdeck-emacs--boot-mode-current nil
+  "Boot mode for this boot: `staged' or `full'.  Set once by
+`cyberdeck-emacs--prompt-boot-mode'.  Never persisted.")
 
 (defun cyberdeck-emacs--prompt-boot-mode ()
   "Ask staged/full/rescan unless this boot must not be interrupted.
 Skips (uses the default) in batch, on daemons, when the timeout is
 nil, and on restart-emacs reboots (see the advice below, which passes
 a sentinel through the re-exec environment).  Returns the mode and
-records it for the boot."
-  (setq cyberdeck-emacs--boot-ignore-stages nil)
+records it in `cyberdeck-emacs--boot-mode-current'.  Stages run on
+every boot; mode only decides S2 (pipelined vs deferred)."
   (let ((mode cyberdeck-emacs-boot-mode))
     (unless (or noninteractive (daemonp)
                 (null cyberdeck-emacs-boot-prompt-timeout)
@@ -87,11 +89,11 @@ records it for the boot."
               ((eq k ?f) (setq mode 'full))
               ((eq k ?r)
                (cyberdeck-emacs-stage-rescan)
-               (setq mode 'full)))))
+               (setq mode 'staged)))))
     (when (getenv "CYBERDECK_RESTART")
       (setenv "CYBERDECK_RESTART" nil))
-    (when (eq mode 'full)
-      (setq cyberdeck-emacs--boot-ignore-stages t))
+    (setq mode (if (eq mode 'full) 'full 'staged))
+    (setq cyberdeck-emacs--boot-mode-current mode)
     mode))
 
 (with-eval-after-load 'restart-emacs
@@ -267,11 +269,14 @@ opens at the end, with or without file arguments.
       ;; loaded every unit must say so before anything optional runs.  That
       ;; ordering bug is why "AIU Contexts complete" had not printed, and
       ;; boot-times.log had not been written, since 2026-10-01.
-      (message "AIU Cyberdeck: AIU Contexts complete — %d units, %d error(s), %d warning(s)%s"
+      (message "AIU Cyberdeck: AIU Contexts complete — %d units, %d error(s), %d warning(s)%s%s"
                (length cyberdeck-emacs--unit-times)
                (length (cyberdeck-emacs-errors-list))
                (length (cyberdeck-emacs-warnings-list))
-               (if fatal " (BOOT THREW — see *Warnings*)" ""))
+               (if fatal " (BOOT THREW — see *Warnings*)" "")
+               (if (and (boundp 'cyberdeck-emacs--stage-times) cyberdeck-emacs--stage-times)
+                   (concat " [" (mapconcat (lambda (s) (format "%s %.1fs/%du" (nth 0 s) (nth 1 s) (nth 2 s))) (reverse cyberdeck-emacs--stage-times) ", ") "]")
+                 ""))
       ;; Status moves to the minibuffer now that boot logging is done:
       ;; enabling here (never in a unit) keeps *Messages* complete
       ;; through the whole boot, and the done message above shows

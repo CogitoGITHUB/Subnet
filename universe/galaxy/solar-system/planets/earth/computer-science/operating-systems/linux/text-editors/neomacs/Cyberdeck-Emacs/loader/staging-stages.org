@@ -55,27 +55,28 @@ loop — they carry the keymap and the frame."
       (and (plist-get unit :id)
            (member (plist-get unit :id) cyberdeck-emacs--bootstrap-first-ids))))
 
+(defvar cyberdeck-emacs--partition-failures 0
+  "Partition failures this boot.  Shown in the boot summary; never reset silently.")
+
 (defun cyberdeck-emacs--partition-stages (ordered)
   "Split ORDERED into boot units and S2 units.  The boot list is S0
 (Fundamental) first in fundamental-group order, then S1; both halves
-keep ORDERED's relative order, so an S1 boot with no tags is
-byte-for-byte what it was before staging existed.  A bootstrap unit
-tagged S2 is forced to S1 whatever its tag says; an S0 tag always wins
-over bootstrap pinning.  Never throws: any failure degrades to all-S1,
-which is the always-safe stage.
+keep ORDERED's relative order.  Stage tags are always honored: there
+is no full-mode bypass.  A bootstrap unit tagged S2 is forced to S1
+whatever its tag says; an S0 tag always wins over bootstrap pinning.
+Loud: on failure records, bumps `cyberdeck-emacs--partition-failures',
+and signals instead of falling back to a combined list.
 
 Also records `cyberdeck-emacs--units-by-id' so an on-demand S2 load can
 find an ancestor that lives in S1."
-  (condition-case nil
+  (condition-case err
       (let (s0 s1 s2)
         (dolist (u ordered)
-          ;; Full mode ignores S2 (everything loads) but NEVER ignores
-          ;; S0: Fundamental leads in every mode, so the screen is up
-          ;; before the rest reads and compiles.
+          ;; Tags always honored: S2 always splits (staged defers it,
+          ;; full runs it as a third pipeline).  S0 leads in every mode.
           (let ((true (cyberdeck-emacs--stage-of-unit u)))
             (cond
              ((and (eq true 'S2)
-                   (not cyberdeck-emacs--boot-ignore-stages)
                    (not (cyberdeck-emacs--bootstrap-unit-p u)))
               (push u s2))
              ((eq true 'S0)
@@ -109,11 +110,10 @@ find an ancestor that lives in S1."
                 (nreverse a)))
         (cons cyberdeck-emacs--s1-units cyberdeck-emacs--s2-units)))
     (error
-     (setq cyberdeck-emacs--s1-units ordered
-           cyberdeck-emacs--s2-units nil
-           cyberdeck-emacs--units-by-id nil
-           cyberdeck-emacs--units-by-key nil)
-     (cons ordered nil))))
+     (setq cyberdeck-emacs--partition-failures (1+ cyberdeck-emacs--partition-failures))
+     (message "cyberdeck-emacs: partition-stages failed (%d): %s -- no fallback list, stopping"
+              cyberdeck-emacs--partition-failures (error-message-string err))
+     (signal (car err) (cdr err)))))
 
 (defun cyberdeck-emacs--stage-of-unit (unit)
   "The stage of UNIT: `S0', `S1', `S2', or nil when discovery found no tag.

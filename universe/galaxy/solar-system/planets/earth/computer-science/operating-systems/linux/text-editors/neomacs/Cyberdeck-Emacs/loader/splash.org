@@ -30,29 +30,45 @@ eval (interpreted fallback), or error.  Written to unit-times.log by
 
 (defun cyberdeck-emacs--write-unit-times ()
   "Persist per-unit durations and load statuses, slowest first, with a
-total line plus loaded/compiled/eval/error counts — so the next boot
-shows exactly what recompiled and what replayed from .elc.
+total line plus loaded/compiled/eval/error counts and per-stage
+seconds — so the next boot shows exactly what recompiled and what
+replayed from .elc, per stage.  Rows carry stage as 4th element.
 Overwrites the previous boot's log (latest only).  Never throws:
 timing must never break a boot."
   (condition-case nil
       (let ((rows (sort (copy-sequence cyberdeck-emacs--unit-times)
                         (lambda (a b) (> (car a) (car b)))))
             (total 0.0)
-            (loaded 0) (compiled 0) (ev 0) (err 0))
+            (loaded 0) (compiled 0) (ev 0) (err 0)
+            (by-stage (make-hash-table :test 'equal)))
         (dolist (r cyberdeck-emacs--unit-times)
           (setq total (+ total (car r)))
           (pcase (nth 2 r)
             ('loaded (setq loaded (1+ loaded)))
             ('compiled (setq compiled (1+ compiled)))
             ('eval (setq ev (1+ ev)))
-            (_ (setq err (1+ err)))))
+            (_ (setq err (1+ err))))
+          (let* ((st (or (nth 3 r) "?"))
+                 (cell (gethash st by-stage)))
+            (puthash st (cons (+ (or (car cell) 0.0) (car r))
+                              (1+ (or (cdr cell) 0)))
+                     by-stage)))
         (with-temp-file (cyberdeck-emacs--unit-times-file)
-          (insert (format ";; unit-times %.1fs total, %d units (%d loaded %d compiled %d eval %d error), %s\n"
+          (insert (format ";; unit-times %.1fs total, %d units (%d loaded %d compiled %d eval %d error)%s, %s\n"
                           total (length rows) loaded compiled ev err
+                          (if (> (hash-table-count by-stage) 0)
+                              (concat " [" (mapconcat
+                                            (lambda (st)
+                                              (let ((cell (gethash st by-stage)))
+                                                (format "%s %.1fs/%du" st (car cell) (cdr cell))))
+                                            (sort (hash-table-keys by-stage) #'string<)
+                                            ", ") "]")
+                            "")
                           (current-time-string)))
           (dolist (r rows)
-            (insert (format "%8.2f %-9s %s\n"
-                            (car r) (or (nth 2 r) 'unknown) (cadr r))))))
+            (insert (format "%8.2f %-9s %-3s %s\n"
+                            (car r) (or (nth 2 r) 'unknown)
+                            (or (nth 3 r) "?") (cadr r))))))
     (error nil)))
 
 (defun cyberdeck-emacs-splash--record-duration (seconds)
@@ -134,6 +150,10 @@ timing must never break a boot."
   "Non-nil once this boot opened the dashboard for live progress.
 Manual reloads never steal the frame: only boots open it.")
 
+(defvar cyberdeck-emacs--boot-stage nil
+  "Current boot pipeline stage name (\"S0\", \"S1\", \"S2\").  Set by the
+stage runner so the splash shows per-stage counts.  Nil outside a run.")
+
 (defun cyberdeck-emacs--progress-line (current total file status)
   "One-line progress text for *Messages*."
   (let ((label (pcase status
@@ -142,7 +162,7 @@ Manual reloads never steal the frame: only boots open it.")
                       (:compiling "Compiling") (:loading "Loading")
                       (:reading "Reading")
                       (_ "Processing"))))))
-    (concat (format "AIU Cyberdeck %d/%d · %s: " current total label)
+    (concat (format "AIU Cyberdeck %s %d/%d · %s: " (or cyberdeck-emacs--boot-stage "?") current total label)
             (or (and file (cyberdeck-emacs-file-title file)) "?")
             (pcase status
               ('compiled " [no cache — compiling fresh]")

@@ -102,10 +102,13 @@ are inside the pinned block or parentless).  Never throws."
 
 ** Ordering — chain topology
 #+begin_src emacs-lisp
-(defun cyberdeck-emacs--collect-units (files)
+(defun cyberdeck-emacs--collect-units (files &optional stage)
   "Order tagged heading units across FILES: chained parents-first via a
 cycle-guarded walk (siblings by :MM_ORDER:), chainless units appended
 after by file and position.  Returns ordered unit plists.
+With STAGE (S0, S1 or S2), only that stage's units enter the chain;
+chain order is computed within the stage.  Cross-stage parents count
+as roots here: their stage already loaded (or loads on demand).
 
 Refuses to pass a file through whose index record claims units but whose
 extracted parts are empty.  That combination is impossible for a real
@@ -113,7 +116,7 @@ file and is the exact signature of the memo-not-populated bug: the unit
 then writes a code-less .el and every `defun' in it reports VOID at load,
 which is a silent, whole-unit code loss.  Signalling loudly here is
 deliberate -- this function is on the boot path and must not swallow it."
-  (let* ((states (mapcan (lambda (f)
+  (let* ((states (seq-filter (lambda (s) (or (null stage) (eq (cyberdeck-emacs--stage-of-unit s) stage))) (mapcan (lambda (f)
                            (let ((units (cyberdeck-emacs-file-tagged-units f)))
                              (when (and (null units)
                                         (plist-get (gethash f cyberdeck-emacs--discovery-index)
@@ -126,7 +129,7 @@ populated, writing it would drop the unit's code silently"
                                        (plist-put (copy-sequence u)
                                                   :file f))
                                      units)))
-                         files))
+                         files)))
          (chained (seq-filter (lambda (s) (or (plist-get s :parent)
                                               (plist-get s :order)))
                               states))
@@ -189,7 +192,21 @@ populated, writing it would drop the unit's code silently"
     (when (> (length free) 0)
       (message "cyberdeck-emacs: %d chainless unit(s) appended after chain"
                (length free)))
-    (cyberdeck-emacs--pin-bootstrap-units ordered)))
+    (let ((pinned (cyberdeck-emacs--pin-bootstrap-units ordered)))
+      (if (eq stage 'S0)
+          (let (f-ordered rest)
+            (setq rest pinned)
+            (dolist (frag cyberdeck-emacs--fundamental-first-paths)
+              (let (group com)
+                (dolist (u rest)
+                  (if (string-match-p (regexp-quote frag)
+                                      (or (plist-get u :file) ""))
+                      (push u group)
+                    (push u com)))
+                (setq f-ordered (nconc f-ordered (nreverse group))
+                      rest (nreverse com))))
+            (nconc f-ordered rest))
+        pinned))))
 
 (defun cyberdeck-emacs--units-files (units)
   "Unique files of ordered UNITS, in order."

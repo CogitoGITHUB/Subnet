@@ -10,6 +10,11 @@ Module of the Cyberdeck-Emacs loader. No :EMACS_MECHANISM: tags here: this direc
 (add-to-list 'display-buffer-alist
              '("\\*Compile-Log\\*" display-buffer-no-window))
 
+(defvar cyberdeck-emacs--stage-times nil
+  "Per-stage pipeline results this boot: ((STAGE-NAME SECONDS UNITS) ...).
+STAGE-NAME is \"S0\", \"S1\" or \"S2\".  Read by the boot summary and
+unit-times log.  Most recent stage first.")
+
 (defun cyberdeck-emacs-compile-directory (&optional progress-fn force)
   "Compile every tagged heading unit under the active Org directory.
 Units from all files order parents-first via `cyberdeck-emacs--collect-units'.
@@ -36,33 +41,31 @@ compiled, in completion order."
   (cyberdeck-emacs-errors-clear-boot-state)
   (dolist (b '("*Warnings*" "*Compile-Log*"))
     (when (get-buffer b) (kill-buffer b)))
-  (let* ((discovered (cyberdeck-emacs--ordered-units
-                      "[^./]+$" (cyberdeck-emacs-get-org-directory)
-                      progress-fn))
-         ;; Staging: split once, here, so every count below covers only
-         ;; what actually runs. With no :stage: tag anywhere the S1 half is
-         ;; `discovered' unchanged and nothing downstream can tell.
-         (partition (and discovered
-                         (or (cyberdeck-emacs--partition-stages
-                              (car discovered))
-                             (cons nil nil))))
-         (units (or (car partition) '()))
-         (s2 (cdr partition))
+  (let* ((mode (if (and (boundp 'cyberdeck-emacs--boot-mode-current)
+                        cyberdeck-emacs--boot-mode-current)
+                   cyberdeck-emacs--boot-mode-current
+                 cyberdeck-emacs-boot-mode))
+         (mode (if (eq mode 'full) 'full 'staged))
+         (dir (cyberdeck-emacs-get-org-directory))
+         ;; One refresh for the whole tree: new/changed files are scanned
+         ;; once up front so their stages are known.  Unchanged files cost
+         ;; no reads here; each stage below selects its own files from the
+         ;; index and never re-reads them.
+         (refreshed (cyberdeck-emacs--refresh-changed-entries dir "[^./]+$"))
+         ;; Full runs S0, S1, S2 as pipelines at boot; staged runs S0, S1
+         ;; then defers S2 to first use.  Tags are always honored.
+         (stages (if (eq mode 'full) '(S0 S1 S2) '(S0 S1)))
          (compiled '()) (pulled '())
-         (current 0) (total (length units))
-         (phase nil) (phase-count 0)
+         (run-s0 nil) (run-s1 nil) (run-s2 nil)
          (paren-errors 0) (void-errors 0))
     ;; Refuse to come up empty.  A scanner that stops seeing
-    ;; `:EMACS_MECHANISM:' yields an empty unit list, and an empty list
-    ;; would otherwise boot a silently bare Emacs: no error, no warning,
-    ;; nothing but missing keymaps.  Anything found empty, or a batch of
-    ;; fresh scans that lost units, stops here where the cause is visible.
-    (when (or (null discovered)
-              (null (car discovered))
+    ;; `:EMACS_MECHANISM:' yields no files, and an empty boot would
+    ;; otherwise come up a silently bare Emacs: no error, no warning,
+    ;; nothing but missing keymaps.  A walked-nothing refresh, or a batch
+    ;; of fresh scans that lost units, stops here where it is visible.
+    (when (or (zerop (car refreshed))
               cyberdeck-emacs--scan-regressions)
-      (let ((why (cond ((null discovered) "discovery returned nothing")
-                       ((null (car discovered))
-                        "discovery found zero units")
+      (let ((why (cond ((zerop (car refreshed)) "refresh walked zero files")
                        (t (format "%d file(s) lost units on a fresh scan: %s"
                                   (length cyberdeck-emacs--scan-regressions)
                                   (mapconcat
@@ -75,24 +78,45 @@ compiled, in completion order."
         (setq cyberdeck-emacs--scan-regressions nil)
         (signal 'error
                 (format "cyberdeck-emacs: refusing to boot on a broken scan — %s. Tag headlines with :EMACS_MECHANISM: and re-run." why))))
-    ;; Discovery is done: the unit loop below is compilation.
+    ;; Refresh is done: each stage below is its own pipeline.
     (setq cyberdeck-emacs--boot-phase :compiling)
-    ;; Position of the last dashboard-group unit: the dashboard opens
-    ;; only past it (full render, never staged).
-    (setq cyberdeck-emacs--dashboard-complete-at
-          (let ((i 0) (last nil))
-            (dolist (u units)
-              (setq i (1+ i))
-              (when (string-match-p "aiu-cyber-desk/"
-                                     (or (plist-get u :file) ""))
-                (setq last i)))
-            last))
     ;; *Warnings* must not steal the dashboard frame mid-loop: bury it
-    ;; until the loop is done. Real problems still pop at the sweep
-    ;; (after the loop) and stay listed for the Errors button.
+    ;; until all stages are done. Real problems still pop at the sweep
+    ;; (after the loops) and stay listed for the Errors button.
     (let ((display-buffer-alist
            (cons '("\\*Warnings\\*" display-buffer-no-window)
                  display-buffer-alist)))
+     (dolist (stage stages)
+      (let* ((sname (symbol-name stage))
+             (files (cyberdeck-emacs--files-for-stage sname)))
+        (setq cyberdeck-emacs--boot-stage sname)
+        (message "cyberdeck-emacs: %s pipeline starting (%d files)" sname (length files))
+        ;; Warm session memos from trusted index entries: no reads here
+        ;; for unchanged files (refresh already scanned the changed ones).
+        (dolist (f files)
+          (let ((entry (gethash f cyberdeck-emacs--discovery-index)))
+            (when entry
+              (cyberdeck-emacs--index-apply f entry))))
+        (let* ((units (cyberdeck-emacs--collect-units files stage))
+               (current 0) (total (length units))
+               (st0 (float-time)))
+          ;; An empty S0 means the scan is broken: refuse loudly instead
+          ;; of booting a half-screen Emacs.  Later stages may run small,
+          ;; so only S0 gates here.
+          (when (and (eq stage 'S0) (null units))
+            (signal 'error "cyberdeck-emacs: refusing to boot on a broken scan — S0 collected zero units. Tag headlines with :EMACS_MECHANISM: and re-run."))
+          ;; Dashboard opens once its own S0 units are live (full render,
+          ;; never staged): position of the last dashboard-group unit in
+          ;; this stage's order.
+          (when (eq stage 'S0)
+            (setq cyberdeck-emacs--dashboard-complete-at
+                  (let ((i 0) (last nil))
+                    (dolist (u units)
+                      (setq i (1+ i))
+                      (when (string-match-p "aiu-cyber-desk/"
+                                             (or (plist-get u :file) ""))
+                        (setq last i)))
+                    last)))
      (dolist (u units)
       (let ((file (plist-get u :file))
             (t0 (float-time))
@@ -106,20 +130,8 @@ compiled, in completion order."
                                    (regexp-quote frag)
                                    (or (plist-get u :file) "")))
                                 cyberdeck-emacs--always-recompile-paths))))
-        ;; Stage gate: S0 fully reads+compiles+loads before S1 starts,
-        ;; S1 before S2 (full mode).  The boot list already runs staged;
-        ;; this marks each boundary so phases are observable, never mixed.
-        (let ((st (cyberdeck-emacs--stage-of-unit u)))
-          (when (and phase (not (eq st phase)))
-            (when (eq phase 'S0)
-              (when (fboundp 'my/boot-mark) (my/boot-mark "s0-end"))
-              (message "cyberdeck-emacs: S0 phase complete (%d units) — S1 starting"
-                       phase-count))
-            (when (and (eq phase 'S1) (eq st 'S2))
-              (message "cyberdeck-emacs: S1 phase complete — S2 starting"))
-            (setq phase-count 0))
-          (setq phase st)
-          (setq phase-count (1+ phase-count)))
+        ;; One stage per pipeline: boundaries are announced per stage
+        ;; (start/finish messages), never mixed within this loop.
         (setq current (1+ current))
         (when progress-fn (funcall progress-fn current total file))
         (unless (member file pulled)
@@ -142,7 +154,7 @@ compiled, in completion order."
                              file u parts profile (or force fresh))))
                 (unless (member file compiled)
                   (push file compiled))
-                (push (list (- (float-time) t0) file status)
+                (push (list (- (float-time) t0) file status sname)
                       cyberdeck-emacs--unit-times)))
           (error
            (let ((msg (error-message-string err)))
@@ -154,26 +166,61 @@ compiled, in completion order."
                :level 'file :file file :message msg))
            (when my/loader-strict-p
              (signal (car err) (cdr err)))
-            (push (list (- (float-time) t0) file 'error)
+            (push (list (- (float-time) t0) file 'error sname)
                   cyberdeck-emacs--unit-times))))))
-     ;; S1 is done: everything below is on-demand work. Mark the moment
-     ;; so boot time splits into discovery, the S1 loop, and the rest.
-     (when (fboundp 'my/boot-mark) (my/boot-mark "s1-end"))
-     (when (> (length s2) 0)
-       (let* ((staged (cyberdeck-emacs--register-s2-autoloads s2))
-              (skipped (length cyberdeck-emacs--s2-clobber-skips)))
-         (message "cyberdeck-emacs: %d unit(s) staged S2 for first use (%s)"
-                  staged
-                  (if (zerop skipped)
-                      "no symbol collisions"
-                    (format "%d symbol(s) left alone: a real function already owns the name"
-                            skipped)))
-         (dolist (pair cyberdeck-emacs--s2-clobber-skips)
-           (message "cyberdeck-emacs:   %s keeps its real function (declared by %s:%s)"
-                    (car pair)
-                    (file-name-nondirectory (or (plist-get (cdr pair) :file) "?"))
-                    (or (plist-get (cdr pair) :start-line) 1)))
-         (setq cyberdeck-emacs--s2-clobber-skips nil)))
+          ;; Stage pipeline finished: record seconds and mark the boundary,
+          ;; so boot time splits per stage.  The next stage starts after this.
+          (let ((dt (- (float-time) st0)))
+            (push (list sname dt (length units)) cyberdeck-emacs--stage-times)
+            (cond ((eq stage 'S0) (setq run-s0 units))
+                  ((eq stage 'S1) (setq run-s1 units))
+                  ((eq stage 'S2) (setq run-s2 units)))
+            (when (fboundp 'my/boot-mark)
+              (my/boot-mark (concat (downcase sname) "-end")))
+            (message "cyberdeck-emacs: %s pipeline complete (%d units, %.1fs)"
+                     sname (length units) dt)))
+        ))
+      ;; Staged mode defers S2 to first use (index records only, no reads).
+      ;; Full mode already ran S2 as a pipeline above.
+      (when (eq mode 'staged)
+        (let ((s2files (cyberdeck-emacs--files-for-stage "S2")))
+          (dolist (f s2files)
+            (let ((entry (gethash f cyberdeck-emacs--discovery-index)))
+              (when entry
+                (cyberdeck-emacs--index-apply f entry))))
+          (let ((s2units (cyberdeck-emacs--collect-units s2files 'S2)))
+            (setq run-s2 s2units)
+            (when (> (length s2units) 0)
+              (let* ((staged (cyberdeck-emacs--register-s2-autoloads s2units))
+                     (skipped (length cyberdeck-emacs--s2-clobber-skips)))
+                (message "cyberdeck-emacs: %d unit(s) staged S2 for first use (%s)"
+                         staged
+                         (if (zerop skipped)
+                             "no symbol collisions"
+                           (format "%d symbol(s) left alone: a real function already owns the name"
+                                   skipped)))
+                (dolist (pair cyberdeck-emacs--s2-clobber-skips)
+                  (message "cyberdeck-emacs:   %s keeps its real function (declared by %s:%s)"
+                           (car pair)
+                           (file-name-nondirectory (or (plist-get (cdr pair) :file) "?"))
+                           (or (plist-get (cdr pair) :start-line) 1)))
+                (setq cyberdeck-emacs--s2-clobber-skips nil))))))
+     ;; Sweep compat (diagnostic only): expose this boot's units for the
+     ;; void-defun sweep.  Loading already ran per stage above, never as
+     ;; one list.  S1-units stays the boot list (S0 first, then S1).
+     (setq cyberdeck-emacs--s1-units (append (or run-s0 '()) (or run-s1 '()))
+           cyberdeck-emacs--s2-units (or run-s2 '())
+           cyberdeck-emacs--units-by-key
+           (let (a)
+             (dolist (u (append (or run-s0 '()) (or run-s1 '()) (or run-s2 '())))
+               (push (cons (cyberdeck-emacs--unit-key u) u) a))
+             (nreverse a))
+           cyberdeck-emacs--units-by-id
+           (let (a)
+             (dolist (u (append (or run-s0 '()) (or run-s1 '()) (or run-s2 '())))
+               (when (plist-get u :id)
+                 (push (cons (plist-get u :id) u) a)))
+             (nreverse a)))
      (cyberdeck-emacs--prune-elc-cache)
      (when-let ((log (get-buffer "*Compile-Log*")))
        ;; One pointer in the warnings list, not an error: warnings live
