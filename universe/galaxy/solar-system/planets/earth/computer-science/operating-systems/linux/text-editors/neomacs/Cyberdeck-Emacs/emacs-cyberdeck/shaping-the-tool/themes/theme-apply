@@ -31,6 +31,8 @@
                (not (string-match-p "ks-lead-face" (symbol-name face))))
       (set-face-attribute face nil :background 'unspecified))))
 
+(when (custom-theme-p 'modus-operandi)
+  (enable-theme 'modus-operandi))
 (cyberdeck/pure-red)
 (cyberdeck/nuke-backgrounds)
 (advice-add 'load-theme :after (lambda (&rest _) (cyberdeck/pure-red) (cyberdeck/nuke-backgrounds)))
