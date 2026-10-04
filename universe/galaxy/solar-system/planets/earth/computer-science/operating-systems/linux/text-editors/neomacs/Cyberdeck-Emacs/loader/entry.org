@@ -180,18 +180,6 @@ silently is worse than not booting.  Honors
     (cyberdeck-emacs-errors-save-log)
     (unless fatal
       (cyberdeck-emacs-maybe-freeze-on-clean-boot))
-    (let ((errn (length (cyberdeck-emacs-errors-list)))
-          (warnn (length (cyberdeck-emacs-warnings-list))))
-      (message "cyberdeck-emacs: %s%d error(s), %d warning(s)%s%s"
-               (if fatal "BOOT THREW - " "")
-               errn warnn
-               (if (and (not (zerop (+ errn warnn))) (not fatal))
-                   " — details in *Warnings*" "")
-               ;; Filtering is never silent: say what was dropped.
-               (if (zerop cyberdeck-emacs--third-party-warning-count)
-                   ""
-                 (format " (%d third-party package warning(s) filtered)"
-                         cyberdeck-emacs--third-party-warning-count))))
     ;; Void-defun sweep: verify critical functions actually exist.
     ;; Diagnostic only: when one is void the message names the check
     ;; (sweep), the defining unit's file, its tier this boot, its cache id
@@ -334,7 +322,54 @@ silently is worse than not booting.  Honors
                   (if (default-value 'mode-line-format)
                       (setq cyberdeck-emacs--custom-line-active t)
                     (when (boundp 'my/saved-mode-line-format)
-                      (setq-default mode-line-format my/saved-mode-line-format)))))))
+                      (setq-default mode-line-format my/saved-mode-line-format)))))
+      ;; Errors and warnings close the boot: summary, details, display.
+      ;; Moved to the end so the log tail and the screen both finish on
+      ;; what needs fixing.  Every item is guarded: a broken entry must
+      ;; never break boot end.
+      (let ((errn (length (cyberdeck-emacs-errors-list)))
+            (warnn (length (cyberdeck-emacs-warnings-list))))
+        (message "cyberdeck-emacs: %s%d error(s), %d warning(s)%s%s"
+                 (if fatal "BOOT THREW - " "")
+                 errn warnn
+                 (if (and (not (zerop (+ errn warnn))) (not fatal))
+                     " — details in *Warnings*" "")
+                 (if (zerop cyberdeck-emacs--third-party-warning-count)
+                     ""
+                   (format " (%d third-party package warning(s) filtered)"
+                           cyberdeck-emacs--third-party-warning-count)))
+        (let ((n 0))
+          (dolist (e (cyberdeck-emacs-errors-list))
+            (when (< n 30)
+              (setq n (1+ n))
+              (message "  ERROR: %s"
+                       (or (ignore-errors
+                             (format "%s%s%s%s: %s"
+                                     (or (and (cyberdeck-emacs-error-entry-file e)
+                                              (file-name-nondirectory (cyberdeck-emacs-error-entry-file e))) "?")
+                                     (let ((el (ignore-errors (cyberdeck-emacs-error-entry-line e))))
+                                       (if el (format ":%s" el) ""))
+                                     (let ((pk (ignore-errors (cyberdeck-emacs-error-entry-package e))))
+                                       (if pk (format " [%s]" pk) ""))
+                                     (let ((lv (ignore-errors (cyberdeck-emacs-error-entry-level e))))
+                                       (if lv (format " %s" lv) ""))
+                                     (or (ignore-errors (cyberdeck-emacs-error-entry-message e)) "?")))
+                           (ignore-errors (prin1-to-string e))))))
+          (dolist (w (cyberdeck-emacs-warnings-list))
+            (when (< n 30)
+              (setq n (1+ n))
+              (message "  WARNING: %s"
+                       (or (ignore-errors
+                             (format "%s%s: %s"
+                                     (or (plist-get w :file) "?")
+                                     (let ((ty (plist-get w :type)))
+                                       (if ty (format " %s" ty) ""))
+                                     (or (plist-get w :message) "?")))
+                           (ignore-errors (prin1-to-string w)))))))
+        (when (and (not (zerop (+ errn warnn)))
+                   (not noninteractive)
+                   (get-buffer "*Warnings*"))
+          (pop-to-buffer "*Warnings*")))))
 #+end_src
 
 ** Entry — provide
