@@ -51,16 +51,12 @@ recompile.  With FORCE (prefix argument) recompile everything."
 
 ** Boot — mode prompt
 #+begin_src emacs-lisp
-(defcustom cyberdeck-emacs-boot-mode 'full
-  "Boot mode when no prompt answer applies: `full' or `staged'.
-Stages always run; mode only decides S2: `full' runs S0, S1, S2 as
-pipelines at boot, `staged' runs S0, S1 then defers S2 to first use."
+(defcustom cyberdeck-emacs-boot-mode 'staged
+  "Boot mode: `staged' or `full'.  Default staged: S0 and S1 load at
+boot (everything needed), S2 units load on first use via autoloads.
+`full' additionally runs S2 as a third pipeline at boot.  No prompt:
+S2 stays deferred until first use unless customized."
   :type '(choice (const full) (const staged)) :group 'cyberdeck-emacs)
-
-(defcustom cyberdeck-emacs-boot-prompt-timeout 4
-  "Seconds to wait for a boot-mode key.  Nil means never ask."
-  :type '(choice (integer :tag "Seconds") (const :tag "Never ask" nil))
-  :group 'cyberdeck-emacs)
 
 (defvar cyberdeck-emacs--boot-ignore-stages nil
   "Obsolete: always nil.  Stages run on every boot; mode only decides S2.")
@@ -70,31 +66,16 @@ pipelines at boot, `staged' runs S0, S1 then defers S2 to first use."
 `cyberdeck-emacs--prompt-boot-mode'.  Never persisted.")
 
 (defun cyberdeck-emacs--prompt-boot-mode ()
-  "Ask staged/full/rescan unless this boot must not be interrupted.
-Skips (uses the default) in batch, on daemons, when the timeout is
-nil, and on restart-emacs reboots (see the advice below, which passes
-a sentinel through the re-exec environment).  Returns the mode and
-records it in `cyberdeck-emacs--boot-mode-current'.  Stages run on
-every boot; mode only decides S2 (pipelined vs deferred)."
-  (message "AIU Cyberdeck: boot-mode prompt…")
+  "Record this boot's mode without asking: staged unless customized.
+Returns the mode and records it in
+`cyberdeck-emacs--boot-mode-current'.  Stages run on every boot; mode
+only decides S2 (pipelined vs deferred).  Rescan via M-x
+`cyberdeck-emacs-stage-rescan', which then runs staged."
+  (message "AIU Cyberdeck: staged boot…")
   (redisplay t)
-  (let ((mode cyberdeck-emacs-boot-mode))
-    (unless (or noninteractive (daemonp)
-                (null cyberdeck-emacs-boot-prompt-timeout)
-                (getenv "CYBERDECK_RESTART"))
-      (let ((k (read-char-exclusive
-                (format "Boot: [s]taged / [f]ull (%ss, default %s)"
-                        cyberdeck-emacs-boot-prompt-timeout
-                        cyberdeck-emacs-boot-mode)
-                nil cyberdeck-emacs-boot-prompt-timeout)))
-        (cond ((eq k ?s) (setq mode 'staged))
-              ((eq k ?f) (setq mode 'full))
-              ((eq k ?r)
-               (cyberdeck-emacs-stage-rescan)
-               (setq mode 'staged)))))
-    (when (getenv "CYBERDECK_RESTART")
-      (setenv "CYBERDECK_RESTART" nil))
-    (setq mode (if (eq mode 'full) 'full 'staged))
+  (when (getenv "CYBERDECK_RESTART")
+    (setenv "CYBERDECK_RESTART" nil))
+  (let ((mode (if (eq cyberdeck-emacs-boot-mode 'full) 'full 'staged)))
     (setq cyberdeck-emacs--boot-mode-current mode)
     mode))
 
