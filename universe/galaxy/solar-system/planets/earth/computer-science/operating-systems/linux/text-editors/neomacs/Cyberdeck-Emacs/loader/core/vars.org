@@ -1,5 +1,8 @@
 
 * Cyberdeck Emacs
+:PROPERTIES:
+:AIU: TODO
+:END:
 
 #+begin_src emacs-lisp
 ;;; -*- lexical-binding: t -*-

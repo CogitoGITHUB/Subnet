@@ -1,4 +1,4 @@
-* Modus Declare :EMACS_MECHANISM:S0:
+* Theme Declare :EMACS_MECHANISM:S0:
 :PROPERTIES:
 :ID:       c62fe1cb-98fd-49db-affe-c78d10fc2753
 :MM_PARENT: none
@@ -7,65 +7,65 @@
 
 
 #+begin_src emacs-lisp
-(defun modus-themes-declare (name family description background-mode core-palette user-palette overrides-palette)
+(defun theme-declare (name family description background-mode core-palette user-palette overrides-palette)
   "Declare NAME theme that belongs to FAMILY.
 All of DESCRIPTION, BACKGROUND-MODE, CORE-PALETTE, USER-PALETTE,
-OVERRIDES-PALETTE have the same meaning as in `modus-themes-theme'.
+OVERRIDES-PALETTE have the same meaning as in `theme-theme'.
 
-To simply register the theme, use `modus-themes-register'."
+To simply register the theme, use `theme-register'."
   (custom-declare-theme
    name (intern (format "%s-theme" name))
    description
    (list :kind 'color-scheme :background-mode background-mode :family family
-         :modus-core-palette core-palette :modus-user-palette user-palette
-         :modus-overrides-palette overrides-palette :modus-documentation description)))
+         :theme-core-palette core-palette :theme-user-palette user-palette
+         :theme-overrides-palette overrides-palette :theme-documentation description)))
 
-(defun modus-themes-register (name)
-  "Add NAME theme to `modus-themes-registered-items'.
+(defun theme-register (name)
+  "Add NAME theme to `theme-registered-items'.
 To actually declare a theme, instantiating with together with its
-properties, use `modus-themes-declare'."
-  (add-to-list 'modus-themes-registered-items name))
+properties, use `theme-declare'."
+  (add-to-list 'theme-registered-items name))
 
 ;;;###autoload
-(defun modus-themes-theme (name family description background-mode core-palette user-palette overrides-palette &optional custom-faces custom-variables)
-  "Define a Modus theme or derivative thereof.
+(defun theme-theme (name family description background-mode core-palette user-palette overrides-palette &optional custom-faces custom-variables)
+  "Define a theme or derivative thereof.
 NAME is the name of the new theme.  FAMILY is the collection of themes
 it belongs to.  DESCRIPTION is its documentation string.
 BACKGROUND-MODE is either `dark' or `light', in reference to the theme's
 background color.  The CORE-PALETTE, USER-PALETTE, and OVERRIDES-PALETTE
 are symbols of variables which define palettes commensurate with
-`modus-themes-operandi-palette'.
+`palette-light'.
 
 The optional CUSTOM-FACES and CUSTOM-VARIABLES are joined together with
-the `modus-themes-faces' and `modus-themes-custom-variables',
+the `theme-faces' and `theme-custom-variables',
 respectively.  A derivative theme defining those is thus overriding what
-the Modus themes have by default.
+the themes have by default.
 
-Consult the manual for details on how to build a theme on top of the
-`modus-themes': Info node `(modus-themes) Build on top of the Modus themes'."
+Consult the upstream manual (see the header of `theme-options') for
+details on how to build a theme on top of the `cyberdeck' family."
   (let ((theme-exists-p (get name 'theme-feature))
         (faces (append
                 (symbol-value custom-faces)
-                modus-themes-faces))
+                theme-faces))
         (variables (append
-                    modus-themes-custom-variables
+                    theme-custom-variables
                     (symbol-value custom-variables)
                     (list `'(frame-background-mode ',background-mode)))))
     (unless theme-exists-p
-      (modus-themes-declare
+      (theme-declare
        name family
        description background-mode
        core-palette user-palette overrides-palette)
-      (unless (eq family 'modus-themes)
-        (modus-themes-register name)))
-    (let ((palette (modus-themes--get-theme-palette-subr name :with-overrides :with-user-palette)))
+      (unless (eq family 'cyberdeck)
+        (theme-register name)))
+    (let ((palette (theme--get-theme-palette-subr name :with-overrides :with-user-palette)))
       (eval
        `(let* ((c '((class color) (min-colors 256)))
-               (palette (modus-themes--get-theme-palette-subr ',name :with-overrides :with-user-palette))
+               (palette (theme--get-theme-palette-subr ',name :with-overrides :with-user-palette))
                ,@(mapcar
                   (lambda (entry)
                     (let ((name (car entry)))
-                      (list name `(modus-themes-retrieve-palette-value ',name palette))))
+                      (list name `(theme-retrieve-palette-value ',name palette))))
                   palette))
           (custom-theme-set-faces
            ',name
@@ -79,17 +79,17 @@ Consult the manual for details on how to build a theme on top of the
 
 ;;;; Use theme colors
 
-(defun modus-themes--with-colors-get-palette (theme)
-  "Get THEME palette for `modus-themes-with-colors'.
+(defun theme--with-colors-get-palette (theme)
+  "Get THEME palette for `theme-with-colors'.
 Return (list CORE USER OVERRIDES) palettes."
   (when-let* ((properties (get theme 'theme-properties))
-              (core-palette (symbol-value (plist-get properties :modus-core-palette))))
-    (let* ((user-palette (symbol-value (plist-get properties :modus-user-palette)))
-           (overrides-palette (symbol-value (plist-get properties :modus-overrides-palette)))
-           (all-overrides (append overrides-palette modus-themes-common-palette-overrides)))
+              (core-palette (symbol-value (plist-get properties :theme-core-palette))))
+    (let* ((user-palette (symbol-value (plist-get properties :theme-user-palette)))
+           (overrides-palette (symbol-value (plist-get properties :theme-overrides-palette)))
+           (all-overrides (append overrides-palette palette-common-overrides)))
       (list core-palette user-palette all-overrides))))
 
-(defun modus-themes--with-colors-resolve-palette-sort (colors)
+(defun theme--with-colors-resolve-palette-sort (colors)
   "Sort all COLORS in the theme's palette.
 Put all named colors before semantic color mappings.  A named color is a
 symbol whose value is a string.  A semantic color mapping is a symbol
@@ -110,91 +110,91 @@ whose value is another symbol, which ultimately resolves to a string or
            (semantic-unique (funcall unique-fn semantic)))
       (nreverse (nconc semantic-unique named-unique)))))
 
-(defmacro modus-themes-with-colors (&rest body)
+(defmacro theme-with-colors (&rest body)
   "Evaluate BODY with colors from current palette bound."
   (declare (indent 0))
   `(condition-case data
-       (when-let* ((theme (modus-themes-get-current-theme))
-                   (palette (modus-themes--with-colors-get-palette theme)))
+       (when-let* ((theme (theme-get-current-theme))
+                   (palette (theme--with-colors-get-palette theme)))
          (let ((bindings
                 (append
                  '((c '((class color) (min-colors 256))) (unspecified 'unspecified))
                  (cl-remove-duplicates (apply #'append palette) :key #'car))))
            (eval (nconc `(cl-symbol-macrolet ,bindings) ',body))))
-     (error (message "Error in modus-themes-with-colors: %s" data))))
+     (error (message "Error in theme-with-colors: %s" data))))
 
-;;;; Declare all the Modus themes
+;;;; Declare all the themes
 
-(defconst modus-themes-with-properties
-  '((modus-operandi-deuteranopia modus-themes "Deuteranopia-optimized theme with a white background." light modus-themes-operandi-deuteranopia-palette modus-operandi-deuteranopia-palette-user modus-operandi-deuteranopia-palette-overrides)
-    (modus-operandi modus-themes "Elegant, highly legible theme with a white background." light modus-themes-operandi-palette modus-operandi-palette-user modus-operandi-palette-overrides)
-    (modus-operandi-tinted modus-themes "Elegant, highly legible theme with a light ochre background." light modus-themes-operandi-tinted-palette modus-operandi-tinted-palette-user modus-operandi-tinted-palette-overrides)
-    (modus-operandi-tritanopia modus-themes "Tritanopia-optimized theme with a white background." light modus-themes-operandi-tritanopia-palette modus-operandi-tritanopia-palette-user modus-operandi-tritanopia-palette-overrides)
-    (modus-vivendi-deuteranopia modus-themes "Deuteranopia-optimized theme with a black background." dark modus-themes-vivendi-deuteranopia-palette modus-vivendi-deuteranopia-palette-user modus-vivendi-deuteranopia-palette-overrides)
-    (modus-vivendi modus-themes "Elegant, highly legible theme with a black background." dark modus-themes-vivendi-palette modus-vivendi-palette-user modus-vivendi-palette-overrides)
-    (modus-vivendi-tinted modus-themes "Elegant, highly legible theme with a night sky background." dark modus-themes-vivendi-tinted-palette modus-vivendi-tinted-palette-user modus-vivendi-tinted-palette-overrides)
-    (modus-vivendi-tritanopia modus-themes "Tritanopia-optimized theme with a black background." dark modus-themes-vivendi-tritanopia-palette modus-vivendi-tritanopia-palette-user modus-vivendi-tritanopia-palette-overrides)))
+(defconst theme-with-properties
+  '((light-deuteranopia cyberdeck "Deuteranopia-optimized theme with a white background." light palette-light-deuteranopia palette-light-deuteranopia-user palette-light-deuteranopia-overrides)
+    (light cyberdeck "Elegant, highly legible theme with a white background." light palette-light palette-light-user palette-light-overrides)
+    (light-tinted cyberdeck "Elegant, highly legible theme with a light ochre background." light palette-light-tinted palette-light-tinted-user palette-light-tinted-overrides)
+    (light-tritanopia cyberdeck "Tritanopia-optimized theme with a white background." light palette-light-tritanopia palette-light-tritanopia-user palette-light-tritanopia-overrides)
+    (dark-deuteranopia cyberdeck "Deuteranopia-optimized theme with a black background." dark palette-dark-deuteranopia palette-dark-deuteranopia-user palette-dark-deuteranopia-overrides)
+    (dark cyberdeck "Elegant, highly legible theme with a black background." dark palette-dark palette-dark-user palette-dark-overrides)
+    (dark-tinted cyberdeck "Elegant, highly legible theme with a night sky background." dark palette-dark-tinted palette-dark-tinted-user palette-dark-tinted-overrides)
+    (dark-tritanopia cyberdeck "Tritanopia-optimized theme with a black background." dark palette-dark-tritanopia palette-dark-tritanopia-user palette-dark-tritanopia-overrides)))
 
-(defvar modus-themes--declared-p nil)
+(defvar theme--declared-p nil)
 
-(defun modus-themes-declare-themes ()
-  "Declare the Modus themes."
-  (unless modus-themes--declared-p
-    (dolist (theme modus-themes-with-properties)
-      (apply #'modus-themes-declare theme))
-    (setq modus-themes--declared-p t)))
+(defun theme-declare-themes ()
+  "Declare the themes."
+  (unless theme--declared-p
+    (dolist (theme theme-with-properties)
+      (apply #'theme-declare theme))
+    (setq theme--declared-p t)))
 
-(modus-themes-declare-themes)
+(theme-declare-themes)
 
-;;;; Accept all Modus themes and their derivatives
+;;;; Accept all themes and their derivatives
 
 ;;;###autoload
-(define-minor-mode modus-themes-include-derivatives-mode
-  "When enabled, all Modus themes commands cover derivatives as well.
-Otherwise, they only consider the `modus-themes-items'.
+(define-minor-mode theme-include-derivatives-mode
+  "When enabled, all themes commands cover derivatives as well.
+Otherwise, they only consider the `theme-items'.
 
 Derivative theme projects can implement the equivalent of this minor
-mode plus a method for `modus-themes-get-themes' to filter themes
+mode plus a method for `theme-get-themes' to filter themes
 accordingly."
   :global t
   :init-value nil)
 
-(cl-defmethod modus-themes-get-themes (&context (modus-themes-include-derivatives-mode (eql t)))
-  "Return list of Modus themes per `modus-themes-include-derivatives-mode'."
-  (if-let* ((themes (modus-themes-get-all-known-themes nil))
-            (sorted-themes (modus-themes-sort themes 'light)))
+(cl-defmethod theme-get-themes (&context (theme-include-derivatives-mode (eql t)))
+  "Return list of themes per `theme-include-derivatives-mode'."
+  (if-let* ((themes (theme-get-all-known-themes nil))
+            (sorted-themes (theme-sort themes 'light)))
       sorted-themes
-    modus-themes-items))
+    theme-items))
 
 ;;;; Let derivative themes create commands to load only their themes
 
-(defvar modus-themes-define-derivative-command-known-suffixes
+(defvar theme-define-derivative-command-known-suffixes
   '( toggle rotate select select-dark select-light
      load-random load-random-dark load-random-light
      list-colors list-colors-current)
-  "Command suffixes accepted by `modus-themes-define-derivative-command'.")
+  "Command suffixes accepted by `theme-define-derivative-command'.")
 
-(defmacro modus-themes-define-derivative-command (family suffix)
+(defmacro theme-define-derivative-command (family suffix)
   "Define convenience command with SUFFIX to load only FAMILY themes.
 SUFFIX is a symbol among those listed in the variable
-`modus-themes-define-derivative-command-known-suffixes'.  The newly
-defined command's symbol is FAMILY-SUFFIX, like `modus-themes-rotate'."
-  (unless (memq suffix modus-themes-define-derivative-command-known-suffixes)
+`theme-define-derivative-command-known-suffixes'.  The newly
+defined command's symbol is FAMILY-SUFFIX, like `theme-rotate'."
+  (unless (memq suffix theme-define-derivative-command-known-suffixes)
     (error "Cannot define command with unknown suffix `%s'" suffix))
-  (let ((modus-command (intern (format "modus-themes-%s" suffix))))
+  (let ((theme-command (intern (format "theme-%s" suffix))))
     `(defun ,(intern (format "%s-%s" family suffix)) ()
-       ,(format "Like `%s' but only for the `%s'" modus-command family)
+       ,(format "Like `%s' but only for the `%s'" theme-command family)
        (interactive)
-       (cl-letf (((symbol-function 'modus-themes-get-themes)
+       (cl-letf (((symbol-function 'theme-get-themes)
                   (lambda ()
-                    (modus-themes-get-all-known-themes ',family))))
-         (call-interactively ',modus-command)))))
+                    (theme-get-all-known-themes ',family))))
+         (call-interactively ',theme-command)))))
 
 ;;;; Generate a palette given the base colors
 
 ;; NOTE 2025-11-25: This is a copy of `color-blend' from Emacs 31.  We
 ;; should remove this in the future.
-(defun modus-themes-blend (a b &optional alpha)
+(defun theme-blend (a b &optional alpha)
   "Blend the two colors A and B in linear space with ALPHA.
 A and B should be lists (RED GREEN BLUE), where each element is
 between 0.0 and 1.0, inclusive.  ALPHA controls the influence A
@@ -202,7 +202,7 @@ has on the result and should be between 0.0 and 1.0, inclusive.
 
 For instance:
 
-   (modus-themes-blend \\='(1 0.5 1) \\='(0 0 0) 0.75)
+   (theme-blend \\='(1 0.5 1) \\='(0 0 0) 0.75)
       => (0.75 0.375 0.75)"
   (setq alpha (or alpha 0.5))
   (let (blend)
@@ -210,72 +210,72 @@ For instance:
       (push (+ (* (nth i a) alpha) (* (nth i b) (- 1 alpha))) blend))
     (nreverse blend)))
 
-(defun modus-themes-generate-color-blend (color blended-with-hex alpha)
+(defun theme-generate-color-blend (color blended-with-hex alpha)
   "Return hexadecimal RGB of COLOR with BLENDED-WITH-HEX given ALPHA.
 BLENDED-WITH-HEX is commensurate with COLOR.  ALPHA is between 0.0 and 1.0,
 inclusive.
 
-Color values are of the form accepted by `modus-themes-wcag-formula'."
-  (let* ((blend-rgb (modus-themes-blend
-                     (modus-themes--hex-or-name-to-rgb color)
-                     (modus-themes--hex-or-name-to-rgb blended-with-hex)
+Color values are of the form accepted by `theme-wcag-formula'."
+  (let* ((blend-rgb (theme-blend
+                     (theme--hex-or-name-to-rgb color)
+                     (theme--hex-or-name-to-rgb blended-with-hex)
                      alpha))
          (blend-hex (apply #'color-rgb-to-hex blend-rgb)))
-    (modus-themes--color-eight-to-six-digits blend-hex)))
+    (theme--color-eight-to-six-digits blend-hex)))
 
-(defun modus-themes-generate-color-warmer (color alpha)
-  "Return warmer COLOR by ALPHA, per `modus-themes-generate-color-blend'."
-  (modus-themes-generate-color-blend color "#ff0000" alpha))
+(defun theme-generate-color-warmer (color alpha)
+  "Return warmer COLOR by ALPHA, per `theme-generate-color-blend'."
+  (theme-generate-color-blend color "#ff0000" alpha))
 
-(defun modus-themes-generate-color-cooler (color alpha)
-  "Return cooler COLOR by ALPHA, per `modus-themes-generate-color-blend'."
-  (modus-themes-generate-color-blend color "#0000ff" alpha))
+(defun theme-generate-color-cooler (color alpha)
+  "Return cooler COLOR by ALPHA, per `theme-generate-color-blend'."
+  (theme-generate-color-blend color "#0000ff" alpha))
 
 (define-obsolete-function-alias
-  'modus-themes-generate-gradient
-  'modus-themes-adjust-value
+  'theme-generate-gradient
+  'theme-adjust-value
   "5.3.0")
 
-(defun modus-themes-color-warm-p (color)
+(defun theme-color-warm-p (color)
   "Return non-nil if COLOR is warm.
 A warm color has more contribution from the red channel of light than
 the blue one."
-  (pcase-let ((`(,r ,_ ,b) (modus-themes--hex-or-name-to-rgb color)))
+  (pcase-let ((`(,r ,_ ,b) (theme--hex-or-name-to-rgb color)))
     (> r b)))
 
-(defun modus-themes-color-is-warm-or-cool-p (color)
+(defun theme-color-is-warm-or-cool-p (color)
   "Return `warm' or `cool' for COLOR depending on its value."
-  (if (modus-themes-color-warm-p color)
+  (if (theme-color-warm-p color)
       'warm
     'cool))
 
-(defun modus-themes-generate-color-warmer-or-cooler (color alpha &optional preference)
+(defun theme-generate-color-warmer-or-cooler (color alpha &optional preference)
   "Return COLOR variant by ALPHA and PREFERENCE.
 PREFERENCE is either `cool' or `warm'.  An unknown PREFERENCE means
 `cool'.  Without PREFERENCE, rely on the return value of
-`modus-themes-color-is-warm-or-cool-p'."
-  (let ((kind (or preference (modus-themes-color-is-warm-or-cool-p color))))
+`theme-color-is-warm-or-cool-p'."
+  (let ((kind (or preference (theme-color-is-warm-or-cool-p color))))
     (funcall
      (if (eq kind 'warm)
-         #'modus-themes-generate-color-warmer
-       'modus-themes-generate-color-cooler)
+         #'theme-generate-color-warmer
+       'theme-generate-color-cooler)
      color
      alpha)))
 
 ;;;###autoload
-(defun modus-themes-generate-palette (base-colors &optional cool-or-warm-preference core-palette mappings)
+(defun theme-generate-palette (base-colors &optional cool-or-warm-preference core-palette mappings)
   "Generate a palette given the BASE-COLORS.
 BASE-COLORS consists of lists in the form (NAME VALUE).  NAME is at
 least a symbol of `bg-main' or `fg-main', while VALUE is a string
 representing a color either by name like in `list-colors-display' or
-hexadecimal RGB of the form #123456.  See the value of a core Modus
-palette, like `modus-themes-operandi-palette' for all current NAME
+hexadecimal RGB of the form #123456.  See the value of a core
+palette, like `palette-light', for all current NAME
 symbols.
 
 BASE-COLORS is used to derive a palette.  Any entry whose name is
 already present in BASE-COLORS is not derived but taken as-is.  The rest
 are generated automatically.  The generated palette can be used as-is by
-a derivative theme (per `modus-themes-theme') or as a starting point for
+a derivative theme (per `theme-theme') or as a starting point for
 further refinements.
 
 With optional COOL-OR-WARM-PREFERENCE as a symbol of either `cool' or
@@ -287,17 +287,17 @@ satisfies `color-gray-p', then fall back to `cool'.  For our purposes,
 `warm' is the opposite.
 
 With optional CORE-PALETTE use it to fill in any of the remaining
-entries.  This can be a symbol like `modus-themes-operandi-palette'.  Do
-not try to enforce a core palette among those defined in modus-themes.el
+entries.  This can be a symbol like `palette-light'.  Do
+not try to enforce a core palette among those defined in the palette units
 and let the user assume responsibility for any incompatibilities.  If
 CORE-PALETTE is nil, then infer a suitable palette based on whether the
 `bg-main' value in BASE-COLORS is light or dark and then the
 COOL-OR-WARM-PREFERENCE.  This inferred palette will be
-`modus-themes-operandi-palette' for a light `bg-main' and
-`modus-themes-vivendi-palette' for a dark `bg-main'.  The `cool' or
+`palette-light' for a light `bg-main' and
+`palette-dark' for a dark `bg-main'.  The `cool' or
 `warm' shall yield the tinted variants of those palettes, namely,
-`modus-themes-operandi-tinted-palette' and
-`modus-themes-vivendi-tinted-palette'.
+`palette-light-tinted' and
+`palette-dark-tinted'.
 
 With optional MAPPINGS use them instead of trying to derive new ones.
 If MAPPINGS is nil, generate some essential color mappings and let the
@@ -317,7 +317,7 @@ rest come from CORE-PALETTE."
     (unless (and bg-main fg-main)
       (error "The palette must define at least a bg-main and fg-main entry with their values"))
     (let* ((bg-main (car bg-main))
-           (bg-main-dark-p (modus-themes-color-dark-p bg-main))
+           (bg-main-dark-p (theme-color-dark-p bg-main))
            (fg-main (car fg-main))
            (six-colors (seq-filter
                         (lambda (color)
@@ -325,7 +325,7 @@ rest come from CORE-PALETTE."
                         base-colors))
            (prefers-cool-p (cond
                             (cool-or-warm-preference (eq cool-or-warm-preference 'cool))
-                            (t (eq (modus-themes-color-is-warm-or-cool-p bg-main) 'cool))))
+                            (t (eq (theme-color-is-warm-or-cool-p bg-main) 'cool))))
            (derived-colors nil)
            (derived-mappings nil)
            (push-derived-value-fn (lambda (name value)
@@ -335,24 +335,24 @@ rest come from CORE-PALETTE."
                               (unless (assq name mappings)
                                 (push (list name value) derived-mappings)))))
       ;; Base entries
-      (funcall push-derived-value-fn 'bg-dim (modus-themes-adjust-value bg-main (if bg-main-dark-p 5 -5)))
-      (funcall push-derived-value-fn 'bg-active (modus-themes-adjust-value bg-main (if bg-main-dark-p 10 -10)))
-      (funcall push-derived-value-fn 'bg-inactive (modus-themes-adjust-value bg-main (if bg-main-dark-p 8 -8)))
-      (funcall push-derived-value-fn 'border (modus-themes-adjust-value bg-main (if bg-main-dark-p 20 -20)))
-      (funcall push-derived-value-fn 'fg-dim (modus-themes-adjust-value fg-main (if bg-main-dark-p -20 20)))
-      (funcall push-derived-value-fn 'fg-alt (modus-themes-generate-color-warmer-or-cooler (modus-themes-adjust-value fg-main (if bg-main-dark-p -10 10)) 0.8 prefers-cool-p))
+      (funcall push-derived-value-fn 'bg-dim (theme-adjust-value bg-main (if bg-main-dark-p 5 -5)))
+      (funcall push-derived-value-fn 'bg-active (theme-adjust-value bg-main (if bg-main-dark-p 10 -10)))
+      (funcall push-derived-value-fn 'bg-inactive (theme-adjust-value bg-main (if bg-main-dark-p 8 -8)))
+      (funcall push-derived-value-fn 'border (theme-adjust-value bg-main (if bg-main-dark-p 20 -20)))
+      (funcall push-derived-value-fn 'fg-dim (theme-adjust-value fg-main (if bg-main-dark-p -20 20)))
+      (funcall push-derived-value-fn 'fg-alt (theme-generate-color-warmer-or-cooler (theme-adjust-value fg-main (if bg-main-dark-p -10 10)) 0.8 prefers-cool-p))
       ;; Primary and secondary colors
       (pcase-dolist (`(,name ,value) six-colors)
-        (funcall push-derived-value-fn (intern (format "%s-warmer" name)) (modus-themes-adjust-value (modus-themes-generate-color-warmer value 0.9) (if bg-main-dark-p 20 -20)))
-        (funcall push-derived-value-fn (intern (format "%s-cooler" name)) (modus-themes-adjust-value (modus-themes-generate-color-cooler value 0.9) (if bg-main-dark-p 20 -20)))
-        (funcall push-derived-value-fn (intern (format "%s-faint" name)) (modus-themes-adjust-value value (if bg-main-dark-p 10 -10)))
-        (funcall push-derived-value-fn (intern (format "%s-intense" name)) (modus-themes-adjust-value value (if bg-main-dark-p -5 5)))
+        (funcall push-derived-value-fn (intern (format "%s-warmer" name)) (theme-adjust-value (theme-generate-color-warmer value 0.9) (if bg-main-dark-p 20 -20)))
+        (funcall push-derived-value-fn (intern (format "%s-cooler" name)) (theme-adjust-value (theme-generate-color-cooler value 0.9) (if bg-main-dark-p 20 -20)))
+        (funcall push-derived-value-fn (intern (format "%s-faint" name)) (theme-adjust-value value (if bg-main-dark-p 10 -10)))
+        (funcall push-derived-value-fn (intern (format "%s-intense" name)) (theme-adjust-value value (if bg-main-dark-p -5 5)))
         ;; TODO 2025-12-06: We should have a function here that adjusts the value also up to a
         ;; maximum distance from bg-main.  Basically, we want to avoid the scenario where a given
         ;; base value produces something that is virtually indistinguishable from bg-main.
-        (funcall push-derived-value-fn (intern (format "bg-%s-intense" name)) (modus-themes-adjust-value value (if bg-main-dark-p -40 40)))
-        (funcall push-derived-value-fn (intern (format "bg-%s-subtle" name)) (modus-themes-adjust-value value (if bg-main-dark-p -60 60)))
-        (funcall push-derived-value-fn (intern (format "bg-%s-nuanced" name)) (modus-themes-adjust-value value (if bg-main-dark-p -80 80))))
+        (funcall push-derived-value-fn (intern (format "bg-%s-intense" name)) (theme-adjust-value value (if bg-main-dark-p -40 40)))
+        (funcall push-derived-value-fn (intern (format "bg-%s-subtle" name)) (theme-adjust-value value (if bg-main-dark-p -60 60)))
+        (funcall push-derived-value-fn (intern (format "bg-%s-nuanced" name)) (theme-adjust-value value (if bg-main-dark-p -80 80))))
       ;; Mappings
       (funcall push-mapping-fn 'bg-completion (if prefers-cool-p 'bg-cyan-subtle 'bg-yellow-subtle))
       (funcall push-mapping-fn 'bg-hover (if prefers-cool-p 'bg-green-intense 'bg-magenta-intense))
@@ -487,8 +487,8 @@ rest come from CORE-PALETTE."
              ;; duplicates.
              (core (or core-palette
                        (if bg-main-dark-p
-                           (if prefers-cool-p modus-themes-vivendi-palette modus-themes-vivendi-tinted-palette)
-                         (if prefers-cool-p modus-themes-operandi-palette modus-themes-operandi-tinted-palette))))
+                           (if prefers-cool-p palette-dark palette-dark-tinted)
+                         (if prefers-cool-p palette-light palette-light-tinted))))
              (combined-new-palette (append new-colors new-mappings core))
              (no-duplicates (seq-uniq
                              combined-new-palette
@@ -512,6 +512,6 @@ rest come from CORE-PALETTE."
     (unless (equal dir (expand-file-name "themes/" data-directory))
       (add-to-list 'custom-theme-load-path dir))))
 
-(provide 'modus-themes)
-;;; modus-themes.el ends here
+(provide 'theme-system)
+;;; theme-declare.el ends here
 #+end_src

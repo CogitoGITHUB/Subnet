@@ -1,4 +1,4 @@
-* Modus Palettes Vivendi :EMACS_MECHANISM:S0:
+* Palette Dark :EMACS_MECHANISM:S0:
 :PROPERTIES:
 :ID:       4a3e219a-6831-413e-b382-fddedb1aaff7
 :MM_PARENT: none
@@ -7,7 +7,7 @@
 
 
 #+begin_src emacs-lisp
-(defconst modus-themes-vivendi-palette
+(defconst palette-dark
   (append
    '(
      ;; Basic values
@@ -323,8 +323,8 @@
      (fg-heading-6 red-faint)
      (fg-heading-7 cyan-faint)
      (fg-heading-8 fg-dim))
-   modus-themes-common-palette-mappings)
-  "The entire palette of the `modus-vivendi' theme.
+   theme-common-palette-mappings)
+  "The entire palette of the `dark' theme.
 
 Named colors have the form (COLOR-NAME HEX-VALUE) with the former
 as a symbol and the latter as a string.
@@ -333,7 +333,7 @@ Semantic color mappings have the form (MAPPING-NAME COLOR-NAME)
 with both as symbols.  The latter is a named color that already
 exists in the palette and is associated with a HEX-VALUE.")
 
-(defconst modus-themes-vivendi-tinted-palette
+(defconst palette-dark-tinted
   (append
    '(
      ;; Basic values
@@ -649,8 +649,8 @@ exists in the palette and is associated with a HEX-VALUE.")
      (fg-heading-6 red-faint)
      (fg-heading-7 cyan-faint)
      (fg-heading-8 fg-dim))
-   modus-themes-common-palette-mappings)
-  "The entire palette of the `modus-vivendi-tinted' theme.
+   theme-common-palette-mappings)
+  "The entire palette of the `dark-tinted' theme.
 
 Named colors have the form (COLOR-NAME HEX-VALUE) with the former
 as a symbol and the latter as a string.
@@ -659,7 +659,7 @@ Semantic color mappings have the form (MAPPING-NAME COLOR-NAME)
 with both as symbols.  The latter is a named color that already
 exists in the palette and is associated with a HEX-VALUE.")
 
-(defconst modus-themes-vivendi-deuteranopia-palette
+(defconst palette-dark-deuteranopia
   (append
    '(
      ;; Basic values
@@ -975,8 +975,8 @@ exists in the palette and is associated with a HEX-VALUE.")
      (fg-heading-6 yellow-cooler)
      (fg-heading-7 cyan)
      (fg-heading-8 fg-dim))
-   modus-themes-common-palette-mappings)
-  "The entire palette of the `modus-vivendi-deuteranopia' theme.
+   theme-common-palette-mappings)
+  "The entire palette of the `dark-deuteranopia' theme.
 
 Named colors have the form (COLOR-NAME HEX-VALUE) with the former
 as a symbol and the latter as a string.
@@ -985,7 +985,7 @@ Semantic color mappings have the form (MAPPING-NAME COLOR-NAME)
 with both as symbols.  The latter is a named color that already
 exists in the palette and is associated with a HEX-VALUE.")
 
-(defconst modus-themes-vivendi-tritanopia-palette
+(defconst palette-dark-tritanopia
   (append
    '(
      ;; Basic values
@@ -1305,8 +1305,8 @@ exists in the palette and is associated with a HEX-VALUE.")
      (fg-heading-6 magenta-faint)
      (fg-heading-7 cyan-faint)
      (fg-heading-8 fg-dim))
-   modus-themes-common-palette-mappings)
-  "The entire palette of the `modus-vivendi-tritanopia' theme.
+   theme-common-palette-mappings)
+  "The entire palette of the `dark-tritanopia' theme.
 
 Named colors have the form (COLOR-NAME HEX-VALUE) with the former
 as a symbol and the latter as a string.

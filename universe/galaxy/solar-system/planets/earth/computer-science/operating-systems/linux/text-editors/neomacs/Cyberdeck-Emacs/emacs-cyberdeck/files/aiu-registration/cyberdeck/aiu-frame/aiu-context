@@ -683,8 +683,8 @@ No options in the file is a loud error -- never a silent empty picker."
     (((background dark)) :foreground "#c79bf0" :weight bold)
     (t :weight bold))
   "Face for the KEY part of unfolding `KEY → value' context lines.
-Light/dark variants keep it readable under modus-operandi and
-modus-vivendi without hardcoded single-theme colors."
+Light/dark variants keep it readable in either background mode
+without hardcoded single-theme colors."
   :group 'cyberdeck)
 
 (defface my/cyberdeck-context-value-face
@@ -692,8 +692,8 @@ modus-vivendi without hardcoded single-theme colors."
     (((background dark)) :foreground "#ff7f7f" :weight bold)
     (t :weight bold))
   "Face for the value part of unfolding `KEY → value' context lines.
-Light/dark variants keep it readable under modus-operandi and
-modus-vivendi without hardcoded single-theme colors."
+Light/dark variants keep it readable in either background mode
+without hardcoded single-theme colors."
   :group 'cyberdeck)
 
 (defvar my/cyberdeck--context-line-keywords
