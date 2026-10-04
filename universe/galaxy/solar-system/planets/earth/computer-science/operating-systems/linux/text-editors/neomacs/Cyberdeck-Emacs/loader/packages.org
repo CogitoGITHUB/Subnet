@@ -81,7 +81,12 @@ Atomic upstream — kept whole.
 The recipe is a melpa-style list, e.g.
   (interleave :type git :host github :repo \"llcc/interleave\")
 which becomes
-  (straight-use-package \'interleave :type git :host github :repo \"llcc/interleave\")
+  (straight-use-package '(interleave :type git :host github :repo \"llcc/interleave\"))
+
+The recipe MUST stay one quoted list: splicing its elements bare into
+the call evaluates `:type'/`git'/... as variables and the block dies in
+leaf's `:leaf-protect' handler (\"Error in `interleave' block: void:
+git\", once per such unit).
 
 leaf-keywords' `:straight' keyword is NOT this: it maps every element of
 its value to `(straight-use-package \'ELM)', so it wants a list of package
@@ -95,7 +100,7 @@ than emitted."
   (condition-case nil
       (let ((form (car (read-from-string body))))
         (when (and (consp form) (symbolp (car form)) (cdr form))
-          (format "(straight-use-package '%s %s)"
+          (format "(straight-use-package '(%s %s))"
                   (car form)
                   (mapconcat #'prin1-to-string (cdr form) " "))))
     (error nil)))

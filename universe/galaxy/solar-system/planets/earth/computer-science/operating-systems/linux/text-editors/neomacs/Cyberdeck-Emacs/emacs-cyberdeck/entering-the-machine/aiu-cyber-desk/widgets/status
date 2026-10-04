@@ -14,6 +14,21 @@ which always evaluates before modules do).
 #+begin_src emacs-lisp
 (aiu-cyber-desk-define-widget status
   :doc "Loader boot stats as a dashboard section."
+  :helpers
+  ((defvar cyberdeck-status--refresh-timer nil
+     "Live refresh timer for the Cyberdeck status section.")
+   (defun cyberdeck-status--refresh-maybe ()
+     "Re-render the dashboard while its window is visible.
+Keeps boot, errors, and git info live without touching anything else."
+     (let ((buf (and (boundp 'dashboard-buffer-name)
+                     (get-buffer dashboard-buffer-name))))
+       (when (and (buffer-live-p buf)
+                  (get-buffer-window buf)
+                  (fboundp 'dashboard-open))
+         (dashboard-open))))
+   (unless (timerp cyberdeck-status--refresh-timer)
+     (setq cyberdeck-status--refresh-timer
+           (run-with-timer 30 30 #'cyberdeck-status--refresh-maybe))))
   :generate
   ((let* ((errors (length (cyberdeck-emacs-errors-list)))
           (warnings (length (cyberdeck-emacs-warnings-list)))

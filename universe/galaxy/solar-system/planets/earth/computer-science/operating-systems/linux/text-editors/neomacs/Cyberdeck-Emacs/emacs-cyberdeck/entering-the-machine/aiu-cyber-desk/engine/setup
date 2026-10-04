@@ -18,8 +18,7 @@ and re-applies on manual save. The banner is structural and always
 renders first — it never belongs here.
 #+begin_src emacs-lisp
 (defvar aiu-cyber-desk--default-items
-  '((cyberdeck-clock . 1) (cyberdeck-commands . 1)
-    (recents . 10) (bookmarks . 10) (registers . 10) (projects . 10)
+  '((recents . 10) (bookmarks . 10) (registers . 10) (projects . 10)
     (cyberdeck-status . 1) (cyberdeck-todos . 1) (cyberdeck-sartre . 1))
   "Seed and empty-file fallback for the section order. Mirrors the
 aiu-context default key list.")
@@ -186,7 +185,6 @@ find-file installer."
             (local-set-key (kbd "p") #'dashboard-jump-to-projects)
             (local-set-key (kbd "a") #'org-agenda)
             (local-set-key (kbd "g") #'consult-register)
-            (local-set-key (kbd "c") (lambda () (interactive) (dashboard-jump-to-item 'cyberdeck-commands)))
             (local-set-key (kbd "q") (lambda () (interactive) (save-buffers-kill-terminal)))
             (local-set-key (kbd "d") (lambda () (interactive) (dired "~")))))
 #+end_src

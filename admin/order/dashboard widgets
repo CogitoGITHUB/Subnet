@@ -1,7 +1,6 @@
 * Dashboard Section Order
 
-** manifold-clock
-** manifold-commands
+** cyberdeck-status
 ** recents
 ** bookmarks
 ** registers
@@ -10,8 +9,5 @@
 ** manifold-status
 ** manifold-todos
 ** manifold-sartre
-** cyberdeck-clock
-** cyberdeck-commands
 ** cyberdeck-sartre
-** cyberdeck-status
 ** cyberdeck-todos
