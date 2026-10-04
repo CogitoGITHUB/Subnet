@@ -420,7 +420,7 @@ Auto-triggers aiu-subnet/repack if the gap to the next sibling < aiu-subnet/epsi
 #+begin_src emacs-lisp
 (defun aiu-subnet/order-key-after (aiu-id)
   "Return an ORDER_KEY placing a new sibling immediately after NOTE-ID.
-Auto-triggers aiu-subnet/repack if the gap to the next sibling < aiu-subnet/epsilon."
+Auto-triggers `aiu-subnet/repack' if the next-sibling gap is tiny."
   (let* ((row       (aiu-subnet/node-at aiu-id))
          (parent-id (nth 1 row))
          (aiu-type (nth 3 row))
@@ -442,16 +442,16 @@ Auto-triggers aiu-subnet/repack if gap < aiu-subnet/epsilon.
 #+begin_src emacs-lisp
 (defun aiu-subnet/order-key-between (aiu-id-an aiu-id-b)
   "Return an ORDER_KEY placing a new node between NOTE-ID-A and NOTE-ID-B."
-  (let* ((key-a (nth 2 (aiu-subnet/node-at aiu-id-a)))
+  (let* ((key-a (nth 2 (aiu-subnet/node-at aiu-id-an)))
          (key-b (nth 2 (aiu-subnet/node-at aiu-id-b)))
          (lo    (min key-a key-b))
          (hi    (max key-a key-b)))
     (when (< (- hi lo) aiu-subnet/epsilon)
-      (let* ((row-a     (aiu-subnet/node-at aiu-id-a))
+      (let* ((row-a     (aiu-subnet/node-at aiu-id-an))
              (parent-id (nth 1 row-a))
              (aiu-type (nth 3 row-a)))
         (aiu-subnet/repack parent-id aiu-type)
-        (setq key-a (nth 2 (aiu-subnet/node-at aiu-id-a))
+        (setq key-a (nth 2 (aiu-subnet/node-at aiu-id-an))
               key-b (nth 2 (aiu-subnet/node-at aiu-id-b))
               lo    (min key-a key-b)
               hi    (max key-a key-b))))
@@ -1037,6 +1037,8 @@ Safe to run repeatedly — never overwrites existing entries."
 Writes go through aiu-subnet/set-status (unified STATUS + flag mirror), so
 the map display and the review pool agree on every keypress.
 #+begin_src emacs-lisp
+(require 'transient)
+
 (transient-define-suffix aiu-subnet/--status-active ()
   :description "Set ACTIVE"
   (interactive)
