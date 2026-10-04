@@ -50,6 +50,12 @@ stale.  Runs before the package system.
   (menu-bar-mode -1)
   (when (fboundp 'tool-bar-mode)   (tool-bar-mode -1))
   (when (fboundp 'scroll-bar-mode) (scroll-bar-mode -1)))
+;; Hide the vanilla mode line until the custom bar installs (S0): the
+;; stock format is saved first and restored after boot only when the
+;; custom line never appeared.
+(defvar my/saved-mode-line-format (default-value 'mode-line-format)
+  "Stock mode line captured before the boot hides it.")
+(setq-default mode-line-format nil)
 #+end_src
 
 ** GC & Handlers During Boot

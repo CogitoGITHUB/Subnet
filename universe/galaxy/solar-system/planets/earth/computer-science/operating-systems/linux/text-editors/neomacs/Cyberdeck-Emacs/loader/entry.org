@@ -329,7 +329,20 @@ silently is worse than not booting.  Honors
       (condition-case nil
           (when (fboundp 'mini-modeline-mode)
             (mini-modeline-mode 1))
-        (t nil))))
+        (t nil))
+      ;; Restore-last safety net for the hidden vanilla line: install
+      ;; also runs on after-init-hook, so check there, after it.  If the
+      ;; custom bar never installed (format still hidden), bring back
+      ;; the saved stock line instead of a missing one.
+      (defvar cyberdeck-emacs--custom-line-active nil
+        "Non-nil once this boot verified the custom mode line installed.")
+      (setq cyberdeck-emacs--custom-line-active nil)
+      (add-hook 'after-init-hook
+                (lambda ()
+                  (if (default-value 'mode-line-format)
+                      (setq cyberdeck-emacs--custom-line-active t)
+                    (when (boundp 'my/saved-mode-line-format)
+                      (setq-default mode-line-format my/saved-mode-line-format)))))))
 #+end_src
 
 ** Entry — provide
