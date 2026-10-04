@@ -113,7 +113,40 @@ opens at the end, with or without file arguments.
 
  (defvar cyberdeck-emacs--boot-t0 nil "Boot start time for dashboard.")
 
- (defun cyberdeck-emacs-boot ()
+ (defcustom cyberdeck-emacs-allow-stale-loader nil
+  "Non-nil lets `cyberdeck-emacs-boot' run on a stale loader artifact.
+Default nil refuses loudly: a failed or skipped re-tangle must never
+boot stale code silently.  Set temporarily only to recover from a
+broken module."
+  :type 'boolean :group 'cyberdeck-emacs)
+
+(defun cyberdeck-emacs--refuse-stale-loader ()
+  "Signal unless the running artifact is newer than every module.
+Catches failed or skipped re-tangles: booting stale loader code
+silently is worse than not booting.  Honors
+`cyberdeck-emacs-allow-stale-loader'.  Never throws otherwise."
+  (let ((mods (if (and (boundp 'my/loader-modules)
+                       (fboundp 'my/loader-module-dir))
+                  (mapcar (lambda (m)
+                            (expand-file-name (concat m ".org")
+                                              (my/loader-module-dir)))
+                          my/loader-modules)
+                (let ((d (and (fboundp 'my/loader-module-dir)
+                              (my/loader-module-dir))))
+                  (and d (file-directory-p d)
+                       (directory-files-recursively d "\\.org\\'")))))
+        (el (locate-user-emacs-file "cyberdeck-emacs.el")))
+    (when (and mods (file-exists-p el))
+      (let ((mt (float-time (nth 5 (file-attributes el)))))
+        (dolist (m mods)
+          (when (and (file-exists-p m)
+                     (> (float-time (nth 5 (file-attributes m))) mt))
+            (if cyberdeck-emacs-allow-stale-loader
+                (message "cyberdeck-emacs: STALE loader artifact allowed by opt-out (%s newer)"
+                         (file-name-nondirectory m))
+              (signal 'error (list (format "cyberdeck-emacs: refusing boot on stale loader: %s is newer than the artifact (re-tangle failed or skipped); fix it or set cyberdeck-emacs-allow-stale-loader" (file-name-nondirectory m)))))))))))
+
+(defun cyberdeck-emacs-boot ()
    "Compile every Org file, with progress in *Messages* and the
  dashboard header line, structured error tracking, an idle sweep to
  surface deferred-load errors early, and (optionally) an automatic
@@ -130,6 +163,7 @@ opens at the end, with or without file arguments.
     (when cyberdeck-emacs-mode-line-indicator
       (cyberdeck-emacs-doctor-indicator-mode 1))
     (cyberdeck-emacs--prompt-boot-mode)
+    (cyberdeck-emacs--refuse-stale-loader)
     (message "AIU Cyberdeck: reading modules/ …")
     (condition-case err
         ;; Warning capture during boot comes from the foundation
