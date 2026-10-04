@@ -300,6 +300,10 @@ unavailable, so behaviour never depends on caching being present."
 
 (defun cyberdeck-emacs--file-sig (file)
   "Stat signature (MTIME SIZE) of FILE, or nil when stat fails.
+MTIME is integer seconds (truncated), matching the `find -printf %T@'
+truncation in `cyberdeck-emacs--stat-table', so index records and the
+one-shot listing compare equal.  (The raw attribute list never equals
+that integer, which once forced a full rescan on every boot.)
 Memoised per path string for the boot; one `file-attributes' call per
 file instead of one per call site.  A nil signature is a real answer and
 is memoised too, so a missing or unreadable file is not re-statted at
@@ -308,12 +312,12 @@ every call site -- hence the ABSENT sentinel rather than a bare nil test."
       (let ((hit (gethash file cyberdeck-emacs--sig-cache :absent)))
         (if (eq hit :absent)
             (let* ((a (file-attributes file))
-                   (v (and a (list (nth 5 a) (nth 7 a)))))
+                   (v (and a (list (truncate (float-time (nth 5 a))) (nth 7 a)))))
               (puthash file v cyberdeck-emacs--sig-cache)
               v)
           hit))
     (let ((a (file-attributes file)))
-      (and a (list (nth 5 a) (nth 7 a))))))
+      (and a (list (truncate (float-time (nth 5 a))) (nth 7 a))))))
 
 (defun cyberdeck-emacs-file-tagged-units (file)
   "Stat-cached wrapper around `cyberdeck-emacs--scan-file-tagged-units'.
