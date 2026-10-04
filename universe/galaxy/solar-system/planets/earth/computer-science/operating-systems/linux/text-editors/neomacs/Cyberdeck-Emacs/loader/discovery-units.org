@@ -116,6 +116,10 @@ files are never read, loaded, or compiled — by any caller."
   "Walked absolute paths from the last refresh.  Stage selection
 intersects this with index :stages, so no per-file syscalls.")
 
+(defvar cyberdeck-emacs--refresh-changed nil
+  "Paths refreshed (new/changed/rebuilt) by the last refresh.
+Messages only: lets each stage report its changed count.")
+
 (defun cyberdeck-emacs--refresh-changed-entries (directory &optional extension)
   "Walk DIRECTORY once; refresh index entries for new/changed files only.
 Unchanged files (listing sig matches index mtime/size AND :stages
@@ -123,9 +127,23 @@ present) are never read.  Entries missing :stages are rebuilt even on
 a sig match (one-time v4->v5 cost).  Nil listing means trust nothing:
 every file is ensured.  Returns (LISTED REFRESHED)."
   (cyberdeck-emacs--index-load)
+  ;; Fallback case: no record carries :stages (fresh v5 rebuild).  Say so
+  ;; once up front; per-file lines below are then labeled as index build.
+  (when (not (catch 'cyb-has-stages
+               (maphash (lambda (_ v) (when (plist-get v :stages) (throw 'cyb-has-stages t)))
+                        cyberdeck-emacs--discovery-index)
+               nil))
+    (message "AIU Cyberdeck: building index: one-time full scan")
+    (redisplay t))
+  (message "AIU Cyberdeck: listing files…")
+  (redisplay t)
   (if (not (file-directory-p directory))
       (list 0 0)
-    (let* ((ext (or extension "[^./]+$"))
+    (let* ((rebuilding (not (catch 'cyb-stage-tags
+                               (maphash (lambda (_ v) (when (plist-get v :stages) (throw 'cyb-stage-tags t)))
+                                        cyberdeck-emacs--discovery-index)
+                               nil)))
+           (ext (or extension "[^./]+$"))
            (all (seq-remove (lambda (f) (or (string-match-p "/\\.git/" f)
                                             (string-match-p "/admin/" f)
                                             (string-match-p "/WIP/" f)
@@ -134,8 +152,11 @@ every file is ensured.  Returns (LISTED REFRESHED)."
                             (directory-files-recursively directory ext)))
            (stats (cyberdeck-emacs--stat-table directory))
            (table (car stats))
-           (refreshed 0))
+           (refreshed 0)
+           (t0 (float-time))
+           (last-t 0.0))
       (setq cyberdeck-emacs--refresh-listed all)
+      (setq cyberdeck-emacs--refresh-changed nil)
       (setq cyberdeck-emacs--discovery-listed (length all))
       (dolist (f all)
         (let* ((entry (and table (gethash f cyberdeck-emacs--discovery-index)))
@@ -146,9 +167,26 @@ every file is ensured.  Returns (LISTED REFRESHED)."
                         (plist-get entry :stages))))
           (unless ok
             (setq refreshed (1+ refreshed))
+            (push f cyberdeck-emacs--refresh-changed)
+            (if rebuilding
+                (message "AIU Cyberdeck: building index: reading %s"
+                         (file-name-nondirectory f))
+              (message "AIU Cyberdeck: rescanning %s"
+                       (file-name-nondirectory f)))
+            (let ((now (float-time)))
+              (when (> (- now last-t) 0.3)
+                (setq last-t now)
+                (redisplay t)))
             (when entry
               (remhash f cyberdeck-emacs--discovery-index))
             (cyberdeck-emacs--index-ensure f))))
+      (message "AIU Cyberdeck: %d files listed, %d changed"
+               (length all) refreshed)
+      (redisplay t)
+      (let ((dt (- (float-time) t0)))
+        (when (> dt 2.0)
+          (message "AIU Cyberdeck: refresh took %.1fs…" dt)
+          (redisplay t)))
       (list (length all) refreshed))))
 
 (defun cyberdeck-emacs--files-for-stage (stage)

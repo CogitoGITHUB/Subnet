@@ -76,6 +76,8 @@ nil, and on restart-emacs reboots (see the advice below, which passes
 a sentinel through the re-exec environment).  Returns the mode and
 records it in `cyberdeck-emacs--boot-mode-current'.  Stages run on
 every boot; mode only decides S2 (pipelined vs deferred)."
+  (message "AIU Cyberdeck: boot-mode prompt…")
+  (redisplay t)
   (let ((mode cyberdeck-emacs-boot-mode))
     (unless (or noninteractive (daemonp)
                 (null cyberdeck-emacs-boot-prompt-timeout)
@@ -255,7 +257,7 @@ opens at the end, with or without file arguments.
                 ;; and the cyberdeck-status widget, on demand.
                 (condition-case nil
                     (progn
-                      (when-let ((win (get-buffer-window "*dashboard*" t)))
+                      (when-let* ((win (get-buffer-window "*dashboard*" t)))
                         (select-window win)
                         (delete-other-windows win)))
                   (error nil)))
@@ -337,5 +339,7 @@ when half the loader is missing. Never throws."
             (display-warning 'cyberdeck-emacs msg :error))))
     (error nil)))
 
+(message "AIU Cyberdeck: loader self-check…")
+(redisplay t)
 (cyberdeck-emacs--self-check)
 #+end_src

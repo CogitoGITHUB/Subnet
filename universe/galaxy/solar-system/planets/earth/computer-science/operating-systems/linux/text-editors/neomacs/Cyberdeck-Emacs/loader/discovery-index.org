@@ -60,6 +60,8 @@ compared here is `cyberdeck-emacs-discovery-index-version', NOT the
 cache salt, so a format change to the index never costs a recompile."
   (unless cyberdeck-emacs--discovery-loaded
     (setq cyberdeck-emacs--discovery-loaded t)
+    (message "AIU Cyberdeck: loading discovery index…")
+    (redisplay t)
     (condition-case nil
         (let ((data (cyberdeck-emacs--cache-read
                      (cyberdeck-emacs-discovery-index-file))))
@@ -76,6 +78,8 @@ cache salt, so a format change to the index never costs a recompile."
   "Persist the index when dirty.  Never throws; logs one line on failure."
   (when cyberdeck-emacs--discovery-dirty
     (setq cyberdeck-emacs--discovery-dirty nil)
+    (message "AIU Cyberdeck: saving discovery index…")
+    (redisplay t)
     (condition-case err
         (let (pairs)
           (maphash (lambda (k v)

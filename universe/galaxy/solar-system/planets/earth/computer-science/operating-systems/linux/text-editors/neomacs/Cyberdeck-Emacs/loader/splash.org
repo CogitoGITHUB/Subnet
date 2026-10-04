@@ -4,7 +4,7 @@ Module of the Cyberdeck-Emacs loader. No :EMACS_MECHANISM: tags here: this direc
 ** Splash — constants & state
 Pure renderer: reads the error/warnings lists, never mutates them.
 #+begin_src emacs-lisp
-(defconst cyberdeck-emacs-splash--redraw-interval 0.5
+(defconst cyberdeck-emacs-splash--redraw-interval 0.3
   "Seconds between live progress updates (throttle).")
 (defconst cyberdeck-emacs-splash--history-length 24
   "How many past boot durations the sparkline remembers.")
@@ -205,8 +205,20 @@ compilation."
             (plist-put cyberdeck-emacs--progress-state :last-render now)
             (plist-put cyberdeck-emacs--progress-state :last-count current)
             (plist-put cyberdeck-emacs--progress-state :last-status status)
-            (message "%s" (cyberdeck-emacs--progress-line
-                           current total file status))
+            (let ((line (cyberdeck-emacs--progress-line
+                         current total file status)))
+              ;; Slow-step line: when one unit's load took more than 2s,
+              ;; its post-load tick says so, so a long compile never looks
+              ;; frozen once it lands.
+              (when (and status
+                         (equal file (plist-get st :unit-file))
+                         (plist-get st :unit-t0)
+                         (> (- now (plist-get st :unit-t0)) 2.0))
+                (setq line (format "%s (took %.1fs…)" line
+                                   (- now (plist-get st :unit-t0)))))
+              (plist-put cyberdeck-emacs--progress-state :unit-file file)
+              (plist-put cyberdeck-emacs--progress-state :unit-t0 now)
+              (message "%s" line))
              (when (and cyberdeck-emacs--booting
                         (not cyberdeck-emacs--dashboard-progress-opened)
                         (or (null cyberdeck-emacs--dashboard-complete-at)
@@ -220,7 +232,7 @@ compilation."
                      (dashboard-open)
                      ;; Fullscreen first: the dashboard owns the frame
                      ;; while units load behind it.
-                     (when-let ((win (get-buffer-window "*dashboard*" t)))
+                     (when-let* ((win (get-buffer-window "*dashboard*" t)))
                        (select-window win)
                        (delete-other-windows win)))
                  (error nil)))

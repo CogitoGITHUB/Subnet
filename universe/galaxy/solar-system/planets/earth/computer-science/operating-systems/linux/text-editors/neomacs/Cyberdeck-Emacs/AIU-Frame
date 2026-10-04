@@ -258,6 +258,8 @@ straight-use-package call.
         "straight/repos/straight.el/bootstrap.el" user-emacs-directory))
       (bootstrap-version 6))
   (when (file-exists-p bootstrap-file)
+    (message "AIU Cyberdeck: straight bootstrap…")
+    (redisplay t)
     (load bootstrap-file nil 'nomessage)))
 ;; (my/init-aiu "[init] straight ready")
 (my/boot-mark "straight-ready")
@@ -312,6 +314,8 @@ version-mismatch warnings.
 
 #+begin_src emacs-lisp
 ;; (my/init-aiu "[init] loading org + leaf…")
+(message "AIU Cyberdeck: loading org…")
+(redisplay t)
 (straight-use-package 'org)
 #+end_src
 
@@ -319,6 +323,8 @@ version-mismatch warnings.
 Must be here — cyberdeck-emacs-boot generates leaf forms.
 
 #+begin_src emacs-lisp
+(message "AIU Cyberdeck: loading leaf…")
+(redisplay t)
 (straight-use-package 'leaf)
 (straight-use-package 'leaf-keywords)
 (eval-and-compile
@@ -360,6 +366,13 @@ concatenated artifact must read exactly as the old single file did.")
   "Directory holding the loader modules."
   (expand-file-name "loader" my/emacs-root))
 
+(defun my/note-slow (label secs)
+  "Echo-area line when a single boot step runs more than 2 seconds.
+Messages only: never throws, never changes control flow."
+  (when (> (or secs 0) 2.0)
+    (message "AIU Cyberdeck: %s took %.1fs…" label secs)
+    (redisplay t)))
+
 (defun my/tangle-loader-files (files target)
   "Tangle FILES (Org, in order) and write the concatenation to TARGET.
 Each file tangles to its own temp file with an explicit target, so no
@@ -372,18 +385,26 @@ total number of emacs-lisp blocks tangled."
         (tmp-target (make-temp-file "cyberdeck-loader-")))
     (unwind-protect
         (let ((parts nil))
-          (dolist (f files)
-            (let ((tmp (make-temp-file "cyberdeck-module-")))
-              (unwind-protect
-                  (progn
-                    ;; Explicit target: this Org ignores dynamically bound
-                    ;; default header args, so the target goes on the call.
-                    (org-babel-tangle-file f tmp)
-                    (push (with-temp-buffer
-                            (insert-file-contents tmp)
-                            (buffer-string))
-                          parts))
-                (ignore-errors (delete-file tmp)))))
+          (let ((n (length files)) (i 0))
+            (dolist (f files)
+              (setq i (1+ i))
+              (message "AIU Cyberdeck: tangling loader %d/%d %s"
+                       i n (file-name-nondirectory f))
+              (redisplay t)
+              (let ((tmp (make-temp-file "cyberdeck-module-"))
+                    (t0 (float-time)))
+                (unwind-protect
+                    (progn
+                      ;; Explicit target: this Org ignores dynamically bound
+                      ;; default header args, so the target goes on the call.
+                      (org-babel-tangle-file f tmp)
+                      (my/note-slow (format "tangle %s" (file-name-nondirectory f))
+                                    (- (float-time) t0))
+                      (push (with-temp-buffer
+                              (insert-file-contents tmp)
+                              (buffer-string))
+                            parts))
+                  (ignore-errors (delete-file tmp))))))
           (setq parts (nreverse parts))
           ;; Join rule, matching org-babel-tangle exactly: blocks are
           ;; separated by one blank line, the file ends with one newline.
@@ -450,6 +471,8 @@ total number of emacs-lisp blocks tangled."
                    "loader tangle dropped blocks: %d of %d emacs-lisp src blocks from %s"
                    (or tangled 0) source (file-name-nondirectory file))))))
     ;; (my/init-aiu "[init] loading literate loader…")
+    (message "AIU Cyberdeck: loading cyberdeck-emacs.el…")
+    (redisplay t)
     (load el nil t)))
 
 (add-to-list 'load-path (expand-file-name "lisp/" user-emacs-directory))

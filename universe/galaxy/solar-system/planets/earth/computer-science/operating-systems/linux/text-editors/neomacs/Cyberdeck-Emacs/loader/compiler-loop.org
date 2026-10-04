@@ -91,6 +91,10 @@ compiled, in completion order."
              (files (cyberdeck-emacs--files-for-stage sname)))
         (setq cyberdeck-emacs--boot-stage sname)
         (message "cyberdeck-emacs: %s pipeline starting (%d files)" sname (length files))
+        (redisplay t)
+        (let ((changed (seq-filter (lambda (f) (member f cyberdeck-emacs--refresh-changed)) files)))
+          (message "AIU Cyberdeck: %s: scanning %d changed files" sname (length changed))
+          (redisplay t))
         ;; Warm session memos from trusted index entries: no reads here
         ;; for unchanged files (refresh already scanned the changed ones).
         (dolist (f files)
@@ -100,6 +104,8 @@ compiled, in completion order."
         (let* ((units (cyberdeck-emacs--collect-units files stage))
                (current 0) (total (length units))
                (st0 (float-time)))
+          (message "AIU Cyberdeck: %s: compiling %d units" sname (length units))
+          (redisplay t)
           ;; An empty S0 means the scan is broken: refuse loudly instead
           ;; of booting a half-screen Emacs.  Later stages may run small,
           ;; so only S0 gates here.
@@ -178,11 +184,14 @@ compiled, in completion order."
             (when (fboundp 'my/boot-mark)
               (my/boot-mark (concat (downcase sname) "-end")))
             (message "cyberdeck-emacs: %s pipeline complete (%d units, %.1fs)"
-                     sname (length units) dt)))
+                     sname (length units) dt)
+            (redisplay t)))
         ))
       ;; Staged mode defers S2 to first use (index records only, no reads).
       ;; Full mode already ran S2 as a pipeline above.
       (when (eq mode 'staged)
+        (message "AIU Cyberdeck: registering S2 autoloads…")
+        (redisplay t)
         (let ((s2files (cyberdeck-emacs--files-for-stage "S2")))
           (dolist (f s2files)
             (let ((entry (gethash f cyberdeck-emacs--discovery-index)))
@@ -205,6 +214,10 @@ compiled, in completion order."
                            (file-name-nondirectory (or (plist-get (cdr pair) :file) "?"))
                            (or (plist-get (cdr pair) :start-line) 1)))
                 (setq cyberdeck-emacs--s2-clobber-skips nil))))))
+     ;; Persist the refreshed index once per boot (all stages ran above).
+     (message "AIU Cyberdeck: saving discovery index…")
+     (redisplay t)
+     (cyberdeck-emacs--index-save)
      ;; Sweep compat (diagnostic only): expose this boot's units for the
      ;; void-defun sweep.  Loading already ran per stage above, never as
      ;; one list.  S1-units stays the boot list (S0 first, then S1).
@@ -222,7 +235,7 @@ compiled, in completion order."
                  (push (cons (plist-get u :id) u) a)))
              (nreverse a)))
      (cyberdeck-emacs--prune-elc-cache)
-     (when-let ((log (get-buffer "*Compile-Log*")))
+     (when-let* ((log (get-buffer "*Compile-Log*")))
        ;; One pointer in the warnings list, not an error: warnings live
        ;; in the log buffer. Never pops anything; the Errors button and
        ;; the cyberdeck-status widget surface it on demand.
