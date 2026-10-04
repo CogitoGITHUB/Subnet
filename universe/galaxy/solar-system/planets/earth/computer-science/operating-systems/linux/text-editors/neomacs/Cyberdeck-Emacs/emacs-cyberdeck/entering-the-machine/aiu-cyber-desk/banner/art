@@ -7,43 +7,124 @@
 :END:
 
 The Cyberdeck identity banner plus banner selection. Edit freely.
-Restrained structural aesthetic: identity only, no decoration.
+Words live here; both boxes are drawn by code and re-boxed on resize.
 
-** Banner — content lines (plain text; outer box drawn by code)
-Edit the words here. Spacing inside the box is computed at render.
+** Banner — content words (plain text; boxes drawn by code)
+Edit the words here. All sizing and padding is computed at render.
 #+begin_src emacs-lisp
-(defvar cyberdeck/banner-content-lines
-  '("A T O M I C   I N F O R M A T I O N   U N I T"
-    ""
-    "┌──────────────────────┐"
-    "│    C Y B E R D E C K │"
-    "└──────────────────────┘"
-    "")
-  "Plain banner content. The outer box is drawn by `cyberdeck/banner-box'.")
+(defvar cyberdeck/banner-title-full
+  "A T O M I C   I N F O R M A T I O N   U N I T"
+  "Wide-tier banner title.  Used when it fits the available width.")
+
+(defvar cyberdeck/banner-title-compact
+  "ATOMIC INFORMATION UNIT"
+  "Medium-tier banner title.  Wrapped by words when it must span lines.")
+
+(defvar cyberdeck/banner-inner-text
+  "C Y B E R D E C K"
+  "Inner box text.  The inner box border is generated from this string.")
+
+(defvar cyberdeck/banner-max-width 120
+  "Maximum total outer-box width, including the outer border.")
+
+(defvar cyberdeck/banner-inner-pad 6
+  "Preferred padding inside the inner box, per side.
+The narrow tier shrinks this so the box always fits.")
 #+end_src
 
-** Banner — dynamic outer box (follows window width)
-Recomputed before every dashboard render, so resizes re-box.
+** Banner — width, tiers, outer box, resize
+Recomputed before every dashboard render and on window resize.
 #+begin_src emacs-lisp
+(defun cyberdeck/banner-available-width (&optional width)
+  "Return usable banner columns.
+With WIDTH, use it as the available width (tests, callers).
+Else use the body width of the dashboard window, else the selected
+window, else the frame width --- always minus 1, because the last
+TTY column wraps.  There is no 80-column fallback."
+  (if width
+      width
+    (max 21
+         (1- (let ((win (and (boundp 'dashboard-buffer-name)
+                             (get-buffer-window dashboard-buffer-name))))
+                (cond ((and win (window-live-p win))
+                       (window-body-width win))
+                      ((window-live-p (selected-window))
+                       (window-body-width (selected-window)))
+                      (t
+                       (frame-width))))))))
+
+(defun cyberdeck/banner--wrap (text width)
+  "Wrap TEXT by words into lines of at most WIDTH columns, centered.
+Every returned line is exactly WIDTH columns wide."
+  (let ((lines nil)
+        (line ""))
+    (dolist (word (split-string text " +" t))
+      (let ((trial (if (string-empty-p line) word (concat line " " word))))
+        (if (<= (string-width trial) width)
+            (setq line trial)
+          (push line lines)
+          (setq line word))))
+    (push line lines)
+    (mapcar (lambda (s) (cyberdeck/banner--pad-line s width))
+            (nreverse lines))))
+
+(defun cyberdeck/banner--pad-line (s width)
+  "Center S in exactly WIDTH columns.
+Left and right padding differ by at most 1."
+  (let* ((pad (max 0 (- width (string-width s))))
+         (left (/ pad 2)))
+    (concat (make-string left ?\s) s
+            (make-string (- pad left) ?\s))))
+
+(defun cyberdeck/banner--inner-box (content-width)
+  "Generate the inner CYBERDECK box, at most CONTENT-WIDTH wide.
+Border width derives from `cyberdeck/banner-inner-text'; side
+padding is equal left/right (+/-1) and shrinks under pressure."
+  (let* ((text cyberdeck/banner-inner-text)
+         (text-w (string-width text))
+         (total (min content-width (+ text-w (* 2 cyberdeck/banner-inner-pad) 2)))
+         (total (max total (+ text-w 2)))
+         (inner-w (- total 2))
+         (pad (- inner-w text-w))
+         (left (/ pad 2))
+         (right (- pad left))
+         (mid (concat (make-string left ?\s) text (make-string right ?\s)))
+         (box (list (concat "┌" (make-string inner-w ?─) "┐")
+                    (concat "│" mid "│")
+                    (concat "└" (make-string inner-w ?─) "┘"))))
+    (mapcar (lambda (s) (cyberdeck/banner--pad-line s content-width))
+            box)))
+
 (defun cyberdeck/banner-box (&optional width)
-  "Frame `cyberdeck/banner-content-lines' in an outer box.
-WIDTH defaults to the dashboard window width, clamped between
-content width and 120 columns."
-  (let* ((win (and (boundp 'dashboard-buffer-name)
-                   (get-buffer-window dashboard-buffer-name)))
-         (cols (or width (if win (window-width win) 80)))
-         (inner (apply #'max
-                       (mapcar #'string-width
-                               cyberdeck/banner-content-lines)))
-         (w (min (max (+ inner 4) (- cols 2)) 120))
-         (center (lambda (s)
-                   (let ((pad (- w (string-width s))))
-                     (concat "║" (make-string (/ pad 2) ?\s) s
-                             (make-string (- pad (/ pad 2)) ?\s) "║")))))
+  "Build the dashboard banner for available WIDTH columns.
+WIDTH defaults to `cyberdeck/banner-available-width'.  Total outer
+width is (min available `cyberdeck/banner-max-width').  Tiers:
+wide shows the full spaced title, medium a wrapped compact title,
+narrow only the inner box.  Every line shares one string-width."
+  (let* ((available (cyberdeck/banner-available-width width))
+         (total (min available cyberdeck/banner-max-width))
+         (content-w (max 1 (- total 2)))
+         (full-w (string-width cyberdeck/banner-title-full))
+         (preferred (+ (string-width cyberdeck/banner-inner-text)
+                       (* 2 cyberdeck/banner-inner-pad) 2))
+         (lines (cond ((>= content-w full-w)
+                       (append (list (cyberdeck/banner--pad-line
+                                      cyberdeck/banner-title-full content-w))
+                               (list (make-string content-w ?\s))
+                               (cyberdeck/banner--inner-box content-w)))
+                      ((>= content-w preferred)
+                       (append (cyberdeck/banner--wrap
+                                cyberdeck/banner-title-compact content-w)
+                               (list (make-string content-w ?\s))
+                               (cyberdeck/banner--inner-box content-w)))
+                      (t
+                       (cyberdeck/banner--inner-box content-w))))
+         (frame (lambda (s)
+                  (concat "║" s "║"))))
     (mapconcat #'identity
-               (append (list (concat "╔" (make-string w ?═) "╗"))
-                       (mapcar center cyberdeck/banner-content-lines)
-                       (list (concat "╚" (make-string w ?═) "╝")))
+               (append (list (concat "╔" (make-string content-w ?═) "╗"))
+                       (mapcar frame lines)
+                       (list (concat "╚" (make-string content-w ?═) "╝")))
                "\n")))
 
 (defun cyberdeck/banner-apply (&rest _)
@@ -51,6 +132,30 @@ content width and 120 columns."
   (when (boundp 'dashboard-banner-ascii)
     (setq dashboard-banner-ascii (cyberdeck/banner-box)
           dashboard-startup-banner 'ascii)))
+
+(defvar cyberdeck/banner--resize-timer nil
+  "Pending debounced dashboard banner re-render timer, if any.")
+
+(defun cyberdeck/banner--resize-now ()
+  "Re-render the dashboard banner if its window is visible."
+  (setq cyberdeck/banner--resize-timer nil)
+  (let ((buf (and (boundp 'dashboard-buffer-name)
+                  (get-buffer dashboard-buffer-name))))
+    (when (buffer-live-p buf)
+      (let ((win (get-buffer-window buf)))
+        (when (and (window-live-p win) (fboundp 'dashboard-open))
+          (with-selected-window win
+            (dashboard-open)))))))
+
+(defun cyberdeck/banner--on-size-change (&optional _frame)
+  "Debounce dashboard banner re-render after a window size change."
+  (when (timerp cyberdeck/banner--resize-timer)
+    (cancel-timer cyberdeck/banner--resize-timer))
+  (setq cyberdeck/banner--resize-timer
+        (run-with-idle-timer 0.15 nil #'cyberdeck/banner--resize-now)))
+
+(unless (memq #'cyberdeck/banner--on-size-change window-size-change-functions)
+  (add-hook 'window-size-change-functions #'cyberdeck/banner--on-size-change))
 
 (when (fboundp 'dashboard-insert-startupify-lists)
   (advice-add 'dashboard-insert-startupify-lists
