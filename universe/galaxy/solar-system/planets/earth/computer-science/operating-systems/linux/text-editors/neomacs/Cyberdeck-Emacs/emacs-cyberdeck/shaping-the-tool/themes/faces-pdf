@@ -1,0 +1,15 @@
+* Cyberdeck Faces Pdf :EMACS_MECHANISM:S0:
+:PROPERTIES:
+:ID:       67405674-724b-48d2-b6c2-2be37b508a1b
+:MM_PARENT: none
+:MM_ORDER:  18.5
+:END:
+
+
+** PDF
+
+#+begin_src emacs-lisp
+(defun cyberdeck/pure-red--pdf ()
+  (with-eval-after-load 'pdf-view
+    (setq pdf-view-midnight-colors '("#FFFFFF" . "unspecified-bg"))))
+#+end_src

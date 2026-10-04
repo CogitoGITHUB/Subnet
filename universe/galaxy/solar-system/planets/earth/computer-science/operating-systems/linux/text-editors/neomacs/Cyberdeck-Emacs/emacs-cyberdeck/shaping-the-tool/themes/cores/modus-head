@@ -1,0 +1,284 @@
+* Modus Engine Head :EMACS_MECHANISM:S0:
+:PROPERTIES:
+:ID:       260149d1-c261-42e9-8ae6-ccb038784983
+:MM_PARENT: none
+:MM_ORDER:  15.1
+:END:
+
+
+#+begin_src emacs-lisp
+;;; modus-themes.el --- Elegant, highly legible and customizable themes -*- lexical-binding:t -*-
+
+;; Copyright (C) 2019-2026  Free Software Foundation, Inc.
+
+;; Author: Protesilaos <info@protesilaos.com>
+;; Maintainer: Protesilaos <info@protesilaos.com>
+;; URL: https://github.com/protesilaos/modus-themes
+;; Version: 5.3.0
+;; Package-Requires: ((emacs "28.1"))
+;; Keywords: faces, theme, accessibility
+
+;; This file is part of GNU Emacs.
+
+;; GNU Emacs is free software: you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published by
+;; the Free Software Foundation, either version 3 of the License, or
+;; (at your option) any later version.
+;;
+;; GNU Emacs is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; GNU General Public License for more details.
+;;
+;; You should have received a copy of the GNU General Public License
+;; along with GNU Emacs.  If not, see <https://www.gnu.org/licenses/>.
+
+;;; Commentary:
+;;
+;; The Modus themes conform with the highest standard for
+;; color-contrast accessibility between background and foreground
+;; values (WCAG AAA).  They are also highly customizable and can even
+;; be used as the basis for other themes.  Please refer to the official
+;; Info manual for further documentation (distributed with the themes,
+;; or available at: <https://protesilaos.com/emacs/modus-themes>).
+
+;;; Code:
+
+
+
+(require 'color)
+(eval-when-compile
+  (require 'subr-x)
+  (require 'cl-lib))
+
+(defgroup modus-themes ()
+  "User options for the Modus themes.
+The Modus themes conform with the WCAG AAA standard for color
+contrast between background and foreground combinations (a
+minimum contrast of 7:1---the highest standard of its kind).
+
+The Modus themes collection includes themes that are optimized
+for people with red-green or blue-yellow color
+deficiency (deuteranopia or tritanopia, respectively)."
+  :group 'faces
+  :link '(info-link "(modus-themes) Top")
+  :link '(url-link :tag "Homepage" "https://protesilaos.com/emacs/modus-themes")
+  :link '(url-link :tag "Sample pictures" "https://protesilaos.com/emacs/modus-themes-pictures")
+  :prefix "modus-themes-"
+  :tag "Modus Themes")
+
+(defgroup modus-themes-faces ()
+  "Faces defined by the Modus themes."
+  :group 'modus-themes
+  :link '(info-link "(modus-themes) Top")
+  :link '(url-link :tag "Homepage" "https://protesilaos.com/emacs/modus-themes")
+  :link '(url-link :tag "Sample pictures" "https://protesilaos.com/emacs/modus-themes-pictures")
+  :prefix "modus-themes-"
+  :tag "Modus Themes Faces")
+
+
+
+;;;; Custom faces
+
+;; TODO 2026-07-14: Review which other Modus faces can be
+;; introduced. I am only interested in the semantic ones, not those
+;; with named colours.
+
+;; NOTE 2025-10-25: I could not find the `make-obsolete' equivalent for faces.
+(define-obsolete-face-alias 'modus-themes-fg-blue nil "5.0.0")
+(define-obsolete-face-alias 'modus-themes-fg-blue-cooler nil "5.0.0")
+(define-obsolete-face-alias 'modus-themes-fg-blue-faint nil "5.0.0")
+(define-obsolete-face-alias 'modus-themes-fg-blue-intense nil "5.0.0")
+(define-obsolete-face-alias 'modus-themes-fg-blue-warmer nil "5.0.0")
+(define-obsolete-face-alias 'modus-themes-fg-cyan nil "5.0.0")
+(define-obsolete-face-alias 'modus-themes-fg-cyan-cooler nil "5.0.0")
+(define-obsolete-face-alias 'modus-themes-fg-cyan-faint nil "5.0.0")
+(define-obsolete-face-alias 'modus-themes-fg-cyan-intense nil "5.0.0")
+(define-obsolete-face-alias 'modus-themes-fg-cyan-warmer nil "5.0.0")
+(define-obsolete-face-alias 'modus-themes-fg-green nil "5.0.0")
+(define-obsolete-face-alias 'modus-themes-fg-green-cooler nil "5.0.0")
+(define-obsolete-face-alias 'modus-themes-fg-green-faint nil "5.0.0")
+(define-obsolete-face-alias 'modus-themes-fg-green-intense nil "5.0.0")
+(define-obsolete-face-alias 'modus-themes-fg-green-warmer nil "5.0.0")
+(define-obsolete-face-alias 'modus-themes-fg-magenta nil "5.0.0")
+(define-obsolete-face-alias 'modus-themes-fg-magenta-cooler nil "5.0.0")
+(define-obsolete-face-alias 'modus-themes-fg-magenta-faint nil "5.0.0")
+(define-obsolete-face-alias 'modus-themes-fg-magenta-intense nil "5.0.0")
+(define-obsolete-face-alias 'modus-themes-fg-magenta-warmer nil "5.0.0")
+(define-obsolete-face-alias 'modus-themes-fg-red nil "5.0.0")
+(define-obsolete-face-alias 'modus-themes-fg-red-cooler nil "5.0.0")
+(define-obsolete-face-alias 'modus-themes-fg-red-faint nil "5.0.0")
+(define-obsolete-face-alias 'modus-themes-fg-red-intense nil "5.0.0")
+(define-obsolete-face-alias 'modus-themes-fg-red-warmer nil "5.0.0")
+(define-obsolete-face-alias 'modus-themes-fg-yellow nil "5.0.0")
+(define-obsolete-face-alias 'modus-themes-fg-yellow-cooler nil "5.0.0")
+(define-obsolete-face-alias 'modus-themes-fg-yellow-faint nil "5.0.0")
+(define-obsolete-face-alias 'modus-themes-fg-yellow-intense nil "5.0.0")
+(define-obsolete-face-alias 'modus-themes-fg-yellow-warmer nil "5.0.0")
+(define-obsolete-face-alias 'modus-themes-intense-blue nil "5.0.0")
+(define-obsolete-face-alias 'modus-themes-intense-cyan nil "5.0.0")
+(define-obsolete-face-alias 'modus-themes-intense-green nil "5.0.0")
+(define-obsolete-face-alias 'modus-themes-intense-magenta nil "5.0.0")
+(define-obsolete-face-alias 'modus-themes-intense-red nil "5.0.0")
+(define-obsolete-face-alias 'modus-themes-intense-yellow nil "5.0.0")
+(define-obsolete-face-alias 'modus-themes-key-binding nil "5.0.0")
+(define-obsolete-face-alias 'modus-themes-lang-error nil "5.0.0")
+(define-obsolete-face-alias 'modus-themes-lang-note nil "5.0.0")
+(define-obsolete-face-alias 'modus-themes-lang-warning nil "5.0.0")
+(define-obsolete-face-alias 'modus-themes-nuanced-blue nil "5.0.0")
+(define-obsolete-face-alias 'modus-themes-nuanced-cyan nil "5.0.0")
+(define-obsolete-face-alias 'modus-themes-nuanced-green nil "5.0.0")
+(define-obsolete-face-alias 'modus-themes-nuanced-magenta nil "5.0.0")
+(define-obsolete-face-alias 'modus-themes-nuanced-red nil "5.0.0")
+(define-obsolete-face-alias 'modus-themes-nuanced-yellow nil "5.0.0")
+(define-obsolete-face-alias 'modus-themes-prominent-error nil "5.0.0")
+(define-obsolete-face-alias 'modus-themes-prominent-note nil "5.0.0")
+(define-obsolete-face-alias 'modus-themes-prominent-warning nil "5.0.0")
+(define-obsolete-face-alias 'modus-themes-prose-code nil "5.0.0")
+(define-obsolete-face-alias 'modus-themes-prose-macro nil "5.0.0")
+(define-obsolete-face-alias 'modus-themes-prose-verbatim nil "5.0.0")
+(define-obsolete-face-alias 'modus-themes-subtle-blue nil "5.0.0")
+(define-obsolete-face-alias 'modus-themes-subtle-cyan nil "5.0.0")
+(define-obsolete-face-alias 'modus-themes-subtle-green nil "5.0.0")
+(define-obsolete-face-alias 'modus-themes-subtle-magenta nil "5.0.0")
+(define-obsolete-face-alias 'modus-themes-subtle-red nil "5.0.0")
+(define-obsolete-face-alias 'modus-themes-subtle-yellow nil "5.0.0")
+
+;; These faces are used internally to ensure consistency between various
+;; groups and to streamline the evaluation of relevant customization
+;; options.
+
+(dotimes (n 9)
+  (custom-declare-face
+   (intern (format "modus-themes-heading-%d" n))
+   nil (format "Level %d heading." n)
+   :package-version '(modus-themes . "4.0.0")
+   :version "30.1"
+   :group 'modus-themes-faces))
+
+(defface modus-themes-bold nil
+  "Generic face for applying a conditional bold weight.
+This behaves in accordance with `modus-themes-bold-constructs'."
+  :package-version '(modus-themes . "4.0.0")
+  :version "30.1"
+  :group 'modus-themes-faces)
+
+(defface modus-themes-slant nil
+  "Generic face for applying a conditional slant (italics).
+This behaves in accordance with `modus-themes-italic-constructs'."
+  :package-version '(modus-themes . "4.0.0")
+  :version "30.1"
+  :group 'modus-themes-faces)
+
+(defface modus-themes-fixed-pitch nil
+  "Face for `fixed-pitch' if `modus-themes-mixed-fonts' is non-nil."
+  :package-version '(modus-themes . "4.0.0")
+  :version "30.1"
+  :group 'modus-themes-faces)
+
+(defface modus-themes-ui-variable-pitch nil
+  "Face for `variable-pitch' if `modus-themes-variable-pitch-ui' is non-nil."
+  :package-version '(modus-themes . "4.0.0")
+  :version "30.1"
+  :group 'modus-themes-faces)
+
+(defface modus-themes-reset-soft nil
+  "Generic face to set most face properties to nil.
+
+This is intended to be inherited by faces that should not retain
+properties from their context (e.g. an overlay over an underlined
+text should not be underlined as well) yet still blend in."
+  :group 'modus-themes-faces)
+
+(defface modus-themes-button nil
+  "Face for graphical buttons."
+  :group 'modus-themes-faces)
+
+(defface modus-themes-prompt nil
+  "Prompts like in the minibuffer and the shell."
+  :package-version '(modus-themes . "5.4.0")
+  :group 'modus-themes-faces)
+
+(defface modus-themes-completion-selected nil
+  "Face for completion selected candidate."
+  :package-version '(modus-themes . "5.4.0")
+  :group 'modus-themes-faces)
+
+(dotimes (n 4)
+  (custom-declare-face
+   (intern (format "modus-themes-completion-match-%d" n))
+   nil (format "Face for completion matches %d." n)
+   :package-version '(modus-themes . "5.4.0")
+   :group 'modus-themes-faces))
+
+(dolist (suffix '(current lazy replace static))
+  (custom-declare-face
+   (intern (format "modus-themes-search-%s" suffix))
+   nil (format "Face for %s search matches." suffix)
+   :package-version '(modus-themes . "5.4.0")
+   :group 'modus-themes-faces))
+
+(dotimes (n 4)
+  (custom-declare-face
+   (intern (format "modus-themes-search-rx-group-%d" n))
+   nil (format "Face for regexp group %d." n)
+   :package-version '(modus-themes . "5.4.0")
+   :group 'modus-themes-faces))
+
+(define-obsolete-face-alias 'modus-themes-mark-alt 'modus-themes-mark-other "5.4.0")
+(define-obsolete-face-alias 'modus-themes-mark-del 'modus-themes-mark-delete "5.4.0")
+(define-obsolete-face-alias 'modus-themes-mark-sel 'modus-themes-mark-select "5.4.0")
+
+(dolist (suffix '(other delete select))
+  (custom-declare-face
+   (intern (format "modus-themes-mark-%s" suffix))
+   nil (format "Face for %s marks." suffix)
+   :package-version '(modus-themes . "5.4.0")
+   :group 'modus-themes-faces))
+
+
+
+;;;; Customization variables
+
+(make-obsolete-variable
+ 'modus-themes-custom-auto-reload
+ "reload the theme manually for changes to take effect"
+ "5.0.0")
+
+(defcustom modus-themes-disable-other-themes t
+  "Disable all other themes when loading a Modus theme.
+
+When the value is non-nil, the commands `modus-themes-toggle' and
+`modus-themes-select', as well as the `modus-themes-load-theme'
+function, will disable all other themes while loading the
+specified Modus theme.  This is done to ensure that Emacs does
+not blend two or more themes: such blends lead to awkward results
+that undermine the work of the designer.
+
+When the value is nil, the aforementioned commands and function
+will only disable other themes within the Modus collection.
+
+This option is provided because Emacs themes are not necessarily
+limited to colors/faces: they can consist of an arbitrary set of
+customizations.  Users who use such customization bundles must
+set this variable to a nil value."
+  :group 'modus-themes
+  :package-version '(modus-themes . "4.1.0")
+  :version "30.1"
+  :type 'boolean
+  :link '(info-link "(modus-themes) Disable other themes"))
+
+(defvaralias 'modus-themes-collection 'modus-themes-items
+  "Alias of `modus-themes-items'.")
+
+(defconst modus-themes-items
+  '( modus-operandi
+     modus-operandi-tinted
+     modus-operandi-deuteranopia
+     modus-operandi-tritanopia
+     modus-vivendi
+     modus-vivendi-tinted
+     modus-vivendi-deuteranopia
+     modus-vivendi-tritanopia)
+  "Symbols of the Modus themes.")
+#+end_src

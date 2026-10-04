@@ -1,0 +1,13 @@
+* Modus Faces Join :EMACS_MECHANISM:S0:
+:PROPERTIES:
+:ID:       e695a4db-1133-4037-88e0-5ddc3ba3b6f6
+:MM_PARENT: none
+:MM_ORDER:  17.5
+:END:
+
+
+#+begin_src emacs-lisp
+(defvar modus-themes-faces
+  (append modus-themes-faces-part-a modus-themes-faces-part-b modus-themes-faces-part-c modus-themes-faces-part-d modus-themes-faces-part-e modus-themes-faces-part-f modus-themes-faces-part-g)
+  "Complete face specs, joined from the part constants in original order.")
+#+end_src

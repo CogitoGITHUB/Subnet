@@ -1,0 +1,38 @@
+* Cyberdeck Theme Apply :EMACS_MECHANISM:S0:
+:PROPERTIES:
+:ID:       4c22cbcf-048f-433c-8435-69bc786a1744
+:MM_PARENT: none
+:MM_ORDER:  20.1
+:END:
+
+
+** Apply
+
+#+begin_src emacs-lisp
+(defun cyberdeck/pure-red ()
+  (cyberdeck/pure-red--default)
+  (cyberdeck/pure-red--hl-line)
+  (cyberdeck/pure-red--org)
+  (cyberdeck/pure-red--code)
+  (cyberdeck/pure-red--latex)
+  (cyberdeck/pure-red--pdf)
+  (cyberdeck/pure-red--line-numbers)
+  (cyberdeck/pure-red--minibuffer)
+  (cyberdeck/pure-red--vertico)
+  (cyberdeck/pure-red--orderless)
+  (cyberdeck/pure-red--ivy)
+  (cyberdeck/pure-red--helm)
+  (cyberdeck/pure-red--mode-line)
+  )
+
+(defun cyberdeck/nuke-backgrounds ()
+  (dolist (face (face-list))
+    (when (and (not (memq face '(region cursor)))
+               (not (string-match-p "ks-lead-face" (symbol-name face))))
+      (set-face-attribute face nil :background 'unspecified))))
+
+(cyberdeck/pure-red)
+(cyberdeck/nuke-backgrounds)
+(advice-add 'load-theme :after (lambda (&rest _) (cyberdeck/pure-red) (cyberdeck/nuke-backgrounds)))
+(add-hook 'after-make-frame-functions (lambda (_frame) (cyberdeck/pure-red) (cyberdeck/nuke-backgrounds)))
+#+end_src

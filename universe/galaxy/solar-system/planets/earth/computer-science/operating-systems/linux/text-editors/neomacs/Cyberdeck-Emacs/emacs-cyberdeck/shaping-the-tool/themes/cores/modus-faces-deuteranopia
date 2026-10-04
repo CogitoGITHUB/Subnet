@@ -1,0 +1,19 @@
+* Modus Faces Deuteranopia :EMACS_MECHANISM:S0:
+:PROPERTIES:
+:ID:       4f74552a-7f1d-48c2-ba4e-8545395c0456
+:MM_PARENT: none
+:MM_ORDER:  17.3
+:END:
+
+
+#+begin_src emacs-lisp
+(defconst modus-themes-faces-deuteranopia
+  '(
+    `(transient-key-exit ((,c :inherit (bold modus-themes-fixed-pitch) :foreground ,yellow-warmer)))
+    `(transient-key-noop ((,c :inherit modus-themes-fixed-pitch :foreground ,fg-dim)))
+    `(transient-key-recurse ((,c :inherit (bold modus-themes-fixed-pitch) :foreground ,fg-main)))
+    `(transient-key-return ((,c :inherit (bold modus-themes-fixed-pitch) :foreground ,yellow-cooler)))
+    `(transient-key-stack ((,c :inherit (bold modus-themes-fixed-pitch) :foreground ,blue-cooler)))
+    `(transient-key-stay ((,c :inherit (bold modus-themes-fixed-pitch) :foreground ,cyan-faint))))
+  "Faces that must be used by themes that are optimized for deuteranopia.")
+#+end_src

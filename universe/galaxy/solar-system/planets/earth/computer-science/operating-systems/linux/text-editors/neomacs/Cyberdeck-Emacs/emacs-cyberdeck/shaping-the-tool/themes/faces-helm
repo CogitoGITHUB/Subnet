@@ -1,0 +1,20 @@
+* Cyberdeck Faces Helm :EMACS_MECHANISM:S0:
+:PROPERTIES:
+:ID:       ea4d823e-5f22-41fb-9189-616c3075f408
+:MM_PARENT: none
+:MM_ORDER:  19.2
+:END:
+
+
+** Helm
+
+#+begin_src emacs-lisp
+(defun cyberdeck/pure-red--helm ()
+  (with-eval-after-load 'helm
+    (dolist (face '(helm-selection helm-match helm-source-header helm-visible-mark
+                    helm-candidate-number helm-separator helm-M-x-key helm-buffer-directory
+                    helm-buffer-file helm-buffer-process helm-ff-directory helm-ff-file
+                    helm-grep-match))
+      (when (facep face)
+        (set-face-attribute face nil :foreground "#FFFFFF" :background "unspecified-bg" :weight 'normal :inherit nil)))))
+#+end_src

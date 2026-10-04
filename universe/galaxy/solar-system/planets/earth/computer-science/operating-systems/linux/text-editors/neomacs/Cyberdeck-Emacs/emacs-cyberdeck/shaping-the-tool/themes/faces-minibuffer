@@ -1,0 +1,18 @@
+* Cyberdeck Faces Minibuffer :EMACS_MECHANISM:S0:
+:PROPERTIES:
+:ID:       968db93c-85bb-47a1-b02e-b4c2a54febea
+:MM_PARENT: none
+:MM_ORDER:  18.7
+:END:
+
+
+** Minibuffer
+
+#+begin_src emacs-lisp
+(defun cyberdeck/pure-red--minibuffer ()
+  (dolist (face '(minibuffer-prompt completions-annotations completions-common-part
+                  completions-first-difference shadow help-key-binding))
+    (set-face-attribute face nil :foreground "#FFFFFF" :background "unspecified-bg" :weight 'normal :inherit nil))
+  (when (facep 'completions-highlight)
+    (set-face-attribute 'completions-highlight nil :foreground "#FFFFFF" :background "unspecified-bg" :inherit nil)))
+#+end_src

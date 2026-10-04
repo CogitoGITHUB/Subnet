@@ -1,0 +1,17 @@
+* Cyberdeck Faces Orderless :EMACS_MECHANISM:S0:
+:PROPERTIES:
+:ID:       a6c30438-1063-4fcd-a6cd-fd98ad494642
+:MM_PARENT: none
+:MM_ORDER:  18.9
+:END:
+
+
+** Orderless
+
+#+begin_src emacs-lisp
+(defun cyberdeck/pure-red--orderless ()
+  (with-eval-after-load 'orderless
+    (dolist (face '(orderless-match-face-0 orderless-match-face-1
+                    orderless-match-face-2 orderless-match-face-3))
+      (set-face-attribute face nil :foreground "#FFFFFF" :background "unspecified-bg" :weight 'bold :inherit nil))))
+#+end_src

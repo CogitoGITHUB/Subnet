@@ -1,0 +1,20 @@
+* Cyberdeck Faces Ivy :EMACS_MECHANISM:S0:
+:PROPERTIES:
+:ID:       3e6640e3-7521-4165-9b1f-5773b75f7b02
+:MM_PARENT: none
+:MM_ORDER:  19.1
+:END:
+
+
+** Ivy
+
+#+begin_src emacs-lisp
+(defun cyberdeck/pure-red--ivy ()
+  (with-eval-after-load 'ivy
+    (dolist (face '(ivy-current-match ivy-minibuffer-match-face-1 ivy-minibuffer-match-face-2
+                    ivy-minibuffer-match-face-3 ivy-minibuffer-match-face-4 ivy-action
+                    ivy-highlight-face ivy-remote ivy-subdir ivy-virtual ivy-confirm-face
+                    ivy-match-required-face))
+      (when (facep face)
+        (set-face-attribute face nil :foreground "#FFFFFF" :background "unspecified-bg" :weight 'normal :inherit nil)))))
+#+end_src

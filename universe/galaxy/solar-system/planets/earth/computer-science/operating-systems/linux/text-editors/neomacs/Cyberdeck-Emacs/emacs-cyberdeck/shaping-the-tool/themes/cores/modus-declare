@@ -1,0 +1,517 @@
+* Modus Declare And Provide :EMACS_MECHANISM:S0:
+:PROPERTIES:
+:ID:       f67e7d18-81f4-438d-80b1-23160fe14500
+:MM_PARENT: none
+:MM_ORDER:  17.6
+:END:
+
+
+#+begin_src emacs-lisp
+(defun modus-themes-declare (name family description background-mode core-palette user-palette overrides-palette)
+  "Declare NAME theme that belongs to FAMILY.
+All of DESCRIPTION, BACKGROUND-MODE, CORE-PALETTE, USER-PALETTE,
+OVERRIDES-PALETTE have the same meaning as in `modus-themes-theme'.
+
+To simply register the theme, use `modus-themes-register'."
+  (custom-declare-theme
+   name (intern (format "%s-theme" name))
+   description
+   (list :kind 'color-scheme :background-mode background-mode :family family
+         :modus-core-palette core-palette :modus-user-palette user-palette
+         :modus-overrides-palette overrides-palette :modus-documentation description)))
+
+(defun modus-themes-register (name)
+  "Add NAME theme to `modus-themes-registered-items'.
+To actually declare a theme, instantiating with together with its
+properties, use `modus-themes-declare'."
+  (add-to-list 'modus-themes-registered-items name))
+
+;;;###autoload
+(defun modus-themes-theme (name family description background-mode core-palette user-palette overrides-palette &optional custom-faces custom-variables)
+  "Define a Modus theme or derivative thereof.
+NAME is the name of the new theme.  FAMILY is the collection of themes
+it belongs to.  DESCRIPTION is its documentation string.
+BACKGROUND-MODE is either `dark' or `light', in reference to the theme's
+background color.  The CORE-PALETTE, USER-PALETTE, and OVERRIDES-PALETTE
+are symbols of variables which define palettes commensurate with
+`modus-themes-operandi-palette'.
+
+The optional CUSTOM-FACES and CUSTOM-VARIABLES are joined together with
+the `modus-themes-faces' and `modus-themes-custom-variables',
+respectively.  A derivative theme defining those is thus overriding what
+the Modus themes have by default.
+
+Consult the manual for details on how to build a theme on top of the
+`modus-themes': Info node `(modus-themes) Build on top of the Modus themes'."
+  (let ((theme-exists-p (get name 'theme-feature))
+        (faces (append
+                (symbol-value custom-faces)
+                modus-themes-faces))
+        (variables (append
+                    modus-themes-custom-variables
+                    (symbol-value custom-variables)
+                    (list `'(frame-background-mode ',background-mode)))))
+    (unless theme-exists-p
+      (modus-themes-declare
+       name family
+       description background-mode
+       core-palette user-palette overrides-palette)
+      (unless (eq family 'modus-themes)
+        (modus-themes-register name)))
+    (let ((palette (modus-themes--get-theme-palette-subr name :with-overrides :with-user-palette)))
+      (eval
+       `(let* ((c '((class color) (min-colors 256)))
+               (palette (modus-themes--get-theme-palette-subr ',name :with-overrides :with-user-palette))
+               ,@(mapcar
+                  (lambda (entry)
+                    (let ((name (car entry)))
+                      (list name `(modus-themes-retrieve-palette-value ',name palette))))
+                  palette))
+          (custom-theme-set-faces
+           ',name
+           ,@faces)
+          (custom-theme-set-variables
+           ',name
+           ,@variables))
+       :lexical))
+    (unless (featurep theme-exists-p)
+      (provide-theme name))))
+
+;;;; Use theme colors
+
+(defun modus-themes--with-colors-get-palette (theme)
+  "Get THEME palette for `modus-themes-with-colors'.
+Return (list CORE USER OVERRIDES) palettes."
+  (when-let* ((properties (get theme 'theme-properties))
+              (core-palette (symbol-value (plist-get properties :modus-core-palette))))
+    (let* ((user-palette (symbol-value (plist-get properties :modus-user-palette)))
+           (overrides-palette (symbol-value (plist-get properties :modus-overrides-palette)))
+           (all-overrides (append overrides-palette modus-themes-common-palette-overrides)))
+      (list core-palette user-palette all-overrides))))
+
+(defun modus-themes--with-colors-resolve-palette-sort (colors)
+  "Sort all COLORS in the theme's palette.
+Put all named colors before semantic color mappings.  A named color is a
+symbol whose value is a string.  A semantic color mapping is a symbol
+whose value is another symbol, which ultimately resolves to a string or
+`unspecified'."
+  (let ((named nil)
+        (semantic nil))
+    (dolist (group colors)
+      (dolist (color group)
+        (if (stringp (cadr color))
+            (push color named)
+          (push color semantic))))
+    (let* ((unique-fn (lambda (sequence)
+                        (seq-uniq sequence
+                                  (lambda (elt1 elt2)
+                                    (eq (car elt1) (car elt2))))))
+           (named-unique (funcall unique-fn named))
+           (semantic-unique (funcall unique-fn semantic)))
+      (nreverse (nconc semantic-unique named-unique)))))
+
+(defmacro modus-themes-with-colors (&rest body)
+  "Evaluate BODY with colors from current palette bound."
+  (declare (indent 0))
+  `(condition-case data
+       (when-let* ((theme (modus-themes-get-current-theme))
+                   (palette (modus-themes--with-colors-get-palette theme)))
+         (let ((bindings
+                (append
+                 '((c '((class color) (min-colors 256))) (unspecified 'unspecified))
+                 (cl-remove-duplicates (apply #'append palette) :key #'car))))
+           (eval (nconc `(cl-symbol-macrolet ,bindings) ',body))))
+     (error (message "Error in modus-themes-with-colors: %s" data))))
+
+;;;; Declare all the Modus themes
+
+(defconst modus-themes-with-properties
+  '((modus-operandi-deuteranopia modus-themes "Deuteranopia-optimized theme with a white background." light modus-themes-operandi-deuteranopia-palette modus-operandi-deuteranopia-palette-user modus-operandi-deuteranopia-palette-overrides)
+    (modus-operandi modus-themes "Elegant, highly legible theme with a white background." light modus-themes-operandi-palette modus-operandi-palette-user modus-operandi-palette-overrides)
+    (modus-operandi-tinted modus-themes "Elegant, highly legible theme with a light ochre background." light modus-themes-operandi-tinted-palette modus-operandi-tinted-palette-user modus-operandi-tinted-palette-overrides)
+    (modus-operandi-tritanopia modus-themes "Tritanopia-optimized theme with a white background." light modus-themes-operandi-tritanopia-palette modus-operandi-tritanopia-palette-user modus-operandi-tritanopia-palette-overrides)
+    (modus-vivendi-deuteranopia modus-themes "Deuteranopia-optimized theme with a black background." dark modus-themes-vivendi-deuteranopia-palette modus-vivendi-deuteranopia-palette-user modus-vivendi-deuteranopia-palette-overrides)
+    (modus-vivendi modus-themes "Elegant, highly legible theme with a black background." dark modus-themes-vivendi-palette modus-vivendi-palette-user modus-vivendi-palette-overrides)
+    (modus-vivendi-tinted modus-themes "Elegant, highly legible theme with a night sky background." dark modus-themes-vivendi-tinted-palette modus-vivendi-tinted-palette-user modus-vivendi-tinted-palette-overrides)
+    (modus-vivendi-tritanopia modus-themes "Tritanopia-optimized theme with a black background." dark modus-themes-vivendi-tritanopia-palette modus-vivendi-tritanopia-palette-user modus-vivendi-tritanopia-palette-overrides)))
+
+(defvar modus-themes--declared-p nil)
+
+(defun modus-themes-declare-themes ()
+  "Declare the Modus themes."
+  (unless modus-themes--declared-p
+    (dolist (theme modus-themes-with-properties)
+      (apply #'modus-themes-declare theme))
+    (setq modus-themes--declared-p t)))
+
+(modus-themes-declare-themes)
+
+;;;; Accept all Modus themes and their derivatives
+
+;;;###autoload
+(define-minor-mode modus-themes-include-derivatives-mode
+  "When enabled, all Modus themes commands cover derivatives as well.
+Otherwise, they only consider the `modus-themes-items'.
+
+Derivative theme projects can implement the equivalent of this minor
+mode plus a method for `modus-themes-get-themes' to filter themes
+accordingly."
+  :global t
+  :init-value nil)
+
+(cl-defmethod modus-themes-get-themes (&context (modus-themes-include-derivatives-mode (eql t)))
+  "Return list of Modus themes per `modus-themes-include-derivatives-mode'."
+  (if-let* ((themes (modus-themes-get-all-known-themes nil))
+            (sorted-themes (modus-themes-sort themes 'light)))
+      sorted-themes
+    modus-themes-items))
+
+;;;; Let derivative themes create commands to load only their themes
+
+(defvar modus-themes-define-derivative-command-known-suffixes
+  '( toggle rotate select select-dark select-light
+     load-random load-random-dark load-random-light
+     list-colors list-colors-current)
+  "Command suffixes accepted by `modus-themes-define-derivative-command'.")
+
+(defmacro modus-themes-define-derivative-command (family suffix)
+  "Define convenience command with SUFFIX to load only FAMILY themes.
+SUFFIX is a symbol among those listed in the variable
+`modus-themes-define-derivative-command-known-suffixes'.  The newly
+defined command's symbol is FAMILY-SUFFIX, like `modus-themes-rotate'."
+  (unless (memq suffix modus-themes-define-derivative-command-known-suffixes)
+    (error "Cannot define command with unknown suffix `%s'" suffix))
+  (let ((modus-command (intern (format "modus-themes-%s" suffix))))
+    `(defun ,(intern (format "%s-%s" family suffix)) ()
+       ,(format "Like `%s' but only for the `%s'" modus-command family)
+       (interactive)
+       (cl-letf (((symbol-function 'modus-themes-get-themes)
+                  (lambda ()
+                    (modus-themes-get-all-known-themes ',family))))
+         (call-interactively ',modus-command)))))
+
+;;;; Generate a palette given the base colors
+
+;; NOTE 2025-11-25: This is a copy of `color-blend' from Emacs 31.  We
+;; should remove this in the future.
+(defun modus-themes-blend (a b &optional alpha)
+  "Blend the two colors A and B in linear space with ALPHA.
+A and B should be lists (RED GREEN BLUE), where each element is
+between 0.0 and 1.0, inclusive.  ALPHA controls the influence A
+has on the result and should be between 0.0 and 1.0, inclusive.
+
+For instance:
+
+   (modus-themes-blend \\='(1 0.5 1) \\='(0 0 0) 0.75)
+      => (0.75 0.375 0.75)"
+  (setq alpha (or alpha 0.5))
+  (let (blend)
+    (dotimes (i 3)
+      (push (+ (* (nth i a) alpha) (* (nth i b) (- 1 alpha))) blend))
+    (nreverse blend)))
+
+(defun modus-themes-generate-color-blend (color blended-with-hex alpha)
+  "Return hexadecimal RGB of COLOR with BLENDED-WITH-HEX given ALPHA.
+BLENDED-WITH-HEX is commensurate with COLOR.  ALPHA is between 0.0 and 1.0,
+inclusive.
+
+Color values are of the form accepted by `modus-themes-wcag-formula'."
+  (let* ((blend-rgb (modus-themes-blend
+                     (modus-themes--hex-or-name-to-rgb color)
+                     (modus-themes--hex-or-name-to-rgb blended-with-hex)
+                     alpha))
+         (blend-hex (apply #'color-rgb-to-hex blend-rgb)))
+    (modus-themes--color-eight-to-six-digits blend-hex)))
+
+(defun modus-themes-generate-color-warmer (color alpha)
+  "Return warmer COLOR by ALPHA, per `modus-themes-generate-color-blend'."
+  (modus-themes-generate-color-blend color "#ff0000" alpha))
+
+(defun modus-themes-generate-color-cooler (color alpha)
+  "Return cooler COLOR by ALPHA, per `modus-themes-generate-color-blend'."
+  (modus-themes-generate-color-blend color "#0000ff" alpha))
+
+(define-obsolete-function-alias
+  'modus-themes-generate-gradient
+  'modus-themes-adjust-value
+  "5.3.0")
+
+(defun modus-themes-color-warm-p (color)
+  "Return non-nil if COLOR is warm.
+A warm color has more contribution from the red channel of light than
+the blue one."
+  (pcase-let ((`(,r ,_ ,b) (modus-themes--hex-or-name-to-rgb color)))
+    (> r b)))
+
+(defun modus-themes-color-is-warm-or-cool-p (color)
+  "Return `warm' or `cool' for COLOR depending on its value."
+  (if (modus-themes-color-warm-p color)
+      'warm
+    'cool))
+
+(defun modus-themes-generate-color-warmer-or-cooler (color alpha &optional preference)
+  "Return COLOR variant by ALPHA and PREFERENCE.
+PREFERENCE is either `cool' or `warm'.  An unknown PREFERENCE means
+`cool'.  Without PREFERENCE, rely on the return value of
+`modus-themes-color-is-warm-or-cool-p'."
+  (let ((kind (or preference (modus-themes-color-is-warm-or-cool-p color))))
+    (funcall
+     (if (eq kind 'warm)
+         #'modus-themes-generate-color-warmer
+       'modus-themes-generate-color-cooler)
+     color
+     alpha)))
+
+;;;###autoload
+(defun modus-themes-generate-palette (base-colors &optional cool-or-warm-preference core-palette mappings)
+  "Generate a palette given the BASE-COLORS.
+BASE-COLORS consists of lists in the form (NAME VALUE).  NAME is at
+least a symbol of `bg-main' or `fg-main', while VALUE is a string
+representing a color either by name like in `list-colors-display' or
+hexadecimal RGB of the form #123456.  See the value of a core Modus
+palette, like `modus-themes-operandi-palette' for all current NAME
+symbols.
+
+BASE-COLORS is used to derive a palette.  Any entry whose name is
+already present in BASE-COLORS is not derived but taken as-is.  The rest
+are generated automatically.  The generated palette can be used as-is by
+a derivative theme (per `modus-themes-theme') or as a starting point for
+further refinements.
+
+With optional COOL-OR-WARM-PREFERENCE as a symbol of either `cool' or
+`warm' make relevant color choices for derivative values.  If
+COOL-OR-WARM-PREFERENCE is nil, derive the implied preference from the
+value of the `bg-main' color in BASE-COLORS.  If the value of `bg-main'
+satisfies `color-gray-p', then fall back to `cool'.  For our purposes,
+`cool' means that the color is closer to pure blue than pure red, while
+`warm' is the opposite.
+
+With optional CORE-PALETTE use it to fill in any of the remaining
+entries.  This can be a symbol like `modus-themes-operandi-palette'.  Do
+not try to enforce a core palette among those defined in modus-themes.el
+and let the user assume responsibility for any incompatibilities.  If
+CORE-PALETTE is nil, then infer a suitable palette based on whether the
+`bg-main' value in BASE-COLORS is light or dark and then the
+COOL-OR-WARM-PREFERENCE.  This inferred palette will be
+`modus-themes-operandi-palette' for a light `bg-main' and
+`modus-themes-vivendi-palette' for a dark `bg-main'.  The `cool' or
+`warm' shall yield the tinted variants of those palettes, namely,
+`modus-themes-operandi-tinted-palette' and
+`modus-themes-vivendi-tinted-palette'.
+
+With optional MAPPINGS use them instead of trying to derive new ones.
+If MAPPINGS is nil, generate some essential color mappings and let the
+rest come from CORE-PALETTE."
+  (when (seq-some
+         (lambda (entry)
+           (not (stringp (cadr entry))))
+         base-colors)
+    (error "Base colors can only be references to string color values, not symbols"))
+  (when (seq-some
+         (lambda (entry)
+           (stringp (cadr entry)))
+         mappings)
+    (error "Mappings can only be references to named colors, not color values"))
+  (let ((bg-main (alist-get 'bg-main base-colors))
+        (fg-main (alist-get 'fg-main base-colors)))
+    (unless (and bg-main fg-main)
+      (error "The palette must define at least a bg-main and fg-main entry with their values"))
+    (let* ((bg-main (car bg-main))
+           (bg-main-dark-p (modus-themes-color-dark-p bg-main))
+           (fg-main (car fg-main))
+           (six-colors (seq-filter
+                        (lambda (color)
+                          (memq (car color) '(red green yellow blue magenta cyan)))
+                        base-colors))
+           (prefers-cool-p (cond
+                            (cool-or-warm-preference (eq cool-or-warm-preference 'cool))
+                            (t (eq (modus-themes-color-is-warm-or-cool-p bg-main) 'cool))))
+           (derived-colors nil)
+           (derived-mappings nil)
+           (push-derived-value-fn (lambda (name value)
+                                    (unless (assq name base-colors)
+                                      (push (list name value) derived-colors))))
+           (push-mapping-fn (lambda (name value)
+                              (unless (assq name mappings)
+                                (push (list name value) derived-mappings)))))
+      ;; Base entries
+      (funcall push-derived-value-fn 'bg-dim (modus-themes-adjust-value bg-main (if bg-main-dark-p 5 -5)))
+      (funcall push-derived-value-fn 'bg-active (modus-themes-adjust-value bg-main (if bg-main-dark-p 10 -10)))
+      (funcall push-derived-value-fn 'bg-inactive (modus-themes-adjust-value bg-main (if bg-main-dark-p 8 -8)))
+      (funcall push-derived-value-fn 'border (modus-themes-adjust-value bg-main (if bg-main-dark-p 20 -20)))
+      (funcall push-derived-value-fn 'fg-dim (modus-themes-adjust-value fg-main (if bg-main-dark-p -20 20)))
+      (funcall push-derived-value-fn 'fg-alt (modus-themes-generate-color-warmer-or-cooler (modus-themes-adjust-value fg-main (if bg-main-dark-p -10 10)) 0.8 prefers-cool-p))
+      ;; Primary and secondary colors
+      (pcase-dolist (`(,name ,value) six-colors)
+        (funcall push-derived-value-fn (intern (format "%s-warmer" name)) (modus-themes-adjust-value (modus-themes-generate-color-warmer value 0.9) (if bg-main-dark-p 20 -20)))
+        (funcall push-derived-value-fn (intern (format "%s-cooler" name)) (modus-themes-adjust-value (modus-themes-generate-color-cooler value 0.9) (if bg-main-dark-p 20 -20)))
+        (funcall push-derived-value-fn (intern (format "%s-faint" name)) (modus-themes-adjust-value value (if bg-main-dark-p 10 -10)))
+        (funcall push-derived-value-fn (intern (format "%s-intense" name)) (modus-themes-adjust-value value (if bg-main-dark-p -5 5)))
+        ;; TODO 2025-12-06: We should have a function here that adjusts the value also up to a
+        ;; maximum distance from bg-main.  Basically, we want to avoid the scenario where a given
+        ;; base value produces something that is virtually indistinguishable from bg-main.
+        (funcall push-derived-value-fn (intern (format "bg-%s-intense" name)) (modus-themes-adjust-value value (if bg-main-dark-p -40 40)))
+        (funcall push-derived-value-fn (intern (format "bg-%s-subtle" name)) (modus-themes-adjust-value value (if bg-main-dark-p -60 60)))
+        (funcall push-derived-value-fn (intern (format "bg-%s-nuanced" name)) (modus-themes-adjust-value value (if bg-main-dark-p -80 80))))
+      ;; Mappings
+      (funcall push-mapping-fn 'bg-completion (if prefers-cool-p 'bg-cyan-subtle 'bg-yellow-subtle))
+      (funcall push-mapping-fn 'bg-hover (if prefers-cool-p 'bg-green-intense 'bg-magenta-intense))
+      (funcall push-mapping-fn 'bg-hover-secondary (if prefers-cool-p 'bg-green-subtle 'bg-magenta-subtle))
+      (funcall push-mapping-fn 'bg-hl-line (if prefers-cool-p 'bg-cyan-nuanced 'bg-yellow-nuanced))
+      (funcall push-mapping-fn 'bg-paren-match (if prefers-cool-p 'bg-green-intense 'bg-yellow-subtle))
+      (funcall push-mapping-fn 'bg-paren-expression (if prefers-cool-p 'bg-green-nuanced 'bg-yellow-nuanced))
+      (funcall push-mapping-fn 'bg-popup 'bg-dim)
+      (funcall push-mapping-fn 'bg-region 'bg-active)
+      (funcall push-mapping-fn 'fg-region 'fg-main)
+
+      (funcall push-mapping-fn 'bg-mode-line-active 'bg-active)
+      (funcall push-mapping-fn 'fg-mode-line-active 'fg-main)
+      (funcall push-mapping-fn 'border-mode-line-active 'border)
+      (funcall push-mapping-fn 'bg-mode-line-inactive 'bg-inactive)
+      (funcall push-mapping-fn 'fg-mode-line-inactive 'fg-dim)
+      (funcall push-mapping-fn 'border-mode-line-inactive 'border)
+
+      (funcall push-mapping-fn 'modeline-err 'red-faint)
+      (funcall push-mapping-fn 'modeline-warning 'yellow-faint)
+      (funcall push-mapping-fn 'modeline-info 'blue-faint)
+
+      (funcall push-mapping-fn 'bg-search-current 'bg-yellow-subtle)
+      (funcall push-mapping-fn 'bg-search-lazy 'bg-magenta-subtle)
+      (funcall push-mapping-fn 'bg-search-replace 'bg-red-subtle)
+      (funcall push-mapping-fn 'bg-search-rx-group-0 'bg-blue-subtle)
+      (funcall push-mapping-fn 'bg-search-rx-group-1 'bg-green-subtle)
+      (funcall push-mapping-fn 'bg-search-rx-group-2 'bg-red-subtle)
+      (funcall push-mapping-fn 'bg-search-rx-group-3 'bg-magenta-subtle)
+
+      (funcall push-mapping-fn 'fg-search-current 'yellow-warmer)
+      (funcall push-mapping-fn 'fg-search-lazy 'magenta-cooler)
+      (funcall push-mapping-fn 'fg-search-replace 'red-cooler)
+      (funcall push-mapping-fn 'fg-search-rx-group-0 'blue-warmer)
+      (funcall push-mapping-fn 'fg-search-rx-group-1 'green-warmer)
+      (funcall push-mapping-fn 'fg-search-rx-group-2 'red-cooler)
+      (funcall push-mapping-fn 'fg-search-rx-group-3 'magenta-cooler)
+
+      (funcall push-mapping-fn 'bg-prominent-err 'unspecified)
+      (funcall push-mapping-fn 'bg-prominent-warning 'unspecified)
+      (funcall push-mapping-fn 'bg-prominent-note 'unspecified)
+      (funcall push-mapping-fn 'fg-prominent-err 'red-intense)
+      (funcall push-mapping-fn 'fg-prominent-warning 'yellow-intense)
+      (funcall push-mapping-fn 'fg-prominent-note 'green-intense)
+
+      (funcall push-mapping-fn 'bg-active-argument (if prefers-cool-p 'bg-cyan-subtle 'bg-yellow-subtle))
+      (funcall push-mapping-fn 'fg-active-argument (if prefers-cool-p 'cyan-cooler 'yellow-warmer))
+      (funcall push-mapping-fn 'bg-active-value (if prefers-cool-p 'bg-magenta-subtle 'bg-blue-subtle))
+      (funcall push-mapping-fn 'fg-active-value (if prefers-cool-p 'magenta-cooler 'blue-warmer))
+
+      (funcall push-mapping-fn 'bg-tab-bar 'bg-dim)
+      (funcall push-mapping-fn 'bg-tab-current 'bg-main)
+      (funcall push-mapping-fn 'bg-tab-other 'bg-inactive)
+
+      (funcall push-mapping-fn 'bg-diff-context 'bg-dim)
+
+      (funcall push-mapping-fn 'bg-added 'bg-green-subtle)
+      (funcall push-mapping-fn 'bg-added-faint 'bg-green-nuanced)
+      (funcall push-mapping-fn 'bg-added-refine 'bg-green-intense)
+      (funcall push-mapping-fn 'bg-added-fringe 'green)
+      (funcall push-mapping-fn 'fg-added 'green-faint)
+      (funcall push-mapping-fn 'fg-added-intense 'green-intense)
+
+      (funcall push-mapping-fn 'bg-changed 'bg-yellow-subtle)
+      (funcall push-mapping-fn 'bg-changed-faint 'bg-yellow-nuanced)
+      (funcall push-mapping-fn 'bg-changed-refine 'bg-yellow-intense)
+      (funcall push-mapping-fn 'bg-changed-fringe 'yellow)
+      (funcall push-mapping-fn 'fg-changed 'yellow-faint)
+      (funcall push-mapping-fn 'fg-changed-intense 'yellow-intense)
+
+      (funcall push-mapping-fn 'bg-removed 'bg-red-subtle)
+      (funcall push-mapping-fn 'bg-removed-faint 'bg-red-nuanced)
+      (funcall push-mapping-fn 'bg-removed-refine 'bg-red-intense)
+      (funcall push-mapping-fn 'bg-removed-fringe 'red)
+      (funcall push-mapping-fn 'fg-removed 'red-faint)
+      (funcall push-mapping-fn 'fg-removed-intense 'red-intense)
+
+      (funcall push-mapping-fn 'fg-heading-0 'fg-alt)
+      (funcall push-mapping-fn 'fg-heading-1 'fg-main)
+      (funcall push-mapping-fn 'fg-heading-2 (if prefers-cool-p 'cyan 'yellow))
+      (funcall push-mapping-fn 'fg-heading-3 (if prefers-cool-p 'green 'magenta))
+      (funcall push-mapping-fn 'fg-heading-4 (if prefers-cool-p 'blue 'red))
+      (funcall push-mapping-fn 'fg-heading-5 (if prefers-cool-p 'yellow 'cyan))
+      (funcall push-mapping-fn 'fg-heading-6 (if prefers-cool-p 'magenta 'green))
+      (funcall push-mapping-fn 'fg-heading-7 (if prefers-cool-p 'red 'blue))
+      (funcall push-mapping-fn 'fg-heading-8 'fg-dim)
+
+      (funcall push-mapping-fn 'bg-term-black (if bg-main-dark-p 'bg-main 'fg-main))
+      (funcall push-mapping-fn 'bg-term-black-bright (if bg-main-dark-p 'bg-active 'fg-dim))
+      (funcall push-mapping-fn 'fg-term-black (if bg-main-dark-p 'bg-main 'fg-main))
+      (funcall push-mapping-fn 'fg-term-black-bright (if bg-main-dark-p 'bg-active 'fg-dim))
+
+      (funcall push-mapping-fn 'bg-term-white (if bg-main-dark-p 'fg-dim 'bg-active))
+      (funcall push-mapping-fn 'bg-term-white-bright (if bg-main-dark-p 'fg-main 'bg-main))
+      (funcall push-mapping-fn 'fg-term-white (if bg-main-dark-p 'fg-dim 'bg-active))
+      (funcall push-mapping-fn 'fg-term-white-bright (if bg-main-dark-p 'fg-main 'bg-main))
+
+      (funcall push-mapping-fn 'rust 'red-faint)
+      (funcall push-mapping-fn 'gold 'yellow-faint)
+      (funcall push-mapping-fn 'olive 'green-faint)
+      (funcall push-mapping-fn 'slate 'cyan-faint)
+      (funcall push-mapping-fn 'indigo 'blue-warmer)
+      (funcall push-mapping-fn 'maroon 'magenta-warmer)
+      (funcall push-mapping-fn 'pink 'magenta-faint)
+
+      (funcall push-mapping-fn 'bg-clay 'bg-red-nuanced)
+      (funcall push-mapping-fn 'fg-clay 'red-cooler)
+      (funcall push-mapping-fn 'bg-ochre 'bg-yellow-nuanced)
+      (funcall push-mapping-fn 'fg-ochre 'yellow-cooler)
+      (funcall push-mapping-fn 'bg-lavender 'bg-magenta-nuanced)
+      (funcall push-mapping-fn 'fg-lavender 'magenta-cooler)
+      (funcall push-mapping-fn 'bg-sage 'bg-green-nuanced)
+      (funcall push-mapping-fn 'fg-sage 'green-cooler)
+
+      (funcall push-mapping-fn 'bg-graph-red-0 (if bg-main-dark-p 'bg-red-intense 'bg-red-subtle))
+      (funcall push-mapping-fn 'bg-graph-red-1 (if bg-main-dark-p 'bg-red-subtle 'bg-red-intense))
+      (funcall push-mapping-fn 'bg-graph-green-0 (if bg-main-dark-p 'bg-green-intense 'bg-green-subtle))
+      (funcall push-mapping-fn 'bg-graph-green-1 (if bg-main-dark-p 'bg-green-subtle 'bg-green-intense))
+      (funcall push-mapping-fn 'bg-graph-yellow-0 (if bg-main-dark-p 'bg-yellow-intense 'bg-yellow-subtle))
+      (funcall push-mapping-fn 'bg-graph-yellow-1 (if bg-main-dark-p 'bg-yellow-subtle 'bg-yellow-intense))
+      (funcall push-mapping-fn 'bg-graph-blue-0 (if bg-main-dark-p 'bg-blue-intense 'bg-blue-subtle))
+      (funcall push-mapping-fn 'bg-graph-blue-1 (if bg-main-dark-p 'bg-blue-subtle 'bg-blue-intense))
+      (funcall push-mapping-fn 'bg-graph-magenta-0 (if bg-main-dark-p 'bg-magenta-intense 'bg-magenta-subtle))
+      (funcall push-mapping-fn 'bg-graph-magenta-1 (if bg-main-dark-p 'bg-magenta-subtle 'bg-magenta-intense))
+      (funcall push-mapping-fn 'bg-graph-cyan-0 (if bg-main-dark-p 'bg-cyan-intense 'bg-cyan-subtle))
+      (funcall push-mapping-fn 'bg-graph-cyan-1 (if bg-main-dark-p 'bg-cyan-subtle 'bg-cyan-intense))
+
+      (let* ((new-colors (append base-colors derived-colors))
+             (new-mappings (append mappings derived-mappings))
+             ;; We have to add one of the core palettes to make sure
+             ;; there are no missing entries.  We will then remove
+             ;; duplicates.
+             (core (or core-palette
+                       (if bg-main-dark-p
+                           (if prefers-cool-p modus-themes-vivendi-palette modus-themes-vivendi-tinted-palette)
+                         (if prefers-cool-p modus-themes-operandi-palette modus-themes-operandi-tinted-palette))))
+             (combined-new-palette (append new-colors new-mappings core))
+             (no-duplicates (seq-uniq
+                             combined-new-palette
+                             (lambda (element1 element2)
+                               (eq (car element1) (car element2)))))
+             (named-values (seq-filter
+                            (lambda (entry)
+                              (stringp (cadr entry)))
+                            no-duplicates))
+             (mapping-values (seq-filter
+                              (lambda (entry)
+                                (symbolp (cadr entry)))
+                              no-duplicates)))
+        (append named-values mapping-values)))))
+
+;;;; Add themes from package to path
+
+;;;###autoload
+(when load-file-name
+  (let ((dir (file-name-directory load-file-name)))
+    (unless (equal dir (expand-file-name "themes/" data-directory))
+      (add-to-list 'custom-theme-load-path dir))))
+
+(provide 'modus-themes)
+;;; modus-themes.el ends here
+#+end_src

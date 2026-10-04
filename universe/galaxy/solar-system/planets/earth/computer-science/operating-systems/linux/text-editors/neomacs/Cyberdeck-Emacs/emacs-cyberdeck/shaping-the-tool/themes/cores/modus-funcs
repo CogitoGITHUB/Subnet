@@ -1,0 +1,535 @@
+* Modus Functions :EMACS_MECHANISM:S0:
+:PROPERTIES:
+:ID:       cec81488-ba66-4674-b485-2714755756e5
+:MM_PARENT: none
+:MM_ORDER:  16.3
+:END:
+
+
+#+begin_src emacs-lisp
+(defun modus-themes--color-hex-p (color)
+  "Return non-nil if COLOR is hexadecimal RGB."
+  (and (stringp color) (string-match-p modus-themes--hex-regexp color)))
+
+(defun modus-themes--hex-or-name-to-rgb (color)
+  "Convert COLOR to a list of normalized RGB values.
+COLOR can be a hexadecimal RGB value like #123456 or a named color
+like those produced by `list-colors-display'."
+  (cond
+   ((modus-themes--color-hex-p color)
+    (when-let* ((spec (color-values-from-color-spec color)))
+      (mapcar (lambda (x) (/ x 65535.0)) spec)))
+   ((color-name-to-rgb color))
+   (t
+    (error "The color `%s' cannot be resolved" color))))
+
+;; This is the WCAG formula: https://www.w3.org/TR/WCAG20-TECHS/G18.html
+(defun modus-themes--wcag-contribution (channel weight)
+  "Return the CHANNEL contribution to overall luminance given WEIGHT."
+  (* weight
+     (if (<= channel 0.03928)
+         (/ channel 12.92)
+       (expt (/ (+ channel 0.055) 1.055) 2.4))))
+
+(defun modus-themes-wcag-formula (color)
+  "Get WCAG value of color value COLOR.
+The value is defined in hexadecimal RGB notation, such #123456, or
+as a named color like those of `list-colors-display'."
+  (when-let* ((channels (modus-themes--hex-or-name-to-rgb color)))
+    (let ((weights '(0.2126 0.7152 0.0722))
+          (contribution nil))
+      (while channels
+        (push (modus-themes--wcag-contribution (pop channels) (pop weights)) contribution))
+      (apply #'+ contribution))))
+
+;;;###autoload
+(defun modus-themes-contrast (color-1 color-2)
+  "Measure WCAG contrast ratio between COLOR-1 and COLOR-2.
+Color values are of the form accepted by `modus-themes-wcag-formula'."
+  (if-let* ((hex1-weight (modus-themes-wcag-formula color-1))
+            (hex2-weight (modus-themes-wcag-formula color-2)))
+      (let ((contrast (/ (+ hex1-weight 0.05) (+ hex2-weight 0.05))))
+        (max contrast (/ contrast)))
+    (error "Both `%s' and `%s' must be valid hexadecimal RGB or named colors" color-1 color-2)))
+
+(defun modus-themes--color-eight-to-six-digits (hex-color)
+  "Reduce representation of hexadecimal RGB HEX-COLOR from eight to six digits.
+If HEX-COLOR is three or six digits, then return it as is."
+  (if (modus-themes--color-hex-p hex-color)
+      hex-color
+    (let* ((color-no-hash (substring hex-color 1))
+           (triplets (seq-split color-no-hash 4))
+           (triplets-shortened (mapcar
+                                (lambda (string)
+                                  (substring string 0 2))
+                                triplets)))
+      (concat "#" (string-join triplets-shortened)))))
+
+(defun modus-themes-adjust-value (color percentage)
+  "Adjust value of COLOR by PERCENTAGE.
+COLOR is either a hexadecimal RGB string or a named color."
+  (when-let* ((rgb (modus-themes--hex-or-name-to-rgb color)))
+    (pcase-let* ((`(,r ,g ,b) rgb)
+                 (`(,h ,s ,l) (color-rgb-to-hsl r g b))
+                 (adjusted (color-lighten-hsl h s l percentage))
+                 (adjusted-rgb (apply #'color-hsl-to-rgb adjusted))
+                 (value (apply #'color-rgb-to-hex adjusted-rgb)))
+      (modus-themes--color-eight-to-six-digits value))))
+
+(defvar modus-themes-registered-items nil
+  "List of defined themes.
+This list is instantiated by the `modus-themes-theme' macro.  Themes
+that build on top of Modus but for some reason cannot use that macro
+must define theme properties to include those that the macro specifies.
+
+Also see `modus-themes-get-themes'.")
+
+(defvar modus-themes--activated-themes nil
+  "List of themes that `modus-themes-activate' operated on.")
+
+;;;###autoload
+(defun modus-themes-activate (theme)
+  "Load THEME if neeeded, so that it can be used by other commands."
+  ;; If it is already in the `modus-themes--activated-themes', then we
+  ;; have already processed it.
+  (unless (memq theme modus-themes--activated-themes)
+    (let ((properties (get theme 'theme-properties)))
+      ;; If it has no properties, then we need to load it so that
+      ;; those are reified.
+      (if (null properties)
+          (progn
+            (push theme modus-themes--activated-themes)
+            (load-theme theme t t))
+        (let ((core-palette (plist-get properties :modus-core-palette))
+              (user-palette (plist-get properties :modus-user-palette)))
+          ;; If its core palette is void or nil, then we need to load it.
+          ;; Same if its user palette is void, but it is okay if that
+          ;; one is nil.
+          (unless (and (boundp core-palette)
+                       core-palette
+                       (boundp user-palette))
+            (push theme modus-themes--activated-themes)
+            (load-theme theme t t)))))))
+
+(defun modus-themes--belongs-to-family-p (theme family)
+  "Return non-nil if THEME has FAMILY property."
+  (when-let* ((properties (get theme 'theme-properties))
+              (theme-family (plist-get properties :family)))
+    (eq theme-family family)))
+
+(defun modus-themes-get-all-known-themes (&optional theme-family)
+  "Return all known Modus themes or derivatives, enabling them if needed.
+With optional THEME-FAMILY, operate only on the themes whose :family
+property is that.  Else consider the Modus themes as well as all their
+derivatives.
+
+Also see `modus-themes-sort'."
+  (let ((themes (pcase theme-family
+                  ('modus-themes modus-themes-items)
+                  ((pred identity) modus-themes-registered-items)
+                  (_ (seq-union modus-themes-items modus-themes-registered-items)))))
+    (if theme-family
+        (seq-filter
+         (lambda (theme)
+           (modus-themes--belongs-to-family-p theme theme-family))
+         themes)
+      themes)))
+
+(defun modus-themes--background-p (theme background-mode)
+  "Return non-nil if THEME has BACKGROUND-MODE :background-mode property."
+  (when-let* ((properties (get theme 'theme-properties))
+              (background (plist-get properties :background-mode)))
+    (eq background background-mode)))
+
+(defun modus-themes-sort (themes background-mode)
+  "Reorder THEMES so that those with BACKGROUND-MODE come first.
+BACKGROUND-MODE is either `dark' or `light'."
+  (unless (memq background-mode '(dark light))
+    (error "The BACKGROUND-MODE can be either `dark' or `light'"))
+  (sort
+   themes
+   (lambda (theme1 theme2)
+     (and (modus-themes--background-p theme1 background-mode)
+          (modus-themes--background-p theme2 (if (eq background-mode 'dark) 'light 'dark))))))
+
+(cl-defgeneric modus-themes-get-themes ()
+  "Return a list of all themes with `modus-themes' :family property.
+Use `modus-themes-sort' to sort by light and then dark background."
+  (if-let* ((themes (modus-themes-get-all-known-themes 'modus-themes))
+            (sorted-themes (modus-themes-sort themes 'light)))
+      sorted-themes
+    modus-themes-items))
+
+(defun modus-themes-known-p (themes)
+  "Return THEMES if they are among `modus-themes-get-themes' else nil.
+THEMES is either a list of symbols, like `modus-themes-items' or a
+symbol.
+
+With optional SHOW-ERROR, throw an error instead of returning nil."
+  (let ((known-themes (modus-themes-get-all-known-themes)))
+    (cond
+     ((symbolp themes)
+      (memq themes known-themes))
+     ((listp themes)
+      (when (seq-every-p (lambda (theme) (memq theme known-themes)) themes)
+        themes))
+     (t
+      (error "Themes `%S' is not a symbol or a list of symbols" themes)))))
+
+(defun modus-themes--modus-theme-p (theme)
+  "Return non-nil if THEME has a :modus-core-palette property."
+  (when-let* ((properties (get theme 'theme-properties))
+              (core (plist-get properties :modus-core-palette)))
+    theme))
+
+(defun modus-themes-get-current-theme ()
+  "Return currently enabled Modus theme.
+More specifically, return the first of the currently enabled Modus
+themes among the `custom-enabled-themes'.
+
+Assume that a Modus theme has a `theme-properties' entry of
+`:modus-core-palette'."
+  (seq-find #'modus-themes--modus-theme-p custom-enabled-themes))
+
+(defun modus-themes--get-theme-palette-subr (theme with-overrides with-user-palette)
+  "Get THEME palette without `modus-themes-known-p'.
+WITH-OVERRIDES and WITH-USER-PALETTE are described in
+`modus-themes-get-theme-palette'.
+
+If THEME does not have at least a `:modus-core-palette' among its
+`theme-properties', return nil.
+
+Else return (append OVERRIDES USER CORE)."
+  (when-let* ((properties (get theme 'theme-properties))
+              (core-palette-name (plist-get properties :modus-core-palette)))
+    ;; If the palette variable hasn't been loaded into memory yet, load the theme silently
+    (unless (boundp core-palette-name)
+      (load-theme theme t t))
+    (when (boundp core-palette-name)
+      (let* ((core-palette (symbol-value core-palette-name))
+             (user-palette-name (plist-get properties :modus-user-palette))
+             (user-palette (when (and with-user-palette
+                                      user-palette-name
+                                      (boundp user-palette-name))
+                             (symbol-value user-palette-name)))
+             (overrides-palette-name (plist-get properties :modus-overrides-palette))
+             (overrides-palette (when (and with-overrides
+                                           overrides-palette-name
+                                           (boundp overrides-palette-name))
+                                  (symbol-value overrides-palette-name)))
+             (all-overrides (when with-overrides
+                              (append overrides-palette modus-themes-common-palette-overrides))))
+        (append all-overrides user-palette core-palette)))))
+
+(defun modus-themes-get-theme-palette (&optional theme with-overrides with-user-palette)
+  "Return palette value of active `modus-themes-get-themes' THEME.
+If THEME is nil, use the return value of
+`modus-themes-get-current-theme'.  With WITH-OVERRIDES, include all
+overrides in the combined palette.  With WITH-USER-PALETTE do the same
+for the user-defined palette extension.
+
+If THEME is unknown, return nil.  Else return (append OVERRIDES USER CORE)."
+  (modus-themes--get-theme-palette-subr (or theme (modus-themes-get-current-theme)) with-overrides with-user-palette))
+
+(defun modus-themes--disable-themes (themes)
+  "Disable THEMES per `modus-themes-disable-other-themes'."
+  (mapc
+   #'disable-theme
+   (if modus-themes-disable-other-themes
+       themes
+     (seq-filter #'modus-themes--modus-theme-p themes))))
+
+(defun modus-themes--get-color-schemes ()
+  "Return `custom-enabled-themes' of :kind `color-scheme'."
+  (seq-filter
+   (lambda (theme)
+     (eq (plist-get (get theme 'theme-properties) :kind) 'color-scheme))
+   custom-enabled-themes))
+
+(defun modus-themes-load-theme (theme &optional hook)
+  "Load THEME while disabling other themes.
+
+Which themes are disabled is determined by the user option
+`modus-themes-disable-other-themes'.
+
+Run the `modus-themes-after-load-theme-hook' as the final step
+after loading the THEME.  If HOOK, then call that instead.
+
+Return THEME."
+  (load-theme theme :no-confirm)
+  (modus-themes--disable-themes (remq theme (modus-themes--get-color-schemes)))
+  (run-hooks (or hook 'modus-themes-after-load-theme-hook))
+  theme)
+
+(define-obsolete-function-alias
+  'modus-themes--retrieve-palette-value
+  'modus-themes-retrieve-palette-value
+  "5.3.0")
+
+(defun modus-themes-retrieve-palette-value (color palette)
+  "Return COLOR from PALETTE.
+Use recursion until COLOR is retrieved as a string.  Refrain from
+doing so if the value of COLOR is not a key in the PALETTE.
+
+Return `unspecified' if the value of COLOR cannot be determined.
+This symbol is accepted by faces and is thus harmless.
+
+This function is used in the macro `modus-themes-theme'"
+  (let ((value (car (alist-get color palette))))
+    (cond
+     ((or (stringp value)
+          (eq value 'unspecified))
+      value)
+     ((and (symbolp value)
+           value)
+      (modus-themes-retrieve-palette-value value palette))
+     (t
+      'unspecified))))
+
+;; NOTE 2025-09-29: We keep THEME at that position for backward-compatibility.
+(defun modus-themes-get-color-value (color &optional with-overrides theme)
+  "Return color value of named COLOR for current Modus theme.
+
+COLOR is a symbol that represents a named color entry in the
+palette.
+
+If the value is the name of another color entry in the
+palette (so a mapping), recur until you find the underlying color
+value.
+
+With optional WITH-OVERRIDES as a non-nil value, include palette
+overrides.  Else use the default palette.
+
+With optional THEME among `modus-themes-get-themes', use the palette of
+that item.  Else use the current theme.
+
+If COLOR is not present in the palette, return the `unspecified'
+symbol, which is safe when used as a face attribute's value."
+  (when theme
+    (modus-themes-activate theme))
+  (if-let* ((palette (modus-themes-get-theme-palette theme with-overrides :with-user-palette))
+            (value (modus-themes-retrieve-palette-value color palette)))
+      value
+    'unspecified))
+
+;;;; Commands
+
+;;;;; Select a theme with completion
+
+(defvar modus-themes--select-theme-history nil
+  "Minibuffer history of `modus-themes-select-prompt'.")
+
+(defun modus-themes--annotate-theme (theme)
+  "Return description of THEME ."
+  (when-let* ((symbol (intern-soft theme))
+              (properties (get symbol 'theme-properties))
+              (doc-string (or (get symbol 'theme-documentation)
+                              (plist-get properties :modus-documentation))))
+    (format " %s"
+            (propertize (concat "-- " (car (split-string doc-string "\\.")))
+                        'face 'completions-annotations))))
+
+(defun modus-themes--group-themes (theme transform)
+  "Group THEME by its background for minibuffer completion.
+If TRANSFORM is non-nil, return THEME as-is."
+  (let ((symbol (intern-soft theme)))
+    (cond
+     (transform
+      theme)
+     ((eq symbol (modus-themes-get-current-theme))
+      "Current")
+     ((when-let* ((properties (get symbol 'theme-properties))
+                  (background (plist-get properties :background-mode)))
+        (capitalize (format "%s" background)))))))
+
+(defun modus-themes--display-sort (themes)
+  "Put the current theme before other THEMES for minibuffer completion."
+  (let* ((current (modus-themes-get-current-theme))
+         (current-theme-p (lambda (theme) (eq (intern-soft theme) current))))
+    (nconc
+     (seq-filter current-theme-p themes)
+     (seq-remove current-theme-p themes))))
+
+(defun modus-themes--completion-table (themes)
+  "Pass appropriate metadata to THEMES for minibuffer completion."
+  (lambda (string pred action)
+    (if (eq action 'metadata)
+        (list 'metadata
+              (cons 'category 'theme)
+              (cons 'annotation-function #'modus-themes--annotate-theme)
+              (cons 'group-function #'modus-themes--group-themes)
+              (cons 'display-sort-function #'modus-themes--display-sort))
+      (complete-with-action action themes string pred))))
+
+(defun modus-themes-select-prompt (&optional prompt background-mode)
+  "Minibuffer prompt to select a Modus theme.
+With optional PROMPT string, use it as the first argument of
+`format-prompt'.  Else use a generic prompt.
+
+With optional BACKGROUND-MODE as either `dark' or `light' limit the
+themes accordingly."
+  (intern
+   (completing-read
+    (format-prompt (or prompt "Select theme") nil)
+    (modus-themes--completion-table
+     (if background-mode
+         (modus-themes-filter-by-background-mode
+          (modus-themes-get-themes)
+          background-mode)
+       (modus-themes-get-themes)))
+    nil t nil
+    'modus-themes--select-theme-history)))
+
+;;;###autoload
+(defun modus-themes-select (theme)
+  "Load a Modus THEME using minibuffer completion.
+With optional prefix argument, prompt to limit the set of themes to
+either dark or light variants.
+
+Run `modus-themes-after-load-theme-hook' after loading the theme.
+Disable other themes per `modus-themes-disable-other-themes'."
+  (interactive
+   (list
+    (if current-prefix-arg
+        (modus-themes-select-prompt nil (modus-themes-background-mode-prompt))
+      (modus-themes-select-prompt))))
+  (modus-themes-load-theme theme))
+
+;;;###autoload
+(defun modus-themes-select-dark (theme)
+  "Like `modus-themes-select' for a dark THEME."
+  (interactive (list (modus-themes-select-prompt nil 'dark)))
+  (modus-themes-load-theme theme))
+
+;;;###autoload
+(defun modus-themes-select-light (theme)
+  "Like `modus-themes-select' for a light THEME."
+  (interactive (list (modus-themes-select-prompt nil 'light)))
+  (modus-themes-load-theme theme))
+
+;;;;; Toggle between two themes
+
+;;;###autoload
+(defun modus-themes-toggle ()
+  "Toggle between the two `modus-themes-to-toggle'.
+If `modus-themes-to-toggle' does not specify two Modus themes,
+prompt with completion for a theme among our collection (this is
+practically the same as the `modus-themes-select' command).
+
+Run `modus-themes-after-load-theme-hook' after loading the theme.
+Disable other themes per `modus-themes-disable-other-themes'."
+  (declare (interactive-only t))
+  (interactive)
+  (if-let* ((themes (modus-themes-known-p modus-themes-to-toggle))
+            (one (car themes))
+            (two (cadr themes)))
+      (modus-themes-load-theme (if (eq (modus-themes-get-current-theme) one) two one))
+    (modus-themes-load-theme (modus-themes-select-prompt "No two valid themes to toggle; select other"))))
+
+;;;;; Rotate through a list of themes
+
+(defun modus-themes-rotate-subr (themes &optional reverse)
+  "Return a new theme for `modus-themes-rotate'.
+The theme is the next among THEMES if it is possible to rotate to it.
+When REVERSE is non-nil, move to the left, else to the right."
+  (if-let* ((valid-themes (modus-themes-known-p themes)))
+      (if-let* ((index (or (seq-position valid-themes (modus-themes-get-current-theme)) -1))
+                (offset (mod
+                         (if reverse (1- index) (1+ index))
+                         (length valid-themes)))
+                (new-theme (nth offset valid-themes)))
+          new-theme
+        (modus-themes-select-prompt "Cannot determine next rotation; select other"))
+    (modus-themes-select-prompt "No valid theme to rotate; select other")))
+
+;;;###autoload
+(defun modus-themes-rotate (themes &optional reverse)
+  "Rotate to the next theme among THEMES.
+When called interactively THEMES is the value of `modus-themes-to-rotate'
+and REVERSE is the prefix argument.
+
+If the current theme is already the next in line, then move to the one
+after.  The rotation is performed rightwards if REVERSE is nil (the
+default), and leftwards if REVERSE is non-nil.  Perform the rotation
+such that the current element in the list becomes the last.  Do not
+modify THEMES in the process."
+  (interactive
+   (list
+    (or modus-themes-to-rotate (modus-themes-get-themes))
+    current-prefix-arg))
+  (let ((theme (modus-themes-rotate-subr themes reverse)))
+    (message "Rotating to `%s'" theme)
+    (modus-themes-load-theme theme)))
+
+;;;;; Load a random theme
+
+(defun modus-themes-filter-by-background-mode (themes background-mode)
+  "Return list of THEMES by BACKGROUND-MODE property.
+BACKGROUND-MODE is the symbol `dark' or `light'.  It corresponds to the
+theme property of :background-mode.  Any other value means to use all
+THEMES."
+  (if background-mode
+      (progn
+        (unless (memq background-mode '(dark light))
+          (error "The BACKGROUND-MODE can be either `dark' or `light'"))
+        (seq-filter
+         (lambda (theme)
+           (modus-themes--background-p theme background-mode))
+         themes))
+    themes))
+
+(defun modus-themes-background-mode-prompt ()
+  "Select `dark' or `light' and return it as a symbol."
+  (intern
+   (cadr
+    (read-multiple-choice
+     "Variant"
+     '((?d "dark" "Load a random dark theme")
+       (?l "light" "Load a random light theme"))
+     "Limit to the dark or light subset of the themes."))))
+
+(defun modus-themes-load-random-subr (background-mode)
+  "Return theme for `modus-themes-load-random' given BACKGROUND-MODE."
+  (let* ((themes (modus-themes-filter-by-background-mode
+                  (modus-themes-get-themes)
+                  background-mode))
+         (current (modus-themes-get-current-theme))
+         (themes-minus-current (delete current (copy-sequence themes))))
+    (or (nth (random (length themes-minus-current)) themes-minus-current)
+        (car themes-minus-current))))
+
+;;;###autoload
+(defun modus-themes-load-random (&optional background-mode)
+  "Load a Modus theme at random, excluding the current one.
+
+With optional BACKGROUND-MODE as a prefix argument, prompt to limit the
+set of themes to either dark or light variants.  When called from Lisp,
+BACKGROUND-MODE is either the `dark' or `light' symbol.
+
+Run `modus-themes-after-load-theme-hook' after loading a theme."
+  (interactive
+   (list
+    (when current-prefix-arg
+      (modus-themes-background-mode-prompt))))
+  (if-let* ((theme (modus-themes-load-random-subr background-mode)))
+      (progn
+        (message "Loading `%s'" theme)
+        (modus-themes-load-theme theme))
+    (error "Could not find a theme to load at random")))
+
+;;;###autoload
+(defun modus-themes-load-random-dark ()
+  "Load a random dark theme."
+  (declare (interactive-only t))
+  (interactive)
+  (modus-themes-load-random 'dark))
+
+;;;###autoload
+(defun modus-themes-load-random-light ()
+  "Load a random light theme."
+  (declare (interactive-only t))
+  (interactive)
+  (modus-themes-load-random 'light))
+
+;;;;; Preview a theme palette
+#+end_src

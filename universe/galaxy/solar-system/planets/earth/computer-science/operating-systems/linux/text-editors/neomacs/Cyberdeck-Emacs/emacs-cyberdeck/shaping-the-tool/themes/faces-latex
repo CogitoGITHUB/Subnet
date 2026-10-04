@@ -1,0 +1,21 @@
+* Cyberdeck Faces Latex :EMACS_MECHANISM:S0:
+:PROPERTIES:
+:ID:       ad1ee948-4175-4a8e-9f1b-aae489b050e3
+:MM_PARENT: none
+:MM_ORDER:  18.4
+:END:
+
+
+** LaTeX
+
+#+begin_src emacs-lisp
+(defun cyberdeck/pure-red--latex ()
+  (with-eval-after-load 'tex-mode
+    (dolist (face '(font-latex-math-face font-latex-script-char-face
+                    font-latex-string-face font-latex-warning-face
+                    font-latex-sedate-face font-latex-sectioning-0-face
+                    font-latex-sectioning-1-face font-latex-sectioning-2-face
+                    font-latex-sectioning-3-face font-latex-sectioning-4-face
+                    font-latex-sectioning-5-face))
+      (set-face-attribute face nil :foreground "#FFFFFF" :background "unspecified-bg" :inherit nil))))
+#+end_src

@@ -1,0 +1,17 @@
+* Cyberdeck Faces Vertico :EMACS_MECHANISM:S0:
+:PROPERTIES:
+:ID:       0775791f-40c9-434d-a290-223d7d98b8de
+:MM_PARENT: none
+:MM_ORDER:  18.8
+:END:
+
+
+** Vertico
+
+#+begin_src emacs-lisp
+(defun cyberdeck/pure-red--vertico ()
+  (with-eval-after-load 'vertico
+    (dolist (face '(vertico-current vertico-group-title vertico-group-separator vertico-multiline))
+      (when (facep face)
+        (set-face-attribute face nil :foreground "#FFFFFF" :background "unspecified-bg" :inherit nil)))))
+#+end_src

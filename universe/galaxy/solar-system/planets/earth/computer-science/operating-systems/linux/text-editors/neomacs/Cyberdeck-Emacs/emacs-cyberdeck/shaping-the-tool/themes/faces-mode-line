@@ -1,0 +1,16 @@
+* Cyberdeck Faces Mode Line :EMACS_MECHANISM:S0:
+:PROPERTIES:
+:ID:       06d9e941-2c5c-445b-8bbd-67182f5b73f4
+:MM_PARENT: none
+:MM_ORDER:  20.0
+:END:
+
+
+** Mode Line
+
+#+begin_src emacs-lisp
+(defun cyberdeck/pure-red--mode-line ()
+  (set-face-attribute 'mode-line nil :foreground "#FFFFFF" :background "unspecified-bg" :box nil)
+  (set-face-attribute 'mode-line-inactive nil :foreground "#FFFFFF" :background "unspecified-bg" :box nil)
+  (set-face-attribute 'header-line nil :foreground "#FFFFFF" :background "unspecified-bg" :box nil :inherit nil))
+#+end_src

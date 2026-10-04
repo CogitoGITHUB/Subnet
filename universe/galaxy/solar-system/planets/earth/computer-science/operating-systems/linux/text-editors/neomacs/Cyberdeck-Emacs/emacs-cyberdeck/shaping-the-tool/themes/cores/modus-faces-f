@@ -1,0 +1,402 @@
+* Modus Faces Outline-Minor To Table :EMACS_MECHANISM:S0:
+:PROPERTIES:
+:ID:       7a9e1c20-ead9-4a9c-b062-c115c5e376c0
+:MM_PARENT: none
+:MM_ORDER:  17.1
+:END:
+
+
+#+begin_src emacs-lisp
+(defconst modus-themes-faces-part-f
+  '(
+    ;;;;; outline-minor-faces
+        `(outline-minor-0 (()))
+    ;;;;; package (M-x list-packages)
+        `(package-description ((,c :foreground ,docstring)))
+        `(package-help-section-name ((,c :inherit modus-themes-bold)))
+        `(package-mark-delete-line ((,c :inherit modus-themes-mark-delete)))
+        `(package-mark-install-line ((,c :inherit modus-themes-mark-select)))
+        `(package-name ((,c :background ,bg-link :foreground ,fg-link :underline ,underline-link)))
+        `(package-status-available ((,c :foreground ,date-common)))
+        `(package-status-avail-obso ((,c :foreground ,err)))
+        `(package-status-built-in ((,c :foreground ,builtin)))
+        `(package-status-dependency ((,c :foreground ,warning)))
+        `(package-status-disabled ((,c :foreground ,err :strike-through t)))
+        `(package-status-from-source ((,c :foreground ,type)))
+        `(package-status-held ((,c :foreground ,warning)))
+        `(package-status-incompat ((,c :foreground ,warning)))
+        `(package-status-installed ((,c :foreground ,fg-alt)))
+        `(package-status-new ((,c :foreground ,info)))
+        `(package-status-unsigned ((,c :foreground ,err)))
+    ;;;;; page-break-lines
+        `(page-break-lines ((,c :inherit default :foreground "gray50")))
+    ;;;;; pandoc-mode
+        `(pandoc-citation-key-face ((,c :inherit modus-themes-bold :foreground ,builtin)))
+        `(pandoc-directive-@@-face ((,c :inherit modus-themes-bold :foreground ,keyword)))
+        `(pandoc-directive-braces-face ((,c :foreground ,constant)))
+        `(pandoc-directive-contents-face ((,c :foreground ,string)))
+        `(pandoc-directive-type-face ((,c :inherit modus-themes-bold :foreground ,type)))
+    ;;;;; paren-face
+        `(parenthesis ((,c :foreground ,fg-dim)))
+    ;;;;; pass
+        `(pass-mode-directory-face ((,c :inherit modus-themes-bold :foreground ,accent-0)))
+        `(pass-mode-entry-face ((,c :background ,bg-main :foreground ,fg-main)))
+        `(pass-mode-header-face ((,c :foreground ,fg-dim)))
+    ;;;;; pdf-tools
+        `(pdf-links-read-link ((,c :inherit modus-themes-bold :background ,fg-main :foreground ,bg-magenta-intense))) ; Foreground is background and vice versa
+        `(pdf-occur-document-face ((,c :foreground ,fg-dim)))
+        `(pdf-occur-page-face ((,c :foreground ,fg-dim)))
+    ;;;;; persp-mode
+        `(persp-face-lighter-buffer-not-in-persp ((,c :foreground ,err)))
+        `(persp-face-lighter-default ((,c :inherit modus-themes-bold :foreground ,name)))
+        `(persp-face-lighter-nil-persp ((,c :inherit modus-themes-bold)))
+    ;;;;; perspective
+        `(persp-selected-face ((,c :inherit modus-themes-bold :foreground ,name)))
+    ;;;;; proced
+        `(proced-cpu ((,c :foreground ,keyword)))
+        `(proced-emacs-pid ((,c :foreground ,identifier :underline t)))
+        `(proced-executable ((,c :foreground ,name)))
+        `(proced-interruptible-sleep-status-code ((,c :foreground ,fg-dim)))
+        `(proced-mem ((,c :foreground ,type)))
+        `(proced-memory-high-usage ((,c :foreground ,err)))
+        `(proced-memory-low-usage ((,c :foreground ,info)))
+        `(proced-memory-medium-usage ((,c :foreground ,warning)))
+        `(proced-pgrp ((,c :foreground ,identifier)))
+        `(proced-pid ((,c :foreground ,identifier)))
+        `(proced-ppid ((,c :foreground ,identifier)))
+        `(proced-run-status-code ((,c :foreground ,info)))
+        `(proced-sess ((,c :foreground ,identifier)))
+        `(proced-session-leader-pid ((,c :inherit modus-themes-bold :foreground ,identifier)))
+        `(proced-time-colon (( )))
+        `(proced-uninterruptible-sleep-status-code ((,c :foreground ,err)))
+        `(proced-user (( )))
+    ;;;;; popup
+        `(popup-face ((,c :background ,bg-popup :foreground ,fg-main)))
+        `(popup-isearch-match ((,c :inherit modus-themes-search-current)))
+        `(popup-menu-mouse-face ((,c :background ,bg-hover :foreground ,fg-main)))
+        `(popup-menu-selection-face ((,c :inherit modus-themes-completion-selected)))
+        `(popup-scroll-bar-background-face ((,c :background ,bg-active)))
+        `(popup-scroll-bar-foreground-face (( )))
+        `(popup-summary-face ((,c :background ,bg-active :foreground ,fg-dim)))
+        `(popup-tip-face ((,c :background ,bg-yellow-intense :foreground ,fg-main)))
+    ;;;;; powerline
+        `(powerline-active0 ((,c :background ,fg-dim :foreground ,bg-main)))
+        `(powerline-active1
+          ((default :inherit modus-themes-ui-variable-pitch
+                    :background ,bg-mode-line-active
+                    :foreground ,fg-mode-line-active)
+           (((supports :box t))
+            :box ,border-mode-line-active)
+           (t :underline ,border-mode-line-active)))
+        `(powerline-active2
+          ((default :inherit modus-themes-ui-variable-pitch
+                    :background ,bg-mode-line-inactive
+                    :foreground ,fg-mode-line-inactive)
+           (((supports :box t))
+            :box ,border-mode-line-inactive)
+           (t :underline ,border-mode-line-inactive)))
+        `(powerline-inactive0 ((,c :background ,bg-active :foreground ,fg-dim)))
+        `(powerline-inactive1 ((,c :background ,bg-main :foreground ,fg-dim)))
+        `(powerline-inactive2
+          ((default :inherit modus-themes-ui-variable-pitch
+                    :background ,bg-mode-line-inactive
+                    :foreground ,fg-mode-line-inactive)
+           (((supports :box t))
+            :box ,border-mode-line-inactive)
+           (t :underline ,border-mode-line-inactive)))
+    ;;;;; powerline-evil
+        `(powerline-evil-base-face ((,c :background ,fg-main :foreground ,bg-main)))
+        `(powerline-evil-emacs-face ((,c :inherit modus-themes-bold :background ,bg-main)))
+        `(powerline-evil-insert-face ((,c :background ,bg-main :foreground ,info)))
+        `(powerline-evil-motion-face ((,c :inherit modus-themes-slant :background ,bg-main)))
+        `(powerline-evil-normal-face ((,c :background ,bg-main :foreground ,fg-alt)))
+        `(powerline-evil-operator-face ((,c :background ,bg-main :foreground ,warning)))
+        `(powerline-evil-replace-face ((,c :background ,bg-main :foreground ,err)))
+        `(powerline-evil-visual-face ((,c :inherit modus-themes-bold :background ,bg-main)))
+    ;;;;; prescient
+        `(prescient-primary-highlight ((,c :inherit modus-themes-completion-match-0)))
+        `(prescient-secondary-highlight ((,c :inherit modus-themes-completion-match-1)))
+    ;;;;; proced
+        `(proced-mark ((,c :inherit modus-themes-bold)))
+        `(proced-marked ((,c :inherit modus-themes-mark-other)))
+        `(proced-sort-header ((,c :inherit modus-themes-bold :underline t)))
+    ;;;;; prodigy
+        `(prodigy-green-face ((,c :foreground ,info)))
+        `(prodigy-red-face ((,c :foreground ,err)))
+        `(prodigy-yellow-face ((,c :foreground ,warning)))
+    ;;;;; pulsar
+        `(pulsar-blue ((,c :background ,bg-blue-subtle)))
+        `(pulsar-cyan ((,c :background ,bg-cyan-subtle)))
+        `(pulsar-green ((,c :background ,bg-green-subtle)))
+        `(pulsar-magenta ((,c :background ,bg-magenta-subtle)))
+        `(pulsar-red ((,c :background ,bg-red-subtle)))
+        `(pulsar-yellow ((,c :background ,bg-yellow-subtle)))
+    ;;;;; pulse
+        `(pulse-highlight-start-face ((,c :background ,bg-blue-intense :extend t)))
+    ;;;;; pyim
+        `(pyim-page ((,c :background ,bg-active)))
+        `(pyim-page-selection ((,c :inherit modus-themes-bold :background ,bg-active :foreground ,info)))
+        `(pyim-page-subword ((,c :background ,bg-inactive)))
+    ;;;;; quick-peek
+        `(quick-peek-background-face ((,c :background ,bg-inactive)))
+        `(quick-peek-border-face ((,c :background ,border :height 1)))
+        `(quick-peek-padding-face ((,c :background ,bg-inactive :height 0.15)))
+    ;;;;; rainbow-delimiters
+        `(rainbow-delimiters-base-error-face ((,c :background ,bg-prominent-err :foreground ,fg-prominent-err)))
+        `(rainbow-delimiters-base-face ((,c :foreground ,fg-main)))
+        `(rainbow-delimiters-depth-1-face ((,c :foreground ,rainbow-0)))
+        `(rainbow-delimiters-depth-2-face ((,c :foreground ,rainbow-1)))
+        `(rainbow-delimiters-depth-3-face ((,c :foreground ,rainbow-2)))
+        `(rainbow-delimiters-depth-4-face ((,c :foreground ,rainbow-3)))
+        `(rainbow-delimiters-depth-5-face ((,c :foreground ,rainbow-4)))
+        `(rainbow-delimiters-depth-6-face ((,c :foreground ,rainbow-5)))
+        `(rainbow-delimiters-depth-7-face ((,c :foreground ,rainbow-6)))
+        `(rainbow-delimiters-depth-8-face ((,c :foreground ,rainbow-7)))
+        `(rainbow-delimiters-depth-9-face ((,c :foreground ,rainbow-8)))
+        `(rainbow-delimiters-mismatched-face ((,c :background ,bg-prominent-warning :foreground ,fg-prominent-warning)))
+        `(rainbow-delimiters-unmatched-face ((,c :background ,bg-prominent-err :foreground ,fg-prominent-err)))
+    ;;;;; rcirc
+        `(rcirc-bright-nick ((,c :inherit modus-themes-bold :foreground ,accent-2)))
+        `(rcirc-dim-nick ((,c :foreground ,fg-dim)))
+        `(rcirc-monospace-text ((,c :inherit fixed-pitch)))
+        `(rcirc-my-nick ((,c :inherit modus-themes-bold :foreground ,accent-1)))
+        `(rcirc-nick-in-message ((,c :inherit modus-themes-bold :foreground ,accent-1)))
+        `(rcirc-nick-in-message-full-line ((,c :inherit modus-themes-bold :foreground ,accent-1)))
+        `(rcirc-other-nick ((,c :inherit modus-themes-bold :foreground ,accent-0)))
+        `(rcirc-prompt ((,c :inherit modus-themes-prompt)))
+        `(rcirc-server ((,c :inherit modus-themes-slant :foreground ,comment)))
+        `(rcirc-timestamp ((,c :foreground ,date-common)))
+        `(rcirc-track-keyword ((,c :inherit modus-themes-bold :foreground ,modeline-warning)))
+        `(rcirc-track-nick ((,c :inherit modus-themes-bold :foreground ,accent-1)))
+        `(rcirc-url ((,c :background ,bg-link :foreground ,fg-link :underline ,underline-link)))
+    ;;;;; recursion-indicator
+        `(recursion-indicator-general ((,c :foreground ,modeline-err)))
+        `(recursion-indicator-minibuffer ((,c :foreground ,modeline-info)))
+    ;;;;; regexp-builder (re-builder)
+        `(reb-match-0 ((,c :inherit modus-themes-search-rx-group-0)))
+        `(reb-match-1 ((,c :inherit modus-themes-search-rx-group-1)))
+        `(reb-match-2 ((,c :inherit modus-themes-search-rx-group-2)))
+        `(reb-match-3 ((,c :inherit modus-themes-search-rx-group-3)))
+        `(reb-regexp-grouping-backslash ((,c :inherit modus-themes-bold :foreground ,rx-backslash)))
+        `(reb-regexp-grouping-construct ((,c :inherit modus-themes-bold :foreground ,rx-construct)))
+    ;;;;; rg (rg.el)
+        `(rg-column-number-face ((,c :foreground ,fg-dim)))
+        `(rg-context-face ((,c :foreground ,fg-dim)))
+        `(rg-error-face ((,c :foreground ,err)))
+        `(rg-file-tag-face ((,c :inherit modus-themes-bold :foreground ,builtin)))
+        `(rg-filename-face ((,c :inherit modus-themes-bold :foreground ,name)))
+        `(rg-line-number-face ((,c :foreground ,fg-dim)))
+        `(rg-literal-face ((,c :foreground ,constant)))
+        `(rg-match-face ((,c :inherit modus-themes-search-static)))
+        `(rg-regexp-face ((,c :foreground ,name)))
+        `(rg-toggle-off-face ((,c :inherit modus-themes-bold :foreground ,fg-dim)))
+        `(rg-toggle-on-face ((,c :foreground ,info)))
+        `(rg-warning-face ((,c :foreground ,warning)))
+    ;;;;; ripgrep
+        `(ripgrep-context-face ((,c :foreground ,fg-dim)))
+        `(ripgrep-error-face ((,c :foreground ,err)))
+        `(ripgrep-hit-face ((,c :foreground ,info)))
+        `(ripgrep-match-face ((,c :inherit modus-themes-search-static)))
+    ;;;;; rmail
+        `(rmail-header-name ((,c :inherit bold)))
+        `(rmail-highlight ((,c :inherit bold :foreground ,mail-other)))
+    ;;;;; rst-mode
+        `(rst-level-1 ((,c :inherit modus-themes-heading-1)))
+        `(rst-level-2 ((,c :inherit modus-themes-heading-2)))
+        `(rst-level-3 ((,c :inherit modus-themes-heading-3)))
+        `(rst-level-4 ((,c :inherit modus-themes-heading-4)))
+        `(rst-level-5 ((,c :inherit modus-themes-heading-5)))
+        `(rst-level-6 ((,c :inherit modus-themes-heading-6)))
+    ;;;;; ruler-mode
+        ;; NOTE 2025-10-24: All the faces of `ruler-mode' need to inherit
+        ;; from `default' to yield the expected results.  Otherwise the
+        ;; ruler is shorter.  I am not sure what is happening, but it
+        ;; seems important.  Its default face definitions also inherit
+        ;; from `default' and then from `ruler-mode-default'.
+        `(ruler-mode-column-number ((,c :inherit default :background ,bg-dim :foreground ,fg-dim)))
+        `(ruler-mode-comment-column ((,c :inherit default :foreground ,info)))
+        `(ruler-mode-current-column ((,c :inherit default :background ,bg-active :foreground ,fg-main)))
+        `(ruler-mode-default ((,c :inherit default :background ,bg-dim :foreground ,fg-dim)))
+        `(ruler-mode-fill-column ((,c :inherit default :foreground ,info)))
+        `(ruler-mode-fringes ((,c :inherit default :foreground ,fg-dim)))
+        `(ruler-mode-goal-column ((,c :inherit default :foreground ,info)))
+        `(ruler-mode-margins ((,c :inherit default :foreground ,bg-main)))
+        `(ruler-mode-pad ((,c :inherit default :background ,bg-inactive :foreground ,fg-dim)))
+        `(ruler-mode-tab-stop ((,c :inherit default :foreground ,warning)))
+    ;;;;; sesman
+        `(sesman-browser-button-face ((,c :background ,bg-link :foreground ,fg-link :underline ,underline-link)))
+        `(sesman-browser-highligh-face ((,c :background ,bg-hover :foreground ,fg-main)))
+        `(sesman-buffer-face ((,c :foreground ,accent-1)))
+        `(sesman-directory-face ((,c :inherit modus-themes-bold :foreground ,accent-0)))
+        `(sesman-project-face ((,c :inherit modus-themes-bold :foreground ,accent-2)))
+    ;;;;; shell-script-mode
+        `(sh-heredoc ((,c :foreground ,string)))
+        `(sh-quoted-exec ((,c :inherit modus-themes-bold :foreground ,builtin)))
+    ;;;;; shortdoc
+        `(shortdoc-heading ((,c :inherit modus-themes-heading-1)))
+        `(shortdoc-section (())) ; remove the default's variable-pitch style
+    ;;;;; show-paren-mode
+        `(show-paren-match ((,c :background ,bg-paren-match :foreground ,fg-paren-match :underline ,underline-paren-match)))
+        `(show-paren-match-expression ((,c :background ,bg-paren-expression)))
+        `(show-paren-mismatch ((,c :background ,bg-prominent-err :foreground ,fg-prominent-err)))
+    ;;;;; shr
+        `(shr-abbreviation ((,c :underline (:style wave :color ,underline-note))))
+        `(shr-code ((,c :inherit modus-themes-fixed-pitch :background ,bg-prose-verbatim :foreground ,fg-prose-verbatim)))
+        `(shr-h1 ((,c :inherit modus-themes-heading-1)))
+        `(shr-h2 ((,c :inherit modus-themes-heading-2)))
+        `(shr-h3 ((,c :inherit modus-themes-heading-3)))
+        `(shr-h4 ((,c :inherit modus-themes-heading-4)))
+        `(shr-h5 ((,c :inherit modus-themes-heading-5)))
+        `(shr-h6 ((,c :inherit modus-themes-heading-6)))
+        `(shr-mark ((,c :inherit modus-themes-search-static)))
+        `(shr-selected-link ((,c :inherit modus-themes-mark-select)))
+    ;;;;; side-notes
+        `(side-notes ((,c :background ,bg-dim :foreground ,fg-dim)))
+    ;;;;; sieve-mode
+        `(sieve-action-commands ((,c :inherit modus-themes-bold :foreground ,builtin)))
+        `(sieve-control-commands ((,c :inherit modus-themes-bold :foreground ,keyword)))
+        `(sieve-tagged-arguments ((,c :inherit modus-themes-bold :foreground ,type)))
+        `(sieve-test-commands ((,c :foreground ,fnname)))
+    ;;;;; skewer-mode
+        `(skewer-error-face ((,c :underline (:style wave :color ,underline-err))))
+    ;;;;; slime (sldb)
+        `(sldb-condition-face ((,c :foreground ,preprocessor)))
+        `(sldb-restart-number-face ((,c :inherit modus-themes-bold)))
+        `(sldb-restart-type-face ((,c :inherit modus-themes-bold :foreground ,type)))
+        `(sldb-restartable-frame-line-face ((,c :foreground ,info)))
+        `(sldb-section-face ((,c :inherit modus-themes-bold)))
+        `(slime-error-face ((,c :underline (:style wave :color ,underline-err))))
+        `(slime-note-face ((,c :inherit underline)))
+        `(slime-repl-input-face ((,c :inherit modus-themes-bold)))
+        `(slime-repl-inputed-output-face ((,c :foreground ,string)))
+        `(slime-repl-output-mouseover-face ((,c :background ,bg-hover :foreground ,fg-main)))
+        `(slime-repl-prompt-face ((,c :inherit modus-themes-prompt)))
+        `(slime-style-warning-face ((,c :underline (:style wave :color ,underline-note))))
+        `(slime-warning-face ((,c :underline (:style wave :color ,underline-warning))))
+    ;;;;; sly
+        `(sly-action-face ((,c :inherit modus-themes-bold :foreground ,type)))
+        `(sly-db-condition-face ((,c :foreground ,preprocessor)))
+        `(sly-db-restartable-frame-line-face ((,c :foreground ,info)))
+        `(sly-error-face ((,c :underline (:style wave :color ,underline-err))))
+        `(sly-mode-line ((,c :inherit italic :foreground ,modeline-info)))
+        `(sly-mrepl-output-face ((,c :foreground ,string)))
+        `(sly-mrepl-prompt-face ((,c :inherit modus-themes-prompt)))
+        `(sly-note-face ((,c :underline (:style wave :color ,underline-note))))
+        `(sly-stickers-placed-face ((,c :background ,bg-inactive)))
+        `(sly-style-warning-face ((,c :underline (:style wave :color ,underline-note))))
+        `(sly-warning-face ((,c :underline (:style wave :color ,underline-warning))))
+    ;;;;; smart-mode-line
+        `(sml/charging ((,c :foreground ,info)))
+        `(sml/discharging ((,c :foreground ,err)))
+        `(sml/filename ((,c :inherit modus-themes-bold :foreground ,name)))
+        `(sml/folder (( )))
+        `(sml/git ((,c :foreground ,info)))
+        `(sml/global (( )))
+        `(sml/line-number (( )))
+        `(sml/minor-modes (( )))
+        `(sml/modes ((,c :inherit modus-themes-bold)))
+        `(sml/modified ((,c :inherit modus-themes-slant)))
+        `(sml/mule-info (( )))
+        `(sml/name-filling ((,c :foreground ,warning)))
+        `(sml/not-modified (( )))
+        `(sml/numbers-separator (( )))
+        `(sml/outside-modified ((,c :background ,bg-prominent-err :foreground ,fg-prominent-err)))
+        `(sml/position-percentage (( )))
+        `(sml/prefix ((,c :foreground ,fg-alt)))
+        `(sml/process ((,c :foreground ,fg-alt)))
+        `(sml/projectile ((,c :foreground ,info)))
+        `(sml/read-only (( )))
+        `(sml/remote (( )))
+        `(sml/sudo ((,c :foreground ,warning)))
+        `(sml/time (( )))
+        `(sml/vc ((,c :foreground ,info)))
+        `(sml/vc-edited ((,c :inherit modus-themes-slant)))
+    ;;;;; smerge
+        `(smerge-base ((,c :background ,bg-changed :foreground ,fg-changed :extend t)))
+        `(smerge-lower ((,c :background ,bg-added :foreground ,fg-added :extend t)))
+        `(smerge-markers (( )))
+        `(smerge-refined-added ((,c :background ,bg-added-refine :foreground ,fg-added)))
+        `(smerge-refined-changed ((,c :background ,bg-changed-refine :foreground ,fg-changed)))
+        `(smerge-refined-removed ((,c :background ,bg-removed-refine :foreground ,fg-removed)))
+        `(smerge-upper ((,c :background ,bg-removed :foreground ,fg-removed :extend t)))
+    ;;;;; spacious-padding
+        `(spacious-padding-line-active ((,c :foreground ,accent-0)))
+        `(spacious-padding-line-inactive ((,c :foreground ,border)))
+        `(spacious-padding-subtle-mode-line-active ((,c :foreground ,accent-0)))
+        `(spacious-padding-subtle-mode-line-inactive ((,c :foreground ,border)))
+    ;;;;; speedbar
+        `(speedbar-button-face ((,c :background ,bg-link :foreground ,fg-link :underline ,underline-link)))
+        `(speedbar-directory-face ((,c :inherit modus-themes-bold :foreground ,accent-0)))
+        `(speedbar-file-face ((,c :foreground ,fg-main)))
+        `(speedbar-highlight-face ((,c :background ,bg-hover :foreground ,fg-main)))
+        `(speedbar-selected-face ((,c :inherit modus-themes-mark-select)))
+        `(speedbar-separator-face ((,c :background ,bg-active :foreground ,fg-main)))
+        `(speedbar-tag-face ((,c :foreground ,accent-1)))
+    ;;;;; spell-fu
+        `(spell-fu-incorrect-face ((,c :underline (:style wave :color ,underline-err))))
+    ;;;;; stripes
+        `(stripes ((,c :background ,bg-inactive)))
+    ;;;;; suggest
+        `(suggest-heading ((,c :foreground ,warning)))
+    ;;;;; switch-window
+        `(switch-window-background ((,c :background ,bg-inactive)))
+        `(switch-window-label ((,c :inherit (bold modus-themes-reset-soft) :height 1.5 :foreground ,err))) ; same as `aw-leading-char-face'
+    ;;;;; swiper
+        `(swiper-background-match-face-1 (( )))
+        `(swiper-background-match-face-2 ((,c :inherit modus-themes-completion-match-0)))
+        `(swiper-background-match-face-3 ((,c :inherit modus-themes-completion-match-1)))
+        `(swiper-background-match-face-4 ((,c :inherit modus-themes-completion-match-2)))
+        `(swiper-line-face ((,c :background ,bg-hl-line :extend t)))
+        `(swiper-match-face-1 (( )))
+        `(swiper-match-face-2 ((,c :inherit modus-themes-completion-match-0)))
+        `(swiper-match-face-3 ((,c :inherit modus-themes-completion-match-1)))
+        `(swiper-match-face-4 ((,c :inherit modus-themes-completion-match-2)))
+    ;;;;; symbol-overlay
+        `(symbol-overlay-default-face ((,c :background ,bg-inactive)))
+        `(symbol-overlay-face-1 ((,c :background ,bg-blue-intense :foreground ,fg-main)))
+        `(symbol-overlay-face-2 ((,c :background ,bg-magenta-intense :foreground ,fg-main)))
+        `(symbol-overlay-face-3 ((,c :background ,bg-yellow-intense :foreground ,fg-main)))
+        `(symbol-overlay-face-4 ((,c :background ,bg-cyan-intense :foreground ,fg-main)))
+        `(symbol-overlay-face-5 ((,c :background ,bg-red-intense :foreground ,fg-main)))
+        `(symbol-overlay-face-6 ((,c :background ,bg-green-intense :foreground ,fg-main)))
+        `(symbol-overlay-face-7 ((,c :background ,bg-red-subtle :foreground ,fg-main)))
+        `(symbol-overlay-face-8 ((,c :background ,bg-cyan-subtle :foreground ,fg-main)))
+    ;;;;; synaxis
+        `(synaxis-search-date-face ((,c :foreground ,date-common)))
+        `(synaxis-search-feed-face ((,c :foreground ,name))) ; TODO 2026-07-14: maybe make this the same as `elfeed-search-feed-face'
+        `(synaxis-search-marked-face ((,c :inherit modus-themes-mark-select)))
+        `(synaxis-search-read-face (( )))
+        `(synaxis-search-tag-face ((,c :foreground ,identifier))) ; TODO 2026-07-14: maybe make this the same as `elfeed-search-tag-face'
+        `(synaxis-search-unread-face ((,c :inherit bold :foreground ,fg-main))) ; same as `elfeed-search-unread-title-face'
+        `(synaxis-show-meta-face ((,c :inherit modus-themes-heading-2)))
+        `(synaxis-show-title-face ((,c :inherit modus-themes-heading-1)))
+    ;;;;; syslog-mode
+        `(syslog-debug ((,c :inherit modus-themes-slant)))
+        `(syslog-error ((,c :foreground ,err)))
+        `(syslog-file ((,c :inherit modus-themes-bold :foreground ,name)))
+        `(syslog-hide ((,c :background ,bg-main :foreground ,fg-main)))
+        `(syslog-hour ((,c :inherit modus-themes-bold :foreground ,date-common)))
+        `(syslog-info ((,c :foreground ,info)))
+        `(syslog-ip ((,c :inherit modus-themes-bold :foreground ,name :underline t)))
+        `(syslog-su ((,c :foreground ,err :underline t)))
+        `(syslog-warn ((,c :foreground ,warning)))
+    ;;;;; tab-bar-mode
+        `(tab-bar ((,c :inherit modus-themes-ui-variable-pitch :background ,bg-tab-bar)))
+        `(tab-bar-tab-group-current ((,c :inherit modus-themes-bold :background ,bg-tab-current :foreground ,fg-alt ,@(modus-themes--box bg-tab-current -2 nil))))
+        `(tab-bar-tab-group-inactive ((,c :background ,bg-tab-bar :foreground ,fg-alt ,@(modus-themes--box bg-tab-bar -2 nil))))
+        `(tab-bar-tab ((,c :inherit modus-themes-bold :background ,bg-tab-current ,@(modus-themes--box bg-tab-current -2 nil))))
+        `(tab-bar-tab-highlight ((,c :background ,bg-hover :foreground ,fg-main :box t)))
+        `(tab-bar-tab-inactive ((,c :background ,bg-tab-other ,@(modus-themes--box bg-tab-other -2 nil))))
+        `(tab-bar-tab-ungrouped ((,c :background ,bg-tab-other ,@(modus-themes--box bg-tab-other -2 nil))))
+    ;;;;; tab-line-mode
+        `(tab-line ((,c :inherit modus-themes-ui-variable-pitch :background ,bg-tab-bar :height 0.95)))
+        `(tab-line-active ((,c :inherit modus-themes-ui-variable-pitch :background ,bg-tab-bar)))
+        `(tab-line-inactive ((,c :inherit modus-themes-ui-variable-pitch :background ,bg-dim)))
+        `(tab-line-close-highlight ((,c :foreground ,err)))
+        `(tab-line-highlight ((,c :background ,bg-hover :foreground ,fg-main)))
+        `(tab-line-tab (( )))
+        `(tab-line-tab-current ((,c :inherit modus-themes-bold :background ,bg-tab-current ,@(modus-themes--box bg-tab-current -2 nil))))
+        `(tab-line-tab-inactive ((,c :background ,bg-tab-other ,@(modus-themes--box bg-tab-other -2 nil))))
+        `(tab-line-tab-inactive-alternate ((,c :background ,bg-tab-other :foreground ,fg-alt ,@(modus-themes--box bg-tab-other -2 nil))))
+        `(tab-line-tab-modified ((,c :foreground ,warning)))
+    ))

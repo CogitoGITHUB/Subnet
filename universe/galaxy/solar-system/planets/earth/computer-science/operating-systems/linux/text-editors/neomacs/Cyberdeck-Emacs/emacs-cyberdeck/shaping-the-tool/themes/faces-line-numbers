@@ -1,0 +1,16 @@
+* Cyberdeck Faces Line Numbers :EMACS_MECHANISM:S0:
+:PROPERTIES:
+:ID:       c9fc305a-82e2-4e76-8c88-1aae8d5555e5
+:MM_PARENT: none
+:MM_ORDER:  18.6
+:END:
+
+
+** Line Numbers
+
+#+begin_src emacs-lisp
+(defun cyberdeck/pure-red--line-numbers ()
+  (when (facep 'line-number)
+    (set-face-attribute 'line-number nil :foreground "#FFFFFF" :background "unspecified-bg")
+    (set-face-attribute 'line-number-current-line nil :foreground "#FFFFFF" :background "unspecified-bg" :weight 'bold)))
+#+end_src

@@ -1,0 +1,327 @@
+* Modus Select And Preview :EMACS_MECHANISM:S0:
+:PROPERTIES:
+:ID:       980328fe-5ac0-492b-a868-a738cd64c6a9
+:MM_PARENT: none
+:MM_ORDER:  16.4
+:END:
+
+
+#+begin_src emacs-lisp
+(defun modus-themes-color-dark-p (color)
+  "Return non-nil if hexadecimal RGB COLOR is dark.
+Test that COLOR has more contrast against white than black."
+  (> (modus-themes-contrast color "#ffffff")
+     (modus-themes-contrast color "#000000")))
+
+(defun modus-themes-get-readable-foreground (color)
+  "Get readable foreground for background hexadecimal RGB COLOR."
+  (if (modus-themes-color-dark-p color)
+      "#ffffff"
+    "#000000"))
+
+(defun modus-themes--list-colors-get-mappings (palette)
+  "Get the semantic palette entries in PALETTE.
+PALETTE is the value of a variable like `modus-operandi-palette'."
+  (seq-remove
+   (lambda (cell)
+     (stringp (cadr cell)))
+   palette))
+
+(defun modus-themes--list-colors-tabulated (theme &optional mappings)
+  "Return a data structure of THEME palette or MAPPINGS for tabulated list."
+  (let* ((current-palette (modus-themes-get-theme-palette theme :with-overrides :with-user-palette))
+         (palette (if mappings
+                      (modus-themes--list-colors-get-mappings current-palette)
+                    current-palette)))
+    (mapcar
+     (lambda (entry)
+       (pcase-let* ((`(,name ,value) entry)
+                    (name-string (format "%s" name))
+                    (value-string (format "%s" value))
+                    (value-string-padded (format "%-30s" value-string))
+                    (color (modus-themes-get-color-value name :with-overrides theme))) ; resolve a semantic mapping
+         (list
+          (cons entry color)
+          (vector
+           (pcase value
+             ('unspecified "---")
+             ((pred symbolp) "Yes")
+             (_ ""))
+           name-string
+           (propertize value-string 'face `( :foreground ,color))
+           (propertize value-string-padded 'face `( :background ,color
+                                                    :foreground ,(if (string= color "unspecified")
+                                                                     (modus-themes-get-readable-foreground (modus-themes-get-color-value 'bg-main nil theme))
+                                                                   (modus-themes-get-readable-foreground color))))))))
+     palette)))
+
+(defvar modus-themes-current-preview nil)
+(defvar modus-themes-current-preview-show-mappings nil)
+
+(defun modus-themes--set-tabulated-entries ()
+  "Set the value of `tabulated-list-entries' with palette entries."
+  (setq-local tabulated-list-entries
+              (modus-themes--list-colors-tabulated modus-themes-current-preview modus-themes-current-preview-show-mappings)))
+
+(defun modus-themes-list-colors (theme &optional mappings)
+  "Preview the palette of the Modus THEME of choice.
+With optional prefix argument for MAPPINGS preview only the semantic
+color mappings instead of the complete palette."
+  (interactive
+   (let ((prompt (if current-prefix-arg
+                     "Preview palette mappings of THEME"
+                   "Preview palette of THEME")))
+     (list
+      (modus-themes-select-prompt prompt)
+      current-prefix-arg)))
+  (modus-themes-activate theme)
+  (let ((buffer (get-buffer-create (format (if mappings "*%s-list-mappings*" "*%s-list-all*") theme))))
+    (with-current-buffer buffer
+      (let ((modus-themes-current-preview theme)
+            (modus-themes-current-preview-show-mappings mappings))
+        (modus-themes-preview-mode)))
+    (pop-to-buffer buffer)))
+
+(defalias 'modus-themes-preview-colors 'modus-themes-list-colors
+  "Alias for `modus-themes-list-colors'.")
+
+(defun modus-themes-list-colors-current (&optional mappings)
+  "Like `modus-themes-list-colors' with optional MAPPINGS for the current theme."
+  (interactive "P")
+  (modus-themes-list-colors (modus-themes-get-current-theme) mappings))
+
+(defalias 'modus-themes-preview-colors-current 'modus-themes-list-colors-current
+  "Alias for `modus-themes-list-colors-current'.")
+
+(defvar-local modus-themes-preview-mode--marked-entries nil
+  "List of entries marked in the `modus-themes-list-colors' buffer.")
+
+(defun modus-themes-preview-mode-mark ()
+  "Mark a palette entry in the `modus-themes-list-colors' buffer."
+  (declare (interactive-only t))
+  (interactive nil modus-themes-preview-mode)
+  (unless (derived-mode-p 'modus-themes-preview-mode)
+    (user-error "Only use this command inside the `modus-themes-preview-mode'"))
+  (when-let* ((id-at-point (tabulated-list-get-id)))
+    (add-to-list 'modus-themes-preview-mode--marked-entries id-at-point)
+    (tabulated-list-put-tag "*" t)))
+
+(defun modus-themes-preview-mode-mark-all ()
+  "Mark all palette entries in the `modus-themes-list-colors' buffer."
+  (declare (interactive-only t))
+  (interactive nil modus-themes-preview-mode)
+  (unless (derived-mode-p 'modus-themes-preview-mode)
+    (user-error "Only use this command inside the `modus-themes-preview-mode'"))
+  (save-excursion
+    (goto-char (point-min))
+    (while (re-search-forward (format "^\s\\{%d,\\}" tabulated-list-padding) nil t)
+      (call-interactively 'modus-themes-preview-mode-mark))))
+
+(defun modus-themes-preview-mode-unmark ()
+  "Unmark a palette entry in the `modus-themes-list-colors' buffer."
+  (declare (interactive-only t))
+  (interactive nil modus-themes-preview-mode)
+  (unless (derived-mode-p 'modus-themes-preview-mode)
+    (user-error "Only use this command inside the `modus-themes-preview-mode'"))
+  (when-let* ((id-at-point (tabulated-list-get-id)))
+    (setq-local modus-themes-preview-mode--marked-entries (delq id-at-point modus-themes-preview-mode--marked-entries))
+    (tabulated-list-put-tag " " t)))
+
+(defun modus-themes-preview-mode-unmark-all ()
+  "Unmark all palette entries in the `modus-themes-list-colors' buffer."
+  (declare (interactive-only t))
+  (interactive nil modus-themes-preview-mode)
+  (unless (derived-mode-p 'modus-themes-preview-mode)
+    (user-error "Only use this command inside the `modus-themes-preview-mode'"))
+  (setq-local modus-themes-preview-mode--marked-entries nil)
+  (tabulated-list-clear-all-tags))
+
+(defun modus-themes-preview-mode-copy-entry ()
+  "Copy marked entries or entry at point in the `modus-themes-list-colors' buffer.
+Each entry is of the form that appears is the underlying palette.  This
+is useful as a starting point for writing palette overrides.
+
+Also see `modus-themes-preview-mode-copy-color'."
+  (declare (interactive-only t))
+  (interactive nil modus-themes-preview-mode)
+  (unless (derived-mode-p 'modus-themes-preview-mode)
+    (user-error "Only use this command inside the `modus-themes-preview-mode'"))
+  (cond
+   (modus-themes-preview-mode--marked-entries
+    (let* ((entries (copy-sequence modus-themes-preview-mode--marked-entries))
+           (colors (mapcar #'car (nreverse entries))))
+      (kill-new (format "%S" colors))
+      (message "Copied all marked entries: `%S'" colors)))
+   ((when-let* ((color (car (tabulated-list-get-id)))
+                (string (format "%S" color)))
+      (kill-new string)
+      (message "Copied palette entry: `%s'" (propertize string 'face 'success))))
+   (t
+    (user-error "Nothing to copy"))))
+
+(defun modus-themes-preview-mode-copy-color ()
+  "Copy marked colors or colors at point in the `modus-themes-list-colors' buffer.
+Each color is a string.  Also see `modus-themes-preview-mode-copy-entry'."
+  (declare (interactive-only t))
+  (interactive nil modus-themes-preview-mode)
+  (unless (derived-mode-p 'modus-themes-preview-mode)
+    (user-error "Only use this command inside the `modus-themes-preview-mode'"))
+  (cond
+   (modus-themes-preview-mode--marked-entries
+    (let* ((entries (copy-sequence modus-themes-preview-mode--marked-entries))
+           (colors (mapcar #'cdr (nreverse entries))))
+      (kill-new (format "%S" colors))
+      (message "Copied all marked entries: `%S'" colors)))
+   ((when-let* ((color (cdr (tabulated-list-get-id)))
+                (string (format "%S" color)))
+      (kill-new string)
+      (message "Copied palette entry: `%s'" (propertize string 'face 'success))))
+   (t
+    (user-error "Nothing to copy"))))
+
+(defvar modus-themes-preview-mode-map
+  (let ((map (make-sparse-keymap)))
+    (define-key map (kbd "m") #'modus-themes-preview-mode-mark)
+    (define-key map (kbd "M") #'modus-themes-preview-mode-mark-all)
+    (define-key map (kbd "u") #'modus-themes-preview-mode-unmark)
+    (define-key map (kbd "U") #'modus-themes-preview-mode-unmark-all)
+    (define-key map (kbd "w") #'modus-themes-preview-mode-copy-color)
+    (define-key map (kbd "W") #'modus-themes-preview-mode-copy-entry)
+    map)
+  "Key map for `modus-themes-preview-mode'.")
+
+(define-derived-mode modus-themes-preview-mode tabulated-list-mode "Modus palette"
+  "Major mode to display a Modus themes palette."
+  :interactive nil
+  (setq-local modus-themes-preview-mode--marked-entries nil)
+  (setq-local tabulated-list-padding 2)
+  (setq-local tabulated-list-format
+              [("Mapping?" 10 t)
+               ("Symbol name" 30 t)
+               ("As foreground" 30 t)
+               ("As background" 0 t)])
+  (modus-themes--set-tabulated-entries)
+  (tabulated-list-init-header)
+  (tabulated-list-print))
+
+
+
+;;;; Internal functions
+
+(defun modus-themes--warn (option)
+  "Warn that OPTION has changed."
+  (prog1 nil
+    (display-warning
+     'modus-themes
+     (format "`%s' has changed; please read the updated documentation" option)
+     :warning)))
+
+(defun modus-themes--list-or-warn (option)
+  "Return list or nil value of OPTION, else `modus-themes--warn'."
+  (let* ((value (symbol-value option)))
+    (if (or (null value) (listp value))
+        value
+      (modus-themes--warn option))))
+
+(defun modus-themes--property-lookup (properties alist-key list-pred default)
+  "Return value from property alist or list.
+Check PROPERTIES for an alist value that corresponds to
+ALIST-KEY.  If no alist is present, search the PROPERTIES
+list given LIST-PRED, using DEFAULT as a fallback."
+  (if-let* ((val (or (alist-get alist-key properties)
+                     (seq-filter (lambda (x) (funcall list-pred x)) properties)
+                     default))
+            ((listp val)))
+      (car val)
+    val))
+
+;; Helper functions that are meant to ease the implementation of the
+;; above customization variables.
+(defun modus-themes--bold-weight ()
+  "Conditional use of a heavier text weight."
+  (when modus-themes-bold-constructs
+    (list :inherit 'bold)))
+
+(defun modus-themes--slant ()
+  "Conditional use of italics for slant attribute."
+  (when modus-themes-italic-constructs
+    (list :inherit 'italic)))
+
+(defun modus-themes--fixed-pitch ()
+  "Conditional application of `fixed-pitch' inheritance."
+  (when modus-themes-mixed-fonts
+    (list :inherit 'fixed-pitch)))
+
+(defun modus-themes--variable-pitch-ui ()
+  "Conditional use of `variable-pitch' in UI elements."
+  (when modus-themes-variable-pitch-ui
+    (list :inherit 'variable-pitch)))
+
+(defconst modus-themes-weights
+  '( thin ultralight extralight light semilight regular medium
+     semibold bold heavy extrabold ultrabold)
+  "List of font weights.")
+
+(defun modus-themes--weight (list)
+  "Search for `modus-themes-weights' weight in LIST."
+  (catch 'found
+    (dolist (elt list)
+      (when (memq elt modus-themes-weights)
+        (throw 'found elt)))))
+
+(defun modus-themes--heading (level fg &optional bg ol)
+  "Conditional styles for `modus-themes-headings'.
+
+LEVEL is the heading's position in their order.  FG is the
+default text color.  Optional BG is an appropriate background.
+Optional OL is the color of an overline."
+  (let* ((key (alist-get level modus-themes-headings))
+         (style (or key (alist-get t modus-themes-headings)))
+         (style-listp (listp style))
+         (properties style)
+         (var (when (and style-listp (memq 'variable-pitch properties)) 'variable-pitch))
+         (weight (when style-listp (modus-themes--weight style))))
+    (list :inherit (cond
+                    ((not style-listp) 'bold)
+                    ;; `no-bold' is for backward compatibility because we cannot
+                    ;; deprecate a variable's value.
+                    ((or weight (memq 'no-bold properties))
+                     var)
+                    (var (append (list 'bold) (list var)))
+                    (t 'bold))
+          :background (or bg 'unspecified)
+          :foreground fg
+          :overline (or ol 'unspecified)
+          :height (if style-listp
+                      (modus-themes--property-lookup properties 'height #'floatp 'unspecified)
+                    'unspecified)
+          :weight (or weight 'unspecified))))
+
+
+;; NOTE 2025-11-23: In theory we need the `modus-themes--box'
+;; equivalent for this:
+;;
+;;     :underline (:style wave :color unspecified)
+;;
+;; I checked all the relevant faces and feel that users will not be
+;; benefitting form such a style anyway.  What would be the point of a
+;; spell checker that cannot highlight its errors, for example?
+;; Granted, we could have another kind of highlight, but I am here
+;; focusing on the use of this:
+;;
+;;     :underline unspecified
+(defun modus-themes--box (color width style)
+  "Return :box COLOR, WIDTH, STYLE if appropriate.
+If COLOR is unspecified, then return :box unspecified."
+  (cond
+   ((eq color 'unspecified)
+    '(:box unspecified))
+   ((and width style)
+    `(:box (:line-width ,width :color ,color :style ,style)))
+   (width
+    `(:box (:line-width ,width :color ,color)))
+   (style
+    `(:box (:color ,color :style ,style)))
+   (t
+    `(:box ,color))))
+#+end_src

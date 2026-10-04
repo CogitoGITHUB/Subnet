@@ -1,0 +1,26 @@
+* Cyberdeck Faces Org :EMACS_MECHANISM:S0:
+:PROPERTIES:
+:ID:       f0d7d0aa-554a-4621-bb3d-23ef2aa04e79
+:MM_PARENT: none
+:MM_ORDER:  18.2
+:END:
+
+
+** Org
+#+begin_src emacs-lisp
+(defun cyberdeck/pure-red--org ()
+  (dolist (level '(org-level-1 org-level-2 org-level-3
+                   org-level-4 org-level-5 org-level-6 org-level-7 org-level-8))
+    (set-face-attribute level nil :foreground "#FFFFFF" :background "unspecified-bg" :weight 'bold :inherit nil))
+  (set-face-attribute 'org-document-title nil :foreground "#FFFFFF" :background 'unspecified :height 2.0 :weight 'bold :inherit nil :extend nil)
+  (set-face-attribute 'org-level-1 nil :height 1.8)
+  (set-face-attribute 'org-level-2 nil :height 1.6)
+  (set-face-attribute 'org-level-3 nil :height 1.4)
+  (set-face-attribute 'org-level-4 nil :height 1.2)
+  (set-face-attribute 'org-link nil :foreground "#FFFFFF" :background "unspecified-bg" :weight 'normal :inherit nil)
+  (dolist (face '(org-block org-block-begin-line org-block-end-line
+                  org-code org-verbatim org-meta-line org-todo org-done
+                  org-date org-special-keyword org-tag org-drawer
+                  org-property-value org-table))
+    (set-face-attribute face nil :foreground "#FFFFFF" :background "unspecified-bg" :weight 'normal :inherit nil)))
+#+end_src

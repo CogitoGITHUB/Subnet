@@ -1,0 +1,15 @@
+* Cyberdeck Faces Hl Line :EMACS_MECHANISM:S0:
+:PROPERTIES:
+:ID:       98b92a78-72a2-4fb6-9dab-88ef0a253e49
+:MM_PARENT: none
+:MM_ORDER:  18.1
+:END:
+
+
+** Focused Line
+#+begin_src emacs-lisp
+(defun cyberdeck/pure-red--hl-line ()
+  (with-eval-after-load 'hl-line
+    (set-face-attribute 'hl-line nil :background "unspecified-bg" :inherit nil))
+  (global-hl-line-mode 1))
+#+end_src

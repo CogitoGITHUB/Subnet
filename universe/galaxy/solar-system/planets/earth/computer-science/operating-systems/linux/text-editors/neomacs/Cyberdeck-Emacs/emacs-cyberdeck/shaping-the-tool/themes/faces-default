@@ -1,0 +1,18 @@
+* Cyberdeck Faces Default :EMACS_MECHANISM:S0:
+:PROPERTIES:
+:ID:       ba15b0bc-8102-4ca2-9dee-39173df33118
+:MM_PARENT: none
+:MM_ORDER:  17.9
+:END:
+
+
+** Default & Fringe
+
+#+begin_src emacs-lisp
+(defun cyberdeck/pure-red--default ()
+  (set-face-attribute 'default nil :foreground "#FFFFFF" :background "unspecified-bg")
+  (set-face-attribute 'fringe nil :foreground "#FFFFFF" :background "unspecified-bg")
+  (set-face-attribute 'region nil :foreground "#FFFFFF" :background "unspecified-bg")
+  (set-face-attribute 'highlight nil :foreground "#FFFFFF" :background "unspecified-bg")
+  (set-face-attribute 'cursor nil :background "#FFFFFF"))
+#+end_src
