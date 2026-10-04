@@ -179,8 +179,7 @@ silently is worse than not booting.  Honors
                (signal (car err) (cdr err)))))
     (cyberdeck-emacs-errors-save-log)
     (unless fatal
-      (cyberdeck-emacs-maybe-freeze-on-clean-boot)
-      (cyberdeck-emacs-doctor-schedule-idle-sweep))
+      (cyberdeck-emacs-maybe-freeze-on-clean-boot))
     (let ((errn (length (cyberdeck-emacs-errors-list)))
           (warnn (length (cyberdeck-emacs-warnings-list))))
       (message "cyberdeck-emacs: %s%d error(s), %d warning(s)%s%s"
@@ -271,20 +270,13 @@ silently is worse than not booting.  Honors
                    (fboundp 'dashboard-refresh-buffer))
               (progn
                 (dashboard-open)
-                (run-with-idle-timer
-                 5 nil (lambda ()
-                         ;; Never refresh mid-boot (units still load
-                         ;; behind the dashboard) and never let a
-                         ;; refresh error near the debugger: a 5s
-                         ;; timer firing mid-loop once froze a boot.
-                         (let ((debug-on-error nil)
-                               (debug-on-quit nil))
-                           (when (and (get-buffer "*dashboard*")
-                                      (not (and (boundp 'cyberdeck-emacs--booting)
-                                                cyberdeck-emacs--booting)))
-                             (condition-case nil
-                                 (dashboard-refresh-buffer)
-                               (error nil))))))
+                ;; Refresh synchronously at boot end: when the boot says
+                ;; finished, the dashboard is already fresh — no idle
+                ;; timer, no delay.  Errors here must never break boot end.
+                (condition-case nil
+                    (when (get-buffer "*dashboard*")
+                      (dashboard-refresh-buffer))
+                  (error nil))
                 ;; Land fullscreen on the dashboard and stay there.
                 ;; Nothing auto-displays at boot end, ever: errors and
                 ;; warnings live in *Warnings* plus the Errors button

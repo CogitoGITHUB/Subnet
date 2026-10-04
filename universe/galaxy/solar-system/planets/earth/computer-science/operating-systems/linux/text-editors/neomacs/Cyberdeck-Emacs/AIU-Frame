@@ -65,6 +65,9 @@ restore both when init settles.
 #+begin_src emacs-lisp
 (setq gc-cons-threshold (* 64 1024 1024)
       gc-cons-percentage 0.6)
+;; Cap async native compilation: one background worker, so package
+;; builds never saturate the phone after boot.
+(setq native-comp-async-jobs-number 1)
 (defvar my/saved-file-name-handler-alist file-name-handler-alist)
 (setq file-name-handler-alist nil)
 (add-hook 'after-init-hook
