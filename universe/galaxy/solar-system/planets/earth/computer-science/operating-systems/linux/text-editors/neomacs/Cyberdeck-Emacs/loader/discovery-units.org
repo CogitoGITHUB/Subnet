@@ -188,9 +188,10 @@ every file is ensured.  Returns (LISTED REFRESHED)."
                (length all) refreshed)
       (let ((ratio (if (zerop (length all)) 0.0 (/ (float refreshed) (length all)))))
         (when (or (null table) (> ratio 0.05))
-          (message "AIU Cyberdeck: change detection failed: %s, rescanning %d files (table=%S statslen=%S)"
+          (message "AIU Cyberdeck: change detection failed: %s, rescanning %d files"
                    (or (car (cdr stats)) (and table "widespread mtime changes") "listing untrusted")
-                   refreshed table (and (listp stats) (length stats)))))
+                   refreshed)
+          (redisplay t)))
       (redisplay t)
       (let ((dt (- (float-time) t0)))
         (when (> dt 2.0)
@@ -260,11 +261,11 @@ resolution it has always had."
          (signal-msg nil))
     (unwind-protect
         (with-current-buffer out
-          (condition-case nil
+          (condition-case err
               (setq status (call-process "find" nil t nil root
                                         "-type" "f"
                                         "-printf" "%p\t%T@\t%s\n"))
-            (error (setq signal-msg (error-message-string e))))
+            (error (setq signal-msg (error-message-string err))))
           (cond
            (signal-msg
             (setq cyberdeck-emacs--stat-table nil)
