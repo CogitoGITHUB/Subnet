@@ -186,6 +186,11 @@ every file is ensured.  Returns (LISTED REFRESHED)."
                   (redisplay t)))))))
       (message "AIU Cyberdeck: %d files listed, %d changed"
                (length all) refreshed)
+      (let ((ratio (if (zerop (length all)) 0.0 (/ (float refreshed) (length all)))))
+        (when (or (null table) (> ratio 0.05))
+          (message "AIU Cyberdeck: change detection failed: %s, rescanning %d files (table=%S statslen=%S)"
+                   (or (car (cdr stats)) (and table "widespread mtime changes") "listing untrusted")
+                   refreshed table (and (listp stats) (length stats)))))
       (redisplay t)
       (let ((dt (- (float-time) t0)))
         (when (> dt 2.0)
