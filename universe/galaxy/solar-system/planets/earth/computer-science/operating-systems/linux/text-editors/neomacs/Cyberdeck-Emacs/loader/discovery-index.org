@@ -23,7 +23,7 @@ Warm-boot accelerator: verified entries skip all per-file parsing.")
   "Truenames hash-verified this session.  `cyberdeck-emacs--index-ensure'
 skips members: their entries are current by construction.")
 
-(defconst cyberdeck-emacs-discovery-index-version "4"
+(defconst cyberdeck-emacs-discovery-index-version "5"
   "Format version of the on-disk discovery index, tracked SEPARATELY
 from `cyberdeck-emacs-cache-salt'.
 
@@ -43,7 +43,10 @@ absent, so the index is rebuilt by one full scan and never misread.
    `stage-of` returns).  Version 3 compared against the string S1, matched
    nothing, and marked every file S2 -- the boot then skipped the whole tree
    (0 units, BOOT THREW).  Bumping discards the poisoned v3 index; one full
-   rebuild, then nothing.")
+   rebuild, then nothing.
+ 5: per-entry :stages, list of stage STRINGS in the file's units
+   (e.g. (\"S0\") or (\"S0\" \"S1\")).  File belongs to each listed stage.
+   :stage kept for compatibility.  Null units means :stages nil.")
 
 (defun cyberdeck-emacs-discovery-index-file ()
   "On-disk discovery index.  Under ~/.config/emacs, never the vault."
@@ -70,10 +73,10 @@ cache salt, so a format change to the index never costs a recompile."
       (error nil))))
 
 (defun cyberdeck-emacs--index-save ()
-  "Persist the index when dirty.  Never throws."
+  "Persist the index when dirty.  Never throws; logs one line on failure."
   (when cyberdeck-emacs--discovery-dirty
     (setq cyberdeck-emacs--discovery-dirty nil)
-    (condition-case nil
+    (condition-case err
         (let (pairs)
           (maphash (lambda (k v)
                      ;; Prune entries for deleted files on every save.
@@ -91,7 +94,8 @@ cache salt, so a format change to the index never costs a recompile."
             (cyberdeck-emacs--cache-write
              idx (list :version cyberdeck-emacs-discovery-index-version
                        :files pairs))))
-      (error nil))))
+      (error (message "cyberdeck-emacs: index-save failed: %s"
+                      (error-message-string err))))))
 
 (defun cyberdeck-emacs--index-lookup (file)
   "Stat-trusted index entry for FILE, or nil.
@@ -334,14 +338,13 @@ later boots skip re-scanning them too.  Never throws."
                      (list :mtime (nth 0 sig) :size (nth 1 sig)
                            :hash h :units units :props props :title title
                            :symbols syms
-                           ;; Per-FILE stage, so boot can skip an S2 file
-                           ;; without opening, statting or truenaming it.
-                           ;; S1 wins: a file holding even one S1 unit must
-                           ;; be walked and scanned like any other.
-                           ;; Compare SYMBOLS: `stage-of' normalizes to 'S1
-                           ;; / 'S2 (see its docstring).  Comparing against
-                           ;; the string "S1" matched nothing, marked every
-                           ;; file S2, and the boot skipped the whole tree.
+                           ;; Per-FILE :stage (compat) plus :stages list, so a
+                           ;; stage runner can select files per stage.
+                           ;; :stages holds each distinct stage STRING in
+                           ;; the file's units, stable order S0,S1,S2
+                           ;; (e.g. ("S0") or ("S0" "S1")).  Null units
+                           ;; means nil (belongs nowhere); :stage stays
+                           ;; "S1" for compatibility.
                            :stage (if (or (null units)
                                           (seq-find (lambda (u)
                                                       (let ((s (plist-get u :stage)))
@@ -349,7 +352,19 @@ later boots skip re-scanning them too.  Never throws."
                                      (equal s "S2")))))
                                                     units))
                                       "S1"
-                                    "S2"))
+                                    "S2")
+                           :stages (and units
+                                        (let ((have (mapcar (lambda (u)
+                                                              (let ((s (plist-get u :stage)))
+                                                                (cond ((eq s 'S0) "S0")
+                                                                      ((eq s 'S2) "S2")
+                                                                      ((eq s 'S1) "S1")
+                                                                      ((equal s "S0") "S0")
+                                                                      ((equal s "S2") "S2")
+                                                                      (t "S1"))))
+                                                            units)))
+                                          (seq-filter (lambda (s) (member s have))
+                                                      '("S0" "S1" "S2")))))
                      cyberdeck-emacs--discovery-index)
             (push key cyberdeck-emacs--index-verified)
             (unless unchanged
