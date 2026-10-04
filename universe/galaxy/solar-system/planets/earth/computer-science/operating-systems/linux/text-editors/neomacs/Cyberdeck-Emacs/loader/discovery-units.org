@@ -3,6 +3,9 @@ Module of the Cyberdeck-Emacs loader. No :EMACS_MECHANISM: tags here: this direc
 
 ** Discovery — ordered units
 #+begin_src emacs-lisp
+(defvar cyberdeck-emacs--discovery-listed 0
+  "Files walked this boot, before the S1/S2 split.")
+
 (defun cyberdeck-emacs--ordered-units (extension directory &optional progress-fn)
   "Single discovery pass: (ORDERED-UNITS . ORDERED-FILES) under DIRECTORY.
 Runs the walk, tag filter, and `--collect-units' exactly once; both
@@ -217,9 +220,6 @@ trusted.  Computed once per boot, never persisted.")
 (defvar cyberdeck-emacs--discovery-report nil
   "One-line discovery summary for this boot, set by
 `cyberdeck-emacs--report-discovery'.")
-
-(defvar cyberdeck-emacs--discovery-listed 0
-  "Files walked this boot, before the S1/S2 split.")
 
 (defun cyberdeck-emacs--report-discovery (from-index rescanned fallback reason listed)
   "Record and print this boot's one-line discovery summary."
