@@ -28,6 +28,9 @@ tracks the vocabulary automatically — FIXME, BUG and HACK were never
 todo states and matched nothing, while DOING, WAIT, DONE and the rest
 of the AIU context were unreachable from here.
 #+begin_src emacs-lisp
+;; Set by the config below from the TODO AIU context; declared for
+;; compiles that run before consult-todo loads.
+(defvar consult-todo-narrow)
 (when-let* ((narrow (my/subnet-consult-todo-narrow)))
   (setq consult-todo-narrow narrow))
 #+end_src

@@ -58,6 +58,16 @@ section before every use.
 (defvar aiu-proxy-mode)
 (defvar aiu-proxy-add-all-on-activate)
 (defvar yas-verbosity)
+;; Key-selection state, defined in the key-selection unit (which
+;; compiles after this file, so macros from there are expanded by
+;; hand at the use site below). Declared dynamic: the ks helpers read
+;; these bindings through dynamic scope.
+(defvar ks-keys-alist)
+(defvar ks-styles-alist)
+(defvar ks-action)
+(defvar ks-keys)
+(defvar ks-style)
+(defvar ks-command)
 #+end_src
 
 ** Prompt Registry (must load first)
@@ -5079,7 +5089,28 @@ Why: Implementation of ~my/cyberdeck-org-prompt--ks-to-option~.
   "Select an option line with key selection; the cursor lands on it.
 Marking is manual afterwards — use buffer-mark on that line."
   (interactive)
-  (ks-with my/cyberdeck-org-prompt-ks
+  ;; Manual expansion of (ks-with my/cyberdeck-org-prompt-ks ...):
+  ;; key-selection compiles after this file, so the macro is not
+  ;; defined at compile time here (it would compile to a dead funcall
+  ;; evaluating the command name as a variable). Keep in sync with
+  ;; `ks-with' in the key-selection unit.
+  (let ((ks-keys (or (cdr (assq 'my/cyberdeck-org-prompt-ks ks-keys-alist))
+                     ks-keys))
+        (ks-style (or (cdr (assq 'my/cyberdeck-org-prompt-ks ks-styles-alist))
+                      ks-style))
+        (ks-command 'my/cyberdeck-org-prompt-ks))
+    (setq ks-action nil)
+    (setf (symbol-function 'ks-resume)
+          (lambda ()
+            (interactive)
+            (let ((r (ks--line (eq current-prefix-arg 4))))
+              (when (and (not (memq r '(t nil))) (eq ks-action #'identity))
+                (goto-char r)
+                (if (and (org-at-heading-p) (>= (org-outline-level) 2))
+                    (message "Option: %s"
+                             (my/cyberdeck-org-prompt--normalize-choice
+                              (org-get-heading t t t t)))
+                  (user-error "Not an option heading"))))))
     (let ((r (ks--line (eq current-prefix-arg 4))))
       (when (and (not (memq r '(t nil))) (eq ks-action #'identity))
         (goto-char r)
@@ -5114,14 +5145,13 @@ is marked; C-q quits, C-l makes live, C-e edits the AIU Context file."
     (while (and (not exit-loop) (buffer-live-p buf))
       (when-let* ((win (get-buffer-window buf)))
         (with-selected-window win
-          (let ((ks-all-windows nil))
-            (condition-case nil
-                (progn (ks-goto-line)
-                       (when (and (org-at-heading-p)
-                                  (>= (org-outline-level) 2))
-                         (my/cyberdeck-org-prompt--buffer-mark)))
-              (user-error nil)
-              (error nil)))))
+          (condition-case nil
+              (progn (ks-goto-line)
+                     (when (and (org-at-heading-p)
+                                (>= (org-outline-level) 2))
+                       (my/cyberdeck-org-prompt--buffer-mark)))
+            (user-error nil)
+            (error nil))))
       (let ((key (read-key "jump to mark · RET advance · SPC back · C-q quit · C-l AIU Context · C-e edit")))
         (cond
          ((eq key 32)

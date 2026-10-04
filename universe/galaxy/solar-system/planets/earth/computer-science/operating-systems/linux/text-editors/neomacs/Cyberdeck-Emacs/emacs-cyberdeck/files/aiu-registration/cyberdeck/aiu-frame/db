@@ -368,13 +368,20 @@ PATH unchanged when the root is unknown."
   "Absolute form of stored PATH for filesystem access.
 Stored paths are vault-relative; resolve them against the vault root so
 file-exists-p and file reads work whatever the current directory is.
-Absolute stored paths pass through untouched.  Never throws."
+Absolute stored paths pass through untouched.  Surrounding double
+quotes are stripped first: old rows were stored shell-quoted, and an
+unstripped quote makes every existence check fail.  Never throws."
   (condition-case nil
-      (if (and (stringp path) (file-name-absolute-p path))
-          path
-        (expand-file-name path
-                          (and (fboundp 'my/cyberdeck-root-dir)
-                               (my/cyberdeck-root-dir))))
+      (let ((s (if (stringp path) path "")))
+        (when (and (> (length s) 0) (eq (aref s 0) 34))
+          (setq s (substring s 1)))
+        (when (and (> (length s) 0) (eq (aref s (1- (length s))) 34))
+          (setq s (substring s 0 -1)))
+        (if (file-name-absolute-p s)
+            s
+          (expand-file-name s
+                            (and (fboundp 'my/cyberdeck-root-dir)
+                                 (my/cyberdeck-root-dir)))))
     (error path)))
 #+end_src
 
@@ -413,16 +420,10 @@ Rows whose file no longer exists on disk are dropped before FILTER
 is applied, so callers never see stale/deleted entries."
   (let* ((db (ignore-errors (cyberdeck-db)))
          (db-result (when db
-                      (let* ((dropped 0)
-                             (notes (seq-filter
+                      (let* ((notes (seq-filter
                                      (lambda (n)
-                                       (if (file-exists-p (cyberdeck-db--resolve-path (cyberdeck-aiu-path n)))
-                                           t
-                                         (setq dropped (1+ dropped))
-                                         nil))
+                                       (file-exists-p (cyberdeck-db--resolve-path (cyberdeck-aiu-path n))))
                                      (mapcar #'my/cyberdeck--row-to-aiu (emacsql db [:select * :from notes])))))
-                        (when (> dropped 0)
-                          (message "cyberdeck-db-query: dropped %d row(s) with missing files" dropped))
                         (if filter (seq-filter filter notes) notes)))))
     (if (and db-result (consp db-result))
         db-result

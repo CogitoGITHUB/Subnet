@@ -2,6 +2,10 @@
 (require 'git-gutter)
 (global-git-gutter-mode 1)
 
+;; Provided by magit-git (loaded via the magit leaf block); declared
+;; for compiles that run before it.
+(defvar magit-git-executable)
+
 (defvar my/cyberdeck-git--pushing nil
   "Non-nil while a git push is in flight.")
 
@@ -276,7 +280,7 @@ UNFOLDINGS is a space-separated string of relative paths (as stored in the
 :DELETED_UNFOLDINGS: unfolding) or a list. Returns count of unfoldings restored."
   (let ((rel-list (if (listp unfoldings) unfoldings
                     (when (and unfoldings (not (string-empty-p unfoldings)))
-                      (split-string AIU Contexts "[ \t]+" t))))
+                      (split-string unfoldings "[ \t]+" t))))
         (count 0))
     (dolist (rel rel-list count)
       (let ((revs (list commit (format "%s^" commit))))

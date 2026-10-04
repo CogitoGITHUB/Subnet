@@ -157,6 +157,12 @@ narrow only the inner box.  Every line shares one string-width."
 (unless (memq #'cyberdeck/banner--on-size-change window-size-change-functions)
   (add-hook 'window-size-change-functions #'cyberdeck/banner--on-size-change))
 
+;; Upstream's resize hook re-renders WITHOUT erasing (no force-refresh),
+;; stacking a second full dashboard under the first on every resize.
+;; Ours erases via `dashboard-open', so the upstream one must go.
+(remove-hook 'window-size-change-functions #'dashboard-resize-on-hook)
+(remove-hook 'window-setup-hook #'dashboard-resize-on-hook)
+
 (when (fboundp 'dashboard-insert-startupify-lists)
   (advice-add 'dashboard-insert-startupify-lists
               :before #'cyberdeck/banner-apply))

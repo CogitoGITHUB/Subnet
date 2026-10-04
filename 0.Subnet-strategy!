@@ -1,0 +1,185 @@
+#+TITLE: Subnet Strategy
+#+STARTUP: overview
+
+* SUBNET STRATEGY
+
+The order is not preference. It is dependency.
+
+Each layer supplies the operating system for the next.
+Skipping a layer produces the usual failure: knowledge that cannot transfer, models that cannot act, and perception that stays fragmented.
+
+** Order of Installation
+
+*** 1. Linguistics
+The base substrate of all the others.
+
+Every domain below is mediated through language: definition, framing, distinction, implication, omission, and force of statement. Without precise control of language, the rest of the map is built on noise.
+
+Linguistics comes first because it is the only domain that operates on every other domain simultaneously. It is the instrument of perception itself.
+
+Install:
+- Precision of terms
+- Framing and re-framing
+- Detection of loaded language
+- Argument structure
+- Register and audience control
+
+Until this layer is live, every subsequent domain will be filtered through uncontrolled language.
+
+*** 2. Psychology + Neurology
+The individual machine.
+
+Once language is under control, the next requirement is an accurate model of the single human: attention, memory, motivation, bias, emotion, decision, and the biological constraints that produce them.
+
+Psychology without neurology stays soft. Neurology without psychology stays abstract. Together they give the actual operating characteristics of the unit that will later form groups, obey or break laws, respond to incentives, and fight.
+
+This layer sits after linguistics because the material of psychology is largely linguistic and observational. It sits before sociology because groups are composed of individuals whose internal mechanics must already be understood.
+
+Install:
+- Attention and cognitive load
+- Memory systems and forgetting curves
+- Motivational structure
+- Bias catalogue with detection rules
+- Emotional regulation and leverage
+- Basic neural constraints on decision
+
+*** 3. Sociology
+The collective machine.
+
+Individuals aggregate into patterns that cannot be reduced to single-person psychology: status, norms, coordination, polarization, rumor, institutional drift, and collective action.
+
+Sociology comes after psychology + neurology because the micro-mechanics must be known before the macro-patterns can be read correctly. It comes before law because law is one formalization of collective force, not the source of it.
+
+Install:
+- Group formation and dissolution
+- Status and hierarchy dynamics
+- Norm enforcement and deviance
+- Information cascades and polarization
+- Institutional behavior over time
+
+*** 4. Law
+The formal constraint layer.
+
+Law is the written and procedural expression of collective power. It defines what is permitted, what is punished, and the actual routes through which force is applied by the state or by private parties under state recognition.
+
+It follows sociology because it is a crystallization of social force. It precedes business and politics because both operate inside (and around) legal containers.
+
+Install:
+- Sources of law and hierarchy of norms
+- Procedural reality vs written text
+- Rights, duties, and standing
+- Enforcement mechanisms and their failure modes
+- Contract, property, and liability as core instruments
+
+*** 5. Business + Economy
+The material incentive layer.
+
+Resources, scarcity, production, exchange, capital, and organizational survival. This is the substrate that funds and constrains every other domain.
+
+It comes after law because markets and firms exist inside legal structures (and exploit their gaps). It comes before politics because political power is downstream of economic capacity more often than the reverse.
+
+Install:
+- Incentives and revealed preference
+- Firm structure and survival conditions
+- Capital allocation and risk
+- Market dynamics and failure modes
+- Accounting and information asymmetry
+
+*** 6. Politics
+The live contest over power and legitimacy.
+
+Politics is the continuous struggle to define the rules, distribute resources, and control the narrative that justifies both. It sits after law and economy because it operates on both: it changes the legal container and redirects economic flows.
+
+It precedes warfare because warfare is the continuation of political contest when formal and informal political means are judged insufficient.
+
+Install:
+- Power mapping (formal and informal)
+- Coalition and fracture dynamics
+- Narrative control and legitimacy
+- Institutional capture and resistance
+- Decision processes under uncertainty and time pressure
+
+*** 7. Warfare
+The extreme case.
+
+Organized force, strategy, logistics, intelligence, deception, and the management of violence at scale. It is last because it is the domain that appears when the previous layers fail or are deliberately set aside.
+
+Understanding warfare without the preceding layers produces technical knowledge without strategic context. Understanding the preceding layers without warfare leaves a blind spot at the edge of the map.
+
+Install:
+- Strategy vs tactics vs logistics
+- Information and deception
+- Force ratios and culmination
+- Civil-military relations
+- Thresholds between political and military action
+
+* PERCEPTION UNDER THE FULL SET
+
+One human running this stack does not switch domains. The domains run concurrently as filters on the same stream of events.
+
+** Continuous Filters
+
+Every significant input is passed through the stack in order:
+
+1. Linguistics — What is being said, how is it framed, what is omitted, what terms are load-bearing?
+2. Psychology + Neurology — What is the internal state and bias of the actor(s)? What are they capable of perceiving and deciding under this load?
+3. Sociology — What group dynamics, status moves, or collective patterns are active?
+4. Law — What formal rules apply, what procedures are available, what is the real enforcement picture?
+5. Business + Economy — What are the material incentives and constraints?
+6. Politics — Who is contesting what, with which coalitions and narratives?
+7. Warfare — Has the situation crossed into organized force or its immediate preparation?
+
+The filters are not sequential in time. They are simultaneous evaluation layers. The order is the order of foundational dependence, not the order of attention.
+
+** Standing Rules
+
+- No domain is allowed to remain isolated. Every AIU must declare its links upward and downward in the stack.
+- Language is never treated as neutral. Every key term is examined for framing effects.
+- Individual psychology is never scaled to groups without explicit sociological translation.
+- Legal text is never trusted without procedural and enforcement reality.
+- Economic claims are never accepted without incentive and information-asymmetry checks.
+- Political narratives are never taken at face value; power and coalition maps are required.
+- Military or force language is treated as a threshold indicator, not as ordinary rhetoric.
+
+** Operating Checklists
+
+*** Intake Checklist
+- [ ] Term precision verified (Linguistics)
+- [ ] Actor internal model stated (Psychology + Neurology)
+- [ ] Group/status pattern identified (Sociology)
+- [ ] Legal container and enforcement path noted (Law)
+- [ ] Incentive structure mapped (Business + Economy)
+- [ ] Power and narrative contest identified (Politics)
+- [ ] Force threshold assessed (Warfare)
+
+*** Decision Checklist
+- [ ] Linguistic framing of the options examined
+- [ ] Cognitive and emotional constraints of decision-makers accounted for
+- [ ] Collective dynamics that will amplify or dampen the decision modeled
+- [ ] Legal exposure and procedural routes calculated
+- [ ] Material cost and incentive alignment checked
+- [ ] Political coalition effects projected
+- [ ] Escalation path to force considered and bounded
+
+*** Review Checklist
+- [ ] Which filter was weakest in the original read?
+- [ ] Which cross-domain link was missing?
+- [ ] What Installation Protocol must be reinforced?
+- [ ] What new AIU must be created or re-parented?
+
+* MANIFOLDING PRINCIPLE
+
+Every domain is both a container and a content.
+
+Linguistics contains the means of describing all the others.
+Psychology + Neurology contain the individual units that populate sociology.
+Sociology contains the patterns that law formalizes.
+Law contains the rules inside which business and politics move.
+Business + Economy contain the resources that politics redistributes and warfare consumes.
+Politics contains the decisions that open or close the door to warfare.
+Warfare, when active, rewrites the conditions of all the layers above it.
+
+The map is recursive. Movement in any layer must be readable from the others. No AIU is allowed to exist without declared vertical connections.
+
+This is the Subnet Strategy.
+I can write this directly into a file in the sandbox if you want it saved as Subnet-Strategy.org or similar.
