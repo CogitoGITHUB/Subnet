@@ -352,3 +352,4 @@
         `(markdown-ts-table-delimiter-cell ((,c :inherit modus-themes-fixed-pitch :foreground ,prose-table)))
         `(markdown-ts-table-header ((,c :inherit (modus-themes-bold modus-themes-fixed-pitch) :foreground ,prose-table)))
     ))
+#+end_src

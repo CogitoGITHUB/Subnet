@@ -400,3 +400,4 @@
         `(tab-line-tab-inactive-alternate ((,c :background ,bg-tab-other :foreground ,fg-alt ,@(modus-themes--box bg-tab-other -2 nil))))
         `(tab-line-tab-modified ((,c :foreground ,warning)))
     ))
+#+end_src

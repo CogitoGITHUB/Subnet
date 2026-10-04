@@ -477,3 +477,4 @@
         `(custom-group-tag-1 ((,c :inherit modus-themes-bold :foreground ,constant)))
         `(custom-variable-tag ((,c :inherit modus-themes-bold :foreground ,variable)))
     ))
+#+end_src

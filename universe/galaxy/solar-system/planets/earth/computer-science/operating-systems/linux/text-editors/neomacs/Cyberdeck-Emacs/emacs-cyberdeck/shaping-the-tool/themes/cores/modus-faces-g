@@ -402,3 +402,4 @@
         `(ztreep-node-count-children-face ((,c :inherit modus-themes-slant :foreground ,fg-dim)))
         `(ztreep-node-face ((,c :foreground ,accent-0)))
     ))
+#+end_src

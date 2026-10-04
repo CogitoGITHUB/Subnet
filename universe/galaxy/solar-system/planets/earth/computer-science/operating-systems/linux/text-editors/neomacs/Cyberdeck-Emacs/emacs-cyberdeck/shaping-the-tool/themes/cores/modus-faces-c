@@ -429,3 +429,4 @@
         `(query-replace ((,c :inherit modus-themes-search-replace)))
         `(query-replace-preview ((,c :inherit (bold modus-themes-search-replace))))
     ))
+#+end_src
