@@ -23,7 +23,7 @@ Warm-boot accelerator: verified entries skip all per-file parsing.")
   "Truenames hash-verified this session.  `cyberdeck-emacs--index-ensure'
 skips members: their entries are current by construction.")
 
-(defconst cyberdeck-emacs-discovery-index-version "5"
+(defconst cyberdeck-emacs-discovery-index-version "6"
   "Format version of the on-disk discovery index, tracked SEPARATELY
 from `cyberdeck-emacs-cache-salt'.
 
@@ -46,7 +46,11 @@ absent, so the index is rebuilt by one full scan and never misread.
    rebuild, then nothing.
  5: per-entry :stages, list of stage STRINGS in the file's units
    (e.g. (\"S0\") or (\"S0\" \"S1\")).  File belongs to each listed stage.
-   :stage kept for compatibility.  Null units means :stages nil.")
+   :stage kept for compatibility.  Null units means :stages nil.
+ 6: :mtime stored as integer seconds (truncate of float-time), matching
+   the `find -printf %T@' truncation in the stat table.  v5 stored the
+   raw attribute list, which never `equal'ed that integer, so every boot
+   rescanned everything; one rebuild on bump, then trust holds.")
 
 (defun cyberdeck-emacs-discovery-index-file ()
   "On-disk discovery index.  Under ~/.config/emacs, never the vault."
