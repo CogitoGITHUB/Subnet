@@ -88,7 +88,9 @@ compiled, in completion order."
                  display-buffer-alist)))
      (dolist (stage stages)
       (let* ((sname (symbol-name stage))
-             (files (cyberdeck-emacs--files-for-stage sname)))
+             (files (cyberdeck-emacs--files-for-stage sname))
+             (st0 (float-time))
+             (ucount 0))
         (setq cyberdeck-emacs--boot-stage sname)
         (message "cyberdeck-emacs: %s pipeline starting (%d files)" sname (length files))
         (redisplay t)
@@ -102,8 +104,7 @@ compiled, in completion order."
             (when entry
               (cyberdeck-emacs--index-apply f entry))))
         (let* ((units (cyberdeck-emacs--collect-units files stage))
-               (current 0) (total (length units))
-               (st0 (float-time)))
+               (current 0) (total (length units)))
           (message "AIU Cyberdeck: %s: compiling %d units" sname (length units))
           (redisplay t)
           ;; An empty S0 means the scan is broken: refuse loudly instead
@@ -160,6 +161,7 @@ compiled, in completion order."
                              file u parts profile (or force fresh))))
                 (unless (member file compiled)
                   (push file compiled))
+                (setq ucount (1+ ucount))
                 (push (list (- (float-time) t0) file status sname)
                       cyberdeck-emacs--unit-times)))
           (error
@@ -172,19 +174,17 @@ compiled, in completion order."
                :level 'file :file file :message msg))
            (when my/loader-strict-p
              (signal (car err) (cdr err)))
+            (setq ucount (1+ ucount))
             (push (list (- (float-time) t0) file 'error sname)
                   cyberdeck-emacs--unit-times))))))
           ;; Stage pipeline finished: record seconds and mark the boundary,
           ;; so boot time splits per stage.  The next stage starts after this.
           (let ((dt (- (float-time) st0)))
-            (push (list sname dt (length units)) cyberdeck-emacs--stage-times)
-            (cond ((eq stage 'S0) (setq run-s0 units))
-                  ((eq stage 'S1) (setq run-s1 units))
-                  ((eq stage 'S2) (setq run-s2 units)))
+            (push (list sname dt ucount) cyberdeck-emacs--stage-times)
             (when (fboundp 'my/boot-mark)
               (my/boot-mark (concat (downcase sname) "-end")))
             (message "cyberdeck-emacs: %s pipeline complete (%d units, %.1fs)"
-                     sname (length units) dt)
+                     sname ucount dt)
             (redisplay t)))
         ))
       ;; Staged mode defers S2 to first use (index records only, no reads).
@@ -221,6 +221,11 @@ compiled, in completion order."
      ;; Sweep compat (diagnostic only): expose this boot's units for the
      ;; void-defun sweep.  Loading already ran per stage above, never as
      ;; one list.  S1-units stays the boot list (S0 first, then S1).
+     ;; Re-collected here from warm memos: zero reads.
+     (setq run-s0 (cyberdeck-emacs--collect-units (cyberdeck-emacs--files-for-stage "S0") 'S0)
+           run-s1 (cyberdeck-emacs--collect-units (cyberdeck-emacs--files-for-stage "S1") 'S1))
+     (unless run-s2
+       (setq run-s2 (cyberdeck-emacs--collect-units (cyberdeck-emacs--files-for-stage "S2") 'S2)))
      (setq cyberdeck-emacs--s1-units (append (or run-s0 '()) (or run-s1 '()))
            cyberdeck-emacs--s2-units (or run-s2 '())
            cyberdeck-emacs--units-by-key
