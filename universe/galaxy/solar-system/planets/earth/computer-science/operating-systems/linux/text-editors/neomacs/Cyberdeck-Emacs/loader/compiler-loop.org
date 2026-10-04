@@ -50,6 +50,7 @@ compiled, in completion order."
          (s2 (cdr partition))
          (compiled '()) (pulled '())
          (current 0) (total (length units))
+         (phase nil) (phase-count 0)
          (paren-errors 0) (void-errors 0))
     ;; Refuse to come up empty.  A scanner that stops seeing
     ;; `:EMACS_MECHANISM:' yields an empty unit list, and an empty list
@@ -105,6 +106,20 @@ compiled, in completion order."
                                    (regexp-quote frag)
                                    (or (plist-get u :file) "")))
                                 cyberdeck-emacs--always-recompile-paths))))
+        ;; Stage gate: S0 fully reads+compiles+loads before S1 starts,
+        ;; S1 before S2 (full mode).  The boot list already runs staged;
+        ;; this marks each boundary so phases are observable, never mixed.
+        (let ((st (cyberdeck-emacs--stage-of-unit u)))
+          (when (and phase (not (eq st phase)))
+            (when (eq phase 'S0)
+              (when (fboundp 'my/boot-mark) (my/boot-mark "s0-end"))
+              (message "cyberdeck-emacs: S0 phase complete (%d units) — S1 starting"
+                       phase-count))
+            (when (and (eq phase 'S1) (eq st 'S2))
+              (message "cyberdeck-emacs: S1 phase complete — S2 starting"))
+            (setq phase-count 0))
+          (setq phase st)
+          (setq phase-count (1+ phase-count)))
         (setq current (1+ current))
         (when progress-fn (funcall progress-fn current total file))
         (unless (member file pulled)
