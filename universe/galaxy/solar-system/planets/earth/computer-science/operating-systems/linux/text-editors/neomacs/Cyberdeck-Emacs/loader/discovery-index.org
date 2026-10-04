@@ -284,7 +284,9 @@ edit removes a unit or two, while a scanner bug removes all of them."
 (defun cyberdeck-emacs--index-ensure (file)
   "Refresh FILE's index entry from session memos, scanning on miss.
 Skips session-verified files.  Untagged files get a nil-units entry so
-later boots skip re-scanning them too.  Never throws."
+later boots skip re-scanning them too.  Never throws.  Returns t when
+it scanned the file (fresh read), nil when it skipped (verified or
+unchanged) or failed."
   (condition-case nil
       (when (and (file-exists-p file)
                  (not (member (file-truename file)
@@ -376,6 +378,7 @@ later boots skip re-scanning them too.  Never throws."
                      cyberdeck-emacs--discovery-index)
             (push key cyberdeck-emacs--index-verified)
             (unless unchanged
-              (setq cyberdeck-emacs--discovery-dirty t)))))
+              (setq cyberdeck-emacs--discovery-dirty t)))
+          (and (not unchanged) t)))
     (error nil)))
 #+end_src

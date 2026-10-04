@@ -157,6 +157,10 @@ every file is ensured.  Returns (LISTED REFRESHED)."
            (last-t 0.0))
       (setq cyberdeck-emacs--refresh-listed all)
       (setq cyberdeck-emacs--refresh-changed nil)
+      (unless table
+        (message "AIU Cyberdeck: file listing untrusted (%s) — verifying per file"
+                 (or (car (cdr stats)) "no reason"))
+        (redisplay t))
       (setq cyberdeck-emacs--discovery-listed (length all))
       (dolist (f all)
         (let* ((entry (and table (gethash f cyberdeck-emacs--discovery-index)))
@@ -166,20 +170,20 @@ every file is ensured.  Returns (LISTED REFRESHED)."
                         (equal (plist-get entry :size) (cdr sig))
                         (plist-get entry :stages))))
           (unless ok
-            (setq refreshed (1+ refreshed))
-            (push f cyberdeck-emacs--refresh-changed)
-            (if rebuilding
-                (message "AIU Cyberdeck: building index: reading %s"
-                         (file-name-nondirectory f))
-              (message "AIU Cyberdeck: rescanning %s"
-                       (file-name-nondirectory f)))
-            (let ((now (float-time)))
-              (when (> (- now last-t) 0.3)
-                (setq last-t now)
-                (redisplay t)))
             (when entry
               (remhash f cyberdeck-emacs--discovery-index))
-            (cyberdeck-emacs--index-ensure f))))
+            (when (cyberdeck-emacs--index-ensure f)
+              (setq refreshed (1+ refreshed))
+              (push f cyberdeck-emacs--refresh-changed)
+              (if rebuilding
+                  (message "AIU Cyberdeck: building index: reading %s"
+                           (file-name-nondirectory f))
+                (message "AIU Cyberdeck: rescanning %s"
+                         (file-name-nondirectory f)))
+              (let ((now (float-time)))
+                (when (> (- now last-t) 0.3)
+                  (setq last-t now)
+                  (redisplay t)))))))
       (message "AIU Cyberdeck: %d files listed, %d changed"
                (length all) refreshed)
       (redisplay t)
