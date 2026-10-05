@@ -38,7 +38,7 @@ in *Messages*.
 (setq mini-modeline-l-format '((:eval (manifolding-modeline--side 'left)))
       mini-modeline-r-format '((:eval (manifolding-modeline--side 'right)))
       mini-modeline-truncate-p nil
-      mini-modeline-update-interval 0.1
+      mini-modeline-update-interval 1.0
       mini-modeline-echo-duration 2
       mini-modeline-echo-position "left"
       mini-modeline-hide-mode-line t

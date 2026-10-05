@@ -18,14 +18,28 @@ which always evaluates before modules do).
   ((defvar cyberdeck-status--refresh-timer nil
      "Live refresh timer for the Cyberdeck status section.")
    (defun cyberdeck-status--refresh-maybe ()
-     "Re-render the dashboard while its window is visible.
-Keeps boot, errors, and git info live without touching anything else."
+     "Update the Cyberdeck status section in place while visible.
+Rewrites only the status lines (heading plus indented stats), so a
+live update costs milliseconds instead of a full dashboard render."
      (let ((buf (and (boundp 'dashboard-buffer-name)
                      (get-buffer dashboard-buffer-name))))
        (when (and (buffer-live-p buf)
                   (get-buffer-window buf)
-                  (fboundp 'dashboard-open))
-         (dashboard-open))))
+                  (fboundp 'dashboard-insert-cyberdeck-status))
+         (with-current-buffer buf
+           (let ((inhibit-read-only t))
+             (save-excursion
+               (goto-char (point-min))
+               (if (re-search-forward "^Cyberdeck:$" nil t)
+                   (let ((start (line-beginning-position)))
+                     (forward-line 1)
+                     (while (looking-at-p "^    ")
+                       (forward-line 1))
+                     (delete-region start (point))
+                     (goto-char start)
+                     (dashboard-insert-cyberdeck-status 1))
+                 (when (fboundp 'dashboard-open)
+                   (dashboard-open)))))))))
    (unless (timerp cyberdeck-status--refresh-timer)
      (setq cyberdeck-status--refresh-timer
            (run-with-timer 30 30 #'cyberdeck-status--refresh-maybe))))
