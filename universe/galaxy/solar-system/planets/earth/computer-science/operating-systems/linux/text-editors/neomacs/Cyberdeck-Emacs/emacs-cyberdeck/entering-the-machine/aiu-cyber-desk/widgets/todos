@@ -6,15 +6,15 @@
 :CATEGORY: ui
 :END:
 
-Module TODOs from every .org in Cyberdeck-Emacs/modules/.
+AIU nodes todo's list from every .org in Cyberdeck-Emacs/modules/.
 
 ** Widget
 #+begin_src emacs-lisp
 (aiu-cyber-desk-define-widget todos
-  :doc "Module TODOs section."
+  :doc "AIU nodes todo's list section."
   :generate
   ((let ((todos (cyberdeck-emacs-splash--module-todos)))
-     (dashboard-insert-heading "Module TODOs:" nil nil)
+     (dashboard-insert-heading "aiu nodes todo's list:" nil nil)
      (insert "\n")
      (if (null todos)
          (insert "    --- No items ---\n")
