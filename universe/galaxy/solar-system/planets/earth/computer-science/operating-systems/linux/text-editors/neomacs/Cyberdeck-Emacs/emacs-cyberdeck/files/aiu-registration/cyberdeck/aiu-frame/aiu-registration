@@ -287,10 +287,11 @@ of inserted (KEY . DEFAULT-VALUE) pairs, nil if none."
                       (dolist (kv add-alist)
                         (save-excursion
                           (goto-char (point-min))
-                          (unless (re-search-forward
-                                   (format "^[ \t]*:%s:[ \t]*.*$"
-                                           (regexp-quote (car kv)))
-                                   drawer-end t)
+                          (unless (or (not (stringp (car kv)))
+                                      (re-search-forward
+                                       (format "^[ \t]*:%s:[ \t]*.*$"
+                                               (regexp-quote (car kv)))
+                                       drawer-end t))
                             (goto-char drawer-end)
                             (beginning-of-line)
                             (insert (format ":%s: %s\n" (car kv) (cdr kv)))
@@ -299,7 +300,8 @@ of inserted (KEY . DEFAULT-VALUE) pairs, nil if none."
                 (forward-line 1)
                 (insert ":PROPERTIES:\n")
                 (dolist (kv add-alist)
-                  (insert (format ":%s: %s\n" (car kv) (cdr kv))))
+                  (when (stringp (car kv))
+                    (insert (format ":%s: %s\n" (car kv) (cdr kv)))))
                 (insert ":END:\n")
                 (setq inserted (copy-sequence add-alist)))
               (when inserted
@@ -1994,14 +1996,15 @@ Returns t when changed. ORDER defaults to
                              (append
                               (mapcan
                                (lambda (k)
-                                 (seq-filter
-                                  (lambda (e) (string= (car e) k))
-                                   entries))
-                                order)
+                                 (when (stringp k)
+                                   (seq-filter
+                                    (lambda (e) (string= (car e) k))
+                                    entries)))
+                               (or order '()))
                                (seq-remove
                                 (lambda (e)
                                   (member (car e)
-                                          order))
+                                          (or order '())))
                                 entries))))
                         (unless (equal ordered entries)
                           (delete-region props-beg drawer-end)
@@ -4381,17 +4384,64 @@ for backward compatibility. A :PROPERTIES:...:END: drawer holding the
 ** Per-file registration
 Each schema file is parsed and its specs registered independently so
 one malformed file costs only itself, never the rest of the batch.
+Parsed specs cache by file stamp: 77 full parses cost ~12s every
+boot, unchanged files reuse last boot's specs.
 ** my/cyberdeck-org-prompt--register-file
 Why: Implementation of ~my/cyberdeck-org-prompt--register-file~.
 
 #+begin_src emacs-lisp
+(defvar my/cyberdeck-org-prompt--parse-cache nil
+  "Alist (FILE MTIME SIZE SPECS) from the last successful batch.")
+(defvar my/cyberdeck-org-prompt--parse-cache-file
+  (locate-user-emacs-file ".cyberdeck-prompt-parse-cache.el")
+  "Persisted parse cache for prompt schema files.")
+
+(defun my/cyberdeck-org-prompt--parse-cache-load ()
+  "Load the persisted parse cache, tolerating any corruption."
+  (setq my/cyberdeck-org-prompt--parse-cache
+        (let ((f my/cyberdeck-org-prompt--parse-cache-file))
+          (when (file-exists-p f)
+            (let ((data (ignore-errors
+                          (with-temp-buffer
+                            (insert-file-contents f)
+                            (read (current-buffer))))))
+              (and (listp data) data))))))
+
+(defun my/cyberdeck-org-prompt--parse-cache-save ()
+  "Persist the parse cache; never throws."
+  (ignore-errors
+    (let ((print-length nil) (print-level nil))
+      (with-temp-file my/cyberdeck-org-prompt--parse-cache-file
+        (prin1 my/cyberdeck-org-prompt--parse-cache (current-buffer))))))
+
+(defun my/cyberdeck-org-prompt--parsed-specs (file)
+  "Specs for FILE, from cache when its stamp matches, else fresh.
+Returns (SPECS . FRESH-P)."
+  (let* ((attrs (file-attributes file))
+         (stamp (and attrs (list (file-attribute-modification-time attrs)
+                                 (file-attribute-size attrs))))
+         (hit (and stamp (assoc file my/cyberdeck-org-prompt--parse-cache))))
+    (if (and hit
+             (equal (nth 1 hit) (nth 0 stamp))
+             (equal (nth 2 hit) (nth 1 stamp))
+             (listp (nth 3 hit)))
+        (cons (nth 3 hit) nil)
+        (let ((specs (my/cyberdeck-org-prompt--parse file)))
+          (when stamp
+            (setq my/cyberdeck-org-prompt--parse-cache
+                  (cons (list file (nth 0 stamp) (nth 1 stamp) specs)
+                        (assq-delete-all
+                         file my/cyberdeck-org-prompt--parse-cache))))
+          (cons specs t)))))
+
 (defun my/cyberdeck-org-prompt--register-file (file failures)
   "Register every spec parsed from FILE.
+Specs come from the parse cache when FILE is unchanged.
 Returns (COUNT . FAILURES) — prompts registered plus the possibly
 extended failure list."
   (let ((count 0)
         (specs (condition-case err
-                   (my/cyberdeck-org-prompt--parse file)
+                   (car (my/cyberdeck-org-prompt--parsed-specs file))
                  (error
                   (push (format "%s: parse failed (%s)"
                                 (file-name-nondirectory file)
@@ -4619,6 +4669,7 @@ repeated reloads/boot timers never duplicate registry entries.
 Per-file/per-spec failures are reported individually instead of
 aborting the whole batch.  Returns number of prompts registered."
   (let ((count 0) (failures nil))
+    (my/cyberdeck-org-prompt--parse-cache-load)
     ;; Drop stale declarative specs from earlier registrations.
     (setq my/cyberdeck-prompt-registry
           (cl-remove-if
@@ -4650,6 +4701,7 @@ aborting the whole batch.  Returns number of prompts registered."
       (lwarn 'cyberdeck-org-prompts :warning
              "declarative prompt failures:\n%s"
              (string-join (nreverse failures) "\n")))
+     (my/cyberdeck-org-prompt--parse-cache-save)
     count))
 #+end_src
 

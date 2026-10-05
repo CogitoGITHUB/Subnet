@@ -338,6 +338,11 @@ Must be here — cyberdeck-emacs-boot generates leaf forms.
 (straight-use-package 'leaf-keywords)
 (eval-and-compile
   (leaf-keywords-init))
+;; Builtin, loaded first: every transient user (units and straight
+;; packages alike) needs these macros at both compile and load time.
+;; Without it, packages compiled in the wrong order produce dead
+;; bytecode (void-variable at load).
+(require 'transient)
 ;; (my/init-aiu "[init] core ready")
 (my/boot-mark "core-ready")
 #+end_src
@@ -513,6 +518,11 @@ total number of emacs-lisp blocks tangled."
 (my/boot-mark "boot-start")
 (cyberdeck-emacs-boot)
 (my/boot-mark "boot-end")
+
+;; Preload the minibuffer stack at boot end: every command goes
+;; through it, so loading now keeps first use instant.
+(dolist (pkg '(vertico consult orderless embark marginalia))
+  (ignore-errors (require pkg)))
 
 (global-auto-revert-mode 1)
 (setq auto-revert-verbose nil

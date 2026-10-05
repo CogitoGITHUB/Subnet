@@ -950,31 +950,86 @@ Atomic tmp+rename: a killed Emacs never leaves a half-written record."
         (insert k "\n")))
     (rename-file tmp p t)))
 
+(defvar my/cyberdeck-links--scan-cache nil
+  "Alist (FILE MTIME SIZE KEYS) for prompt-key scans.")
+(defvar my/cyberdeck-links--scan-cache-file
+  (locate-user-emacs-file ".cyberdeck-scan-keys-cache.el")
+  "Persisted prompt-key scan cache.")
+
+(defun my/cyberdeck-links--scan-cache-load ()
+  "Load the persisted scan cache, tolerating any corruption."
+  (setq my/cyberdeck-links--scan-cache
+        (let ((f my/cyberdeck-links--scan-cache-file))
+          (when (file-exists-p f)
+            (let ((data (ignore-errors
+                          (with-temp-buffer
+                            (insert-file-contents f)
+                            (read (current-buffer))))))
+              (and (listp data) data))))))
+
+(defun my/cyberdeck-links--scan-cache-save ()
+  "Persist the scan cache; never throws."
+  (ignore-errors
+    (let ((print-length nil) (print-level nil))
+      (with-temp-file my/cyberdeck-links--scan-cache-file
+        (prin1 my/cyberdeck-links--scan-cache (current-buffer))))))
+
+(defun my/cyberdeck-links--scan-file-keys (f)
+  "Prompt keys of F, from cache when its stamp matches."
+  (let* ((attrs (file-attributes f))
+         (stamp (and attrs (list (file-attribute-modification-time attrs)
+                                 (file-attribute-size attrs))))
+         (hit (and stamp (assoc f my/cyberdeck-links--scan-cache))))
+    (if (and hit
+             (equal (nth 1 hit) (nth 0 stamp))
+             (equal (nth 2 hit) (nth 1 stamp))
+             (listp (nth 3 hit)))
+        (nth 3 hit)
+      (let ((keys (let (out)
+                    (when (my/cyberdeck-links--aiu-context-trackable-p f)
+                      (let ((meta (ignore-errors
+                                    (my/cyberdeck-links--read-aiu-context-meta f))))
+                        (when (and meta (stringp (car meta))
+                                   (not (string-empty-p (car meta))))
+                          (push (car meta) out))))
+                    out)))
+        (when stamp
+          (setq my/cyberdeck-links--scan-cache
+                (cons (list f (nth 0 stamp) (nth 1 stamp) keys)
+                      (assq-delete-all
+                       f my/cyberdeck-links--scan-cache))))
+        keys))))
+
 (defun my/cyberdeck-links--scan-current-keys ()
   "Sorted prompt KEY strings from tag-discovered files. File truth only —
-ignores the specs registry so load order cannot skew the diff."
+ignores the specs registry so load order cannot skew the diff.
+Per-file meta reads cache by file stamp; the cache persists, so
+steady-state boots skip re-reading unchanged files."
+  (my/cyberdeck-links--scan-cache-load)
   (let (keys)
     (dolist (f (mapcar #'cdr (my/cyberdeck-aiu-context-key-files)))
-      (when (my/cyberdeck-links--aiu-context-trackable-p f)
-        (let ((meta (ignore-errors
-                      (my/cyberdeck-links--read-aiu-context-meta f))))
-          (when (and meta (stringp (car meta))
-                     (not (string-empty-p (car meta))))
-            (push (car meta) keys)))))
-    (sort (delete-dups keys) #'string<)))
+      (setq keys (append (my/cyberdeck-links--scan-file-keys f) keys)))
+    (setq keys (sort (delete-dups keys) #'string<))
+    (my/cyberdeck-links--scan-cache-save)
+    keys))
 
 (defun my/cyberdeck-links--vault-aiu-files ()
   "Vault note files for sweeps: .org + extensionless, minus .git/admin.
-Computed once per reconcile and shared, so N gone keys cost one scan."
-  (let* ((root (my/cyberdeck-root-dir))
-         (gitdir (expand-file-name ".git" root))
-         (admindir (expand-file-name "admin/" root))
-         (wipdir (expand-file-name "WIP/" root)))
-    (cl-remove-if (lambda (f) (or (file-in-directory-p f gitdir)
-                                  (file-in-directory-p f admindir)
-                                  (file-in-directory-p f wipdir)))
-                  (append (directory-files-recursively root "\\.org\\'")
-                          (directory-files-recursively root "[^./]+\\'")))))
+Computed once per reconcile and shared, so N gone keys cost one scan.
+One walk, pruning .git/WIP/admin at descent (walking them cost
+minutes on phone storage), with pure string filters instead of
+per-file truename resolution."
+  (let* ((root (expand-file-name (my/cyberdeck-root-dir)))
+         (skip (lambda (d)
+                 (not (member (file-name-nondirectory
+                               (directory-file-name d))
+                              '(".git" "WIP" "admin"))))))
+    (cl-remove-if
+     (lambda (f)
+       (or (string-match-p "/\\.git/" f)
+           (string-match-p "/admin/" f)
+           (string-match-p "/WIP/" f)))
+     (directory-files-recursively root "" nil skip))))
 
 (defun my/cyberdeck-links--gone-key-holders (key &optional files)
   "Vault note files whose first level-1 drawer still holds :KEY:.

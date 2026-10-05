@@ -218,6 +218,24 @@ sorted by priority.")
               (unfoldings :text)
               (tags :text)])]))
 
+(defun cyberdeck-db--read-cell (s)
+  "Read printed DB cell S as a list, tolerating re-encoding.
+Some rows store doubly printed values; symbols arrive for bare
+text. Always returns nil or a list, so list consumers never crash
+on data: stray scalars wrap in a one-list."
+  (let* ((text (cond ((stringp s) s)
+                     ((symbolp s) (symbol-name s))
+                     (t nil)))
+         (v (and text (ignore-errors (read text)))))
+    (cond ((null v) nil)
+          ((listp v) v)
+          ((stringp v)
+           (let ((w (ignore-errors (read v))))
+             (cond ((listp w) w)
+                   ((null w) nil)
+                   (t (list w)))))
+          (t (list v)))))
+
 (defun my/cyberdeck--row-to-aiu (row)
   "Normalize DB ROW (vector or list) to plist note; tolerate
 nil/malformed `unfoldings'/`tags' via `ignore-errors' + `read'."
@@ -226,8 +244,8 @@ nil/malformed `unfoldings'/`tags' via `ignore-errors' + `read'."
     (let ((v (if (vectorp row) (append row nil) row)))
       (list :id (nth 0 v) :title (nth 1 v) :path (nth 2 v)
             :level (or (nth 3 v) 0) :pos (or (nth 4 v) 1)
-            :unfoldings (let ((s (nth 5 v))) (and (stringp s) (ignore-errors (read s))))
-            :tags (let ((s (nth 6 v))) (and (stringp s) (ignore-errors (read s))))
+            :unfoldings (cyberdeck-db--read-cell (nth 5 v))
+            :tags (cyberdeck-db--read-cell (nth 6 v))
             :aliases nil :primary-title nil :meta nil))))
 
 (defun my/cyberdeck--ensure-links-table ()
