@@ -6605,11 +6605,12 @@ always loaded. No retry timers: boot work happens during boot."
   (setq my/cyberdeck--reconcile-boot-timer nil)
   (if (fboundp 'my/cyberdeck-links--reconcile-on-boot)
       (condition-case err
-          (let ((t0 (float-time))
-                (rc (my/cyberdeck-links--reconcile-on-boot)))
-            (message "known-keys: reconcile done in %.2fs (+%d -%d)"
-                     (- (float-time) t0)
-                     (length (car rc)) (length (cdr rc))))
+          (let ((t0 (float-time)))
+            (message "known-keys: reconciling…")
+            (let ((rc (my/cyberdeck-links--reconcile-on-boot)))
+              (message "known-keys: reconcile done in %.2fs (+%d -%d)"
+                       (- (float-time) t0)
+                       (length (car rc)) (length (cdr rc)))))
         (error (lwarn 'cyberdeck-org-prompts :error
                       "reconcile failed: %s" err)))
     (message "known-keys: reconcile unavailable, skipping")))
@@ -7289,7 +7290,9 @@ Single shot at boot end: no retry timers. Skips quietly when the
 DB is not ready yet."
   (condition-case nil
       (when (> (length (cyberdeck-db-query)) 0)
-        (my/cyberdeck-missing--rebuild-from-health))
+        (message "missing-prompts: rebuilding…")
+        (my/cyberdeck-missing--rebuild-from-health)
+        (message "missing-prompts: rebuild done"))
     (error nil)))
 
 ;; Disabled: `cyberdeck-db-query' in a startup retry loop triggers

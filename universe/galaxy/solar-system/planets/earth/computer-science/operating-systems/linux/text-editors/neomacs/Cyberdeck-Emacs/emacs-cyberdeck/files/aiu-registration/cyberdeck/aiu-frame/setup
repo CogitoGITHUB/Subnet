@@ -179,6 +179,7 @@ Early-exit shell find: instant when fresh. Falls back to t
         (let ((root (ignore-errors (my/cyberdeck-root-dir)))
               (n 0))
           (when (and root (file-directory-p root))
+            (message "Cyberdeck DB backfill: scanning vault…")
             (dolist (f (directory-files-recursively root "[^./]+$"))
               (when (and (file-regular-p f)
                          (not (string-match-p "/\\.git/" f))

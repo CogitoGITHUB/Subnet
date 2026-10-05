@@ -734,6 +734,7 @@ vault root, not whatever directory is current)."
          (removed 0)
          (skipped 0)
          (seen (make-hash-table :test 'equal)))
+    (message "cyberdeck: DB prune start…")
     (dolist (row rows)
       ;; Match rows by ROWID only. emacsql mangles TEXT values on the
       ;; way out (quotes stripped, bare text interned), so matching by
@@ -777,9 +778,8 @@ vault root, not whatever directory is current)."
                       (remhash npath seen)
                       (setq removed (1+ removed)))
                   (error (setq skipped (1+ skipped))))))))))))
-    (when (or (called-interactively-p 'any) (> skipped 0))
-      (message "cyberdeck: pruned %d stale AIU(s), skipped %d malformed row(s)"
-               removed skipped))
+    (message "cyberdeck: DB prune done: %d stale removed, %d skipped"
+             removed skipped)
     removed))
 
 (add-hook 'emacs-startup-hook #'cyberdeck-db-prune-missing)
