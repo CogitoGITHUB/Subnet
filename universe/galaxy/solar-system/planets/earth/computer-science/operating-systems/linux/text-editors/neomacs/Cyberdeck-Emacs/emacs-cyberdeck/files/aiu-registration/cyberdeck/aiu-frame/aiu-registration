@@ -6599,25 +6599,20 @@ Why: Implementation of ~my/cyberdeck-org-prompt--fragment~.
 (defvar my/cyberdeck--reconcile-boot-attempts 0)
 
 (defun my/cyberdeck--reconcile-boot-maybe ()
-  "Run boot reconcile once restoration.org is loaded, else retry.
-The 0.05s boot timer can fire before later files load
-(restoration comes later in aiu-subnet order); a one-shot skip then loses the
-reconcile for the whole session. Retry every 5s, bounded (~5 min)."
+  "Run boot reconcile once restoration.org is loaded, else skip.
+Restoration is an S1 unit, so by the time this runs at boot end it is
+always loaded. No retry timers: boot work happens during boot."
   (setq my/cyberdeck--reconcile-boot-timer nil)
-  (cond
-   ((fboundp 'my/cyberdeck-links--reconcile-on-boot)
-    (condition-case err
-        (let ((t0 (float-time))
-              (rc (my/cyberdeck-links--reconcile-on-boot)))
-          (message "known-keys: reconcile done in %.2fs (+%d -%d)"
-                   (- (float-time) t0)
-                   (length (car rc)) (length (cdr rc))))
-      (error (lwarn 'cyberdeck-org-prompts :error
-                    "reconcile failed: %s" err))))
-   ((< (cl-incf my/cyberdeck--reconcile-boot-attempts) 60)
-    (setq my/cyberdeck--reconcile-boot-timer
-          (run-with-timer 5 nil #'my/cyberdeck--reconcile-boot-maybe)))
-   (t (message "known-keys: reconcile unavailable, skipping"))))
+  (if (fboundp 'my/cyberdeck-links--reconcile-on-boot)
+      (condition-case err
+          (let ((t0 (float-time))
+                (rc (my/cyberdeck-links--reconcile-on-boot)))
+            (message "known-keys: reconcile done in %.2fs (+%d -%d)"
+                     (- (float-time) t0)
+                     (length (car rc)) (length (cdr rc))))
+        (error (lwarn 'cyberdeck-org-prompts :error
+                      "reconcile failed: %s" err)))
+    (message "known-keys: reconcile unavailable, skipping")))
 
 ;; No with-eval-after-load gate: 'cyberdeck is never provided, so
 ;; that wrapper could never fire. This code already lives inside
@@ -6638,6 +6633,9 @@ reconcile for the whole session. Retry every 5s, bounded (~5 min)."
         ;; no timers: files already settled, engine loaded.
         (when (fboundp 'my/cyberdeck-db--prune-orphans)
           (my/cyberdeck-db--prune-orphans))
+        ;; Missing-prompts rebuild runs here too, same pass: DB ready.
+        (when (fboundp 'my/cyberdeck-missing--startup-rebuild)
+          (my/cyberdeck-missing--startup-rebuild))
         (when (= n 0)
           (lwarn 'cyberdeck-org-prompts
                  :warning "registered 0 declarative prompts")))
@@ -7286,19 +7284,13 @@ Why: Implementation of ~my/cyberdeck-missing--startup-rebuild~.
 
 #+begin_src emacs-lisp
 (defun my/cyberdeck-missing--startup-rebuild ()
-  "Run rebuild-from-health if cyberdeck DB has AIUs; retry later if not."
+  "Run rebuild-from-health once if the cyberdeck DB has AIUs.
+Single shot at boot end: no retry timers. Skips quietly when the
+DB is not ready yet."
   (condition-case nil
-      (if (> (length (cyberdeck-db-query)) 0)
-          (progn
-            (my/cyberdeck-missing--rebuild-from-health)
-            (when my/cyberdeck-missing--startup-timer
-              (cancel-timer my/cyberdeck-missing--startup-timer)
-              (setq my/cyberdeck-missing--startup-timer nil)))
-        (setq my/cyberdeck-missing--startup-timer
-              (run-with-idle-timer 5 nil #'my/cyberdeck-missing--startup-rebuild)))
-    (error
-     (setq my/cyberdeck-missing--startup-timer
-           (run-with-idle-timer 5 nil #'my/cyberdeck-missing--startup-rebuild)))))
+      (when (> (length (cyberdeck-db-query)) 0)
+        (my/cyberdeck-missing--rebuild-from-health))
+    (error nil)))
 
 ;; Disabled: `cyberdeck-db-query' in a startup retry loop triggers
 ;; recursive sqlite3_step CPU spike on daemon start.

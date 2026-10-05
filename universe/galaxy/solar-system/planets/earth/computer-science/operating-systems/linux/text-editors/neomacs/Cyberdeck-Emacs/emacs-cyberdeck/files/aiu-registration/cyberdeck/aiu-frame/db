@@ -304,6 +304,10 @@ when file missing."
                       (nreverse tags)))))
         ;; upsert AIUs row
         (ignore-errors (emacsql (cyberdeck-db) [:delete :from notes :where (= id $s1)] id))
+        ;; Stale rows for the same file under a quoted id or quoted
+        ;; path survive the id delete: drop them by path as well.
+        (ignore-errors (emacsql (cyberdeck-db) [:delete :from notes :where (= path $s1)] path))
+        (ignore-errors (emacsql (cyberdeck-db) [:delete :from notes :where (= path $s1)] (concat "\"" path "\"")))
         (emacsql (cyberdeck-db)
                  [:insert :into notes :values $v1]
                  (vector id (or title (file-name-nondirectory path)) path 0 1
@@ -372,7 +376,11 @@ Absolute stored paths pass through untouched.  Surrounding double
 quotes are stripped first: old rows were stored shell-quoted, and an
 unstripped quote makes every existence check fail.  Never throws."
   (condition-case nil
-      (let ((s (if (stringp path) path "")))
+      (let ((s (cond ((stringp path) path)
+                     ;; emacsql hands back symbols for some TEXT values;
+                     ;; coerce so existence checks see a real string.
+                     ((symbolp path) (symbol-name path))
+                     (t ""))))
         (when (and (> (length s) 0) (eq (aref s 0) 34))
           (setq s (substring s 1)))
         (when (and (> (length s) 0) (eq (aref s (1- (length s))) 34))
@@ -383,6 +391,16 @@ unstripped quote makes every existence check fail.  Never throws."
                             (and (fboundp 'my/cyberdeck-root-dir)
                                  (my/cyberdeck-root-dir)))))
     (error path)))
+
+(defun cyberdeck-db--strip-quotes (s)
+  "Remove one wrapping pair of ASCII double quotes from S.
+Shell-quoted listings keep them; the DB stores paths and ids bare."
+  (if (and (stringp s) (> (length s) 0) (eq (aref s 0) 34))
+      (let ((r (substring s 1)))
+        (if (and (> (length r) 0) (eq (aref r (1- (length r))) 34))
+            (substring r 0 -1)
+          r))
+    s))
 #+end_src
 
 *** Orphan prune (state comparison, not hooks)
@@ -703,25 +721,62 @@ review prompts."
 
 (defun cyberdeck-db-prune-missing ()
   "Remove DB rows whose file no longer exists on disk.
-Safe to call anytime; only deletes rows, never touches files.
-Rows with malformed (non-string) paths are skipped and counted, never
-acted on: some extractors historically wrote relative paths."
+Also normalizes shell-quoted paths (strips wrapping double quotes)
+and drops exact duplicate paths, so writers that store quoted forms
+converge to one clean row. Safe to call anytime; only deletes rows,
+never touches files. Rows with malformed (non-string, non-symbol)
+paths are skipped and counted. Existence uses `cyberdeck-db--resolve-path',
+never the raw stored form (relative paths must resolve against the
+vault root, not whatever directory is current)."
   (interactive)
   (let* ((db (ignore-errors (cyberdeck-db)))
-         (rows (and db (ignore-errors (emacsql db [:select [id path] :from notes]))))
+         (rows (and db (ignore-errors (emacsql db [:select [rowid id path] :from notes]))))
          (removed 0)
-         (skipped 0))
+         (skipped 0)
+         (seen (make-hash-table :test 'equal)))
     (dolist (row rows)
-      (let ((id (car row)) (path (cadr row)))
+      ;; Match rows by ROWID only. emacsql mangles TEXT values on the
+      ;; way out (quotes stripped, bare text interned), so matching by
+      ;; id/path silently matches nothing and junk survives forever.
+      (let* ((rid (car row))
+             (raw-id (cadr row))
+             (raw-path (caddr row))
+             (id (cond ((stringp raw-id) raw-id)
+                       ((symbolp raw-id) (symbol-name raw-id))))
+             (path (cond ((stringp raw-path) raw-path)
+                         ((symbolp raw-path) (symbol-name raw-path)))))
         (cond
-         ((not (stringp path))
+         ((or (not (integerp rid)) (not (stringp id)) (not (stringp path)))
           (setq skipped (1+ skipped)))
-         ((file-exists-p path) nil)
-         (t (condition-case nil
-                (progn
-                  (emacsql db [:delete :from notes :where (= id $s1)] id)
-                  (setq removed (1+ removed)))
-              (error (setq skipped (1+ skipped))))))))
+         (t
+          (let ((nid (cyberdeck-db--strip-quotes id))
+                (npath (cyberdeck-db--strip-quotes path)))
+            (cond
+             ((gethash npath seen)
+              (condition-case nil
+                  (progn
+                    (emacsql db [:delete :from notes :where (= rowid $s1)] rid)
+                    (setq removed (1+ removed)))
+                (error (setq skipped (1+ skipped)))))
+             (t
+              (puthash npath t seen)
+              (unless (string= nid id)
+                (condition-case nil
+                    (emacsql db [:update notes :set (= id $s1) :where (= rowid $s2)]
+                             nid rid)
+                  (error (setq skipped (1+ skipped)))))
+              (unless (string= npath path)
+                (condition-case nil
+                    (emacsql db [:update notes :set (= path $s1) :where (= rowid $s2)]
+                             npath rid)
+                  (error (setq skipped (1+ skipped)))))
+              (unless (file-exists-p (cyberdeck-db--resolve-path npath))
+                (condition-case nil
+                    (progn
+                      (emacsql db [:delete :from notes :where (= rowid $s1)] rid)
+                      (remhash npath seen)
+                      (setq removed (1+ removed)))
+                  (error (setq skipped (1+ skipped))))))))))))
     (when (or (called-interactively-p 'any) (> skipped 0))
       (message "cyberdeck: pruned %d stale AIU(s), skipped %d malformed row(s)"
                removed skipped))

@@ -197,7 +197,11 @@ find-file installer."
 ;; Save recentf list every 5 minutes in case of crash
 (run-at-time nil (* 5 60) 'recentf-save-list)
 
-;; Refresh dashboard recents after every super-save
+;; Refresh dashboard recents after super-save, at most once per
+;; two minutes: every save re-rendering the whole dashboard kept the
+;; editor busy indefinitely.
+(defvar aiu-cyber-desk--last-save-refresh 0
+  "Last time an after-save dashboard refresh ran, as float-time.")
 (add-hook 'after-save-hook
           (lambda ()
             (when (and (fboundp 'recentf-add-file)
@@ -206,7 +210,9 @@ find-file installer."
             (when (and (get-buffer-window "*dashboard*")
                        (not (active-minibuffer-window))
                        (not (cl-some (lambda (b) (buffer-local-value 'org-capture-mode b))
-                                     (buffer-list))))
+                                     (buffer-list)))
+                       (> (- (float-time) aiu-cyber-desk--last-save-refresh) 120))
+              (setq aiu-cyber-desk--last-save-refresh (float-time))
               (with-current-buffer "*dashboard*"
                 (dashboard-refresh-buffer)))))
 #+end_src
