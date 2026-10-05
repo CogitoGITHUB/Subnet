@@ -37,7 +37,6 @@
   #:use-module (guix monads)
   #:use-module (guix store)
   #:use-module ((guix self) #:select (make-config.scm))
-  #:use-module (guix channels)
   #:autoload   (guix git) (update-cached-checkout)
   #:use-module (guix i18n)
   #:use-module (guix diagnostics)
@@ -58,11 +57,7 @@
             load-system-for-kexec
 
             install-bootloader-program
-            install-bootloader
-
-            check-forward-update
-            ensure-forward-reconfigure
-            warn-about-backward-reconfigure))
+            install-bootloader))
 
 ;;; Commentary:
 ;;;
@@ -362,85 +357,3 @@ additional configurations specified by MENU-ENTRIES can be selected."
                                                             devices
                                                             target))))))
 
-
-;;;
-;;; Downgrade detection.
-;;;
-
-(define (ensure-forward-reconfigure channel start commit relation)
-  "Raise an error if RELATION is not 'ancestor, meaning that START is not an
-ancestor of COMMIT, unless CHANNEL specifies a commit."
-  (match relation
-    ('ancestor #t)
-    ('self #t)
-    (_
-     (raise (make-compound-condition
-             (formatted-message (G_ "\
-aborting reconfiguration because commit ~a of channel '~a' is not a descendant of ~a")
-                                commit (channel-name channel)
-                                start)
-             (condition
-              (&fix-hint
-               (hint (G_ "Use @option{--allow-downgrades} to force
-this downgrade.")))))))))
-
-(define (warn-about-backward-reconfigure channel start commit relation)
-  "Warn about non-forward updates of CHANNEL from START to COMMIT, without
-aborting."
-  (match relation
-    ((or 'ancestor 'self)
-     #t)
-    ('descendant
-     (warning (G_ "rolling back channel '~a' from ~a to ~a~%")
-              (channel-name channel) start commit))
-    ('unrelated
-     (warning (G_ "moving channel '~a' from ~a to unrelated commit ~a~%")
-              (channel-name channel) start commit))))
-
-(define (channel-relations old new)
-  "Return a list of channel/relation pairs, where each relation is a symbol as
-returned by 'commit-relation' denoting how commits of channels in OLD relate
-to commits of channels in NEW."
-  (filter-map (lambda (old)
-                (let ((new (find (lambda (channel)
-                                   (eq? (channel-name channel)
-                                        (channel-name old)))
-                                 new)))
-                  (and new
-                       (if (string=? (channel-commit old) (channel-commit new))
-                           (list new
-                                 (channel-commit old) (channel-commit new)
-                                 'self)
-                           (let ((checkout commit relation
-                                           (update-cached-checkout
-                                            (channel-url new)
-                                            #:ref `(commit . ,(channel-commit new))
-                                            #:starting-commit (channel-commit old)
-                                            #:check-out? #f)))
-                             (list new
-                                   (channel-commit old) (channel-commit new)
-                                   relation))))))
-              old))
-
-(define* (check-forward-update #:optional
-                               (validate-reconfigure
-                                ensure-forward-reconfigure)
-                               #:key
-                               (current-channels
-                                (system-provenance "/run/current-system")))
-  "Call VALIDATE-RECONFIGURE passing it, for each channel, the channel, the
-currently-deployed commit (from CURRENT-CHANNELS, which is as returned by
-'guix system describe' by default) and the target commit (as returned by 'guix
-describe')."
-  (define new
-    ((@ (guix describe) current-channels)))
-
-  (when (null? current-channels)
-    (warning (G_ "cannot determine provenance for current system~%")))
-  (when (and (null? new) (not (getenv "GUIX_UNINSTALLED")))
-    (warning (G_ "cannot determine provenance of ~a~%") %guix-package-name))
-
-  (for-each (match-lambda
-              ((channel old new relation)
-               (validate-reconfigure channel old new relation)))
-            (channel-relations current-channels new)))

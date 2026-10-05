@@ -147,11 +147,9 @@ cd guix
 @cindex authentication, of a Guix checkout
 How do you ensure that you obtained a genuine copy of the repository?
 To do that, run @command{guix git authenticate}, passing it the commit
-and OpenPGP fingerprint of the @dfn{channel introduction}
+and OpenPGP fingerprint of the @dfn{introduction}
 (@pxref{Invoking guix git authenticate}):
 
-@c The commit and fingerprint below must match those of the channel
-@c introduction in '%default-channels'.
 @example
 guix git authenticate -k origin/keyring \
    9edb3f66fd807b096b48283debdcddccfea34bad \
@@ -418,7 +416,7 @@ describes your problem on @uref{https://codeberg.org/guix/guix/issues,
 Codeberg}, else create a new one and attach the @file{test-suite.log}
 file.  Please specify the Guix version being used as well as version
 numbers of the dependencies (@pxref{Requirements}) in your message by
-running @code{./pre-inst-env guix describe}.
+running @code{./pre-inst-env guix --version}.
 
 Guix also comes with a whole-system test suite that tests complete
 Guix System instances.  It can only run on systems where
@@ -2757,14 +2755,6 @@ When pushing a commit on behalf of somebody else, please add a
 with @command{git am --signoff}.  This improves tracking of who did
 what.
 
-When adding channel news entries (@pxref{Channels, Writing Channel
-News}), make sure they are well-formed by running the following command
-right before pushing:
-
-@example
-make check-channel-news
-@end example
-
 @subsection Addressing Issues
 
 Peer review (@pxref{Submitting Patches}) and tools such as
@@ -3040,9 +3030,8 @@ Guix sub-commands should be thought of as remaining available
 deprecated first, and then remain available for @b{at least one year}
 after the first release that deprecated it.
 
-Deprecation should first be announced in the manual and as an entry in
-@file{etc/news.scm}; additional communication such as a blog post
-explaining the rationale is welcome.  Months before the scheduled
+Deprecation should first be announced in the manual; additional
+communication such as a blog post explaining the rationale is welcome.  Months before the scheduled
 removal date, the command should print a warning explaining how to
 migrate.  An example of this is the replacement of @command{guix
 environment} by @command{guix shell}, started in October
@@ -3207,12 +3196,12 @@ property that would emit a warning:
 
 When deprecating interfaces in @code{operating-system},
 @code{home-environment}, @code{(gnu services)}, or any popular service,
-the deprecation must come with an entry in @code{etc/news.scm}.
+the deprecation must be announced in the manual.
 
 @cindex deprecation of programming interfaces
 @item Core interfaces
 Core programming interfaces, in particular the @code{(guix ...)}
-modules, may be relied on by a variety of external tools and channels.
+modules, may be relied on by a variety of external tools.
 Any incompatible change must be formally deprecated with
 @code{define-deprecated}, as shown above, for @b{at least one year}
 before removal.  The manual must clearly document the new interface and,
@@ -3478,12 +3467,6 @@ fix the issue.
 Currently, some parts of Guix cannot be translated on Weblate, help wanted!
 
 @itemize
-@item @command{guix pull} news can be translated in @file{news.scm}, but is not
-      available from Weblate.  If you want to provide a translation, you
-      can prepare a patch as described above, or simply send us your
-      translation with the name of the news entry you translated and your
-      language. @xref{Writing Channel News}, for more information about
-      channel news.
 @item Guix blog posts cannot currently be translated.
 @item The installer script (for foreign distributions) is entirely in English.
 @item Some of the libraries Guix uses cannot be translated or are translated

@@ -60,7 +60,7 @@ person's version identifier."
 
 (define* (build-program source version
                         #:optional (guile-version (effective-version))
-                        #:key (pull-version 0) (channel-metadata #f)
+                        #:key (pull-version 0)
                         built-in-builders)
   "Return a program that computes the derivation to build Guix from SOURCE.
 If BUILT-IN-BUILDERS is provided, it should be a list of
@@ -68,11 +68,8 @@ strings and this will be used instead of the builtin builders provided by the
 build daemon, from within the generated build program."
   (define select?
     ;; Select every module but (guix config) and non-Guix modules.
-    ;; Also exclude (guix channels): it is autoloaded by (guix describe), but
-    ;; only for peripheral functionality.
     (match-lambda
       (('guix 'config) #f)
-      (('guix 'channels) #f)
       (('guix 'build 'download) #f)             ;autoloaded by (guix download)
       (('guix _ ...)   #t)
       (('gnu _ ...)    #t)
@@ -188,8 +185,6 @@ build daemon, from within the generated build program."
                                (run-with-store store
                                  (guix-derivation source version
                                                   #$guile-version
-                                                  #:channel-metadata
-                                                  '#$channel-metadata
                                                   #:pull-version
                                                   #$pull-version)
                                  #:system system))
@@ -234,7 +229,7 @@ Display a spinner when nothing happens."
 ;; The procedure below is our return value.
 (define* (build source
                 #:key verbose?
-                (version (date-version-string)) channel-metadata
+                (version (date-version-string))
                 system
                 (pull-version 0)
 
@@ -255,7 +250,6 @@ files."
   ;; Build the build program and then use it as a trampoline to build from
   ;; SOURCE.
   (mlet %store-monad ((build  (build-program source version guile-version
-                                             #:channel-metadata channel-metadata
                                              #:pull-version pull-version
                                              #:built-in-builders
                                              built-in-builders))

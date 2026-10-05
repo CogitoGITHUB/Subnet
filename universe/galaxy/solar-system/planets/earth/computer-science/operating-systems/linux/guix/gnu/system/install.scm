@@ -36,14 +36,9 @@
   #:use-module (guix store)
   #:use-module (guix modules)
   #:use-module ((guix packages) #:select (package-version supported-package?))
-  #:autoload   (guix channels) (channel? channel-commit)
   #:use-module (guix platform)
   #:use-module (guix utils)
   #:use-module (guix packages)
-  #:use-module ((guix channels)
-                #:select (%default-guix-channel
-                          channel
-                          channel-commit))
   #:use-module (gnu installer)
   #:use-module (gnu system locale)
   #:use-module (gnu services avahi)

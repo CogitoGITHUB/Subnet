@@ -1596,9 +1596,6 @@ relocatable. Extra arguments are passed to wrapped-package."
                    (alist-cons 'compressor (lookup-compressor arg)
                                result)))
          (option '(#\S "symlink") #t #f symlink-spec-option-parser)
-         (option '("save-provenance") #f #f
-                 (lambda (opt name arg result)
-                   (alist-cons 'save-provenance? #t result)))
          (option '("localstatedir") #f #f
                  (lambda (opt name arg result)
                    (alist-cons 'localstatedir? #t result)))
@@ -1677,8 +1674,6 @@ Create a bundle of PACKAGE.\n"))
       --entry-point=PROGRAM
                          use PROGRAM as the entry point of the pack"))
   (display (G_ "
-      --save-provenance  save provenance information"))
-  (display (G_ "
       --localstatedir    include /var/guix in the resulting pack"))
   (display (G_ "
       --profile-name=NAME
@@ -1743,21 +1738,7 @@ Create a bundle of PACKAGE.\n"))
                                           (('manifest . file) file)
                                           (_ #f))
                                         opts)))
-        (define with-provenance
-          (if (assoc-ref opts 'save-provenance?)
-              (lambda (manifest)
-                (map-manifest-entries
-                 (lambda (entry)
-                   (let ((entry (manifest-entry-with-provenance entry)))
-                     (unless (assq 'provenance (manifest-entry-properties entry))
-                       (warning (G_ "could not determine provenance of package ~a~%")
-                                (manifest-entry-name entry)))
-                     entry))
-                 manifest))
-              identity))
-
-        (with-provenance
-         (cond
+        (cond
           ((and (not (null? manifests)) (not (null? packages)))
            (leave (G_ "both a manifest and a package list were given~%")))
           ((not (null? manifests))
@@ -1767,9 +1748,7 @@ Create a bundle of PACKAGE.\n"))
                  manifests)))
           (else
            (packages->manifest packages
-                               #:properties (if (assoc-ref opts 'save-provenance?)
-                                                default-package-properties
-                                                (const '()))))))))
+                               #:properties (const '()))))))
 
     (define (process-file-arg opts name)
       ;; Validate that the file exists and return it as a <local-file> object,

@@ -26,11 +26,6 @@
   #:use-module ((gnu packages) #:select (specification->package))
   #:use-module (guix tests)
   #:use-module (guix utils)
-  #:use-module ((guix channels)
-                #:select (channel->code
-                          %default-guix-channel
-                          guix-channel?
-                          channel-introduction))
   #:use-module (srfi srfi-1)
   #:use-module (srfi srfi-11)
   #:use-module (srfi srfi-19)
@@ -440,21 +435,5 @@ Second line" 24))
           #f)
         (lambda (key . args)
           key)))))
-
-(test-assert "load/isolated, use of allowed bindings"
-  (call-with-input-string
-      (object->string
-       `(list ,(channel->code %default-guix-channel)))
-    (lambda (port)
-      (match (load* port
-                    '(((guix channels)
-                       channel make-channel-introduction openpgp-fingerprint))
-                    #:isolated? #t)
-        ((channel)
-         ;; The channels have a different 'location' field value hence this
-         ;; limited comparison.
-         (and (guix-channel? channel)
-              (equal? (channel-introduction channel)
-                      (channel-introduction %default-guix-channel))))))))
 
 (test-end "ui")

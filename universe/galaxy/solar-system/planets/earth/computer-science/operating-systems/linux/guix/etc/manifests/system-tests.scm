@@ -42,15 +42,13 @@ determined."
           (repository-close! repository))
         #f))))
 
-(define (tests-for-current-guix source commit)
-  "Return a list of tests for perform, using Guix built from SOURCE, a channel
-instance."
+(define (tests-for-current-guix)
+  "Return a list of tests for perform, using the in-tree Guix package."
   ;; Honor the 'TESTS' environment variable so that one can select a subset
   ;; of tests to run in the usual way:
   ;;
   ;;   make check-system TESTS=installed-os
-  (let ((guix (channel-source->package source #:commit commit)))
-    (map (lambda (test)
+  (map (lambda (test)
            (system-test
             (inherit test)
             (value (store-parameterize ((current-guix-package guix))
@@ -61,7 +59,7 @@ instance."
            ((= string-tokenize (tests ...))
             (filter (lambda (test)
                       (member (system-test-name test) tests))
-                    (all-system-tests)))))))
+                    (all-system-tests))))))
 
 (define (system-test->manifest-entry test)
   "Return a manifest entry for TEST, a system test."
@@ -81,7 +79,7 @@ the 'TESTS' environment variable."
     ;; derivation as ci.guix.gnu.org.
     (source-commit source))
 
-  ;; Intern SOURCE so that 'build-from-source' in (guix channels) sees
+  ;; Intern SOURCE so that 'build-from-source' sees
   ;; "fresh" file names and thus doesn't find itself loading .go files
   ;; from ~/.cache/guile when it loads 'build-aux/build-self.scm'.
   (let* ((source (local-file source
@@ -93,7 +91,7 @@ the 'TESTS' environment variable."
                              #:select?
                              (or (git-predicate source)
                                  (const #t))))
-         (tests  (tests-for-current-guix source commit)))
+         (tests  (tests-for-current-guix)))
     (format (current-error-port) "Selected ~a system tests...~%"
             (length tests))
 

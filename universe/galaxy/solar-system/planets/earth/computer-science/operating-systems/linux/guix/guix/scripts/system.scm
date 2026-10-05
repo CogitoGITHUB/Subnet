@@ -48,15 +48,10 @@
   #:use-module (guix records)
   #:use-module (guix profiles)
   #:use-module (guix scripts)
-  #:autoload   (guix channels) (channel-name
-                                channel-url
-                                channel-branch
-                                channel-commit)
   #:use-module (guix scripts build)
   #:autoload   (guix scripts package) (delete-generations
                                        delete-matching-generations
                                        list-installed)
-  #:autoload   (guix scripts pull) (channel-commit-hyperlink)
   #:autoload   (guix scripts system installer) (guix-system-installer)
   #:autoload   (guix graph) (export-graph node-type
                              graph-backend-name lookup-backend)
@@ -483,16 +478,6 @@ list of services."
                                     #:key (list-installed-regex #f))
   "Display a summary of system generation NUMBER in a human-readable format.
 List packages in that system that match LIST-INSTALLED-REGEX."
-  (define (display-channel channel)
-    (format #t     "    ~a:~%" (channel-name channel))
-    (format #t (G_ "      repository URL: ~a~%") (channel-url channel))
-    (when (channel-branch channel)
-      (format #t (G_ "      branch: ~a~%") (channel-branch channel)))
-    (format #t (G_ "      commit: ~a~%")
-            (if (supports-hyperlinks?)
-                (channel-commit-hyperlink channel)
-                (channel-commit channel))))
-
   (unless (zero? number)
     (let* ((generation  (generation-file-name profile number))
            (params      (read-boot-parameters-file generation))
@@ -504,7 +489,7 @@ List packages in that system that match LIST-INSTALLED-REGEX."
                             root))
            (kernel      (boot-parameters-kernel params))
            (multiboot-modules (boot-parameters-multiboot-modules params)))
-      (define-values (channels config-file)
+      (define config-file
         (system-provenance generation))
 
       (display-generation profile number)
@@ -536,11 +521,6 @@ List packages in that system that match LIST-INSTALLED-REGEX."
          (format #t (G_ "  multiboot: ~a~%")
                  (string-join modules "\n    "))))
 
-      (unless (null? channels)
-        ;; TRANSLATORS: Here "channel" is the same terminology as used in
-        ;; "guix describe" and "guix pull --channels".
-        (format #t (G_ "  channels:~%"))
-        (for-each display-channel channels))
       (when config-file
         (format #t (G_ "  configuration file: ~a~%")
                 (if (supports-hyperlinks?)
@@ -747,16 +727,6 @@ checking this by themselves in their 'check' procedure."
          (warning (G_ "'docker-image' is deprecated: use 'image' instead~%")))
        (lower-object (system-image image))))))
 
-(define (maybe-suggest-running-guix-pull)
-  "Suggest running 'guix pull' if this has never been done before."
-  ;; Check whether we're running a 'guix pull'-provided 'guix' command.  When
-  ;; 'current-profile' returns #f, we may be running the globally-installed
-  ;; 'guix' and thus run the risk of deploying an older 'guix'.  See
-  ;; <https://lists.gnu.org/archive/html/guix-devel/2014-08/msg00057.html>
-  (unless (or (current-profile) (getenv "GUIX_UNINSTALLED"))
-    (warning (G_ "Consider running 'guix pull' before 'reconfigure'.~%"))
-    (warning (G_ "Failing to do that may downgrade your system!~%"))))
-
 (define (bootloader-installer-script installer
                                      bootloader device target)
   "Return a file calling INSTALLER gexp with given BOOTLOADER, DEVICE
@@ -790,7 +760,6 @@ and TARGET arguments."
 
 (define* (perform-action action image
                          #:key
-                         (validate-reconfigure ensure-forward-reconfigure)
                          save-provenance?
                          skip-safety-checks?
                          install-bootloader?
@@ -836,9 +805,6 @@ static checks."
               '()
               (map boot-parameters->menu-entry (profile-boot-parameters))))))
 
-  (when (eq? action 'reconfigure)
-    (maybe-suggest-running-guix-pull)
-    (check-forward-update validate-reconfigure))
 
   ;; Check whether the declared file systems exist.  This is better than
   ;; instantiating a broken configuration.  Assume that we can only check if
@@ -1016,9 +982,6 @@ Some ACTIONS support additional ARGS.\n"))
   -e, --expression=EXPR  consider the operating-system EXPR evaluates to
                          instead of reading FILE, when applicable"))
   (display (G_ "
-      --allow-downgrades for 'reconfigure', allow downgrades to earlier
-                         channel revisions"))
-  (display (G_ "
       --on-error=STRATEGY
                          apply STRATEGY (one of nothing-special, backtrace,
                          or debug) when an error occurs while reading FILE"))
@@ -1109,11 +1072,6 @@ Some ACTIONS support additional ARGS.\n"))
          (option '(#\d "derivation") #f #f
                  (lambda (opt name arg result)
                    (alist-cons 'derivations-only? #t result)))
-         (option '("allow-downgrades") #f #f
-                 (lambda (opt name arg result)
-                   (alist-cons 'validate-reconfigure
-                               warn-about-backward-reconfigure
-                               result)))
          (option '("on-error") #t #f
                  (lambda (opt name arg result)
                    (alist-cons 'on-error (string->symbol arg)
@@ -1209,7 +1167,6 @@ Some ACTIONS support additional ARGS.\n"))
     (graft? . #t)
     (debug . 0)
     (verbosity . #f)                              ;default
-    (validate-reconfigure . ,ensure-forward-reconfigure)
     (image-type . mbr-hybrid-raw)
     (image-size . guess)
     (install-bootloader? . #t)
@@ -1379,8 +1336,6 @@ resulting from command-line parsing."
                                #:use-substitutes? (assoc-ref opts 'substitutes?)
                                #:skip-safety-checks?
                                (assoc-ref opts 'skip-safety-checks?)
-                               #:validate-reconfigure
-                               (assoc-ref opts 'validate-reconfigure)
                                #:spice (assoc-ref opts 'spice)
                                #:full-boot? (assoc-ref opts 'full-boot?)
                                #:volatile-vm-root?

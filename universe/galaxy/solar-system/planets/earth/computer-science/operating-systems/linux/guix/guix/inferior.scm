@@ -39,7 +39,6 @@
   #:use-module (guix gexp)
   #:use-module (guix search-paths)
   #:use-module (guix profiles)
-  #:use-module (guix channels)
   #:autoload   (guix git) (update-cached-checkout commit-id?)
   #:use-module (guix monads)
   #:use-module (guix store)
@@ -92,16 +91,11 @@
             inferior-package-transitive-native-search-paths
             inferior-package-search-paths
             inferior-package-replacement
-            inferior-package-provenance
             inferior-package-derivation
 
             inferior-package->manifest-entry
 
-            gexp->derivation-in-inferior
-
-            %inferior-cache-directory
-            cached-channel-instance
-            inferior-for-channels))
+            gexp->derivation-in-inferior))
 
 ;;; Commentary:
 ;;;
@@ -605,18 +599,6 @@ package, or #f."
                        version
                        id))))
 
-(define (inferior-package-provenance package)
-  "Return a \"provenance sexp\" for PACKAGE, an inferior package.  The result
-is similar to the sexp returned by 'package-provenance' for regular packages."
-  (inferior-package-field package
-                          '(let* ((describe
-                                   (false-if-exception
-                                    (resolve-interface '(guix describe))))
-                                  (provenance
-                                   (false-if-exception
-                                    (module-ref describe
-                                                'package-provenance))))
-                             (or provenance (const #f)))))
 
 (define (proxy inferior store)                    ;adapted from (guix ssh)
   "Proxy communication between INFERIOR and STORE, until the connection to
@@ -763,7 +745,7 @@ PACKAGE must be live."
                                        #:allow-other-keys
                                        #:rest rest)
   "Return a derivation that evaluates EXP with GUIX, an instance of Guix as
-returned for example by 'channel-instances->derivation'.  Other arguments are
+returned for example by an inferior constructor.  Other arguments are
 passed as-is to 'gexp->derivation'.
 
 When SILENT-FAILURE? is true, create an empty output directory instead of
@@ -856,172 +838,6 @@ failing when GUIX is too old and lacks the 'guix repl' command."
         entry))))
 
 
-;;;
-;;; Cached inferiors.
-;;;
-
-(define %inferior-cache-directory
-  ;; Directory for cached inferiors (GC roots).  It must be world-readable so
-  ;; the daemon can traverse it.
-  (make-parameter (string-append %profile-directory "/inferiors")))
-
-(define %legacy-inferior-cache-directory
-  ;; Former directory for cached inferiors, by default under $HOME/.cache.
-  (string-append (cache-directory #:ensure? #f) "/inferiors"))
-
-(define* (channel-full-commit channel #:key (verify-certificate? #t))
-  "Return the commit designated by CHANNEL as quickly as possible.  If
-CHANNEL's 'commit' field is a full SHA1, return it as-is; if it's a SHA1
-prefix, resolve it; and if 'commit' is unset, fetch CHANNEL's branch tip."
-  (let ((commit (channel-commit channel))
-        (branch (channel-branch channel)))
-    (if (and commit (commit-id? commit))
-        commit
-        (let* ((ref (if commit `(tag-or-commit . ,commit)
-                        (channel-reference channel)))
-               (cache commit relation
-                     (update-cached-checkout (channel-url channel)
-                                             #:ref ref
-                                             #:check-out? #f
-                                             #:verify-certificate? verify-certificate?)))
-          commit))))
-
-(define* (cached-channel-instance store
-                                  channels
-                                  #:key
-                                  (authenticate? #t)
-                                  (cache-directory (%inferior-cache-directory))
-                                  (ttl (* 3600 24 30))
-                                  (reference-channels '())
-                                  (validate-channels (const #t))
-                                  (verify-certificate? #t))
-  "Return a directory containing a guix filetree defined by CHANNELS, a list of channels.
-The directory is a subdirectory of CACHE-DIRECTORY, where entries can be
-reclaimed after TTL seconds.  This procedure opens a new connection to the
-build daemon.  AUTHENTICATE? determines whether CHANNELS are authenticated.
-
-VALIDATE-CHANNELS must be a four-argument procedure used to validate channel
-instances against REFERENCE-CHANNELS; it is passed as #:validate-pull to
-'latest-channel-instances' and should raise an exception in case a target
-channel commit is deemed \"invalid\".
-
-When VERIFY-CERTIFICATE? is true, raise an error when encountering an invalid
-X.509 host certificate; otherwise, warn about the problem and keep going."
-  (define commits
-    ;; Since computing the instances of CHANNELS is I/O-intensive, use a
-    ;; cheaper way to get the commit list of CHANNELS.  This limits overhead
-    ;; to the minimum in case of a cache hit.
-    (map (lambda (channel)
-           (channel-full-commit channel
-                                #:verify-certificate? verify-certificate?))
-         channels))
-
-  (define (key commits)
-    (bytevector->base32-string
-     (sha256
-      (string->utf8 (string-append
-                     (if authenticate? "" "unauthenticated:")
-                     (string-concatenate commits))))))
-
-  (define (cached commits)
-    (string-append cache-directory "/" (key commits)))
-
-  (define (base32-encoded-sha256? str)
-    (= (string-length str) 52))
-
-  (define (cache-entries directory)
-    (map (lambda (file)
-           (string-append directory "/" file))
-         (scandir directory base32-encoded-sha256?)))
-
-  (define (symlink/safe old new)
-    (catch 'system-error
-      (lambda ()
-        (symlink old new))
-      (lambda args
-        (unless (= EEXIST (system-error-errno args))
-          (apply throw args)))))
-
-  (define symlink*
-    (lift2 symlink/safe %store-monad))
-
-  (define add-indirect-root*
-    (store-lift add-indirect-root))
-
-  (define add-temp-root*
-    (store-lift add-temp-root))
-
-  (mkdir-p cache-directory)
-  (maybe-remove-expired-cache-entries cache-directory
-                                      cache-entries
-                                      #:entry-expiration
-                                      (file-expiration-time ttl stat:mtime))
-
-  ;; Clean the legacy cache directory as well.  Remove this call once at least
-  ;; one year has passed.
-  (maybe-remove-expired-cache-entries %legacy-inferior-cache-directory
-                                      cache-entries
-                                      #:entry-expiration
-                                      (file-expiration-time ttl stat:mtime))
-
-
-  (if (file-exists? (cached commits))
-      (let ((now (current-time))
-            (cached-directory (cached commits)))
-        ;; Update the mtime on CACHED to reflect usage.
-        (utime cached-directory now now 0 0 AT_SYMLINK_NOFOLLOW)
-        cached-directory)
-      (run-with-store store
-        (mlet* %store-monad ((instances
-                              -> (latest-channel-instances store channels
-                                                           #:authenticate?
-                                                           authenticate?
-                                                           #:current-channels
-                                                           reference-channels
-                                                           #:validate-pull
-                                                           validate-channels
-                                                           #:verify-certificate?
-                                                           verify-certificate?))
-                             (commits -> (map channel-instance-commit instances)))
-          ;; Return early if cache is hit with filled channel dependencies.
-          (if (file-exists? (cached commits))
-              (return (cached commits))
-              (mlet* %store-monad ((profile
-                                     (channel-instances->derivation instances)))
-                (mbegin %store-monad
-                  ;; It's up to the caller to install a build handler to report
-                  ;; what's going to be built.
-                  (built-derivations (list profile))
-
-                  ;; This is safe, since we are using a different key for
-                  ;; unauthenticated commits.
-                  (mbegin %store-monad
-                    (symlink* (derivation->output-path profile) (cached commits))
-                    (add-indirect-root* (cached commits))
-                    (return (cached commits))))))))))
-
-(define* (inferior-for-channels channels
-                                #:key
-                                (cache-directory (%inferior-cache-directory))
-                                (ttl (* 3600 24 30)))
-  "Return an inferior for CHANNELS, a list of channels.  Use the cache at
-CACHE-DIRECTORY, where entries can be reclaimed after TTL seconds.  This
-procedure opens a new connection to the build daemon.
-
-This is a convenience procedure that people may use in manifests passed to
-'guix package -m', for instance."
-  (define cached
-    (with-store store
-      ;; XXX: Install a build notifier out of convenience, so users know
-      ;; what's going on.  However, we cannot be sure that its options, such
-      ;; as #:use-substitutes?, correspond to the daemon's default settings.
-      (with-build-handler (build-notifier)
-        (cached-channel-instance store
-                                 channels
-                                 #:cache-directory cache-directory
-                                 #:ttl ttl))))
-  (open-inferior cached))
-
 ;;; Local Variables:
 ;;; eval: (put 'memoized 'scheme-indent-function 1)
 ;;; End:

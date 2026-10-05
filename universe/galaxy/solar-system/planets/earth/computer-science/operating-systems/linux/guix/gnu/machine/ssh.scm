@@ -36,7 +36,6 @@
   #:use-module (guix pki)
   #:use-module (guix records)
   #:use-module (guix remote)
-  #:use-module (guix scripts system reconfigure)
   #:use-module (guix ssh)
   #:use-module (guix store)
   #:use-module (guix utils)
@@ -64,7 +63,6 @@
             machine-ssh-configuration-host-name
             machine-ssh-configuration-build-locally?
             machine-ssh-configuration-authorize?
-            machine-ssh-configuration-allow-downgrades?
             machine-ssh-configuration-port
             machine-ssh-configuration-user
             machine-ssh-configuration-host-key
@@ -95,8 +93,6 @@
                   (default #t))
   (authorize?     machine-ssh-configuration-authorize?     ; boolean
                   (default #t))
-  (allow-downgrades? machine-ssh-configuration-allow-downgrades? ; boolean
-                     (default #f))
   (safety-checks?    machine-ssh-configuration-safety-checks? ;boolean
                      (default #t))
   (port           machine-ssh-configuration-port           ; integer
@@ -337,26 +333,6 @@ not available in the initrd."
       (map missing-modules file-systems)
       '()))
 
-(define* (machine-check-forward-update machine)
-  "Check whether we are making a forward update for MACHINE.  Depending on its
-'allow-upgrades?' field, raise an error or display a warning if we are
-potentially downgrading it."
-  (define config
-    (machine-configuration machine))
-
-  (define validate-reconfigure
-    (if (machine-ssh-configuration-allow-downgrades? config)
-        warn-about-backward-reconfigure
-        ensure-forward-reconfigure))
-
-  (remote-let ((provenance #~(call-with-input-file
-                                 "/run/current-system/provenance"
-                               read)))
-    (define channels
-      (sexp->system-provenance provenance))
-
-    (check-forward-update validate-reconfigure
-                          #:current-channels channels)))
 
 (define (machine-check-building-for-appropriate-system machine)
   "Raise a '&message' error condition if MACHINE is configured to be built
@@ -381,7 +357,7 @@ by MACHINE."
                    (%current-target-system #f))
       (append (machine-check-file-system-availability machine)
               (machine-check-initrd-modules machine)
-              (list (machine-check-forward-update machine)))))
+              '())))
 
   (define aggregate-exp
     ;; Gather all the expressions so that a single round-trip is enough to

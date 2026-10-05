@@ -189,7 +189,7 @@ call THUNK."
          ;; Invoke 'current-profile' so that it memoizes the correct value
          ;; based on (program-arguments), before we call
          ;; 'set-program-arguments'.  This in turn ensures that
-         ;; (%package-module-path) will contain entries for the channels
+         ;; (%package-module-path) will contain entries for the package modules
          ;; available in the current profile.
          (current-profile)
 

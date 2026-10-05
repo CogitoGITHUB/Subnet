@@ -43,7 +43,7 @@
 ;;; Commentary:
 ;;;
 ;;; Authenticate a Git checkout by reading '.guix-authorizations' files and
-;;; following the "authorizations invariant" also used by (guix channels).
+;;; following the "authorizations invariant".
 ;;;
 ;;; Code:
 

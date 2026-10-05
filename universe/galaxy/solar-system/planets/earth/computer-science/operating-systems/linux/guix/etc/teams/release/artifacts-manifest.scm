@@ -34,9 +34,7 @@
              (gnu system)
              (guix build-system gnu)
              (guix build-system trivial)
-             (guix channels)
              (guix gexp)
-             (guix git)
              (guix grafts)
              (guix memoization)
              (guix monads)
@@ -52,12 +50,6 @@
              (srfi srfi-9)
              (srfi srfi-26)
              (srfi srfi-35))
-
-;; For easier testing, use (snapshot) guix package from (gnu packages
-;; package-management). Otherwise, the package is updated to current commit and
-;; might not be substitutable, leading to longer build times.
-(define %use-snapshot-package?
-  (string=? (or (getenv "GUIX_USE_SNAPSHOT_PACKAGE") "no") "yes"))
 
 (define (%guix-version)
   ;; NOTE: while package-version guix is not correct in general,
@@ -148,11 +140,9 @@ through CONFIG-FILE."
                ,(local-file (assume-valid-file-name config-file)
                             "configuration.scm"))))))
 
-;; This is mostly taken from provenance-service-type from (gnu services),
-;; but it provides only configuration.scm, not channels.scm. This is
-;; to get the same derivations for both Cuirass and local builds.
-;; In the future, provenance-service-type could be adapted to support
-;; this use case as well.
+;; This mirrors provenance-service-type from (gnu services), providing
+;; only configuration.scm. This is to get the same derivations for
+;; both Cuirass and local builds.
 (define simple-provenance-service-type
   (service-type (name 'provenance)
                 (extensions
@@ -177,49 +167,10 @@ configuration.scm."
     (services (cons (service simple-provenance-service-type config-file)
                     (operating-system-user-services os)))))
 
-(define (guix-package-commit guix)
-  ;; Extract the commit of the GUIX package.
-  (match (package-source guix)
-    ((? channel? source)
-     (channel-commit source))
-    (_
-     (apply (lambda* (#:key commit #:allow-other-keys) commit)
-            (package-arguments guix)))))
-
-;; NOTE: Normally, we would use (current-guix), along with url
-;; overridden to the upstream repository to not leak our local checkout.
-;; But currently, the (current-guix) derivation has to be computed through
-;; QEMU for systems other than your host system. This takes a lot of time,
-;; it takes at least half an hour to get the derivations.
-(define (guix-package/with-commit guix commit)
-  "Use the guix from (gnu packages package-management),
-but override its commit to the specified version. Make sure
-to also override the channel commit to have the correct
-provenance."
-  (let ((scm-version (car (string-split (package-version guix) #\-))))
-    (package
-      (inherit guix)
-      (version (string-append scm-version "." (string-take commit 7)))
-      (source (git-checkout
-                (url (channel-url %default-guix-channel))
-                (commit commit)))
-      (arguments
-       (substitute-keyword-arguments (package-arguments guix)
-         ((#:configure-flags flags '())
-          #~(cons*
-             (string-append "--with-channel-commit=" #$commit)
-             (filter (lambda (flag)
-                       (not (string-prefix? "--with-channel-commit=" flag)))
-                     #$flags))))))))
-
+;; In-tree guix only: no external checkouts.
 (define guix-for-images
   (mlambda (system)
-    (cond
-     ;; For testing purposes, use the guix package directly.
-     (%use-snapshot-package? guix)
-     ;; Normally, update the guix package to current commit.
-     (else
-      (guix-package/with-commit guix (guix-package-commit (current-guix)))))))
+    guix))
 
 (define %binary-tarball-compression "xz")
 
@@ -406,8 +357,6 @@ and symlinks them by their manifest-entry-name."
    (map artifacts-for-system
         %supported-systems)))
 
-(when %use-snapshot-package?
-  (warning (G_ "building images using the 'guix' package (snapshot)~%")))
 (info (G_ "producing artifacts for the following systems: ~a~%")
           %supported-systems)
 supported-systems-union-manifest

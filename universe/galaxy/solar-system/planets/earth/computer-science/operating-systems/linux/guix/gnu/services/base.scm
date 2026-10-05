@@ -92,7 +92,6 @@
   #:use-module ((gnu build file-systems)
                 #:select (mount-flags->bit-mask
                           swap-space->flags-bit-mask))
-  #:autoload   (guix channels) (%default-channels channel->code)
   #:use-module (guix gexp)
   #:use-module ((guix packages) #:select (package-version))
   #:use-module (guix records)
@@ -242,7 +241,6 @@
             guix-configuration-use-substitutes?
             guix-configuration-substitute-urls
             guix-configuration-generate-substitute-key?
-            guix-configuration-channels
             guix-configuration-extra-options
             guix-configuration-log-file
             guix-configuration-environment
@@ -1880,7 +1878,7 @@ GID."
 
         (let* ((target #$(string-append "/etc/guix/" name))
                (install (lambda ()
-                          ;; Installed the declared channels.
+                          ;; Install the file.
                           (symlink #+file target))))
           (catch 'system-error
             install
@@ -1927,19 +1925,6 @@ archive' public keys, with GUIX."
                                           port))))))))
 
   (guix-configuration-file-installation "acl" default-acl))
-
-(define (install-channels-file channels)
-  "Return a gexp with code to install CHANNELS, a list of channels, in
-/etc/guix/channels.scm."
-  (define channels-file
-    (plain-file "channels.scm"
-      (call-with-output-string
-        (lambda (port)
-          (pretty-print
-           `(list ,@(map channel->code channels))
-           port)))))
-
-  (guix-configuration-file-installation "channels.scm" channels-file))
 
 (define %default-authorized-guix-keys
   ;; List of authorized substitute keys.
@@ -2089,8 +2074,6 @@ and data directories to ~a:~a...~%"
                     (default %default-substitute-urls))
   (generate-substitute-key? guix-configuration-generate-substitute-key?
                             (default #t))         ;Boolean
-  (channels         guix-configuration-channels ;file-like
-                    (default #f))
   (chroot-directories guix-configuration-chroot-directories ;list of file-like/strings
                       (default '()))
   (max-silent-time  guix-configuration-max-silent-time ;integer
@@ -2397,7 +2380,7 @@ guix-daemon have the right ownership."))
 (define (guix-activation config)
   "Return the activation gexp for CONFIG."
   (match-record config <guix-configuration>
-    (guix generate-substitute-key? authorize-key? authorized-keys channels)
+    (guix generate-substitute-key? authorize-key? authorized-keys)
     #~(begin
         ;; Assume that the store has BUILD-GROUP as its group.  We could
         ;; otherwise call 'chown' here, but the problem is that on a COW overlayfs,
@@ -2413,9 +2396,6 @@ guix-daemon have the right ownership."))
         #$(if authorize-key?
               (substitute-key-authorization authorized-keys guix)
               #~#f)
-
-        ;; ... and /etc/guix/channels.scm...
-        #$(and channels (install-channels-file channels))
 
         ;; ... and /etc/guix/machines.scm.
         #$(if (null? (guix-configuration-build-machines config))

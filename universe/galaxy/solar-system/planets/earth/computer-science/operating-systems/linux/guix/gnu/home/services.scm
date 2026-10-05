@@ -24,7 +24,6 @@
   #:use-module (gnu services)
   #:use-module ((gnu packages package-management) #:select (guix))
   #:use-module ((gnu packages base) #:select (coreutils))
-  #:use-module (guix channels)
   #:use-module (guix monads)
   #:use-module (guix store)
   #:use-module (guix gexp)
@@ -757,8 +756,7 @@ changed, and the second element is the G-expression to be evaluated.")))
    (default-value #f)                ;the HE config file
    (description "\
 Store provenance information about the home environment in the home
-environment itself: the channels used when building the home
-environment, and its configuration file, when available.")))
+environment itself: its configuration file, when available.")))
 
 (define sexp->home-provenance sexp->system-provenance)
 (define home-provenance system-provenance)

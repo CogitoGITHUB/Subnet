@@ -148,8 +148,6 @@
         (ssh-config (machine-configuration ssh-machine)))
     (and (equal? (hetzner-configuration-authorize? config)
                  (machine-ssh-configuration-authorize? ssh-config))
-         (equal? (hetzner-configuration-allow-downgrades? config)
-                 (machine-ssh-configuration-allow-downgrades? ssh-config))
          (equal? (hetzner-configuration-build-locally? config)
                  (machine-ssh-configuration-build-locally? ssh-config))
          (equal? (hetzner-server-public-ipv4 (mock-server machine))

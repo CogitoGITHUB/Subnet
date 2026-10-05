@@ -75,7 +75,6 @@
 
             deploy-hetzner
             hetzner-configuration
-            hetzner-configuration-allow-downgrades?
             hetzner-configuration-api
             hetzner-configuration-authorize?
             hetzner-configuration-build-locally?
@@ -252,8 +251,6 @@ Have you run 'guix archive --generate-key'?")
 
 (define-record-type* <hetzner-configuration> hetzner-configuration
   make-hetzner-configuration hetzner-configuration? this-hetzner-configuration
-  (allow-downgrades? hetzner-configuration-allow-downgrades? ; boolean
-                     (default #f))
   (api hetzner-configuration-api ; <hetzner-api>
        (default (hetzner-api)))
   (authorize? hetzner-configuration-authorize? ; boolean
@@ -318,7 +315,7 @@ object, in the expected format for the Hetzner API."
          ;; duplicate symlink conflict in the store.
          (os ((@@ (gnu machine) %machine-operating-system) target)))
     (match-record config <hetzner-configuration>
-                  ( authorize? allow-downgrades? build-locally? user)
+                  ( authorize? build-locally? user)
       (machine
         (inherit target)
         (operating-system
@@ -328,7 +325,6 @@ object, in the expected format for the Hetzner API."
         (environment managed-host-environment-type)
         (configuration
          (machine-ssh-configuration
-           (allow-downgrades? allow-downgrades?)
            (authorize? authorize?)
            (build-locally? build-locally?)
            (host-name (hetzner-server-public-ipv4 server))

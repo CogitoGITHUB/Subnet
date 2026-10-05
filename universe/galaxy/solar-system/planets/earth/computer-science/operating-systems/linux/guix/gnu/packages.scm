@@ -138,8 +138,7 @@ FILE-NAME found in %PATCH-PATH."
 authoritative when entries have been added via GUIX_PACKAGE_PATH or '-L'
 flags."
   (equal? (%package-module-path)
-          (append %default-package-module-path
-                  (package-path-entries))))
+          (append %default-package-module-path)))
 
 (define %package-module-path
   ;; Search path for package modules.  Each item must be either a directory
@@ -147,13 +146,9 @@ flags."
   ;; to narrow the search.
   (let* ((not-colon   (char-set-complement (char-set #\:)))
          (environment (string-tokenize (or (getenv "GUIX_PACKAGE_PATH") "")
-                                       not-colon))
-         (channels-scm (package-path-entries)))
-    ;; Automatically add channels and items from $GUIX_PACKAGE_PATH to Guile's
-    ;; search path.  For historical reasons, $GUIX_PACKAGE_PATH goes to the
-    ;; front; channels go to the back so that they don't override Guix' own
-    ;; modules.
-    (append-channels-to-load-path!)
+                                       not-colon)))
+    ;; Automatically add items from $GUIX_PACKAGE_PATH to Guile's
+    ;; search path.
     (set! %load-path
       (append environment %load-path))
     (set! %load-compiled-path
@@ -161,8 +156,7 @@ flags."
 
     (make-parameter
      (append environment
-             %default-package-module-path
-             channels-scm))))
+             %default-package-module-path))))
 
 (define (strip-trailing-slash s)
   ;; Strip the trailing slash of a string, if present.

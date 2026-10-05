@@ -124,7 +124,6 @@ MODULES =					\
   guix/inferior.scm				\
   guix/describe.scm				\
   guix/quirks.scm				\
-  guix/channels.scm				\
   guix/gnu-maintenance.scm			\
   guix/self.scm					\
   guix/substitutes.scm				\
@@ -157,7 +156,6 @@ MODULES =					\
   guix/build-system/ant.scm			\
   guix/build-system/asdf.scm			\
   guix/build-system/cargo.scm			\
-  guix/build-system/channel.scm		\
   guix/build-system/chicken.scm		\
   guix/build-system/clojure.scm		\
   guix/build-system/cmake.scm			\
@@ -348,13 +346,11 @@ MODULES =					\
   guix/scripts/gc.scm				\
   guix/scripts/hash.scm				\
   guix/scripts/pack.scm				\
-  guix/scripts/pull.scm				\
   guix/scripts/processes.scm			\
   guix/scripts/substitute.scm			\
   guix/scripts/authenticate.scm			\
   guix/scripts/refresh.scm			\
   guix/scripts/repl.scm				\
-  guix/scripts/describe.scm			\
   guix/scripts/style.scm			\
   guix/scripts/system.scm			\
   guix/scripts/system/edit.scm			\
@@ -398,7 +394,6 @@ MODULES =					\
   guix/scripts/container.scm			\
   guix/scripts/container/exec.scm		\
   guix/scripts/deploy.scm			\
-  guix/scripts/time-machine.scm			\
   guix.scm					\
   $(GNU_SYSTEM_MODULES)
 
@@ -546,7 +541,6 @@ SCM_TESTS =					\
   tests/build-utils.scm			\
   tests/cache.scm				\
   tests/challenge.scm				\
-  tests/channels.scm				\
   tests/combinators.scm			\
   tests/containers.scm				\
   tests/cpio.scm				\
@@ -681,9 +675,7 @@ SH_TESTS =					\
   tests/guix-refresh.sh				\
   tests/guix-shell.sh				\
   tests/guix-shell-export-manifest.sh		\
-  tests/guix-time-machine.sh			\
   tests/guix-graph.sh				\
-  tests/guix-describe.sh			\
   tests/guix-repl.sh     			\
   tests/guix-lint.sh
 
@@ -767,13 +759,11 @@ EXTRA_DIST +=						\
   bootstrap						\
   manifest.scm						\
   build-aux/build-self.scm				\
-  build-aux/check-channel-news.scm			\
   build-aux/check-final-inputs-self-contained.scm	\
   build-aux/compile-all.scm				\
   build-aux/compile-as-derivation.scm			\
   build-aux/config.rpath				\
   build-aux/convert-xref.scm				\
-  build-aux/cuirass/evaluate.scm			\
   build-aux/extract-syscall-ranges.sh			\
   build-aux/generate-authors.scm			\
   build-aux/gitlog-to-changelog				\
@@ -787,7 +777,6 @@ EXTRA_DIST +=						\
   doc/build.scm						\
   etc/guix-install.sh					\
   etc/historical-authorizations				\
-  etc/news.scm						\
   etc/teams.scm						\
   etc/manifests/disarchive.scm				\
   etc/manifests/hurd.scm				\
@@ -797,7 +786,6 @@ EXTRA_DIST +=						\
   etc/manifests/release-user-packages.scm		\
   etc/manifests/source.scm				\
   etc/manifests/system-tests.scm			\
-  etc/manifests/time-travel.scm				\
   etc/manifests/ungraft.scm				\
   etc/manifests/upgrade.scm				\
   scripts/guix.in					\
@@ -1186,13 +1174,10 @@ prepare-release: dist-with-updated-version all
 # the commit to Guix. It might be pushed to any branch, such as version-X.Y.Z.
 release: all
 # Build the artifacts for current commit.
-# Use time-machine for provenance.
 	$(MKDIR_P) "$(releasedir)"
-	@echo "Building guix inferior for current commit."
 	COMMIT="$$(git rev-parse HEAD)" &&					\
-	GUIX="$$(guix time-machine -q --commit=$$COMMIT)/bin/guix" &&		\
 	echo "Building artifacts for current commit: $$COMMIT." &&		\
-	ARTIFACTS="$$($$GUIX build --no-grafts					\
+	ARTIFACTS="$$(guix build --no-grafts					\
 		-f ./etc/teams/release/artifacts.scm)" &&			\
 	echo "Artifacts built! Copying to $(releasedir)" &&			\
 	cp -f "$$ARTIFACTS"/* "$(releasedir)"
@@ -1245,23 +1230,11 @@ assert-final-inputs-self-contained: $(GOBJECTS)
 	$(AM_V_at)$(top_builddir)/pre-inst-env "$(GUILE)"			\
 	  "$(top_srcdir)/build-aux/check-final-inputs-self-contained.scm"
 
-# Validate channel news.
-check-channel-news: $(GOBJECTS)
-	$(AM_V_at)$(top_builddir)/pre-inst-env "$(GUILE)"	\
-	  "$(top_srcdir)/build-aux/check-channel-news.scm"
-
-# Compute the Cuirass jobs.
-cuirass-jobs: $(GOBJECTS)
-	rm -rf "$@"
-	$(AM_V_at)$(MKDIR_P) "$@"
-	$(AM_V_GEN)$(top_builddir)/pre-inst-env "$(GUILE)"		\
-	  "$(top_srcdir)/build-aux/cuirass/evaluate.scm" "$@"
-
 .PHONY: gen-ChangeLog gen-AUTHORS gen-tarball-version
 .PHONY: assert-no-store-file-names assert-binaries-available
-.PHONY: assert-final-inputs-self-contained check-channel-news
+.PHONY: assert-final-inputs-self-contained
 .PHONY: clean-go make-go as-derivation
-.PHONY: update-guix-package update-NEWS cuirass-jobs release
+.PHONY: update-guix-package update-NEWS release
 
 if in_git_p
 # Git auto-configuration.

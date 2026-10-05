@@ -28,7 +28,7 @@ guile -c '(use-modules (git))
   (member "refs/heads/keyring" (branch-list (repository-open ".")))' || \
     exit 77
 
-# Keep in sync with '%default-channels' in (guix channels)!
+# The commit and fingerprint below are the repository introduction.
 intro_commit="9edb3f66fd807b096b48283debdcddccfea34bad"
 intro_signer="BBB0 2DDF 2CEA F6A8 0D1D  E643 A2A0 6DF2 A33A 54FA"
 

@@ -545,14 +545,8 @@ substitutes being downloaded."
                   (eq? (assq-ref properties 'type) 'profile-hook)
                   (eq? (assq-ref properties 'hook) 'package-cache))
          (display-hint (G_ "This usually indicates a bug in one of
-the channels you are pulling from, or some incompatibility among them.  You
-can check the build log and report the issue to the channel developers.
-
-The channels you are pulling from are: ~a.")
-                       (string-join
-                        (map symbol->string
-                             (or (assq-ref properties 'channels)
-                                 '(guix)))))))
+the package definitions, or some incompatibility among them.  You
+can check the build log and report the issue."))))
      (match (derivation-log-file drv)
        (#f
         (format port (failure (G_ "Could not find build log for '~a'."))

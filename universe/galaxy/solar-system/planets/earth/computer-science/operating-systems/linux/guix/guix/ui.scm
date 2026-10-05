@@ -2357,25 +2357,8 @@ contain a 'define-command' form."
 
 (define (extension-directories)
   "Return the list of directories containing Guix extensions."
-  ;; We need to resolve these lazily, because even using an #:autoload is too
-  ;; much and breaks compilation during "guix pull".
-  (define append-channels-to-load-path!
-    (module-ref (resolve-interface '(guix describe))
-                'append-channels-to-load-path!))
-  (define package-path-entries
-    (module-ref (resolve-interface '(guix describe))
-                'package-path-entries))
-
-  (append-channels-to-load-path!)
-  (let ((channels (package-path-entries)))
-    (filter file-exists?
-            (parse-path
-             (getenv "GUIX_EXTENSIONS_PATH")
-             (append
-              (map (cut string-append <> "/guix/scripts")
-                   channels)
-              (map (cut string-append <> "/guix/extensions")
-                   channels))))))
+  (filter file-exists?
+          (parse-path (getenv "GUIX_EXTENSIONS_PATH") '())))
 
 (define (commands)
   "Return the list of commands, alphabetically sorted."

@@ -79,14 +79,12 @@
             package-database-configuration-package
             package-database-configuration-schedule
             package-database-configuration-method
-            package-database-configuration-channels
 
             unattended-upgrade-service-type
             unattended-upgrade-configuration
             unattended-upgrade-configuration?
             unattended-upgrade-configuration-operating-system-file
             unattended-upgrade-configuration-operating-system-expression
-            unattended-upgrade-configuration-channels
             unattended-upgrade-configuration-schedule
             unattended-upgrade-configuration-services-to-restart
             unattended-upgrade-configuration-system-expiration
@@ -374,10 +372,7 @@ GNU@tie{}mcron}).")
   (method    (symbol 'store)
              "Indexing method for @command{guix locate}.  The default value,
 @code{'store}, yields a more complete database but is relatively expensive in
-terms of CPU and input/output.")
-  (channels (gexp #~%default-channels)
-            "G-exp denoting the channels to use when updating the database
-(@pxref{Channels})."))
+terms of CPU and input/output."))
 
 (define %package-database-file
   ;; System-wide package database used by 'guix locate'.
@@ -406,9 +401,8 @@ terms of CPU and input/output.")
 
 (define (package-database-shepherd-services configuration)
   (match-record configuration <package-database-configuration>
-    (package schedule method channels)
-    (let ((channels (scheme-file "channels.scm" channels)))
-      (list (shepherd-service
+    (package schedule method)
+    (list (shepherd-service
              (provision '(package-database-update))
              (requirement '(user-processes guix-daemon))
              (modules '((shepherd service timer)))
@@ -417,8 +411,7 @@ terms of CPU and input/output.")
                              #~(cron-string->calendar-event #$schedule)
                              schedule)
                        (command '(#$(file-append package "/bin/guix")
-                                  "time-machine" "-C" #$channels
-                                  "--" "locate" "--update"
+                                  "locate" "--update"
                                   #$(string-append "--database="
                                                    %package-database-file)
                                   #$(string-append
@@ -431,7 +424,7 @@ terms of CPU and input/output.")
              (documentation
               "Periodically update the system-wide package database that can
 be queried by the 'guix locate' command.")
-             (actions (list shepherd-trigger-action)))))))
+             (actions (list shepherd-trigger-action))))))
 
 (define package-database-service-type
   (service-type
@@ -461,8 +454,6 @@ which lets you search for packages that provide a given file.")
                                (default #f))
   (schedule             unattended-upgrade-configuration-schedule
                         (default "30 01 * * 0"))
-  (channels             unattended-upgrade-configuration-channels
-                        (default #~%default-channels))
   (reboot?              unattended-upgrade-configuration-reboot?
                         (default #f))
   (services-to-restart  unattended-upgrade-configuration-services-to-restart
@@ -478,10 +469,6 @@ which lets you search for packages that provide a given file.")
   "/var/log/unattended-upgrade.log")
 
 (define (unattended-upgrade-shepherd-services config)
-  (define channels
-    (scheme-file "channels.scm"
-                 (unattended-upgrade-configuration-channels config)))
-
   (define log
     (unattended-upgrade-configuration-log-file config))
 
@@ -519,8 +506,7 @@ which lets you search for packages that provide a given file.")
           (setvbuf (current-output-port) 'line)
           (setvbuf (current-error-port) 'line)
 
-          ;; 'guix time-machine' needs X.509 certificates to authenticate the
-          ;; Git host.
+          ;; The upgrade needs X.509 certificates for HTTPS.
           (setenv "SSL_CERT_DIR"
                   #$(file-append nss-certs "/etc/ssl/certs"))
 
@@ -529,8 +515,7 @@ which lets you search for packages that provide a given file.")
                      (report-invoke-error c)
                      (exit 1)))
             (apply invoke #$(file-append guix "/bin/guix")
-                   "time-machine" "-C" #$channels
-                   "--" "system" "reconfigure" #$arguments)
+                   "system" "reconfigure" #$arguments)
 
             ;; 'guix system delete-generations' fails when there's no
             ;; matching generation.  Thus, catch 'invoke-error?'.

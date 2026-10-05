@@ -33,7 +33,6 @@
   #:use-module (guix ui)
   #:use-module ((guix self) #:select (make-config.scm))
   #:use-module (guix describe)
-  #:use-module (guix channels)
   #:use-module (guix packages)
   #:use-module (guix git-download)
   #:use-module (gnu installer utils)
@@ -355,23 +354,6 @@ selected keymap."
              ((installer-final-page current-installer)
               result prev-steps #$dry-run?))))))))
 
-(define (provenance-sexp)
-  "Return an sexp representing the currently-used channels, for logging
-purposes."
-  (match (match (current-channels)
-           (() (and=> (repository->guix-channel (dirname (current-filename)))
-                      list))
-           (channels channels))
-    (#f
-     (warning (G_ "cannot determine installer provenance~%"))
-     'unknown)
-    ((channels ...)
-     (map (lambda (channel)
-            ;; NOTE: URL is not logged to synchronize the derivations
-            ;; coming out of pre-inst-env, time-machine and Cuirass
-            ;; for generating release artifacts.
-            `(channel ,(channel-name channel) ,(channel-commit channel)))
-          channels))))
 
 (define* (installer-program #:key dry-run? (guix-for-installer (current-guix)))
   "Return a file-like object that runs the given INSTALLER."
@@ -490,9 +472,6 @@ purposes."
 
             (define current-installer newt-installer)
             (define steps (#$steps current-installer))
-
-            (installer-log-line "installer provenance: ~s"
-                                '#$(provenance-sexp))
 
             (dynamic-wind
               (installer-init current-installer)

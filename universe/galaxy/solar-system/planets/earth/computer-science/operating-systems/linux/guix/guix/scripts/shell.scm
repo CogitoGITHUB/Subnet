@@ -39,8 +39,6 @@
   #:autoload   (guix base32) (bytevector->base32-string)
   #:autoload   (rnrs bytevectors) (string->utf8)
   #:autoload   (guix utils) (config-directory cache-directory)
-  #:autoload   (guix describe) (current-channels)
-  #:autoload   (guix channels) (channel-commit)
   #:autoload   (gcrypt hash) (sha256)
   #:use-module ((guix build utils) #:select (mkdir-p))
   #:use-module (guix cache)
@@ -340,16 +338,12 @@ echo ~a >> ~a
   "Return the \"primary key\" used when computing keys for the profile cache.
 Return #f if no such key can be obtained and caching cannot be
 performed--e.g., because the package cache is not authoritative."
-  (and (cache-is-authoritative?)
-       (match (current-channels)
-         (()
-          #f)
-         (((= channel-commit commits) ...)
-          (string-join commits)))))
+  ;; No external revisions exist anymore; caching is disabled.
+  #f)
 
 (define (profile-file-cache-key file system graft?)
   "Return the cache key for the profile corresponding to FILE, a 'guix.scm' or
-'manifest.scm' file, or #f if we lack channel information. GRAFT? is used
+'manifest.scm' file, or #f if no cache key is available. GRAFT? is used
 to distinguish cache keys of profiles without grafts."
   (match (profile-cache-primary-key)
     (#f #f)

@@ -29,7 +29,6 @@
   #:use-module (web uri)
   #:use-module (guix i18n)
   #:use-module (guix diagnostics)
-  #:autoload   (guix channels) (channel)
   #:export (build-product?
             build-product-id
             build-product-type
@@ -50,7 +49,6 @@
 
             checkout?
             checkout-commit
-            checkout-channel
 
             evaluation?
             evaluation-id
@@ -80,9 +78,7 @@
             job-build
             jobs-history
             latest-evaluations
-            evaluations-for-commit
-
-            channel-with-substitutes-available))
+            evaluations-for-commit))
 
 ;;; Commentary:
 ;;;
@@ -163,8 +159,7 @@ corresponding date object."
 
 (define-json-mapping <checkout> make-checkout checkout?
   json->checkout
-  (commit      checkout-commit)                   ;string (SHA1)
-  (channel     checkout-channel))                 ;string (name)
+  (commit      checkout-commit))                  ;string (SHA1)
 
 (define-json-mapping <evaluation> make-evaluation evaluation?
   json->evaluation
@@ -329,20 +324,4 @@ definitions at URL.  Return false if no commit were found."
                          (checkout-commit checkout))))))
     commit))
 
-(define (channel-with-substitutes-available chan url)
-  "Return a channel inheriting from CHAN but which commit field is set to the
-latest commit with available substitutes for the Guix package definitions at
-URL.  The current system is taken into account.
 
-If no commit with available substitutes were found, the commit field is set to
-false and a warning message is printed."
-  (let ((commit (catch #t
-                  (lambda ()
-                    (find-latest-commit-with-substitutes url))
-                  (lambda _
-                    (warning (G_ "could not find available substitutes at ~a~%")
-                             url)
-                    #false))))
-    (channel
-     (inherit chan)
-     (commit commit))))

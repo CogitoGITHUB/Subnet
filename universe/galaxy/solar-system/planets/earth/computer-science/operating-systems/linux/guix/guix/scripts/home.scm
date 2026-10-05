@@ -53,7 +53,6 @@
                                           specification->file-system-mapping
                                           %network-file-mappings)
   #:autoload   (guix self) (make-config.scm)
-  #:use-module (guix channels)
   #:use-module (guix derivations)
   #:use-module (guix ui)
   #:autoload   (guix colors) (supports-hyperlinks? file-hyperlink)
@@ -67,7 +66,6 @@
   #:use-module (guix scripts build)
   #:autoload   (guix scripts system search) (service-type->recutils)
   #:use-module (guix scripts system reconfigure)
-  #:autoload   (guix scripts pull) (channel-commit-hyperlink)
   #:autoload   (guix scripts system) (service-node-type
                                       shepherd-service-node-type)
   #:autoload   (guix scripts home edit) (guix-home-edit)
@@ -136,10 +134,6 @@ Some ACTIONS support additional ARGS.\n"))
   -e, --expression=EXPR  consider the home-environment EXPR evaluates to
                          instead of reading FILE, when applicable"))
   (display (G_ "
-      --allow-downgrades for 'reconfigure', allow downgrades to earlier
-                         channel revisions"))
-  (newline)
-  (display (G_ "
   -N, --network          allow containers to access the network"))
   (display (G_ "
       --share=SPEC       for containers, share writable host file system
@@ -192,11 +186,6 @@ Some ACTIONS support additional ARGS.\n"))
          (option '(#\e "expression") #t #f
                  (lambda (opt name arg result)
                    (alist-cons 'expression arg result)))
-         (option '("allow-downgrades") #f #f
-                 (lambda (opt name arg result)
-                   (alist-cons 'validate-reconfigure
-                               warn-about-backward-reconfigure
-                               result)))
          (option '("graph-backend") #t #f
                  (lambda (opt name arg result)
                    (alist-cons 'graph-backend arg result)))
@@ -230,7 +219,6 @@ Some ACTIONS support additional ARGS.\n"))
     (multiplexed-build-output? . #t)
     (verbosity . #f)                              ;default
     (debug . 0)
-    (validate-reconfigure . ,ensure-forward-reconfigure)
     (graph-backend . "graphviz")))
 
 
@@ -418,7 +406,6 @@ immediately.  Return the exit status of the process in the container."
                          derivations-only?
                          use-substitutes?
                          (graph-backend "graphviz")
-                         (validate-reconfigure ensure-forward-reconfigure)
 
                          ;; Container options.
                          (file-system-mappings '())
@@ -429,10 +416,6 @@ immediately.  Return the exit status of the process in the container."
   (ensure-profile-directory)
   (define println
     (cut format #t "~a~%" <>))
-
-  (when (eq? action 'reconfigure)
-    (check-forward-update validate-reconfigure
-                          #:current-channels (home-provenance %guix-home)))
 
   (case action
     ((extension-graph)
@@ -572,8 +555,6 @@ resulting from command-line parsing."
                             #:dry-run? dry?
                             #:derivations-only? (assoc-ref opts 'derivations-only?)
                             #:use-substitutes? (assoc-ref opts 'substitutes?)
-                            #:validate-reconfigure
-                            (assoc-ref opts 'validate-reconfigure)
                             #:graph-backend
                             (assoc-ref opts 'graph-backend)
                             #:network? (assoc-ref opts 'network?)
@@ -809,19 +790,9 @@ description matches REGEXPS sorted by relevance, and their score."
   "Display a summary of home-environment generation NUMBER in a human-readable
 format.  List packages in that home environment that match
 LIST-INSTALLED-REGEX."
-  (define (display-channel channel)
-    (format #t     "    ~a:~%" (channel-name channel))
-    (format #t (G_ "      repository URL: ~a~%") (channel-url channel))
-    (when (channel-branch channel)
-      (format #t (G_ "      branch: ~a~%") (channel-branch channel)))
-    (format #t (G_ "      commit: ~a~%")
-            (if (supports-hyperlinks?)
-                (channel-commit-hyperlink channel)
-                (channel-commit channel))))
-
   (unless (zero? number)
     (let* ((generation  (generation-file-name profile number)))
-      (define-values (channels config-file)
+      (define config-file
         ;; The function will work for home environments too, we just
         ;; need to keep provenance file.
         (system-provenance generation))
@@ -831,11 +802,6 @@ LIST-INSTALLED-REGEX."
       (format #t (G_ "  canonical file name: ~a~%") (readlink* generation))
       ;; TRANSLATORS: Please preserve the two-space indentation.
 
-      (unless (null? channels)
-        ;; TRANSLATORS: Here "channel" is the same terminology as used in
-        ;; "guix describe" and "guix pull --channels".
-        (format #t (G_ "  channels:~%"))
-        (for-each display-channel channels))
       (when config-file
         (format #t (G_ "  configuration file: ~a~%")
                 (if (supports-hyperlinks?)

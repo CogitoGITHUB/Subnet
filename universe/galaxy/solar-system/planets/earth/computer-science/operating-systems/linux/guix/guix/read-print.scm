@@ -325,7 +325,6 @@ expressions and blanks that were read."
    ('unless 2)
    ('package 1)
    ('origin 1)
-   ('channel 1)
    ('modify-inputs 2)
    ('modify-phases 2)
    ('add-after '(((modify-phases) . 3)))
@@ -374,8 +373,7 @@ expressions and blanks that were read."
    ('services '(operating-system))
    ('set-xorg-configuration '())
    ('services '(home-environment))
-   ('home-bash-configuration '(service))
-   ('introduction '(channel))))
+   ('home-bash-configuration '(service))))
 
 (define (prefix? candidate lst)
   "Return true if CANDIDATE is a prefix of LST."

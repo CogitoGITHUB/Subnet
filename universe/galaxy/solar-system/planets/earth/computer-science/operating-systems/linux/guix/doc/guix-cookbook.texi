@@ -133,7 +133,6 @@ Packaging Tutorial
 Setup
 
 * Local file::
-* Channels::
 * Direct checkout hacking::
 
 Programmable and automated package definition
@@ -212,7 +211,6 @@ Software Development
 
 * Getting Started::             Step 0: using `guix shell'.
 * Building with Guix::          Step 1: building your code.
-* The Repository as a Channel::  Step 2: turning the repo in a channel.
 * Package Variants::            Bonus: Defining variants.
 * Setting Up Continuous Integration::  Step 3: continuous integration.
 * Build Manifest::              Bonus: Manifest.
@@ -225,7 +223,6 @@ Environment management
 Using Guix for Reproducible Research
 
 * Setting Up the Environment::  Step 1: using `guix shell'.
-* Recording the Environment::   Step 2: using `guix describe'.
 * Ensuring Long-Term Source Code Archiving::  Step 3: Software Heritage.
 * Referencing the Software Environment::  Step 4: SWHIDs.
 
@@ -811,7 +808,6 @@ But first, let's look at other possibilities.
 
 @menu
 * Local file::
-* Channels::
 * Direct checkout hacking::
 @end menu
 
@@ -834,120 +830,6 @@ earlier example.
 The @code{use-modules} expression tells which of the modules we need in the file.
 Modules are a collection of values and procedures.  They are commonly called
 ``libraries'' or ``packages'' in other programming languages.
-
-@node Channels
-@subsubsection Channels
-
-@cindex channel
-Guix and its package collection can be extended through @dfn{channels}.
-A channel is a Git repository, public or not, containing @file{.scm}
-files that provide packages (@pxref{Defining Packages,,, guix, GNU Guix
-Reference Manual}) or services (@pxref{Defining Services,,, guix, GNU
-Guix Reference Manual}).
-
-How would you go about creating a channel?  First, create a directory
-that will contain your @file{.scm} files, say @file{~/my-channel}:
-
-@example
-mkdir ~/my-channel
-@end example
-
-Suppose you want to add the @samp{my-hello} package we saw previously;
-it first needs some adjustments:
-
-@lisp
-(define-module (my-hello)
-  #:use-module (guix licenses)
-  #:use-module (guix packages)
-  #:use-module (guix build-system gnu)
-  #:use-module (guix download))
-
-(define-public my-hello
-  (package
-    (name "my-hello")
-    (version "2.10")
-    (source (origin
-              (method url-fetch)
-              (uri (string-append "mirror://gnu/hello/hello-" version
-                                  ".tar.gz"))
-              (sha256
-               (base32
-                "0ssi1wpaf7plaswqqjwigppsg5fyh99vdlb9kzl7c9lng89ndq1i"))))
-    (build-system gnu-build-system)
-    (synopsis "Hello, Guix world: An example custom Guix package")
-    (description
-     "GNU Hello prints the message \"Hello, world!\" and then exits.  It
-serves as an example of standard GNU coding practices.  As such, it supports
-command-line arguments, multiple languages, and so on.")
-    (home-page "https://www.gnu.org/software/hello/")
-    (license gpl3+)))
-@end lisp
-
-Note that we have assigned the package value to an exported variable name with
-@code{define-public}.  This is effectively assigning the package to the @code{my-hello}
-variable so that it can be referenced, among other as dependency of other
-packages.
-
-If you use @code{guix package --install-from-file=my-hello.scm} on the above file, it
-will fail because the last expression, @code{define-public}, does not return a
-package.  If you want to use @code{define-public} in this use-case nonetheless, make
-sure the file ends with an evaluation of @code{my-hello}:
-
-@lisp
-;; ...
-(define-public my-hello
-  ;; ...
-  )
-
-my-hello
-@end lisp
-
-This last example is not very typical.
-
-Now how do you make that package visible to @command{guix} commands so
-you can test your packages?  You need to add the directory to the search
-path using the @option{-L} command-line option, as in these examples:
-
-@example
-guix show -L ~/my-channel my-hello
-guix build -L ~/my-channel my-hello
-@end example
-
-The final step is to turn @file{~/my-channel} into an actual channel,
-making your package collection seamlessly available @i{via} any
-@command{guix} command.  To do that, you first need to make it a Git
-repository:
-
-@example
-cd ~/my-channel
-git init
-git add my-hello.scm
-git commit -m "First commit of my channel."
-@end example
-
-And that's it, you have a channel!  From there on, you can add this
-channel to your channel configuration in
-@file{~/.config/guix/channels.scm} (@pxref{Specifying Additional
-Channels,,, guix, GNU Guix Reference Manual}); assuming you keep your
-channel local for now, the @file{channels.scm} would look something like
-this:
-
-@lisp
-(append (list (channel
-                (name 'my-channel)
-                (url (string-append "file://" (getenv "HOME")
-                                    "/my-channel"))))
-        %default-channels)
-@end lisp
-
-Next time you run @command{guix pull}, your channel will be picked up
-and the packages it defines will be readily available to all the
-@command{guix} commands, even if you do not pass @option{-L}.  The
-@command{guix describe} command will show that Guix is, indeed, using
-both the @code{my-channel} and the @code{guix} channels.
-
-@xref{Creating a Channel,,, guix, GNU Guix Reference Manual}, for
-details.
 
 @node Direct checkout hacking
 @subsubsection Direct checkout hacking
@@ -5200,46 +5082,6 @@ hacking environment will be available at all times.
 @emph{Security warning:} While keeping old profiles around can be convenient, keep in
 mind that outdated packages may not have received the latest security fixes.
 
-@node Reproducible profiles
-@subsection Reproducible profiles
-
-To reproduce a profile bit-for-bit, we need two pieces of information:
-
-@itemize
-@item
-a manifest (@pxref{Writing Manifests,,, guix, GNU Guix Reference Manual});
-@item
-a Guix channel specification (@pxref{Replicating Guix,,, guix, GNU Guix
-Reference Manual}).
-@end itemize
-
-Indeed, manifests alone might not be enough: different Guix versions (or
-different channels) can produce different outputs for a given manifest.
-
-You can output the Guix channel specification with @samp{guix describe
---format=channels} (@pxref{Invoking guix describe,,, guix, GNU Guix
-Reference Manual}).
-Save this to a file, say @samp{channel-specs.scm}.
-
-On another computer, you can use the channel specification file and the manifest
-to reproduce the exact same profile:
-
-@example
-GUIX_EXTRA_PROFILES=$HOME/.guix-extra-profiles
-GUIX_EXTRA=$HOME/.guix-extra
-
-mkdir -p "$GUIX_EXTRA"/my-project
-guix pull --channels=channel-specs.scm --profile="$GUIX_EXTRA/my-project/guix"
-
-mkdir -p "$GUIX_EXTRA_PROFILES/my-project"
-"$GUIX_EXTRA"/my-project/guix/bin/guix package \
- --manifest=/path/to/guix-my-project-manifest.scm \
- --profile="$GUIX_EXTRA_PROFILES"/my-project/my-project
-@end example
-
-It's safe to delete the Guix channel profile you've just installed with the
-channel specification, the project profile does not depend on it.
-
 @node Software Development
 @chapter Software Development
 
@@ -5250,7 +5092,7 @@ particular, gives a standalone development environment for your package,
 no matter what language(s) it's written in (@pxref{Invoking guix
 shell,,, guix, GNU Guix Reference Manual}).  To benefit from it, you
 have to initially write a package definition and have it either in Guix
-proper, or in a channel, or directly in your project's source tree as a
+proper, or directly in your project's source tree as a
 @file{guix.scm} file.  This last option is appealing: all developers
 have to do to get set up is clone the project's repository and run
 @command{guix shell}, with no arguments.
@@ -5268,7 +5110,6 @@ blog post} published in June 2023 on the Guix web site.}.
 @menu
 * Getting Started::             Step 0: using `guix shell'.
 * Building with Guix::          Step 1: building your code.
-* The Repository as a Channel::  Step 2: turning the repo in a channel.
 * Package Variants::            Bonus: Defining variants.
 * Setting Up Continuous Integration::  Step 3: continuous integration.
 * Build Manifest::              Bonus: Manifest.
@@ -5485,147 +5326,11 @@ guix build -f guix.scm \
 
 Handy!
 
-@node The Repository as a Channel
-@section Level 2: The Repository as a Channel
-
-We now have a Git repository containing (among other things) a package
-definition (@pxref{Building with Guix}).  Can't we turn it into a
-@dfn{channel} (@pxref{Channels,,, guix, GNU Guix Reference Manual})?
-After all, channels are designed to ship package definitions to users,
-and that's exactly what we're doing with our @file{guix.scm}.
-
-Turns out we can indeed turn it into a channel, but with one caveat: we
-must create a separate directory for the @code{.scm} file(s) of our
-channel so that @command{guix pull} doesn't load unrelated @code{.scm}
-files when someone pulls the channel---and in Guile, there are lots of
-them! So we'll start like this, keeping a top-level @file{guix.scm}
-symlink for the sake of @command{guix shell}:
-
-@lisp
-mkdir -p .guix/modules
-mv guix.scm .guix/modules/guile-package.scm
-ln -s .guix/modules/guile-package.scm guix.scm
-@end lisp
-
-To make it usable as part of a channel, we need to turn our
-@file{guix.scm} file into a @dfn{package module} (@pxref{Package
-Modules,,, guix, GNU Guix Reference Manual}):
-we do that by changing the @code{use-modules} form at the top to a
-@code{define-module} form. We also need to actually @emph{export} a
-package variable, with @code{define-public}, while still returning the
-package value at the end of the file so we can still use
-@command{guix shell} and @command{guix build -f guix.scm}. The end result
-looks like this (not repeating things that haven't changed):
-
-@lisp
-(define-module (guile-package)
-  #:use-module (guix)
-  #:use-module (guix git-download)   ;for ‘git-predicate’
-  @dots{})
-
-(define vcs-file?
-  ;; Return true if the given file is under version control.
-  (or (git-predicate (dirname (dirname (current-source-directory))))
-      (const #t)))                                ;not in a Git checkout
-
-(define-public guile
-  (package
-    (name "guile")
-    (version "3.0.99-git")                          ;funky version number
-    (source (local-file "../.." "guile-checkout"
-                        #:recursive? #t
-                        #:select? vcs-file?))
-    @dots{}))
-
-;; Return the package object define above at the end of the module.
-guile
-@end lisp
-
-We need one last thing: a
-@uref{https://guix.gnu.org/manual/devel/en/html_node/Package-Modules-in-a-Sub_002ddirectory.html,@code{.guix-channel}
-file} so Guix knows where to look for package modules in our repository:
-
-@lisp
-;; This file lets us present this repo as a Guix channel.
-
-(channel
-  (version 0)
-  (directory ".guix/modules"))  ;look for package modules under .guix/modules/
-@end lisp
-
-To recap, we now have these files:
-
-@lisp
-.
-├── .guix-channel
-├── guix.scm → .guix/modules/guile-package.scm
-└── .guix
-    └── modules
-       └── guile-package.scm
-@end lisp
-
-And that's it: we have a channel! (We could do better and support
-@uref{https://guix.gnu.org/manual/devel/en/html_node/Specifying-Channel-Authorizations.html,@emph{channel
-authentication}} so users know they're pulling genuine code. We'll spare
-you the details here but it's worth considering!) Users can pull from
-this channel by
-@uref{https://guix.gnu.org/manual/devel/en/html_node/Specifying-Additional-Channels.html,adding
-it to @code{~/.config/guix/channels.scm}}, along these lines:
-
-@lisp
-(append (list (channel
-                (name 'guile)
-                (url "https://git.savannah.gnu.org/git/guile.git")
-                (branch "main")))
-        %default-channels)
-@end lisp
-
-After running @command{guix pull}, we can see the new package:
-
-@example
-$ guix describe
-Generation 264  May 26 2023 16:00:35    (current)
-  guile 36fd2b4
-    repository URL: https://git.savannah.gnu.org/git/guile.git
-    branch: main
-    commit: 36fd2b4920ae926c79b936c29e739e71a6dff2bc
-  guix c5bc698
-    repository URL: https://git.guix.gnu.org/guix.git
-    commit: c5bc698e8922d78ed85989985cc2ceb034de2f23
-$ guix package -A ^guile$
-guile   3.0.99-git      out,debug       guile-package.scm:51:4
-guile   3.0.9           out,debug       gnu/packages/guile.scm:317:2
-guile   2.2.7           out,debug       gnu/packages/guile.scm:258:2
-guile   2.2.4           out,debug       gnu/packages/guile.scm:304:2
-guile   2.0.14          out,debug       gnu/packages/guile.scm:148:2
-guile   1.8.8           out             gnu/packages/guile.scm:77:2
-$ guix build guile@@3.0.99-git
-[@dots{}]
-/gnu/store/axnzbl89yz7ld78bmx72vpqp802dwsar-guile-3.0.99-git-debug
-/gnu/store/r34gsij7f0glg2fbakcmmk0zn4v62s5w-guile-3.0.99-git
-@end example
-
-That's how, as a developer, you get your software delivered directly
-into the hands of users! No intermediaries, yet no loss of transparency
-and provenance tracking.
-
-With that in place, it also becomes trivial for anyone to create Docker
-images, Deb/RPM packages, or a plain tarball with @command{guix pack}
-(@pxref{Invoking guix pack,,, guix, GNU Guix Reference Manual}):
-
-@example
-# How about a Docker image of our Guile snapshot?
-guix pack -f docker -S /bin=bin guile@@3.0.99-git
-
-# And a relocatable RPM?
-guix pack -f rpm -R -S /bin=bin guile@@3.0.99-git
-@end example
-
 @node Package Variants
 @section Bonus: Package Variants
 
-We now have an actual channel, but it contains only one package
-(@pxref{The Repository as a Channel}).  While we're at it, we can define
+We now have a package definition, but only one package.  While we're at
+it, we can define
 @dfn{package variants} (@pxref{Defining Package Variants,,, guix, GNU
 Guix Reference Manual}) in our @file{guile-package.scm} file, variants
 that we want to be able to test as Guile developers---similar to what we
@@ -5665,9 +5370,8 @@ did above with transformation options. We can add them like so:
 guile
 @end lisp
 
-We can build these variants as regular packages once we've pulled the
-channel. Alternatively, from a checkout of Guile, we can run a command
-like this one from the top level:
+We can build these variants as regular packages.  From a checkout of
+Guile, we can run a command like this one from the top level:
 
 @lisp
 guix build -L $PWD/.guix/modules guile-without-threads
@@ -5677,8 +5381,7 @@ guix build -L $PWD/.guix/modules guile-without-threads
 @section Level 3: Setting Up Continuous Integration
 
 @cindex continuous integration (CI)
-The channel we defined above (@pxref{The Repository as a Channel})
-becomes even more interesting once we set up
+Our package definitions become even more interesting once we set up
 @uref{https://en.wikipedia.org/wiki/Continuous_integration,
 @dfn{continuous integration}} (CI). There are several ways to do that.
 
@@ -5695,65 +5398,23 @@ guix build -L $PWD/.guix/modules guile@@3.0.99-git
 Doing this works great and has the advantage of being easy to achieve on
 your favorite CI platform.
 
-That said, you'll really get the most of it by using
-@uref{https://guix.gnu.org/en/cuirass,Cuirass}, a CI tool designed for
-and tightly integrated with Guix. Using it is more work than using a
-hosted CI tool because you first need to set it up, but that setup phase
-is greatly simplified if you use its Guix System service
-(@pxref{Continuous Integration,,, guix, GNU Guix Reference Manual}).
-Going back to our example, we give Cuirass a spec file that goes like
-this:
+Another option is a CI tool designed for and tightly integrated with
+Guix.  Using it is more work than using a hosted CI tool, but the
+integration buys you two things that matter: the CI tool understands
+your package definitions directly, and build results are not thrown
+away---they can be distributed as @dfn{substitutes}
+(@pxref{Substitutes,,, guix, GNU Guix Reference Manual}, for background
+info on substitutes) so that users transparently get pre-built binaries.
 
-@lisp
-;; Cuirass spec file to build all the packages of the ‘guile’ channel.
-(list (specification
-        (name "guile")
-        (build '(channels guile))
-        (channels
-         (append (list (channel
-                         (name 'guile)
-                         (url "https://git.savannah.gnu.org/git/guile.git")
-                         (branch "main")))
-                 %default-channels))))
-@end lisp
-
-It differs from what you'd do with other CI tools in two important ways:
-
-@itemize
-@item
-Cuirass knows it's tracking @emph{two} channels, @code{guile} and
-@code{guix}. Indeed, our own @code{guile} package depends on many
-packages provided by the @code{guix} channel---GCC, the GNU libc,
-libffi, and so on. Changes to packages from the @code{guix} channel can
-potentially influence our @code{guile} build and this is something we'd
-like to see as soon as possible as Guile developers.
-@item
-Build results are not thrown away: they can be distributed as
-@dfn{substitutes} so that users of our @code{guile} channel
-transparently get pre-built binaries!  (@pxref{Substitutes,,, guix, GNU
-Guix Reference Manual}, for background info on substitutes.)
-@end itemize
-
-From a developer's viewpoint, the end result is this
-@uref{https://ci.guix.gnu.org/jobset/guile,status page} listing
-@emph{evaluations}: each evaluation is a combination of commits of the
-@code{guix} and @code{guile} channels providing a number of
-@emph{jobs}---one job per package defined in @file{guile-package.scm}
-times the number of target architectures.
-
-As for substitutes, they come for free! As an example, since our
-@code{guile} jobset is built on ci.guix.gnu.org, which runs
-@command{guix publish} (@pxref{Invoking guix publish,,, guix, GNU Guix
-Reference Manual}) in addition to Cuirass, one automatically gets
-substitutes for @code{guile} builds from ci.guix.gnu.org; no additional
-work is needed for that.
+From a developer's viewpoint, the end result is a @emph{status page}
+listing @emph{evaluations}: each evaluation is a combination of commits
+providing a number of @emph{jobs}---one job per package defined in
+@file{guile-package.scm} times the number of target architectures.
 
 @node Build Manifest
 @section Bonus: Build manifest
 
-The Cuirass spec above is convenient: it builds every package in our
-channel, which includes a few variants (@pxref{Setting Up Continuous
-Integration}).  However, this might be insufficiently expressive in some
+A plain per-package build is convenient, but insufficiently expressive in some
 cases: one might want specific cross-compilation jobs, transformations,
 Docker images, RPM/Deb packages, or even system tests.
 
@@ -5820,26 +5481,7 @@ TARGET."
 @end lisp
 
 We won't go into the details of this manifest; suffice to say that it
-provides additional flexibility. We now need to tell Cuirass to build
-this manifest, which is done with a spec slightly different from the
-previous one:
-
-@lisp
-;; Cuirass spec file to build all the packages of the ‘guile’ channel.
-(list (specification
-        (name "guile")
-        (build '(manifest ".guix/manifest.scm"))
-        (channels
-         (append (list (channel
-                         (name 'guile)
-                         (url "https://git.savannah.gnu.org/git/guile.git")
-                         (branch "main")))
-                 %default-channels))))
-@end lisp
-
-We changed the @code{(build @dots{})} part of the spec to
-@code{'(manifest ".guix/manifest.scm")} so that it would pick our
-manifest, and that's it!
+provides additional flexibility.
 
 @node Wrapping Up
 @section Wrapping Up
@@ -5848,8 +5490,6 @@ We picked Guile as the running example in this chapter and you can see
 the result here:
 
 @itemize
-@item
-@uref{https://git.savannah.gnu.org/cgit/guile.git/tree/.guix-channel?id=cd57379b3df636198d8cd8e76c1bfbc523762e79,@code{.guix-channel}};
 @item
 @uref{https://git.savannah.gnu.org/cgit/guile.git/tree/.guix/modules/guile-package.scm?id=cd57379b3df636198d8cd8e76c1bfbc523762e79,@code{.guix/modules/guile-package.scm}}
 with the top-level @file{guix.scm} symlink;
@@ -5876,8 +5516,7 @@ cross-compilation (@command{guix build});
 @item
 continuous integration (with Cuirass or with some other tool);
 @item
-continuous delivery to users (@emph{via} the channel and with pre-built
-binaries);
+continuous delivery to users (with pre-built binaries);
 @item
 generation of derivative build artifacts such as Docker images or
 Deb/RPM packages (@command{guix pack}).
@@ -6037,7 +5676,6 @@ that information in your research paper.
 
 @menu
 * Setting Up the Environment::  Step 1: using `guix shell'.
-* Recording the Environment::   Step 2: using `guix describe'.
 * Ensuring Long-Term Source Code Archiving::  Step 3: Software Heritage.
 * Referencing the Software Environment::  Step 4: SWHIDs.
 @end menu
@@ -6091,15 +5729,14 @@ Reference Manual}, to learn more on how to do that.
 Eventually, you'll have a list of packages that satisfies your needs.
 
 @quotation What if a package is missing?
-Guix and the main scientific channels provide about
+Guix and its package collection provide about
 @uref{https://hpc.guix.info/browse, tens of thousands of packages}.
 Yet, there's always the possibility that the one package you need is
 missing.
 
 In that case, you will need to provide a definition for it
 (@pxref{Defining Packages,,, guix, GNU Guix Reference Manual}) in a
-dedicated channel of yours (@pxref{Creating a Channel,,, guix, GNU Guix
-Reference Manual}).  For software in Python, R, and other high-level
+package collection of your own.  For software in Python, R, and other high-level
 languages, most of the work can usually be automated by using
 @command{guix import} (@pxref{Invoking guix import,,, guix, GNU Guix
 Reference Manual}).
@@ -6109,91 +5746,13 @@ Join
 help!
 @end quotation
 
-@node Recording the Environment
-@section Step 2: Recording the Environment
-
-Now that you have that @code{guix shell} command line with a list of
-packages, the best course of action is to save it in a @emph{manifest}
-file---essentially a software bill of materials---that Guix can then
-ingest (@pxref{Writing Manifests,,, guix, GNU Guix Reference Manual}).
-The easiest way to get started is by ``translating'' your command line
-into a manifest:
-
-@example
-guix shell python python-numpy python-pandas \
-  --export-manifest > manifest.scm
-@end example
-
-Put that manifest under version control! From there anyone can redeploy
-the software environment described by the manifest and run code in that
-environment:
-
-@example
-guix shell -C -m manifest.scm -- python3 ./myscript.py
-@end example
-
-Here's what @file{manifest.scm} reads:
-
-@lisp
-;; What follows is a "manifest" equivalent to the command line you gave.
-;; You can store it in a file that you may then pass to any 'guix' command
-;; that accepts a '--manifest' (or '-m') option.
-
-(specifications->manifest
-  (list "python" "python-numpy" "python-pandas"))
-@end lisp
-
-It's a code snippet that lists packages.  Notice that there are no
-version numbers! Indeed, these version numbers are specified in package
-definitions, located in Guix channels.  To allow others to reproduce the
-exact same environment as the one you're running, you need to @emph{pin
-Guix itself} , by capturing the current Guix channel commits with
-@command{guix describe} (@pxref{Replicating Guix,,, guix, GNU Guix
-Reference Manual}):
-
-@example
-guix describe -f channels > channels.scm
-@end example
-
-@cindex lock files, for reproducibility
-This @code{channels.scm} file is similar in spirit to ``lock files''
-that some deployment tools employ to pin package revisions. You should
-also keep it under version control in your code, and possibly update it
-once in a while when you feel like running your code against newer
-versions of its dependencies. With this file, anyone, @emph{at any time
-and on any machine}, can now reproduce the exact same environment by
-running:
-
-@example
-guix time-machine -C channels.scm -- \
-  shell -C -m manifest.scm -- \
-  python3 ./myscript.py
-@end example
-
-In this example we rely solely on the @code{guix} channel, which
-provides the Python packages we need. Perhaps some of the packages you
-need live @uref{https://hpc.guix.info/channels,in other
-channels}---maybe @code{guix-cran} if you use R, maybe
-@code{guix-science}.  That's fine: @code{guix describe} also captures
-that.
-
-Of course do include a @file{README} file giving the exact command to
-run the code. Not everyone uses Guix so it can be helpful to also
-provide minimal non-Guix setup instructions: which package versions are
-used, how software is built, etc. As we have seen, such instructions
-would likely be inaccurate and inconvenient to follow at best. Yet, it
-can be a useful starting point to someone trying to recreate a
-@emph{similar} environment using different tools. It should probably be
-presented as such, with the understanding that the only way to get the
-@emph{same} environment is to use Guix.
-
 @node Ensuring Long-Term Source Code Archiving
 @section Step 3: Ensuring Long-Term Source Code Archiving
 
-We insisted on version control before: for the @file{manifest.scm} and
-@file{channels.scm} files, but of course also for your own code. Our
-recommendation is to have these two @file{.scm} files in the same
-repository as the code they're about.
+We insisted on version control before: for the @file{manifest.scm}
+file, but of course also for your own code. Our
+recommendation is to have this @file{.scm} file in the same
+repository as the code it's about.
 
 Since the goal is enabling reproducibility, source code availability is
 a prime concern.  Source code hosting services come and go and we don't
@@ -6528,8 +6087,7 @@ Incidentally, @code{ci.guix.gnu.org} also serves as a
 Consequently, it is sufficient to have @emph{only}
 @code{ci.guix.gnu.org} in that white list.
 
-Software packages maintained in a separate repository such as one of the
-various @uref{https://hpc.guix.info/channels, HPC channels} are of
+Software packages maintained outside of Guix are of
 course unavailable from @code{ci.guix.gnu.org}.  For these packages, you
 may want to extend the white list such that source and pre-built
 binaries (assuming this-party servers provide binaries for these

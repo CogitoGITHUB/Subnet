@@ -830,7 +830,6 @@ itself."
 
 (define* (compiled-guix source #:key
                         (version %guix-version)
-                        (channel-metadata #f)
                         (pull-version 1)
                         (name (string-append "guix-" version))
                         (guile-version (effective-version))
@@ -1067,8 +1066,6 @@ itself."
                                          %guix-package-name
                                          #:package-version
                                          version
-                                         #:channel-metadata
-                                         channel-metadata
                                          #:bug-report-address
                                          %guix-bug-report-address
                                          #:home-page-url
@@ -1172,7 +1169,6 @@ itself."
 (define* (make-config.scm #:key gzip xz bzip2 git
                           (package-name "GNU Guix")
                           (package-version "0")
-                          (channel-metadata #f)
                           (config-variables %config-variables)
                           (bug-report-address
                            "https://codeberg.org/guix/guix/issues/")
@@ -1194,7 +1190,6 @@ itself."
                                %guix-version
                                %guix-bug-report-address
                                %guix-home-page-url
-                               %channel-metadata
                                %system
                                %store-directory
                                %state-directory
@@ -1237,11 +1232,6 @@ itself."
                    (define %guix-version #$package-version)
                    (define %guix-bug-report-address #$bug-report-address)
                    (define %guix-home-page-url #$home-page-url)
-
-                   (define %channel-metadata
-                     ;; Metadata for the 'guix' channel in use.  This
-                     ;; information is used by (guix describe).
-                     '#$channel-metadata)
 
                    (define %git
                      #+(and git (file-append git "/bin/git")))
@@ -1381,11 +1371,9 @@ containing MODULE-FILES and possibly other files as well."
 
 (define* (guix-derivation source version
                           #:optional (guile-version (effective-version))
-                          #:key (pull-version 0)
-                          channel-metadata)
+                          #:key (pull-version 0))
   "Return, as a monadic value, the derivation to build the Guix from SOURCE
-for GUILE-VERSION.  Use VERSION as the version string.  Use CHANNEL-METADATA
-as the channel metadata sexp to include in (guix config).
+for GUILE-VERSION.  Use VERSION as the version string.
 
 PULL-VERSION specifies the version of the 'guix pull' protocol.  Return #f if
 this PULL-VERSION value is not supported."
@@ -1413,7 +1401,6 @@ this PULL-VERSION value is not supported."
     (set-guile-for-build guile)
     (let ((guix (compiled-guix source
                                #:version version
-                               #:channel-metadata channel-metadata
                                #:name (string-append "guix-"
                                                      (shorten version))
                                #:pull-version pull-version

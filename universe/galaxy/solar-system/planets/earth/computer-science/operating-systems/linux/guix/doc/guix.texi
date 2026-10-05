@@ -174,7 +174,6 @@ Documentation License''.
 * Guix: (guix).       Manage installed software and system configuration.
 * guix package: (guix)Invoking guix package.  Installing, removing, and upgrading packages.
 * guix gc: (guix)Invoking guix gc.            Reclaiming unused disk space.
-* guix pull: (guix)Invoking guix pull.        Update the list of available packages.
 * guix system: (guix)Invoking guix system.    Manage the operating system configuration.
 * guix deploy: (guix)Invoking guix deploy.    Manage operating system configurations for remote hosts.
 @end direntry
@@ -229,7 +228,6 @@ Weblate} (@pxref{Translating Guix}).
 * System Installation::         Installing the whole operating system.
 * Getting Started::             Your first steps.
 * Package Management::          Package installation, upgrade, etc.
-* Channels::                    Customizing the package collection.
 * Development::                 Guix-aided software development.
 * Programming Interface::       Using Guix in Scheme.
 * Utilities::                   Package management commands.
@@ -266,7 +264,6 @@ Installation
 * Setting Up the Daemon::       Preparing the build daemon's environment.
 * Invoking guix-daemon::        Running the build daemon.
 * Application Setup::           Application-specific setup.
-* Upgrading Guix::              Upgrading Guix and its build daemon.
 
 Binary Installation
 
@@ -304,10 +301,7 @@ Package Management
 * Packages with Multiple Outputs::  Single source package, multiple outputs.
 * Invoking guix locate::        Locating packages that provide a file.
 * Invoking guix gc::            Running the garbage collector.
-* Invoking guix pull::          Fetching the latest Guix and distribution.
-* Invoking guix time-machine::  Running an older revision of Guix.
 * Inferiors::                   Interacting with another revision of Guix.
-* Invoking guix describe::      Display information about your Guix revision.
 * Invoking guix archive::       Exporting and importing store files.
 
 Substitutes
@@ -320,21 +314,6 @@ Substitutes
 * Proxy Settings::              How to get substitutes via proxy.
 * Substitution Failure::        What happens when substitution fails.
 * On Trusting Binaries::        How can you trust that binary blob?
-
-Channels
-
-* Specifying Additional Channels::  Extending the package collection.
-* Using a Custom Guix Channel::  Using a customized Guix.
-* Replicating Guix::            Running the @emph{exact same} Guix.
-* Customizing the System-Wide Guix::  Default channels on Guix System.
-* Channel Authentication::      How Guix verifies what it fetches.
-* Channels with Substitutes::   Using channels with available substitutes.
-* Creating a Channel::          How to write your custom channel.
-* Package Modules in a Sub-directory::  Specifying the channel's package modules location.
-* Declaring Channel Dependencies::  How to depend on other channels.
-* Specifying Channel Authorizations::  Defining channel authors authorizations.
-* Primary URL::                 Distinguishing mirror to original.
-* Writing Channel News::        Communicating information to channel's users.
 
 Development
 
@@ -767,15 +746,11 @@ tools without interference.  Its data lives exclusively in two directories,
 usually @file{/gnu/store} and @file{/var/guix}; other files on your system,
 such as @file{/etc}, are left untouched.
 
-Once installed, Guix can be updated by running @command{guix pull}
-(@pxref{Invoking guix pull}).
-
 @menu
 * Binary Installation::         Getting Guix running in no time!
 * Setting Up the Daemon::       Preparing the build daemon's environment.
 * Invoking guix-daemon::        Running the build daemon.
 * Application Setup::           Application-specific setup.
-* Upgrading Guix::              Upgrading Guix and its build daemon.
 @end menu
 
 @node Binary Installation
@@ -2187,110 +2162,6 @@ To natively compile your emacs packages ahead of time, use a
 transformation like @option{--with-input=emacs-minimal=emacs}.
 @end quotation
 
-@node Upgrading Guix
-@section Upgrading Guix
-
-@cindex Upgrading Guix, on a foreign distro
-
-To upgrade Guix, run:
-
-@example
-guix pull
-@end example
-
-@xref{Invoking guix pull}, for more information.
-
-@cindex upgrading Guix for the root user, on a foreign distro
-@cindex upgrading the Guix daemon, on a foreign distro
-@cindex @command{guix pull} for the root user, on a foreign distro
-
-If you installed Guix on a foreign distro with @file{guix-install.sh},
-you can upgrade the build daemon by running:
-
-@example
-sudo -i guix pull
-@end example
-
-@noindent
-followed by (assuming your distro uses the systemd service management
-tool):
-
-@example
-systemctl restart guix-daemon.service
-@end example
-
-While this works for @file{guix-install.sh}, it will most likely not
-work if you installed Guix through the package manager of another
-distribution (for instance with @command{sudo apt install guix},
-@command{pacman -S guix}, or similar commands)
-because on many distributions @file{guix-daemon.service} will only
-run the Guix daemon provided by the distribution.
-
-Waiting for your distribution to provide security fixes sometimes work,
-but fixing security issues in the Guix package takes times for
-distributions because Guix doesn't backport the security fixes to the
-releases used by the distributions. On some distribution versions, the
-Guix package is never fixed.
-
-However since Guix updates also comes with a new daemon, so you can
-simply configure your distribution to use the guix-daemon provided by
-Guix instead. The following will assume that your distribution uses
-systemd.
-
-You first need to override @file{guix-daemon.service} with the following
-command:
-
-@example
-sudo install -m 644 \
-     /lib/systemd/system/guix-daemon.service \
-     /etc/systemd/system/guix-daemon.service
-@end example
-
-You will then need to edit @file{/etc/systemd/system/guix-daemon.service}. To do
-that open this file with a text editor that has root permissions:
-
-@example
-sudo $EDITOR /etc/systemd/system/guix-daemon.service
-@end example
-
-Then try to find a line with @emph{ExecStart=}, it should look a bit
-like that:
-@example
-...
-[Service]
-ExecStart=/usr/bin/guix-daemon --build-users-group=_guixbuild
-...
-@end example
-
-Then change @emph{/usr/bin/guix-daemon} into
-@emph{/var/guix/profiles/per-user/root/current-guix/bin/guix-daemon} and
-save the changes.
-
-Once done you need to tell systemd that @emph{guix-daemon.service} was
-overriden:
-
-@example
-sudo systemctl daemon-reload
-@end example
-
-Once done you can then update the Guix daemon in the same way than if
-you installed Guix with @file{guix-install.sh}:
-
-@example
-sudo -i guix pull
-sudo systemctl restart guix-daemon.service
-@end example
-
-On Guix System, upgrading the daemon is achieved by reconfiguring the
-system (@pxref{Invoking guix system, @code{guix system reconfigure}}).
-
-To migrate an existing installation to the @emph{unprivileged daemon}
-where @command{guix-daemon} does not run as root,
-@pxref{unprivileged-daemon-migration}.
-
-@c TODO What else?
-
-@c *********************************************************************
 @node System Installation
 @chapter System Installation
 
@@ -3183,22 +3054,8 @@ perhaps some packages are built), and eventually you end up with the
 upgraded packages.  Should one of these upgraded packages not be to your
 liking, remember you can always roll back!
 
-You can display the exact revision of Guix you're currently using by
-running:
-
-@example
-guix describe
-@end example
-
-The information it displays is @emph{all it takes to reproduce the exact
-same Guix}, be it at a different point in time or on a different
-machine.
-
 @quotation Going further
-@xref{Invoking guix pull}, for more information.  @xref{Channels}, on
-how to specify additional @dfn{channels} to pull packages from, how to
-replicate Guix, and more.  You may also find @command{time-machine}
-handy (@pxref{Invoking guix time-machine}).
+@xref{Package Management}, for more about package management.
 @end quotation
 
 If you installed Guix System, one of the first things you'll want to do
@@ -3272,10 +3129,7 @@ guix install emacs-guix
 * Packages with Multiple Outputs::  Single source package, multiple outputs.
 * Invoking guix locate::        Locating packages that provide a file.
 * Invoking guix gc::            Running the garbage collector.
-* Invoking guix pull::          Fetching the latest Guix and distribution.
-* Invoking guix time-machine::  Running an older revision of Guix.
 * Inferiors::                   Interacting with another revision of Guix.
-* Invoking guix describe::      Display information about your Guix revision.
 * Invoking guix archive::       Exporting and importing store files.
 @end menu
 
@@ -3362,12 +3216,8 @@ package into their profile (@pxref{Invoking guix shell}).
 
 @cindex replication, of software environments
 @cindex provenance tracking, of software artifacts
-All of Guix and its package definitions is version-controlled, and
-@command{guix pull} allows you to ``travel in time'' on the history of Guix
-itself (@pxref{Invoking guix pull}).  This makes it possible to replicate a
-Guix instance on a different machine or at a later point in time, which in
-turn allows you to @emph{replicate complete software environments}, while
-retaining precise @dfn{provenance tracking} of the software.
+All of Guix and its package definitions is version-controlled, retaining
+precise @dfn{provenance tracking} of the software.
 
 @node Invoking guix package
 @section Invoking @command{guix package}
@@ -3557,9 +3407,7 @@ specified, upgrade only installed packages whose name matches a
 @var{regexp}.  Also see the @option{--do-not-upgrade} option below.
 
 Note that this upgrades package to the latest version of packages found
-in the distribution currently installed.  To update your distribution,
-you should regularly run @command{guix pull} (@pxref{Invoking guix
-pull}).
+in the distribution currently installed.
 
 @cindex package transformations, upgrades
 When upgrading, package transformations that were originally applied
@@ -3949,32 +3797,7 @@ exactly what you specified.
 
 Keep in mind that a manifest is purely symbolic: it only contains
 package names and possibly versions, and their meaning varies over time.
-If you wish to ``pin'' channels to the revisions that were used to build
-the profile(s), see @option{--export-channels} below.
 
-@cindex pinning, channel revisions of a profile
-@item --export-channels
-Write to standard output the list of channels used by the chosen
-profile(s), in a format suitable for @command{guix pull --channels} or
-@command{guix time-machine --channels} (@pxref{Channels}).
-
-Together with @option{--export-manifest}, this option provides
-information allowing you to replicate the current profile
-(@pxref{Replicating Guix}).
-
-However, note that the output of this command @emph{approximates} what
-was actually used to build this profile.  In particular, a single
-profile might have been built from several different revisions of the
-same channel.  In that case, @option{--export-manifest} chooses the last
-one and writes the list of other revisions in a comment.  If you really
-need to pick packages from different channel revisions, you can use
-inferiors in your manifest to do so (@pxref{Inferiors}).
-
-Together with @option{--export-manifest}, this is a good starting point
-if you are willing to migrate from the ``imperative'' model to the fully
-declarative model consisting of a manifest file along with a channels
-file pinning the exact channel revision(s) you want.
-@end table
 
 Finally, since @command{guix package} may actually start build
 processes, it supports all the common build options (@pxref{Common Build
@@ -4156,9 +3979,8 @@ guix-daemon}).  It can also be disabled temporarily by passing the
 
 @cindex substitute servers, adding more
 Guix can look up and fetch substitutes from several servers.  This is
-useful when you are using packages from additional channels for which
-the official server does not have substitutes but another server
-provides them.  Another situation where this is useful is when you would
+useful when you are using packages for which the official server does
+not have substitutes but another server provides them.  Another situation where this is useful is when you would
 prefer to download from your organization's substitute server, resorting
 to the official server only as a fallback or dismissing it altogether.
 
@@ -4810,576 +4632,6 @@ it finishes.
 
 @end table
 
-@node Invoking guix pull
-@section Invoking @command{guix pull}
-
-@cindex upgrading Guix
-@cindex updating Guix
-@cindex @command{guix pull}
-@cindex pull
-@cindex security, @command{guix pull}
-@cindex authenticity, of code obtained with @command{guix pull}
-Packages are installed or upgraded to the latest version available in
-the distribution currently available on your local machine.  To update
-that distribution, along with the Guix tools, you must run @command{guix
-pull}: the command downloads the latest Guix source code and package
-descriptions, and deploys it.  Source code is downloaded from a
-@uref{https://git-scm.com/book/en/, Git} repository, by default the official
-GNU@tie{}Guix repository, though this can be customized.  @command{guix
-pull} ensures that the code it downloads is @emph{authentic} by
-verifying that commits are signed by Guix developers.
-
-Specifically, @command{guix pull} downloads code from the @dfn{channels}
-(@pxref{Channels}) specified by one of the following, in this order:
-
-@enumerate
-@item
-the @option{--channels} option;
-@item
-the user's @file{~/.config/guix/channels.scm} file, unless @option{-q}
-is passed;
-@item
-the system-wide @file{/etc/guix/channels.scm} file, unless @option{-q}
-is passed (on Guix System, this file can be declared in the operating
-system configuration, @pxref{guix-configuration-channels,
-@code{channels} field of @code{guix-configuration}});
-@item
-the built-in default channels specified in the @code{%default-channels}
-variable.
-@end enumerate
-
-On completion, @command{guix package} will use packages and package
-versions from this just-retrieved copy of Guix.  Not only that, but all
-the Guix commands and Scheme modules will also be taken from that latest
-version.  New @command{guix} sub-commands added by the update also
-become available.
-
-Any user can update their Guix copy using @command{guix pull}, and the
-effect is limited to the user who ran @command{guix pull}.  For
-instance, when user @code{root} runs @command{guix pull}, this has no
-effect on the version of Guix that user @code{alice} sees, and vice
-versa.
-
-The result of running @command{guix pull} is a @dfn{profile} available
-under @file{~/.config/guix/current} containing the latest Guix.
-
-The @option{--list-generations} or @option{-l} option lists past generations
-produced by @command{guix pull}, along with details about their provenance:
-
-@example
-$ guix pull -l
-Generation 1	Jun 10 2018 00:18:18
-  guix 65956ad
-    repository URL: https://git.guix.gnu.org/guix.git
-    branch: origin/master
-    commit: 65956ad3526ba09e1f7a40722c96c6ef7c0936fe
-
-Generation 2	Jun 11 2018 11:02:49
-  guix e0cc7f6
-    repository URL: https://git.guix.gnu.org/guix.git
-    branch: origin/master
-    commit: e0cc7f669bec22c37481dd03a7941c7d11a64f1d
-
-Generation 3	Jun 13 2018 23:31:07	(current)
-  guix 844cc1c
-    repository URL: https://git.guix.gnu.org/guix.git
-    branch: origin/master
-    commit: 844cc1c8f394f03b404c5bb3aee086922373490c
-@end example
-
-@xref{Invoking guix describe, @command{guix describe}}, for other ways to
-describe the current status of Guix.
-
-This @code{~/.config/guix/current} profile works exactly like the profiles
-created by @command{guix package} (@pxref{Invoking guix package}).  That
-is, you can list generations, roll back to the previous
-generation---i.e., the previous Guix---and so on:
-
-@example
-$ guix pull --roll-back
-switched from generation 3 to 2
-$ guix pull --delete-generations=1
-deleting /var/guix/profiles/per-user/charlie/current-guix-1-link
-@end example
-
-You can also use @command{guix package} (@pxref{Invoking guix package})
-to manage the profile by naming it explicitly:
-@example
-$ guix package -p ~/.config/guix/current --roll-back
-switched from generation 3 to 2
-$ guix package -p ~/.config/guix/current --delete-generations=1
-deleting /var/guix/profiles/per-user/charlie/current-guix-1-link
-@end example
-
-The @command{guix pull} command is usually invoked with no arguments,
-but it supports the following options:
-
-@table @code
-@item --url=@var{url}
-@itemx --commit=@var{commit}
-@itemx --branch=@var{branch}
-Download code for the @code{guix} channel from the specified @var{url}, at the
-given @var{commit} (a valid Git commit ID represented as a hexadecimal
-string or the name of a tag), or @var{branch}.
-
-@cindex @file{channels.scm}, configuration file
-@cindex configuration file for channels
-These options are provided for convenience, but you can also specify your
-configuration in the @file{~/.config/guix/channels.scm} file or using the
-@option{--channels} option (see below).
-
-@item --channels=@var{file-or-uri}
-@itemx -C @var{file-or-uri}
-Read the list of channels from @var{file-or-uri} instead of
-@file{~/.config/guix/channels.scm} or @file{/etc/guix/channels.scm}.
-@var{file-or-uri} must contain Scheme code that
-evaluates to a list of channel objects.  @xref{Channels}, for more
-information.
-
-As you can guess, @var{file-or-uri} can be a URL, in which case the
-given channels file is transparently downloaded.  In the example below,
-we pull from the latest revision of Guix that was successfully
-evaluated:
-
-@example
-guix pull \
-  -C https://ci.guix.gnu.org/eval/latest/channels.scm?spec=master
-@end example
-
-@cindex SWHID, for channel files
-Alternatively, you can refer to a channel file by its
-@uref{https://swhid.org,Software Hash Identifier}, or SWHID, which
-uniquely and unambiguously identifies contents, as in this example:
-
-@example
-guix pull \
-  -C swh:1:cnt:ae02d8ba3538a385ee799e61cdd0dfc5e14a8d1b
-@end example
-
-This command downloads the data designated by the given identifier from
-@uref{https://archive.softwareheritage.org, the Software Heritage
-archive}.
-
-@anchor{trusted-channels}
-@cindex trusted channels, for downloaded channel files
-In both cases, the command errors out if the returned channels are not
-among the user's @dfn{trusted channels}, defined as:
-
-@itemize
-@item
-the channels returned by @file{~/.config/guix/trusted-channels.scm},
-which has the same format as any channel file (these channels
-@emph{must} have an ``introduction'', @pxref{Channel Authentication};
-channels are identified by their introduction and other fields are
-ignored, including @code{url} and @code{name});
-
-@item
-or, if the above file doesn't exist, the currently-used channels as
-returned by @command{guix describe}.
-@end itemize
-
-@item --allow-untrusted-channels[=yes|no]
-Whether to allow pulls from untrusted channels.
-
-By default, @command{guix pull} aborts when downloading a channel file
-that specifies an untrusted channel and merely warns if the list of
-channels comes from a local file.  This option allows you to change
-that.
-
-@quotation Warning
-Allowing untrusted channels can effectively lead to arbitrary code
-execution on your system.
-@end quotation
-
-@anchor{unsafe-channel-evaluation}
-@item --unsafe-channel-evaluation
-Allow arbitrary code execution from channel files, both the default
-@file{channels.scm} files and those passed with @option{--channels} as
-mentioned above.
-
-@anchor{channel-evaluation}
-@cindex sandboxing, of channel evaluation
-By default, channel files are evaluated in an isolated ``sandbox''
-where only trivial declarative code returning a list of channels is
-allowed---calls to procedures such as @code{list}, @code{cons},
-@code{string-append}, as well as the @code{channel} constructor.
-Attempts from a channel file to access unauthorized bindings such as
-@code{system} (to run shell code) or to use additional modules with
-@code{use-modules} are impossible.
-
-The @option{--unsafe-channel-evaluation} option disables these
-safeguards.
-
-@quotation Warning
-When using @code{--unsafe-channel-evaluation}, channel files can
-@emph{run arbitrary code on your machine}.  While this is useful in some
-cases, only use @code{--unsafe-channel-evaluation} when you fully
-understand the code of the channel files you use!
-@end quotation
-
-@cindex indirection, for downloaded channels
-@item --max-indirections=@var{n}
-Allow up to @var{n} channel indirections @i{via}
-@code{downloaded-channels} (@pxref{Downloading a List of Channels}).
-The default is 2.  Setting it to zero disallows use of
-@code{downloaded-channels}.
-
-@item --no-channel-files
-@itemx -q
-Inhibit loading of the user and system channel files,
-@file{~/.config/guix/channels.scm} and @file{/etc/guix/channels.scm}.
-
-@cindex pinning channels, with @command{guix pull}
-@anchor{pull-select}
-@item --select=@var{channel}
-@itemx -e
-Update only @var{channel}, keeping the commit of any other non-selected
-channel unchanged.  In other words, any channel not selected with this
-option is effectively @dfn{pinned} to its current commit.  This option
-can be repeated.
-
-@item --exclude=@var{channel}
-@itemx -x
-Prevent @var{channel} from being updated, effectively @dfn{pinning} it
-to its current commit as shown by @command{guix describe}.  All the
-other channels will be updated.  This option can be repeated.
-
-@cindex channel news
-@item --news
-@itemx -N
-Display news written by channel authors for their users for changes made
-since the previous generation (@pxref{Channels, Writing Channel News}).
-When @option{--details} is passed, additionally display new and upgraded
-packages.
-
-You can view that information for previous generations with
-@command{guix pull -l}.
-
-@item --list-generations[=@var{pattern}]
-@itemx -l [@var{pattern}]
-List all the generations of @file{~/.config/guix/current} or, if @var{pattern}
-is provided, the subset of generations that match @var{pattern}.
-The syntax of @var{pattern} is the same as with @code{guix package
---list-generations} (@pxref{Invoking guix package}).
-
-By default, this prints information about the channels used in each
-revision as well as the corresponding news entries.  If you pass
-@option{--details}, it will also print the list of packages added and
-upgraded in each generation compared to the previous one.
-
-@item --details
-Instruct @option{--list-generations} or @option{--news} to display more
-information about the differences between subsequent generations---see
-above.
-
-@item --roll-back
-@cindex rolling back
-@cindex undoing transactions
-@cindex transactions, undoing
-Roll back to the previous @dfn{generation} of @file{~/.config/guix/current}---i.e.,
-undo the last transaction.
-
-@item --switch-generation=@var{pattern}
-@itemx -S @var{pattern}
-@cindex generations
-Switch to a particular generation defined by @var{pattern}.
-
-@var{pattern} may be either a generation number or a number prefixed
-with ``+'' or ``-''.  The latter means: move forward/backward by a
-specified number of generations.  For example, if you want to return to
-the latest generation after @option{--roll-back}, use
-@option{--switch-generation=+1}.
-
-@item --delete-generations[=@var{pattern}]
-@itemx -d [@var{pattern}]
-When @var{pattern} is omitted, delete all generations except the current
-one.
-
-This command accepts the same patterns as @option{--list-generations}.
-When @var{pattern} is specified, delete the matching generations.  When
-@var{pattern} specifies a duration, generations @emph{older} than the
-specified duration match.  For instance, @option{--delete-generations=1m}
-deletes generations that are more than one month old.
-
-If the current generation matches, it is @emph{not} deleted.
-
-Note that deleting generations prevents rolling back to them.
-Consequently, this command must be used with care.
-
-@xref{Invoking guix describe}, for a way to display information about the
-current generation only.
-
-@item --profile=@var{profile}
-@itemx -p @var{profile}
-Use @var{profile} instead of @file{~/.config/guix/current}.
-
-@item --dry-run
-@itemx -n
-Show which channel commit(s) would be used and what would be built or
-substituted but do not actually do it.
-
-@item --allow-downgrades
-Allow pulling older or unrelated revisions of channels than those
-currently in use.
-
-@cindex downgrade attacks, protection against
-By default, @command{guix pull} protects against so-called ``downgrade
-attacks'' whereby the Git repository of a channel would be reset to an
-earlier or unrelated revision of itself, potentially leading you to
-install older, known-vulnerable versions of software packages.
-
-@quotation Note
-Make sure you understand its security implications before using
-@option{--allow-downgrades}.
-@end quotation
-
-@item --disable-authentication
-Allow pulling channel code without authenticating it.
-
-@cindex authentication, of channel code
-By default, @command{guix pull} authenticates code downloaded from
-channels by verifying that its commits are signed by authorized
-developers, and raises an error if this is not the case.  This option
-instructs it to not perform any such verification.
-
-@quotation Note
-Make sure you understand its security implications before using
-@option{--disable-authentication}.
-@end quotation
-
-@item --no-check-certificate
-Do not validate the X.509 certificates of HTTPS servers.
-
-When using this option, you have @emph{absolutely no guarantee} that you
-are communicating with the authentic server responsible for the given
-URL.  Unless the channel is authenticated, this makes you vulnerable to
-``man-in-the-middle'' attacks.
-
-@item --system=@var{system}
-@itemx -s @var{system}
-Attempt to build for @var{system}---e.g., @code{i686-linux}---instead of
-the system type of the build host.
-
-@item --bootstrap
-Use the bootstrap Guile to build the latest Guix.  This option is only
-useful to Guix developers.
-@end table
-
-The @dfn{channel} mechanism allows you to instruct @command{guix pull} which
-repository and branch to pull from, as well as @emph{additional} repositories
-containing package modules that should be deployed.  @xref{Channels}, for more
-information.
-
-In addition, @command{guix pull} supports all the common build options
-(@pxref{Common Build Options}).
-
-Every time the user invokes a Guix command, Guix detects if the current
-installation has exceeded a certain duration (7 days by default) and
-alerts the user to update with @command{guix pull} if necessary.
-The duration can be configured with the following environment variable:
-
-@defvr {Environment Variable} GUIX_DISTRO_AGE_WARNING
-This environment variable, if set, should be a string representing a
-duration. If the current Guix installation exceeds the duration, Guix
-will raise a warning for outdated installation.
-@end defvr
-
-@node Invoking guix time-machine
-@section Invoking @command{guix time-machine}
-
-@cindex @command{guix time-machine}
-@cindex pinning, channels
-@cindex replicating Guix
-@cindex reproducibility, of Guix
-
-The @command{guix time-machine} command provides access to other
-revisions of Guix, for example to install older versions of packages,
-or to reproduce a computation in an identical environment.  The revision
-of Guix to be used is defined by a commit or by a channel
-description file created by @command{guix describe}
-(@pxref{Invoking guix describe}).
-
-Let's assume that you want to travel to those days of November 2020 when
-version 1.2.0 of Guix was released and, once you're there, run the
-@command{guile} of that time:
-
-@example
-guix time-machine --commit=v1.2.0 -- \
-  environment -C --ad-hoc guile -- guile
-@end example
-
-The command above fetches Guix@tie{}1.2.0 (and possibly other channels
-specified by your @file{channels.scm} configuration files---see
-below) and runs its @command{guix
-environment} command to spawn an environment in a container running
-@command{guile} (@command{guix environment} has since been subsumed by
-@command{guix shell}; @pxref{Invoking guix shell}).  It's like driving a
-DeLorean@footnote{If you don't know what a DeLorean is, consider
-traveling back to the 1980's. (@uref{https://www.imdb.com/title/tt0088763/,
-Back to the Future (1985)})}!  The first @command{guix time-machine}
-invocation can be expensive: it may have to download or even build a
-large number of packages; the result is cached though and subsequent
-commands targeting the same commit are almost instantaneous.
-
-As for @command{guix pull}, in the absence of any options,
-@command{time-machine} fetches the latest commits of the channels
-specified in @file{~/.config/guix/channels.scm},
-@file{/etc/guix/channels.scm}, or the default channels; the @option{-q}
-option lets you ignore these configuration files.  The command:
-
-@example
-guix time-machine -q -- build hello
-@end example
-
-will thus build the package @code{hello} as defined in the main branch
-of Guix, without any additional channel, which is in general a newer
-revision of Guix than you have installed.  Time travel works in both
-directions!
-
-@quotation Note
-The history of Guix is immutable and @command{guix time-machine}
-provides the exact same software as they are in a specific Guix
-revision.  Naturally, no security fixes are provided for old versions
-of Guix or its channels.  A careless use of @command{guix time-machine}
-opens the door to security vulnerabilities.  @xref{Invoking guix pull,
-@option{--allow-downgrades}}.
-@end quotation
-
-@c Keep this paragraph in sync with 'time-machine.scm'.
-@command{guix time-machine} raises an error when attempting to travel to
-commits older than ``v0.16.0'' (commit @samp{4a0b87f0}), dated
-Dec.@: 2018.  This is one of the oldest commits supporting the channel
-mechanism that makes ``time travel'' possible.
-
-@quotation Note
-Although it should technically be possible to travel to such an old
-commit, the ease to do so will largely depend on the availability of
-binary substitutes.  When traveling to a distant past, some packages may
-not easily build from source anymore.  One such example are old versions
-of OpenSSL whose tests would fail after a certain date.  This particular
-problem can be worked around by running a @dfn{virtual build machine}
-with its clock set to the right time (@pxref{build-vm, Virtual Build
-Machines}).
-@end quotation
-
-The general syntax is:
-
-@example
-guix time-machine @var{options}@dots{} -- @var{command} @var {arg}@dots{}
-@end example
-
-where @var{command} and @var{arg}@dots{} are passed unmodified to the
-@command{guix} command of the specified revision.  The @var{options} that define
-this revision are the same as for @command{guix pull} (@pxref{Invoking guix pull}):
-
-@table @code
-@item --url=@var{url}
-@itemx --commit=@var{commit}
-@itemx --branch=@var{branch}
-Use the @code{guix} channel from the specified @var{url}, at the
-given @var{commit} (a valid Git commit ID represented as a hexadecimal
-string or the name of a tag), or @var{branch}.
-
-@item --channels=@var{file-or-uri}
-@itemx -C @var{file-or-uri}
-Read the list of channels from @var{file-or-uri}.  @var{file-or-uri}
-must contain Scheme code that evaluates to a list of channel objects.
-@xref{Channels} for more information.
-
-When @var{file-or-uri} is a URL, channels are transparently downloaded.
-In the example below, we pull from the latest revision of Guix that was
-successfully evaluated:
-
-@example
-guix time-machine \
-  -C https://ci.guix.gnu.org/eval/latest/channels.scm?spec=master \
-  -- describe
-@end example
-
-@cindex SWHID, for channel files
-Note that downloading a channel file potentially harms reproducibility:
-the file might vanish or be modified on the server behind your back.
-From a reproducibility viewpoint the safe approach is to keep channel
-files under version control, or to refer to them by their
-@uref{https://swhid.org,Software Hash Identifier}, or SWHID, which
-uniquely and unambiguously identifies contents.  Here is an example:
-
-@example
-guix time-machine \
-  -C swh:1:cnt:ae02d8ba3538a385ee799e61cdd0dfc5e14a8d1b \
-  -- @dots{}
-@end example
-
-This command downloads the data designated by the identifier from
-@uref{https://archive.softwareheritage.org, the Software Heritage
-archive}; it is fully reproducible because the data it refers to is
-immutable.
-
-@xref{Invoking guix pull}, for more information, and @pxref{Invoking
-guix hash}, for info on how to compute the SWHID of a file.
-
-@item --allow-untrusted-channels[=yes|no]
-Whether to allow pulls from untrusted channels.
-
-@quotation Warning
-Allowing untrusted channels can effectively lead to arbitrary code
-execution on your system.
-@end quotation
-
-@xref{trusted-channels, @command{guix pull} documentation}, for more
-info.
-
-@item --unsafe-channel-evaluation
-Allow arbitrary code execution from channels files.
-
-@quotation Warning
-When using @code{--unsafe-channel-evaluation}, channel files can
-@emph{run arbitrary code on your machine}.  Only use
-@code{--unsafe-channel-evaluation} when you fully understand the code of
-the channel files you use!
-
-@xref{unsafe-channel-evaluation, @option{--unsafe-channel-evaluation} in
-@command{guix pull}}, for background information.
-@end quotation
-
-@cindex indirection, for downloaded channels
-@item --max-indirections=@var{n}
-Allow up to @var{n} channel indirections @i{via}
-@code{downloaded-channels} (@pxref{Downloading a List of Channels}).
-The default is 2.  Setting it to zero disallows use of
-@code{downloaded-channels}.
-
-@item --no-channel-files
-@itemx -q
-Inhibit loading of the user and system channel files,
-@file{~/.config/guix/channels.scm} and @file{/etc/guix/channels.scm}.
-
-Thus, @command{guix time-machine -q} is equivalent to the following Bash
-command, using the ``process substitution'' syntax (@pxref{Process
-Substitution,,, bash, The GNU Bash Reference Manual}):
-
-@example
-guix time-machine -C <(echo %default-channels) @dots{}
-@end example
-
-@item --select
-@itemx -e
-@itemx --exclude
-@itemx -x
-Select or exclude channels that need to be updated.  @xref{pull-select}, for
-more info.
-
-@end table
-
-Note that @command{guix time-machine} can trigger builds of channels and
-their dependencies, and these are controlled by the standard build
-options (@pxref{Common Build Options}).
-
-If @command{guix time-machine} is executed without any command, it
-prints the file name of the profile that would be used to execute the
-command.  This is sometimes useful if you need to get store file name of
-the profile---e.g., when you want to @command{guix copy} it.
-
 @node Inferiors
 @section Inferiors
 
@@ -5403,10 +4655,10 @@ to your main Guix process through a REPL (@pxref{Invoking guix repl}).  The
 communicate with them.  It also provides a high-level interface to browse and
 manipulate the packages that an inferior provides---@dfn{inferior packages}.
 
-When combined with channels (@pxref{Channels}), inferiors provide a simple way
+Inferiors provide a simple way
 to interact with a separate revision of Guix.  For example, let's assume you
 want to install in your profile the current @code{guile} package, along with
-the @code{guile-json} as it existed in an older revision of Guix---perhaps
+the @code{guile-json} as provided by another Guix installation---perhaps
 because the newer @code{guile-json} has an incompatible API and you want to
 run your code against the old API@.  To do that, you could write a manifest for
 use by @code{guix package --manifest} (@pxref{Writing Manifests}); in that
@@ -5414,21 +4666,12 @@ manifest, you would create an inferior for that old Guix revision you care
 about, and you would look up the @code{guile-json} package in the inferior:
 
 @lisp
-(use-modules (guix inferior) (guix channels)
+(use-modules (guix inferior)
              (srfi srfi-1))   ;for 'first'
 
-(define channels
-  ;; This is the old revision from which we want to
-  ;; extract guile-json.
-  (list (channel
-         (name 'guix)
-         (url "https://git.guix.gnu.org/guix.git")
-         (commit
-          "65956ad3526ba09e1f7a40722c96c6ef7c0936fe"))))
-
 (define inferior
-  ;; An inferior representing the above revision.
-  (inferior-for-channels channels))
+  ;; An inferior representing the other installation.
+  (open-inferior "/path/to/other-guix"))
 
 ;; Now create a manifest with the current "guile" package
 ;; and the old "guile-json" package.
@@ -5437,21 +4680,8 @@ about, and you would look up the @code{guile-json} package in the inferior:
        (specification->package "guile")))
 @end lisp
 
-On its first run, @command{guix package --manifest} might have to build the
-channel you specified before it can create the inferior; subsequent runs will
-be much faster because the Guix revision will be cached.
-
 The @code{(guix inferior)} module provides the following procedures to open an
 inferior:
-
-@deffn {Procedure} inferior-for-channels channels [#:cache-directory] [#:ttl]
-Return an inferior for @var{channels}, a list of channels.  Use the cache at
-@var{cache-directory}, where entries can be reclaimed after @var{ttl} seconds.
-This procedure opens a new connection to the build daemon.
-
-As a side effect, this procedure may build or substitute binaries for
-@var{channels}, which can take time.
-@end deffn
 
 @deffn {Procedure} open-inferior directory [#:command "bin/guix"]
 Open the inferior Guix in @var{directory}, running
@@ -5504,102 +4734,6 @@ commonly used in manifests (@pxref{Invoking guix package, the
 an inferior package pretty much anywhere you would insert a regular package:
 in manifests, in the @code{packages} field of your @code{operating-system}
 declaration, and so on.
-
-@node Invoking guix describe
-@section Invoking @command{guix describe}
-
-@cindex reproducibility
-@cindex replicating Guix
-@cindex @command{guix describe}
-Often you may want to answer questions like: ``Which revision of Guix am I
-using?'' or ``Which channels am I using?''  This is useful information in many
-situations: if you want to @emph{replicate} an environment on a different
-machine or user account, if you want to report a bug or to determine what
-change in the channels you are using caused it, or if you want to record your
-system state for reproducibility purposes.  The @command{guix describe}
-command answers these questions.
-
-When run from a @command{guix pull}ed @command{guix}, @command{guix describe}
-displays the channel(s) that it was built from, including their repository URL
-and commit IDs (@pxref{Channels}):
-
-@example
-$ guix describe
-Generation 10	Sep 03 2018 17:32:44	(current)
-  guix e0fa68c
-    repository URL: https://git.guix.gnu.org/guix.git
-    branch: master
-    commit: e0fa68c7718fffd33d81af415279d6ddb518f727
-@end example
-
-If you're familiar with the Git version control system, this is similar in
-spirit to @command{git describe}; the output is also similar to that of
-@command{guix pull --list-generations}, but limited to the current generation
-(@pxref{Invoking guix pull, the @option{--list-generations} option}).  Because
-the Git commit ID shown above unambiguously refers to a snapshot of Guix, this
-information is all it takes to describe the revision of Guix you're using, and
-also to replicate it.
-
-To make it easier to replicate Guix, @command{guix describe} can also be asked
-to return a list of channels instead of the human-readable description above:
-
-@example
-$ guix describe -f channels
-(list (channel
-        (name 'guix)
-        (url "https://git.guix.gnu.org/guix.git")
-        (commit
-          "e0fa68c7718fffd33d81af415279d6ddb518f727")
-        (introduction
-          (make-channel-introduction
-            "9edb3f66fd807b096b48283debdcddccfea34bad"
-            (openpgp-fingerprint
-              "BBB0 2DDF 2CEA F6A8 0D1D  E643 A2A0 6DF2 A33A 54FA")))))
-@end example
-
-@noindent
-You can save this to a file and feed it to @command{guix pull -C} on some
-other machine or at a later point in time, which will instantiate @emph{this
-exact Guix revision} (@pxref{Invoking guix pull, the @option{-C} option}).
-From there on, since you're able to deploy the same revision of Guix, you can
-just as well @emph{replicate a complete software environment}.  We humbly
-think that this is @emph{awesome}, and we hope you'll like it too!
-
-The details of the options supported by @command{guix describe} are as
-follows:
-
-@table @code
-@item --format=@var{format}
-@itemx -f @var{format}
-Produce output in the specified @var{format}, one of:
-
-@table @code
-@item human
-produce human-readable output;
-@item channels
-produce a list of channel specifications that can be passed to @command{guix
-pull -C} or installed as @file{~/.config/guix/channels.scm} (@pxref{Invoking
-guix pull});
-@item channels-sans-intro
-like @code{channels}, but omit the @code{introduction} field; use it to
-produce a channel specification suitable for Guix version 1.1.0 or
-earlier---the @code{introduction} field has to do with channel
-authentication (@pxref{Channels, Channel Authentication}) and is not
-supported by these older versions;
-@item json
-@cindex JSON
-produce a list of channel specifications in JSON format;
-@item recutils
-produce a list of channel specifications in Recutils format.
-@end table
-
-@item --list-formats
-Display available formats for @option{--format} option.
-
-@item --profile=@var{profile}
-@itemx -p @var{profile}
-Display information about @var{profile}.
-@end table
 
 @node Invoking guix archive
 @section Invoking @command{guix archive}
@@ -5796,822 +4930,6 @@ $ wget -O - \
 @end example
 
 @end table
-
-@c *********************************************************************
-@node Channels
-@chapter Channels
-
-@cindex channels
-@cindex @file{channels.scm}, configuration file
-@cindex configuration file for channels
-@cindex @command{guix pull}, configuration file
-@cindex configuration of @command{guix pull}
-Guix and its package collection are updated by running @command{guix
-pull}.  By default @command{guix pull} downloads and deploys Guix itself
-from the official GNU@tie{}Guix repository.  This can be customized by
-providing a file specifying the set of @dfn{channels} to pull from
-(@pxref{Invoking guix pull}).  A channel
-specifies the URL and branch of a Git repository to be deployed, and
-@command{guix pull} can be instructed to pull from one or more channels.
-In other words, channels can be used to @emph{customize} and to
-@emph{extend} Guix, as we will see below.  Guix is able to take into
-account security concerns and deal with authenticated updates.
-
-@menu
-* Specifying Additional Channels::  Extending the package collection.
-* Using a Custom Guix Channel::  Using a customized Guix.
-* Replicating Guix::            Running the @emph{exact same} Guix.
-* Downloading a List of Channels:: Fetching a channel file.
-* Customizing the System-Wide Guix::  Default channels on Guix System.
-* Channel Authentication::      How Guix verifies what it fetches.
-* Channels with Substitutes::   Using channels with available substitutes.
-* Creating a Channel::          How to write your custom channel.
-* Package Modules in a Sub-directory::  Specifying the channel's package modules location.
-* Declaring Channel Dependencies::  How to depend on other channels.
-* Specifying Channel Authorizations::  Defining channel authors authorizations.
-* Primary URL::                 Distinguishing mirror to original.
-* Writing Channel News::        Communicating information to channel's users.
-@end menu
-
-@node Specifying Additional Channels
-@section Specifying Additional Channels
-
-@cindex extending the package collection (channels)
-@cindex variant packages (channels)
-You can specify @emph{additional channels} to pull from.  To use a channel, write
-@code{~/.config/guix/channels.scm} to instruct @command{guix pull} to pull from it
-@emph{in addition} to the default Guix channel(s):
-
-@vindex %default-channels
-@lisp
-;; Add variant packages to those Guix provides.
-(cons (channel
-        (name 'variant-packages)
-        (url "https://example.org/variant-packages.git"))
-      %default-channels)
-@end lisp
-
-@noindent
-Note that the snippet above is (as always!)@: Scheme code; we use @code{cons} to
-add a channel the list of channels that the variable @code{%default-channels}
-is bound to (@pxref{Pairs, @code{cons} and lists,, guile, GNU Guile Reference
-Manual}).  With this file in place, @command{guix pull} builds not only Guix
-but also the package modules from your own repository.  The result in
-@file{~/.config/guix/current} is the union of Guix with your own package
-modules:
-
-@example
-$ guix describe
-Generation 19	Aug 27 2018 16:20:48
-  guix d894ab8
-    repository URL: https://git.guix.gnu.org/guix.git
-    branch: master
-    commit: d894ab8e9bfabcefa6c49d9ba2e834dd5a73a300
-  variant-packages dd3df5e
-    repository URL: https://example.org/variant-packages.git
-    branch: master
-    commit: dd3df5e2c8818760a8fc0bd699e55d3b69fef2bb
-@end example
-
-@noindent
-The output of @command{guix describe} above shows that we're now running
-Generation@tie{}19 and that it includes
-both Guix and packages from the @code{variant-packages} channel
-(@pxref{Invoking guix describe}).
-
-@node Using a Custom Guix Channel
-@section Using a Custom Guix Channel
-
-The channel called @code{guix} specifies where Guix itself---its command-line
-tools as well as its package collection---should be downloaded.  For instance,
-suppose you want to update from another copy of the Guix repository at
-@code{example.org}, and specifically the @code{super-hacks} branch, you can
-write in @code{~/.config/guix/channels.scm} this specification:
-
-@lisp
-;; Tell 'guix pull' to use another repo.
-(list (channel
-        (name 'guix)
-        (url "https://example.org/another-guix.git")
-        (branch "super-hacks")))
-@end lisp
-
-@noindent
-From there on, @command{guix pull} will fetch code from the @code{super-hacks}
-branch of the repository at @code{example.org}.  The authentication concern is
-addressed below (@pxref{Channel Authentication}).
-
-Note that you can specify a local directory on the @code{url} field above if
-the channel that you intend to use resides on a local file system.  However,
-in this case @command{guix} checks said directory for ownership before any
-further processing.  This means that if the user is not the directory owner,
-but wants to use it as their default, they will then need to set it as a safe
-directory in their global git configuration file.  Otherwise, @command{guix}
-will refuse to even read it.  Supposing your system-wide local directory is at
-@code{/src/guix.git}, you would then create a git configuration file at
-@code{~/.gitconfig} with the following contents:
-
-@example
-[safe]
-        directory = /src/guix.git
-@end example
-
-@noindent
-This also applies to the root user unless when called with @command{sudo} by
-the directory owner.
-
-@node Replicating Guix
-@section Replicating Guix
-
-@cindex pinning, channels
-@cindex replicating Guix
-@cindex reproducibility, of Guix
-The @command{guix describe} command shows precisely which commits were
-used to build the instance of Guix we're using (@pxref{Invoking guix
-describe}).  We can replicate this instance on another machine or at a
-different point in time by providing a channel specification ``pinned''
-to these commits that looks like this:
-
-@lisp
-;; Deploy specific commits of my channels of interest.
-(list (channel
-       (name 'guix)
-       (url "https://git.guix.gnu.org/guix.git")
-       (commit "6298c3ffd9654d3231a6f25390b056483e8f407c"))
-      (channel
-       (name 'variant-packages)
-       (url "https://example.org/variant-packages.git")
-       (commit "dd3df5e2c8818760a8fc0bd699e55d3b69fef2bb")))
-@end lisp
-
-To obtain this pinned channel specification, the easiest way is to run
-@command{guix describe} and to save its output in the @code{channels}
-format in a file, like so:
-
-@example
-guix describe -f channels > channels.scm
-@end example
-
-The resulting @file{channels.scm} file can be passed to the @option{-C}
-option of @command{guix pull} (@pxref{Invoking guix pull}) or
-@command{guix time-machine} (@pxref{Invoking guix time-machine}), as in
-this example:
-
-@example
-guix time-machine -C channels.scm -- shell python -- python3
-@end example
-
-Given the @file{channels.scm} file, the command above will always fetch
-the @emph{exact same Guix instance}, then use that instance to run the
-exact same Python (@pxref{Invoking guix shell}).  On any machine, at any
-time, it ends up running the exact same binaries, bit for bit.
-
-@cindex lock files
-Pinned channels address a problem similar to ``lock files'' as
-implemented by some deployment tools---they let you pin and reproduce a
-set of packages.  In the case of Guix though, you are effectively
-pinning the entire package set as defined at the given channel commits;
-in fact, you are pinning all of Guix, including its core modules and
-command-line tools.  You're also getting strong guarantees that you are,
-indeed, obtaining the exact same software.
-
-This gives you super powers, allowing you to track the provenance of binary
-artifacts with very fine grain, and to reproduce software environments at
-will---some sort of ``meta reproducibility'' capabilities, if you will.
-@xref{Inferiors}, for another way to take advantage of these super powers.
-
-@node Downloading a List of Channels
-@section Downloading a List of Channels
-
-@cindex channels, downloading
-@cindex downloading channel files
-In some cases, you might want to delegate maintenance of your set of
-channels to a third party---a person responsible for this in your team,
-or perhaps an automated system that publishes a channel file when some
-criteria are met (@pxref{Channels with Substitutes}, for an example of
-that).
-
-In that case you can make your channel file an @dfn{alias} for some
-downloaded channel file, as in the example below:
-
-@lisp
-;; Use the channels published at example.org.
-(downloaded-channels "https://example.org/channels.scm")
-@end lisp
-
-If you save the content above as @file{~/.config/guix/channels.scm},
-every time you run @command{guix pull} it will first download the given
-channel file and then pull from the channels it specifies.
-
-This mechanism is safe because, by default, the channel file itself is
-evaluated in an isolated environment (@pxref{channel-evaluation,
-@command{guix pull} channel evaluation}), and because only @dfn{trusted
-channels} are accepted (@pxref{trusted-channels, the definition of
-``trusted channels''}).  Likewise, the @option{--max-indirections} option
-of @command{guix pull} allows you to set an upper bound on the number of
-times a channel file might create an indirection to another channel file
-@i{via} @code{downloaded-channels}.
-
-@quotation Note
-@code{downloaded-channels} causes the download a channel file as
-currently provided by a server; the contents of that file may change
-over time, or the server might stop providing it altogether.
-
-For reproducibility purposes, you may want to track the output of
-@command{guix describe} (@pxref{Replicating Guix}).
-@end quotation
-
-The @code{downloaded-channels} is exported by @code{(guix channels)} and
-defined below.
-
-@cindex SWHID, for channel files
-@deffn {Procedure} downloaded-channels @var{uri} [#:append '()]
-Return an opaque object representing a list of channels to be downloaded
-from @var{uri}, a string.  @var{uri} can be either an HTTP or HTTPS URL,
-or a @uref{https://swhid.org,Software Hash Identifier} (SWHID) denoting
-a channel file.
-
-Optionally, @code{#:append} can specify a list of channels to be
-appended to those downloaded from @var{uri}.
-
-@quotation Note
-This procedure does @emph{not} return a list of channels.  Thus it
-cannot be composed with other channel lists by calling @code{append}, it
-cannot be traversed with @code{map}, and so on.  This restriction might
-be lifted in the future; you can also use @code{#:append} to append a
-list of channels to the result.
-@c See <https://codeberg.org/guix/guix/pulls/11246#issuecomment-22934251>.
-@end quotation
-@end deffn
-
-@node Customizing the System-Wide Guix
-@section Customizing the System-Wide Guix
-
-@cindex system-wide Guix, customization
-@cindex channels, for the default Guix
-If you're running Guix System or building system images with it, maybe
-you will want to customize the system-wide @command{guix} it
-provides---specifically, @file{/run/current-system/profile/bin/guix}.
-For example, you might want to provide additional channels or to pin its
-revision.
-
-This can be done using the @code{guix-for-channels} procedure, which
-returns a package for the given channels, and using it as part of your
-operating system configuration, as in this example:
-
-@lisp
-(use-modules (gnu packages package-management)
-             (guix channels))
-
-(define my-channels
-  ;; Channels that should be available to
-  ;; /run/current-system/profile/bin/guix.
-  (append
-   (list (channel
-          (name 'guix-science)
-          (url "https://codeberg.org/guix-science/guix-science")
-          (branch "master")))
-   %default-channels))
-
-(operating-system
-  ;; @dots{}
-  (services
-    ;; Change the package used by 'guix-service-type'.
-    (modify-services %base-services
-      (guix-service-type
-       config => (guix-configuration
-                  (inherit config)
-                  (channels my-channels)
-                  (guix (guix-for-channels my-channels)))))))
-@end lisp
-
-The resulting operating system will have both the @code{guix} and the
-@code{guix-science} channels visible by default.  The @code{channels}
-field of @code{guix-configuration} above further ensures that
-@file{/etc/guix/channels.scm}, which is used by @command{guix pull},
-specifies the same set of channels (@pxref{guix-configuration-channels,
-@code{channels} field of @code{guix-configuration}}).
-
-The @code{(gnu packages package-management)} module exports the
-@code{guix-for-channels} procedure, described below.
-
-@deffn {Procedure} guix-for-channels @var{channels}
-Return a package corresponding to @var{channels}.
-
-The result is a ``regular'' package, which can be used in
-@code{guix-configuration} as shown above or in any other place that
-expects a package.
-@end deffn
-
-@node Channel Authentication
-@section Channel Authentication
-
-@anchor{channel-authentication}
-@cindex authentication, of channel code
-The @command{guix pull} and @command{guix time-machine} commands
-@dfn{authenticate} the code retrieved from channels: they make sure each
-commit that is fetched is signed by an authorized developer.  The goal
-is to protect from unauthorized modifications to the channel that would
-lead users to run malicious code.
-
-As a user, you must provide a @dfn{channel introduction} in your
-channels file so that Guix knows how to authenticate its first commit.
-A channel specification, including its introduction, looks something
-along these lines:
-
-@lisp
-(channel
-  (name 'some-channel)
-  (url "https://example.org/some-channel.git")
-  (introduction
-   (make-channel-introduction
-    "6f0d8cc0d88abb59c324b2990bfee2876016bb86"
-    (openpgp-fingerprint
-     "CABB A931 C0FF EEC6 900D  0CFB 090B 1199 3D9A EBB5"))))
-@end lisp
-
-The specification above shows the name and URL of the channel.  The call
-to @code{make-channel-introduction} above specifies that authentication
-of this channel starts at commit @code{6f0d8cc@dots{}}, which is signed
-by the OpenPGP key with fingerprint @code{CABB A931@dots{}}.
-
-For the main channel, called @code{guix}, you automatically get that
-information from your Guix installation.  For other channels, include
-the channel introduction provided by the channel authors in your
-@file{channels.scm} file.  Make sure you retrieve the channel
-introduction from a trusted source since that is the root of your trust.
-
-If you're curious about the authentication mechanics, read on!
-
-@node Channels with Substitutes
-@section Channels with Substitutes
-
-When running @command{guix pull}, Guix will first compile the
-definitions of every available package.  This is an expensive operation
-for which substitutes (@pxref{Substitutes}) may be available.  The
-following snippet in @file{channels.scm} will ensure that @command{guix
-pull} uses the latest commit with available substitutes for the package
-definitions: this is done by querying the continuous integration
-server at @url{https://ci.guix.gnu.org}.
-
-@lisp
-;; Tell 'guix pull' to download the channel file generated by
-;; the continuous integration server upon success.
-(downloaded-channels
-  "https://ci.guix.gnu.org/eval/latest/channels.scm?spec=master")
-@end lisp
-
-Note that this does not mean that all the packages that you will
-install after running @command{guix pull} will have available
-substitutes.  It only ensures that @command{guix pull} will not try to
-compile package definitions.  @xref{Downloading a List of Channels}, for
-more about @code{downloaded-channels}.
-
-The above snippet gives you nothing but the @code{guix} channel.  To get
-multiple channels, you need to point to a continuous integration server
-that builds the combination of channels you care about.  For instance,
-the snippet below gives you a combination of the @code{guix} and
-@code{guix-science} channels that was successfully evaluated:
-
-@lisp
-(downloaded-channels
-  "https://guix.bordeaux.inria.fr/eval/latest/channels.scm?spec=guix-science")
-@end lisp
-
-Perhaps you'll want to add your personal channel to those downloaded,
-for example because it is not built by the continuous integration
-service referred to above.  Worry not! You can append your own channel
-to those downloaded by passing @code{#:append}:
-
-@lisp
-(downloaded-channels
-  "https://ci.guix.gnu.org/eval/latest/channels.scm?spec=master"
-  #:append (list (channel
-                   (name 'my-channel)
-                   (url "https://example.org/my-channel.git"))))
-@end lisp
-
-Of course there is no guarantee that @code{my-channel} itself was ever
-successfully built, but at least you have that guarantee for the other
-channels.
-
-@quotation Compatibility Note
-@code{downloaded-channels} did not exist in Guix 1.5.0 and earlier.
-
-@findex channel-with-substitutes-available
-With those older versions, the way to achieve a similar result was to
-call the @code{channel-with-substitutes-available} procedure from your
-channel file:
-
-@lisp
-(use-modules (guix ci))
-
-(list (channel-with-substitutes-available
-       %default-guix-channel
-       "https://ci.guix.gnu.org"))
-@end lisp
-
-This procedure is still available but calling it from in your channel
-file requires it to be evaluated in ``unsafe'' mode, with the
-@option{--unsafe-channel-evaluation} option, which is not recommended.
-@xref{unsafe-channel-evaluation, the @command{guix pull} documentation},
-for more info.
-@end quotation
-
-@node Creating a Channel
-@section Creating a Channel
-
-@cindex personal packages (channels)
-@cindex channels, for personal packages
-Let's say you have a bunch of custom package variants or personal packages
-that you think would make little sense to contribute to the Guix project, but
-would like to have these packages transparently available to you at the
-command line.  By creating a @dfn{channel}, you can use and publish such
-a package collection.  This involves the following steps:
-
-@enumerate
-@item
-A channel lives in a Git repository so the first step, when creating a
-channel, is to create its repository:
-
-@example
-mkdir my-channel
-cd my-channel
-git init
-@end example
-
-@item
-The next step is to create files containing package modules
-(@pxref{Package Modules}), each of which will contain one or more
-package definitions (@pxref{Defining Packages}).  A channel can provide
-things other than packages, such as build systems or services; we're
-using packages as it's the most common use case.
-
-For example, Alice might want to provide a module called @code{(alice
-packages greetings)} that will provide her favorite ``hello world''
-implementations.  To do that Alice will create a directory corresponding
-to that module name.
-
-@example
-mkdir -p alice/packages
-$EDITOR alice/packages/greetings.scm
-git add alice/packages/greetings.scm
-@end example
-
-You can name your package modules however you like; the main constraint
-to keep in mind is to avoid name clashes with other package collections,
-which is why our hypothetical Alice wisely chose the @code{(alice
-packages @dots{})} name space.
-
-Note that you can also place modules in a sub-directory of the
-repository; @pxref{Package Modules in a Sub-directory}, for more info on
-that.
-
-@item
-With this first module in place, the next step is to test the packages
-it provides.  This can be done with @command{guix build}, which needs to
-be told to look for modules in the Git checkout.  For example, assuming
-@code{(alice packages greetings)} provides a package called
-@code{hi-from-alice}, Alice will run this command from the Git checkout:
-
-@example
-guix build -L. hi-from-alice
-@end example
-
-@noindent
-... where @code{-L.} adds the current directory to Guile's load path
-(@pxref{Load Paths,,, guile, GNU Guile Reference Manual}).
-
-@item
-It might take Alice a few iterations to obtain satisfying package
-definitions.  Eventually Alice will commit this file:
-
-@example
-git commit
-@end example
-
-As a channel author, consider bundling authentication material with your
-channel so that users can authenticate it.  @xref{Channel
-Authentication}, and @ref{Specifying Channel Authorizations}, for info
-on how to do it.
-
-@item
-To use Alice's channel, anyone can now add it to their channel file
-(@pxref{Specifying Additional Channels}) and run @command{guix pull}
-(@pxref{Invoking guix pull}):
-
-@example
-$EDITOR ~/.config/guix/channels.scm
-guix pull
-@end example
-
-Guix will now behave as if the root directory of that channel's Git
-repository had been permanently added to the Guile load path.  In this
-example, @code{(alice packages greetings)} will automatically be found
-by the @command{guix} command.
-@end enumerate
-
-Voilà!
-
-@c What follows stems from discussions at
-@c <https://debbugs.gnu.org/cgi/bugreport.cgi?bug=22629#134> as well as
-@c earlier discussions on guix-devel@gnu.org.
-@c Updated in 2025 to refer to the Deprecation Policy.
-@quotation Warning
-Before you publish your channel, we would like to share a few words of
-caution:
-
-@itemize
-@item
-Before publishing a channel, please consider contributing your package
-definitions to Guix proper (@pxref{Contributing}).  Guix as a project is open
-to free software of all sorts, and packages in Guix proper are readily
-available to all Guix users and benefit from the project's quality assurance
-process.
-
-@item
-Package modules and package definitions are Scheme code that uses
-various programming interfaces (APIs).  Those may occasionally change,
-in accordance with our deprecation policy (@pxref{Deprecation Policy}),
-and it is your responsibility as a channel author to adjust your code
-accordingly.
-
-@item
-Corollary: if you're using an external channel and that channel breaks, please
-@emph{report the issue to the channel authors}, not to the Guix project.
-@end itemize
-
-You've been warned!  Having said this, we believe external channels are a
-practical way to exert your freedom to augment Guix' package collection and to
-share your improvements, which are basic tenets of
-@uref{https://www.gnu.org/philosophy/free-sw.html, free software}.  Please
-email us at @email{guix-devel@@gnu.org} if you'd like to discuss this.
-@end quotation
-
-
-
-@node Package Modules in a Sub-directory
-@section Package Modules in a Sub-directory
-
-@cindex subdirectory, channels
-As a channel author, you may want to keep your channel modules in a
-sub-directory.  If your modules are in the sub-directory @file{guix}, you must
-add a meta-data file @file{.guix-channel} that contains:
-
-@lisp
-(channel
-  (version 0)
-  (directory "guix"))
-@end lisp
-
-The modules must be @b{underneath} the specified directory, as the
-@code{directory} changes Guile's @code{load-path}.  For example, if
-@file{.guix-channel} has @code{(directory "base")}, then a module
-defined as @code{(define-module (gnu packages fun))} must be located at
-@code{base/gnu/packages/fun.scm}.
-
-Doing this allows for only parts of a repository to be used as a
-channel, as Guix expects valid Guile modules when pulling.  For
-instance, @command{guix deploy} machine configuration files are not
-valid Guile modules, and treating them as such would make @command{guix
-pull} fail.
-
-@node Declaring Channel Dependencies
-@section Declaring Channel Dependencies
-
-@cindex dependencies, channels
-@cindex meta-data, channels
-Channel authors may decide to augment a package collection provided by other
-channels.  They can declare their channel to be dependent on other channels in
-a meta-data file @file{.guix-channel}, which is to be placed in the root of
-the channel repository.
-
-The meta-data file should contain a simple S-expression like this:
-
-@lisp
-(channel
- (version 0)
- (dependencies
-  (channel
-   (name some-collection)
-   (url "https://example.org/first-collection.git")
-
-   ;; The 'introduction' bit below is optional: you would
-   ;; provide it for dependencies that can be authenticated.
-   (introduction
-    (channel-introduction
-      (version 0)
-      (commit "a8883b58dc82e167c96506cf05095f37c2c2c6cd")
-      (signer "CABB A931 C0FF EEC6 900D  0CFB 090B 1199 3D9A EBB5"))))
-  (channel
-   (name some-other-collection)
-   (url "https://example.org/second-collection.git")
-   (branch "testing"))))
-@end lisp
-
-In the above example this channel is declared to depend on two other channels,
-which will both be fetched automatically.  The modules provided by the channel
-will be compiled in an environment where the modules of all these declared
-channels are available.
-
-For the sake of reliability and maintainability, you should avoid dependencies
-on channels that you don't control, and you should aim to keep the number of
-dependencies to a minimum.
-
-@node Specifying Channel Authorizations
-@section Specifying Channel Authorizations
-
-@cindex channel authorizations
-@anchor{channel-authorizations}
-As we saw above, Guix ensures the source code it pulls from channels
-comes from authorized developers.  As a channel author, you need to
-specify the list of authorized developers in the
-@file{.guix-authorizations} file in the channel's Git repository.  The
-authentication rule is simple: each commit must be signed by a key
-listed in the @file{.guix-authorizations} file of its parent
-commit(s)@footnote{Git commits form a @dfn{directed acyclic graph}
-(DAG).  Each commit can have zero or more parents; ``regular'' commits
-have one parent and merge commits have two parent commits.  Read
-@uref{https://eagain.net/articles/git-for-computer-scientists/, @i{Git
-for Computer Scientists}} for a great overview.}  The
-@file{.guix-authorizations} file looks like this:
-
-@lisp
-;; Example '.guix-authorizations' file.
-
-(authorizations
- (version 0)               ;current file format version
-
- (("AD17 A21E F8AE D8F1 CC02  DBD9 F8AE D8F1 765C 61E3"
-   (name "alice"))
-  ("2A39 3FFF 68F4 EF7A 3D29  12AF 68F4 EF7A 22FB B2D5"
-   (name "bob"))
-  ("CABB A931 C0FF EEC6 900D  0CFB 090B 1199 3D9A EBB5"
-   (name "charlie"))))
-@end lisp
-
-Each fingerprint is followed by optional key/value pairs, as in the
-example above.  Currently these key/value pairs are ignored.
-
-This authentication rule creates a chicken-and-egg issue: how do we
-authenticate the first commit?  Related to that: how do we deal with
-channels whose repository history contains unsigned commits and lack
-@file{.guix-authorizations}?  And how do we fork existing channels?
-
-@cindex channel introduction
-Channel introductions answer these questions by describing the first
-commit of a channel that should be authenticated.  The first time a
-channel is fetched with @command{guix pull} or @command{guix
-time-machine}, the command looks up the introductory commit and verifies
-that it is signed by the specified OpenPGP key.  From then on, it
-authenticates commits according to the rule above.  Authentication fails
-if the target commit is neither a descendant nor an ancestor of the
-introductory commit.
-
-Additionally, your channel must provide all the OpenPGP keys that were
-ever mentioned in @file{.guix-authorizations}, stored as @file{.key}
-files, which can be either binary or ``ASCII-armored''.  By default,
-those @file{.key} files are searched for in the branch named
-@code{keyring} but you can specify a different branch name in
-@code{.guix-channel} like so:
-
-@lisp
-(channel
-  (version 0)
-  (keyring-reference "my-keyring-branch"))
-@end lisp
-
-To summarize, as the author of a channel, there are three things you have
-to do to allow users to authenticate your code:
-
-@enumerate
-@item
-Export the OpenPGP keys of past and present committers with @command{gpg
---export} and store them in @file{.key} files, by default in a branch
-named @code{keyring} (we recommend making it an @dfn{orphan branch}).
-
-@item
-Introduce an initial @file{.guix-authorizations} in the channel's
-repository.  Do that in a signed commit (@pxref{Commit Access}, for
-information on how to sign Git commits).
-
-@item
-Advertise the channel introduction, for instance on your channel's web
-page.  The channel introduction, as we saw above, is the commit/key
-pair---i.e., the commit that introduced @file{.guix-authorizations}, and
-the fingerprint of the OpenPGP used to sign it.
-@end enumerate
-
-Before pushing to your public Git repository, you can run @command{guix
-git authenticate} to verify that you did sign all the commits you are
-about to push with an authorized key:
-
-@example
-guix git authenticate @var{commit} @var{signer}
-@end example
-
-@noindent
-where @var{commit} and @var{signer} are your channel introduction.
-@xref{Invoking guix git authenticate}, for details.
-
-Publishing a signed channel requires discipline: any mistake, such as an
-unsigned commit or a commit signed by an unauthorized key, will prevent
-users from pulling from your channel---well, that's the whole point of
-authentication!  Pay attention to merges in particular: merge commits
-are considered authentic if and only if they are signed by a key present
-in the @file{.guix-authorizations} file of @emph{both} branches.
-
-@node Primary URL
-@section Primary URL
-
-@cindex primary URL, channels
-Channel authors can indicate the primary URL of their channel's Git
-repository in the @file{.guix-channel} file, like so:
-
-@lisp
-(channel
-  (version 0)
-  (url "https://example.org/guix.git"))
-@end lisp
-
-This allows @command{guix pull} to determine whether it is pulling code
-from a mirror of the channel; when that is the case, it warns the user
-that the mirror might be stale and displays the primary URL@.  That way,
-users cannot be tricked into fetching code from a stale mirror that does
-not receive security updates.
-
-This feature only makes sense for authenticated repositories, such as
-the official @code{guix} channel, for which @command{guix pull} ensures
-the code it fetches is authentic.
-
-@node Writing Channel News
-@section Writing Channel News
-
-@cindex news, for channels
-Channel authors may occasionally want to communicate to their users
-information about important changes in the channel.  You'd send them all
-an email, but that's not convenient.
-
-Instead, channels can provide a @dfn{news file}; when the channel users
-run @command{guix pull}, that news file is automatically read and
-@command{guix pull --news} can display the announcements that correspond
-to the new commits that have been pulled, if any.
-
-To do that, channel authors must first declare the name of the news file
-in their @file{.guix-channel} file:
-
-@lisp
-(channel
-  (version 0)
-  (news-file "etc/news.txt"))
-@end lisp
-
-The news file itself, @file{etc/news.txt} in this example, must look
-something like this:
-
-@lisp
-(channel-news
-  (version 0)
-  (entry (tag "the-bug-fix")
-         (title (en "Fixed terrible bug")
-                (fr "Oh la la"))
-         (body (en "@@emph@{Good news@}!  It's fixed!")
-               (eo "Certe ĝi pli bone funkcias nun!")))
-  (entry (commit "bdcabe815cd28144a2d2b4bc3c5057b051fa9906")
-         (title (en "Added a great package")
-                (ca "Què vol dir guix?"))
-         (body (en "Don't miss the @@code@{hello@} package!"))))
-@end lisp
-
-While the news file is using the Scheme syntax, avoid naming it with a
-@file{.scm} extension or else it will get picked up when building the
-channel and yield an error since it is not a valid module.
-Alternatively, you can move the channel module to a subdirectory and
-store the news file in another directory.
-
-The file consists of a list of @dfn{news entries}.  Each entry is
-associated with a commit or tag: it describes changes made in this
-commit, possibly in preceding commits as well.  Users see entries only
-the first time they obtain the commit the entry refers to.
-
-The @code{title} field should be a one-line summary while @code{body}
-can be arbitrarily long, and both can contain Texinfo markup
-(@pxref{Overview,,, texinfo, GNU Texinfo}).  Both the title and body are
-a list of language tag/message tuples, which allows @command{guix pull}
-to display news in the language that corresponds to the user's locale.
-
-If you want to translate news using a gettext-based workflow, you can
-extract translatable strings with @command{xgettext} (@pxref{xgettext
-Invocation,,, gettext, GNU Gettext Utilities}).  For example, assuming
-you write news entries in English first, the command below creates a PO
-file containing the strings to translate:
-
-@example
-xgettext -o news.po -l scheme -ken etc/news.txt
-@end example
-
-To sum up, yes, you could use your channel as a blog.  But beware, this
-is @emph{not quite} what your users might expect.
 
 @c *********************************************************************
 @node Development
@@ -7155,12 +5473,10 @@ such that store items made available by nested @command{guix}
 invocations are visible;
 @item
 add the currently-used @command{guix} command to the profile in the
-container, such that @command{guix describe} returns the same state
-inside and outside the container;
+container, so that it is the same inside and outside the container;
 @item
 share the cache (by default @file{~/.cache/guix}) with the host, to
-speed up operations such as @command{guix time-machine} and
-@command{guix shell}.
+speed up operations such as @command{guix shell}.
 @end itemize
 
 @item --rebuild-cache
@@ -8102,23 +6418,6 @@ symlink target.
 For instance, @code{-S /opt/gnu/bin=bin} creates a @file{/opt/gnu/bin}
 symlink pointing to the @file{bin} sub-directory of the profile.
 
-@item --save-provenance
-Save provenance information for the packages passed on the command line.
-Provenance information includes the URL and commit of the channels in use
-(@pxref{Channels}).
-
-Provenance information is saved in the
-@file{/gnu/store/@dots{}-profile/manifest} file in the pack, along with the
-usual package metadata---the name and version of each package, their
-propagated inputs, and so on.  It is useful information to the recipient of
-the pack, who then knows how the pack was (supposedly) obtained.
-
-This option is not enabled by default because, like timestamps, provenance
-information contributes nothing to the build process.  In other words, there
-is an infinity of channel URLs and commit IDs that can lead to the same pack.
-Recording such ``silent'' metadata in the output thus potentially breaks the
-source-to-binary bitwise reproducibility property.
-
 @item --root=@var{file}
 @itemx -r @var{file}
 @cindex garbage collector root, for packs
@@ -8188,16 +6487,13 @@ for Fortran development.  For other languages, please use
 @cindex authentication, of Git checkouts
 @cindex Git checkout authentication
 
-The @command{guix git authenticate} command authenticates a Git checkout
-following the same rule as for channels (@pxref{channel-authentication,
-channel authentication}).  That is, starting from a given commit, it
+The @command{guix git authenticate} command authenticates a Git checkout.
+That is, starting from a given commit, it
 ensures that all subsequent commits are signed by an OpenPGP key whose
 fingerprint appears in the @file{.guix-authorizations} file of its
 parent commit(s).
 
-You will find this command useful if you maintain a channel.  But in
-fact, this authentication mechanism is useful in a broader context, so
-you might want to use it for Git repositories that have nothing to do
+You might want to use it for Git repositories that have nothing to do
 with Guix.
 
 The general syntax is:
@@ -8212,8 +6508,7 @@ directory; it outputs nothing and exits with exit code zero on success
 and non-zero on failure.  @var{commit} above denotes the first commit
 where authentication takes place, and @var{signer} is the OpenPGP
 fingerprint of public key used to sign @var{commit}.  Together, they
-form a @dfn{channel introduction} (@pxref{channel-authentication, channel
-introduction}).  On your first successful run, the introduction is
+form an @dfn{introduction}.  On your first successful run, the introduction is
 recorded in the @file{.git/config} file of your checkout, allowing you
 to omit them from subsequent invocations:
 
@@ -8270,9 +6565,7 @@ stored in file @var{key} in that directory.
 By default, any commit whose parent commit(s) lack the
 @file{.guix-authorizations} file is considered inauthentic.  In
 contrast, this option considers the authorizations in @var{file} for any
-commit that lacks @file{.guix-authorizations}.  The format of @var{file}
-is the same as that of @file{.guix-authorizations}
-(@pxref{channel-authorizations, @file{.guix-authorizations} format}).
+commit that lacks @file{.guix-authorizations}.
 @end table
 
 
@@ -8363,11 +6656,6 @@ with the @code{-L} flag of @command{guix package} and other commands
 (@pxref{Common Build Options}), or by setting the @env{GUIX_PACKAGE_PATH}
 environment variable described below.
 
-@item
-By defining a @dfn{channel} and configuring @command{guix pull} so that it
-pulls from it.  A channel is essentially a Git repository containing package
-modules.  @xref{Channels}, for more information on how to define and use
-channels.
 @end enumerate
 
 @env{GUIX_PACKAGE_PATH} works similarly to other search path variables:
@@ -8553,10 +6841,6 @@ package definition using the @command{guix edit} command
 more information on how to test package definitions, and
 @ref{Invoking guix lint}, for information on how to check a definition
 for style conformance.
-@vindex GUIX_PACKAGE_PATH
-Lastly, @pxref{Channels}, for information
-on how to extend the distribution by adding your own package definitions
-in a ``channel''.
 
 Finally, updating the package definition to a new upstream version
 can be partly automated by the @command{guix refresh} command
@@ -9359,8 +7643,7 @@ options, and so on.  Some of these custom packages can be defined
 straight from the command line (@pxref{Package Transformation Options}).
 This section describes how to define package variants in code.  This can
 be useful in ``manifests'' (@pxref{Writing Manifests})
-and in your own package collection
-(@pxref{Creating a Channel}), among others!
+and in your own package collection, among others!
 
 @cindex inherit, for package definitions
 As discussed earlier, packages are first-class objects in the Scheme
@@ -9731,15 +8014,10 @@ transformation options into account (@pxref{Package Transformation
 Options}).
 
 @quotation Note
-Manifests are @emph{symbolic}: they refer to packages of the channels
-@emph{currently in use} (@pxref{Channels}).  In the example above,
+Manifests are @emph{symbolic}: they refer to packages by name.
+In the example above,
 @code{gcc-toolchain} might refer to version 14 today, but it might refer
 to version 16 two years from now.
-
-If you want to ``pin'' your software environment to specific package
-versions and variants, you need an additional piece of information: the
-list of channel revisions in use, as returned by @command{guix
-describe}.  @xref{Replicating Guix}, for more information.
 @end quotation
 
 Once you've obtained your first manifest, perhaps you'll want to
@@ -11001,7 +9279,7 @@ is always enabled on supported backends.
 It is considered ``experimental'' in that the implementation details are
 not set in stone yet, however users are encouraged to try it for new
 Python projects (even those using @file{setup.py}).  The API is subject to
-change, but any breaking changes in the Guix channel will be dealt with.
+change, but any breaking changes in Guix will be dealt with.
 
 Eventually this build system will be deprecated and merged back into
 @var{python-build-system}, probably some time in 2024.
@@ -11477,22 +9755,6 @@ meta-package in a profile also installs all these other packages.
 @xref{copy-build-system, @code{copy-build-system}}, for a slightly more
 elaborate build system that makes it easy to copy files from package
 source to package output.
-@end defvar
-
-@defvar channel-build-system
-This variable is exported by @code{(guix build-system channel)}.
-
-This build system is meant primarily for internal use.  A package using
-this build system must have a channel specification as its @code{source}
-field (@pxref{Channels}); alternatively, its source can be a directory
-name, in which case an additional @code{#:commit} argument must be
-supplied to specify the commit being built (a hexadecimal string).
-
-Optionally, a @code{#:channels} argument specifying additional channels
-can be provided.
-
-The resulting package is a Guix instance of the given channel(s), similar
-to how @command{guix time-machine} would build it.
 @end defvar
 
 @node Build Phases
@@ -14752,8 +13014,6 @@ upstream servers, deployments made with @option{--with-latest} and
 @option{--with-version} may be non-reproducible: source might disappear
 or be modified in place on the servers.
 
-To deploy old software versions without compromising on reproducibility,
-@pxref{Invoking guix time-machine, @command{guix time-machine}}.
 @end quotation
 
 There are limitations.  First, in cases where the tool cannot or does
@@ -16336,14 +14596,6 @@ Guix Before It Is Installed}):
 @end example
 
 @xref{Defining Packages}, for more information on package definitions.
-You can also run it on packages from a third-party channel:
-
-@example
-guix refresh -L /path/to/channel -u @var{package}
-@end example
-
-@xref{Creating a Channel}, on how to create a channel.
-
 This command updates the version and source code hash of the package.
 Depending on the updater being used, it can also update the various
 @samp{inputs} fields of the package.  In some cases, the updater might
@@ -16728,10 +14980,10 @@ definition of the Coreutils package like so:
 
 @item inputs
 Rewrite package inputs to the ``new style''. This is how you would
-rewrite inputs of package @code{whatnot} in your own channel:
+rewrite inputs of package @code{whatnot}:
 
 @example
-guix style -L ~/my/channel -S inputs whatnot
+guix style -S inputs whatnot
 @end example
 
 The way package inputs are written is going through a transition
@@ -16764,7 +15016,7 @@ Package Variants}, for more info on @code{modify-inputs}).
 In the vast majority of cases, this is a purely mechanical change on the
 surface syntax that does not even incur a package rebuild.  Running
 @command{guix style -S inputs} can do that for you, whether you're working on
-packages in Guix proper or in an external channel.
+packages in Guix proper or in an external package collection.
 
 Rewriting is done in a conservative way: preserving comments and bailing
 out if it cannot make sense of the code that appears in an inputs field.
@@ -18441,7 +16693,7 @@ Guile modules which expose symbols defined through
 @code{define-command}.
 
 Additionally, the command lookup machinery will search for extensions
-provided by channels which contain a @file{guix/extensions}
+provided by directories which contain a @file{guix/extensions}
 subdirectory.
 
 We encourage you to contribute your extensions to the
@@ -18794,8 +17046,8 @@ sudo herd status sshd
 @end quotation
 
 @cindex provenance, of the system
-The system records its @dfn{provenance}---the configuration file and
-channels that were used to deploy it.  You can view it like so:
+The system records its @dfn{provenance}---the configuration file that
+was used to deploy it.  You can view it like so:
 
 @example
 guix system describe
@@ -21492,8 +19744,7 @@ This data type represents the configuration of the Guix build daemon.
 
 @table @asis
 @item @code{guix} (default: @var{guix})
-The Guix package to use.  @xref{Customizing the System-Wide Guix} to
-learn how to provide a package with a pre-configured set of channels.
+The Guix package to use.
 
 @cindex unprivileged @command{guix-daemon}
 @cindex rootless @command{guix-daemon}
@@ -21606,20 +19857,6 @@ archive} (@pxref{Invoking guix archive}).  Generating a key pair takes a
 few seconds when enough entropy is available and is only done once; you
 might want to turn it off for instance in a virtual machine that does
 not need it and where the extra boot time is a problem.
-
-@anchor{guix-configuration-channels}
-@item @code{channels} (default: @code{#f})
-List of channels to be specified in @file{/etc/guix/channels.scm}, which
-is what @command{guix pull} uses by default (@pxref{Invoking guix
-pull}).
-
-@quotation Note
-When reconfiguring a system, the existing @file{/etc/guix/channels.scm}
-file is backed up as @file{/etc/guix/channels.scm.bak} if it was
-determined to be a manually modified file.  This is to facilitate
-migration from earlier versions, which allowed for in-place
-modifications to @file{/etc/guix/channels.scm}.
-@end quotation
 
 @item @code{max-silent-time} (default: @code{3600})
 @itemx @code{timeout} (default: @code{(* 3600 24)})
@@ -25834,9 +24071,6 @@ the upgrade log is kept---you can view it with @command{guix system
 list-generations}---and you can roll back to any previous generation,
 should the upgraded system fail to behave as intended;
 @item
-channel code is authenticated so you know you can only run genuine code
-(@pxref{Channels});
-@item
 @command{guix system reconfigure} prevents downgrades, which makes it
 immune to @dfn{downgrade attacks}.
 @end itemize
@@ -25868,7 +24102,7 @@ the unattended upgrade log file (see below).
 @defvar unattended-upgrade-service-type
 This is the service type for unattended upgrades.  It sets up a Shepherd
 Timer (@pxref{Scheduled Job Execution}) that runs @command{guix system
-reconfigure} from the latest version of the specified channels.
+reconfigure} from the latest version of the system configuration.
 
 Its value must be a @code{unattended-upgrade-configuration} record (see
 below).
@@ -25883,11 +24117,6 @@ service.  The following fields are available:
 This is the schedule of upgrades, expressed as a string in traditional
 cron syntax or as a gexp evaluating to a Shepherd calendar event
 (@pxref{Timers,,, shepherd, The GNU Shepherd Manual}).
-
-@item @code{channels} (default: @code{#~%default-channels})
-This gexp specifies the channels to use for the upgrade
-(@pxref{Channels}).  By default, the tip of the official @code{guix}
-channel is used.
 
 @item @code{operating-system-file} (default: @code{"/run/current-system/configuration.scm"})
 This field specifies the operating system configuration file to use.
@@ -29262,9 +27491,6 @@ Indexing method for @command{guix locate}.  The default value,
 @code{'store}, yields a more complete database but is relatively
 expensive in terms of CPU and input/output.
 
-@item @code{channels} (default: @code{#~%default-channels})
-G-exp denoting the channels to use when updating the database
-(@pxref{Channels}).
 @end table
 @end deftp
 
@@ -37700,12 +35926,9 @@ Extension package for @code{hpcguix-web}.
 @item @code{menu} (default: @code{'()})
 Additional entry in page @code{menu}.
 
-@item @code{channels} (default: @code{%default-channels})
-List of channels from which the package list is built (@pxref{Channels}).
-
 @item @code{package-list-expiration} (default: @code{(* 12 3600)})
 The expiration time, in seconds, after which the package list is rebuilt from
-the latest instances of the given channels.
+the latest instances of the packages.
 @end table
 
 See the hpcguix-web repository for a
@@ -37735,10 +35958,11 @@ A typical hpcguix-web service declaration looks like this:
 @end lisp
 
 @quotation Note
-The hpcguix-web service periodically updates the package list it publishes by
-pulling channels from Git.  To that end, it needs to access X.509 certificates
-so that it can authenticate Git servers when communicating over HTTPS, and it
-assumes that @file{/etc/ssl/certs} contains those certificates.
+The hpcguix-web service periodically updates the package list it
+publishes by fetching from Git.  To that end, it needs to access X.509
+certificates so that it can authenticate Git servers when communicating
+over HTTPS, and it assumes that @file{/etc/ssl/certs} contains those
+certificates.
 
 A certificate package, @code{nss-certs}, is provided by default as
 part of @code{%base-packages}.  @ref{X.509 Certificates}, for more
@@ -40389,27 +38613,8 @@ The type of the Cuirass service.  Its value must be a
 @end defvr
 
 To add build jobs, you have to set the @code{specifications} field of
-the configuration.  For instance, the following example will build all
-the packages provided by the @code{my-channel} channel.
-
-@lisp
-(define %cuirass-specs
-  #~(list (specification
-           (name 'my-channel)
-           (build '(channels my-channel))
-           (channels
-            (cons (channel
-                   (name 'my-channel)
-                   (url "https://my-channel.git"))
-                  %default-channels)))))
-
-(service cuirass-service-type
-         (cuirass-configuration
-          (specifications %cuirass-specs)))
-@end lisp
-
-To build the @code{linux-libre} package defined by the default Guix
-channel, one can use the following configuration.
+the configuration.  For instance, the following example builds the
+@code{linux-libre} package:
 
 @lisp
 (define %cuirass-specs
@@ -46172,9 +44377,7 @@ File name of the file system key for the target volume.
 @cindex shared cache
 @cindex cache, sharing
 
-Running @command{guix pull}, @command{guix time-machine}, @command{guix
-system reconfigure}, and @command{guix home reconfigure} pulls the
-complete Git version control history of your channels in
+Some commands fetch Git repositories into
 @file{$HOME/.cache/guix/checkouts}.  If you have multiple user accounts
 (typically @code{root} and a main user account for your personal
 computer), or if multiple users are using the system (typically on a
@@ -46205,7 +44408,7 @@ access to other user's data and privileges.
 @quotation Warning
 Using @option{'share} is meant for a single-seat computer where the
 single user has unprivileged user accounts---e.g. one for work and one
-for gaming.  Even then, channels from one will leak into the other's
+for gaming.  Even then, cached checkouts from one will leak into the other's
 cache.  Use with caution.
 @end quotation
 
@@ -50787,22 +48990,20 @@ passing the @option{--no-kexec} option.
 @cindex provenance tracking, of the operating system
 Upon completion, the new system is deployed under
 @file{/run/current-system}.  This directory contains @dfn{provenance
-meta-data}: the list of channels in use (@pxref{Channels}) and
-@var{file} itself, when available.  You can view it by running:
+meta-data}: @var{file} itself, when available.  You can view it by
+running:
 
 @example
 guix system describe
 @end example
 
 This information is useful should you later want to inspect how this
-particular generation was built.  In fact, assuming @var{file} is
+particular generation was built.  Assuming @var{file} is
 self-contained, you can later rebuild generation @var{n} of your
 operating system with:
 
 @example
-guix time-machine \
-  -C /var/guix/profiles/system-@var{n}-link/channels.scm -- \
-  system reconfigure \
+system reconfigure \
   /var/guix/profiles/system-@var{n}-link/configuration.scm
 @end example
 
@@ -51227,22 +49428,6 @@ appear in the @code{operating-system} declaration actually exist
 needed at boot time are listed in @code{initrd-modules} (@pxref{Initial
 RAM Disk}).  Passing this option skips these tests altogether.
 
-@item --allow-downgrades
-Instruct @command{guix system reconfigure} to allow system downgrades.
-
-By default, @command{reconfigure} prevents you from downgrading your
-system.  It achieves that by comparing the provenance info of your
-system (shown by @command{guix system describe}) with that of your
-@command{guix} command (shown by @command{guix describe}).  If the
-commits for @command{guix} are not descendants of those used for your
-system, @command{guix system reconfigure} errors out.  Passing
-@option{--allow-downgrades} allows you to bypass these checks.
-
-@quotation Note
-Make sure you understand its security implications before using
-@option{--allow-downgrades}.
-@end quotation
-
 @cindex on-error
 @cindex on-error strategy
 @cindex error strategy
@@ -51567,17 +49752,6 @@ ssh-ed25519 AAAAC3Nz@dots{} root@@example.org
 When @code{host-key} is @code{#f}, the server is authenticated against
 the @file{~/.ssh/known_hosts} file, just like the OpenSSH @command{ssh}
 client does.
-
-@item @code{allow-downgrades?} (default: @code{#f})
-Whether to allow potential downgrades.
-
-Like @command{guix system reconfigure}, @command{guix deploy} compares
-the channel commits currently deployed on the remote host (as returned
-by @command{guix system describe}) to those currently in use (as
-returned by @command{guix describe}) to determine whether commits
-currently in use are descendants of those deployed.  When this is not
-the case and @code{allow-downgrades?} is false, it raises an error.
-This ensures you do not accidentally downgrade remote machines.
 
 @item @code{safety-checks?} (default: @code{#t})
 Whether to perform ``safety checks'' before deployment.  This includes
@@ -52432,12 +50606,6 @@ in the system itself.  It creates several files under
 @file{/run/current-system}:
 
 @table @file
-@item channels.scm
-This is a ``channel file'' that can be passed to @command{guix pull -C}
-or @command{guix time-machine -C}, and which describes the channels used
-to build the system, if that information was available
-(@pxref{Channels}).
-
 @item configuration.scm
 This is the file that was passed as the value for this
 @code{provenance-service-type} service.  By default, @command{guix
@@ -52449,21 +50617,21 @@ This contains the same information as the two other files but in a
 format that is more readily processable.
 @end table
 
-In general, these two pieces of information (channels and configuration
-file) are enough to reproduce the operating system ``from source''.
+In general, the configuration file is enough to reproduce the operating
+system ``from source''.
 
 @quotation Caveats
 This information is necessary to rebuild your operating system, but it
 is not always sufficient.  In particular, @file{configuration.scm}
 itself is insufficient if it is not self-contained---if it refers to
 external Guile modules or to extra files.  If you want
-@file{configuration.scm} to be self-contained, we recommend that modules
-or files it refers to be part of a channel.
+@file{configuration.scm} to be self-contained, we recommend that the
+modules or files it refers to be in the module search path.
 
 Besides, provenance meta-data is ``silent'' in the sense that it does
 not change the bits contained in your system, @emph{except for the
-meta-data bits themselves}.  Two different OS configurations or sets of
-channels can lead to the same system, bit-for-bit; when
+meta-data bits themselves}.  Two different OS configurations can lead
+to the same system, bit-for-bit; when
 @code{provenance-service-type} is used, these two systems will have
 different meta-data and thus different store file names, which makes
 comparison less trivial.
@@ -53881,8 +52049,6 @@ dotfiles/
 │   └── gpg.conf
 ├── .guile
 ├── .config
-│   ├── guix
-│   │   └── channels.scm
 │   └── nixpkgs
 │       └── config.nix
 ├── .nix-channels
@@ -53909,10 +52075,6 @@ dotfiles/
 │       └── gpg.conf
 ├── guile
 │   └── .guile
-├── guix
-│   └── .config
-│       └── guix
-│           └── channels.scm
 ├── nix
 │   ├── .config
 │   │   └── nixpkgs
@@ -53947,8 +52109,6 @@ The expected home directory state would then be:
 @example
 .
 ├── .config
-│   ├── guix
-│   │   └── channels.scm
 │   └── nixpkgs
 │       └── config.nix
 ├── .gitconfig
@@ -55526,32 +53686,6 @@ Default directory for videos.
 
 The @code{(gnu home services guix)} module provides services for
 user-specific Guix configuration.
-
-@defvar home-channels-service-type
-This is the service type for managing
-@file{$XDG_CONFIG_HOME/guix/channels.scm}, the file that controls the
-channels received on @command{guix pull} (@pxref{Channels}).  Its
-associated value is a list of @code{channel} records, defined in the
-@code{(guix channels)} module.
-
-Generally, it is better to extend this service than to directly
-configure it, as its default value is the default guix channel(s)
-defined by @code{%default-channels}.  If you configure this service
-directly, be sure to include a guix channel.  @xref{Specifying
-Additional Channels} and @ref{Using a Custom Guix Channel} for more
-details.
-
-A typical extension for adding a channel might look like this:
-
-@lisp
-(simple-service 'variant-packages-service
-                home-channels-service-type
-                (list
-                 (channel
-                  (name 'variant-packages)
-                  (url "https://example.org/variant-packages.git"))))
-@end lisp
-@end defvar
 
 @node Backup Home Services
 @subsection Backup Services
@@ -57704,25 +55838,21 @@ overwritten.  This behavior mirrors that of @command{guix package}
 
 @cindex provenance tracking, of the home environment
 Upon completion, the new home is deployed under @file{~/.guix-home}.
-This directory contains @dfn{provenance meta-data}: the list of channels
-in use (@pxref{Channels}) and @var{file} itself, when available.  You
-can view the provenance information by running:
+This directory contains @dfn{provenance meta-data}: @var{file} itself,
+when available.  You can view the provenance information by running:
 
 @example
 guix home describe
 @end example
 
 This information is useful should you later want to inspect how this
-particular generation was built.  In fact, assuming @var{file} is
+particular generation was built.  Assuming @var{file} is
 self-contained, you can later rebuild generation @var{n} of your
 home environment with:
 
 @example
-guix time-machine \
-  -C /var/guix/profiles/per-user/@var{USER}/guix-home-@var{n}-link/channels.scm -- \
-  home reconfigure \
+home reconfigure \
   /var/guix/profiles/per-user/@var{USER}/guix-home-@var{n}-link/configuration.scm
-
 @end example
 
 You can think of it as some sort of built-in version control!  Your
@@ -57886,16 +56016,6 @@ following:
 Consider the home-environment @var{expr} evaluates to.
 This is an alternative to specifying a file which evaluates to a home
 environment.
-
-@item --allow-downgrades
-Instruct @command{guix home reconfigure} to allow system downgrades.
-
-Just like @command{guix system}, @command{guix home reconfigure}, by
-default, prevents you from downgrading your home to older or unrelated
-revisions compared to the channel revisions that were used to deploy
-it---those shown by @command{guix home describe}.  Using
-@option{--allow-downgrades} allows you to bypass that check, at the risk
-of downgrading your home---be careful!
 
 @end table
 

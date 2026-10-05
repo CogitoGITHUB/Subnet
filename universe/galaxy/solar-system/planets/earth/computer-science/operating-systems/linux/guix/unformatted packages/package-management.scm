@@ -146,7 +146,6 @@
   #:use-module (gnu packages xml)
   #:use-module (gnu packages xorg)
   #:use-module (gnu packages version-control)
-  #:autoload   (guix build-system channel) (channel-build-system)
   #:use-module (guix build-system cargo)
   #:use-module (guix build-system cmake)
   #:use-module (guix build-system copy)
@@ -161,10 +160,6 @@
   #:use-module (guix download)
   #:use-module (guix gexp)
   #:use-module (guix git-download)
-  #:autoload   (guix describe) (current-channels)
-  #:autoload   (guix channels) (channel?
-                                guix-channel?
-                                repository->guix-channel)
   #:use-module ((guix licenses) #:prefix license:)
   #:use-module (guix packages)
   #:use-module (guix utils)
@@ -221,11 +216,6 @@
         #:parallel-build? #f
         #:configure-flags
         #~(list
-           ;; Provide channel metadata for 'guix describe'.  Don't pass
-           ;; '--with-channel-url' and '--with-channel-introduction' and
-           ;; instead use the defaults.
-           #$(string-append "--with-channel-commit=" commit)
-
            "--localstatedir=/var"
            "--sysconfdir=/etc"
            (string-append "--with-bash-completion-dir="
@@ -571,21 +561,6 @@ upgrades and roll-backs, per-user profiles, and much more.  It is based on
 the Nix package manager.")
       (license license:gpl3+))))
 
-(define* (channel-source->package source #:key commit)
-  "Return a package for the given channel SOURCE, a lowerable object."
-  (package
-    (inherit guix)
-    (version (string-append (package-version guix) "."
-                            (if commit (string-take commit 7) "")))
-    (build-system channel-build-system)
-    (arguments `(#:source ,source
-                 #:commit ,commit))
-    (inputs '())
-    (native-inputs '())
-    (propagated-inputs '())))
-
-(export channel-source->package)
-
 (define-public guix-daemon
   ;; This package is for internal consumption: it allows us to quickly build
   ;; the 'guix-daemon' program and use that in (guix self), used by 'guix
@@ -647,41 +622,16 @@ the Nix package manager.")
       (modify-inputs propagated-inputs
         (delete "guile-ssh"))))))
 
-(define-public (guix-for-channels channels)
-  "Return a package corresponding to CHANNELS."
-  (package
-    (inherit guix)
-    (source (find guix-channel? channels))
-    (build-system channel-build-system)
-    (arguments
-     `(#:channels ,(remove guix-channel? channels)))
-    (inputs '())
-    (native-inputs '())
-    (propagated-inputs '())))
 
 (define-public current-guix-package
   ;; This parameter allows callers to override the package that 'current-guix'
   ;; returns.  This is useful when 'current-guix' cannot compute it by itself,
   ;; for instance because it's not running from a source code checkout.
   ;;
-  ;; The default value is obtained by creating a package from the 'guix'
-  ;; channel returned by 'current-channels' or, if that's the empty list, that
-  ;; returned by 'repository->guix-channel' for the current directory (which
-  ;; assumes that we're running from a Git checkout).  Delay computation so
-  ;; that the relevant modules can be loaded lazily.
+  ;; The default value is the 'guix' package defined in this tree.
+  ;; Delay computation so that the relevant modules can be loaded lazily.
   (make-parameter
-   (delay (match (or (find guix-channel? (current-channels))
-                     (repository->guix-channel
-                      (current-source-directory)))
-            ((? channel? source)
-             (package
-               (inherit guix)
-               (source source)
-               (build-system channel-build-system)
-               (inputs '())
-               (native-inputs '())
-               (propagated-inputs '())))
-            (#f #f)))))
+   (delay guix)))
 
 (define-public current-guix
   (lambda ()

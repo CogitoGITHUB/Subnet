@@ -21,15 +21,13 @@
 ;;; along with GNU Guix.  If not, see <http://www.gnu.org/licenses/>.
 
 (define-module (gnu ci)
-  #:use-module (guix build-system channel)
   #:use-module (guix config)
-  #:autoload   (guix describe) (package-channels)
   #:use-module (guix memoization)
   #:use-module (guix store)
   #:use-module (guix profiles)
   #:use-module (guix packages)
   #:autoload   (guix transformations) (tunable-package? tuned-package)
-  #:use-module (guix channels)
+  #:autoload   (build-self) (build)
   #:use-module (guix config)
   #:use-module (guix derivations)
   #:use-module (guix monads)
@@ -265,19 +263,15 @@ SYSTEM."
                       (targets))))
 
 (define* (guix-jobs store systems #:key source commit)
-  "Return a list of jobs for Guix itself."
-  (define instance
-    (checkout->channel-instance source
-                                #:url (channel-url %default-guix-channel)
-                                #:commit commit))
-
+  "Return a list of jobs for Guix itself, built from the in-tree source."
   (map
    (lambda (system)
      (let ((name (string->symbol
                   (string-append "guix." system)))
            (drv (run-with-store store
-                  (channel-instances->derivation (list instance)
-                                                 #:system system))))
+                  (build source
+                         #:version (or commit "unknown")
+                         #:system system))))
        (derivation->job name drv)))
    systems))
 
@@ -319,7 +313,7 @@ otherwise use the IMAGE name."
     (expt 2 20))
 
   (parameterize ((current-guix-package
-                  (channel-source->package source #:commit commit)))
+                  guix))
     (if (member system %guix-system-supported-systems)
         `(,(image->job store
                        (image
@@ -363,12 +357,11 @@ otherwise use the IMAGE name."
       (derivation->job name drv)))
 
   (if (member system %guix-system-supported-systems)
-      ;; Override the value of 'current-guix' used by system tests.  Using a
-      ;; channel instance makes tests that rely on 'current-guix' less
-      ;; expensive.  It also makes sure we get a valid Guix package when this
+      ;; Override the value of 'current-guix' used by system tests.
+      ;; It also makes sure we get a valid Guix package when this
       ;; code is not running from a checkout.
       (parameterize ((current-guix-package
-                      (channel-source->package source #:commit commit)))
+                      guix))
         (map ->job (all-system-tests)))
       '()))
 
@@ -466,15 +459,13 @@ valid.  Append SUFFIX to the job name."
                           packages)))
                  #:select? (const #t)))           ;include hidden packages
 
-(define (arguments->manifests arguments channels)
-  "Return the list of manifests extracted from ARGUMENTS."
-  (map (lambda (manifest)
-         (any (lambda (checkout)
-                (let ((path (in-vicinity checkout manifest)))
-                  (and (file-exists? path)
-                       path)))
-              (map channel-url channels)))
-       arguments))
+(define (arguments->manifests arguments)
+  "Return the list of manifests extracted from ARGUMENTS.
+Manifests are plain file names; only existing files are kept."
+  (filter-map (lambda (manifest)
+                (and (file-exists? manifest)
+                     manifest))
+              arguments))
 
 (define (manifests->jobs store manifests systems)
   "Return the list of jobs for the entries in MANIFESTS, a list of file
@@ -534,18 +525,11 @@ names, for each one of SYSTEMS."
   (define systems
     (arguments->systems arguments))
 
-  (define channels
-    (let ((channels (assq-ref arguments 'channels)))
-      (map sexp->channel channels)))
-
-  (define guix
-    (find guix-channel? channels))
+  (define source
+    (current-source-directory))
 
   (define commit
-    (channel-commit guix))
-
-  (define source
-    (channel-url guix))
+    #f)
 
   ;; Turn off grafts.  Grafting is meant to happen on the user's machines.
   (parameterize ((%graft? #f))
@@ -615,16 +599,6 @@ names, for each one of SYSTEMS."
                           'cuirass-jobs)))
                (proc store arguments)))
            modules))
-         (('channels . channels)
-          ;; Build only the packages from CHANNELS.
-          (let ((all (all-packages)))
-            (filter-map
-             (lambda (package)
-               (any (lambda (channel)
-                      (and (member (channel-name channel) channels)
-                           (package->job store package system)))
-                    (package-channels package)))
-             all)))
          (('packages . rest)
           ;; Build selected list of packages only.
           (let ((packages (map specification->package rest)))
@@ -634,7 +608,7 @@ names, for each one of SYSTEMS."
                  packages)))
          (('manifests . rest)
           ;; Build packages in the list of manifests.
-          (let ((manifests (arguments->manifests rest channels)))
+          (let ((manifests (arguments->manifests rest)))
             (manifests->jobs store manifests systems)))
          (else
           (error "unknown subset" subset))))

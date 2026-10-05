@@ -574,7 +574,6 @@ reports."))
               "guix/base64.scm"
               "guix/bzr-download.scm"
               "guix/cache.scm"
-              "guix/channels.scm"
               "guix/ci.scm"
               "guix/colors.scm"
               "guix/combinators.scm"
@@ -1248,8 +1247,7 @@ the \"texlive\" importer."
 (define-team translations
   (team 'translations
         #:name "Translations"
-        #:scope (list "etc/news.scm"
-                      (make-regexp* "^po/"))))
+        #:scope (list (make-regexp* "^po/"))))
 
 (define-team vcs
   (team 'vcs

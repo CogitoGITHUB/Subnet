@@ -158,8 +158,7 @@ paragraph."
 (define (main . args)
   (match args
     ((news-file data-directory)
-     ;; Don't browse things listed in the user's $GUIX_PACKAGE_PATH and
-     ;; in external channels.
+     ;; Don't browse things listed in the user's $GUIX_PACKAGE_PATH.
      (parameterize ((%package-module-path
                      %default-package-module-path))
        (define (package-file version)
