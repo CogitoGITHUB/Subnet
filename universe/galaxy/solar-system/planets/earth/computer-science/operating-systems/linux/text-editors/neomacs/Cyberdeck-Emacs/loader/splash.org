@@ -242,23 +242,64 @@ compilation."
 
 ** Splash — module todos & vault git info
 #+begin_src emacs-lisp
+(defvar cyberdeck-emacs-splash--module-todos-cache nil
+  "Alist (FILE MTIME SIZE TODOS) for module TODO headings.")
+(defvar cyberdeck-emacs-splash--module-todos-cache-file
+  (locate-user-emacs-file ".cyberdeck-module-todos-cache.el")
+  "Persisted module-TODO scan cache.")
+
+(defun cyberdeck-emacs-splash--module-todos-cached (f)
+  "TODO entries of F from cache when its stamp matches, else fresh."
+  (let* ((attrs (file-attributes f))
+         (stamp (and attrs (list (file-attribute-modification-time attrs)
+                                 (file-attribute-size attrs))))
+         (hit (and stamp (assoc f cyberdeck-emacs-splash--module-todos-cache))))
+    (if (and hit
+             (equal (nth 1 hit) (nth 0 stamp))
+             (equal (nth 2 hit) (nth 1 stamp))
+             (listp (nth 3 hit)))
+        (nth 3 hit)
+      (let ((todos (let (out)
+                     (with-temp-buffer
+                       (insert-file-contents f)
+                       (goto-char (point-min))
+                       (while (re-search-forward
+                               "^\\*+[ \t]+TODO[ \t]+\\(.*?\\)[ \t]*$" nil t)
+                         (push (match-string 1) out)))
+                     (nreverse out))))
+        (when stamp
+          (setq cyberdeck-emacs-splash--module-todos-cache
+                (cons (list f (nth 0 stamp) (nth 1 stamp) todos)
+                      (assq-delete-all
+                       f cyberdeck-emacs-splash--module-todos-cache))))
+        todos))))
+
 (defun cyberdeck-emacs-splash--module-todos ()
   "Return list of (FILE-BASE . TITLE) TODO headings from mechanism files.
 Driven by the discovery index: only files with tagged units are read,
-so non-mechanism files are never touched."
+so non-mechanism files are never touched. Per-file results cache by
+file stamp; steady-state renders touch no file contents."
   (condition-case nil
       (let (results)
         (cyberdeck-emacs--index-load)
+        (let ((cache-file cyberdeck-emacs-splash--module-todos-cache-file))
+          (when (file-exists-p cache-file)
+            (setq cyberdeck-emacs-splash--module-todos-cache
+                  (let ((data (ignore-errors
+                                (with-temp-buffer
+                                  (insert-file-contents cache-file)
+                                  (read (current-buffer))))))
+                    (and (listp data) data)))))
         (maphash (lambda (f entry)
                    (when (and (plist-get entry :units) (file-exists-p f))
                      (let ((base (cyberdeck-emacs-file-title f)))
-                       (with-temp-buffer
-                         (insert-file-contents f)
-                         (goto-char (point-min))
-                         (while (re-search-forward
-                                 "^\\*+[ \t]+TODO[ \t]+\\(.*?\\)[ \t]*$" nil t)
-                           (push (cons base (match-string 1)) results))))))
+                       (dolist (title (cyberdeck-emacs-splash--module-todos-cached f))
+                         (push (cons base title) results)))))
                  cyberdeck-emacs--discovery-index)
+        (ignore-errors
+          (let ((print-length nil) (print-level nil))
+            (with-temp-file cyberdeck-emacs-splash--module-todos-cache-file
+              (prin1 cyberdeck-emacs-splash--module-todos-cache (current-buffer)))))
         (nreverse results))
     (error nil)))
 

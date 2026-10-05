@@ -236,4 +236,17 @@ Loads here because this is the last dashboard unit, so it wins.
 (when (and (not (daemonp))
            (= 0 (length command-line-args-left)))
   (dashboard-setup-startup-hook))
+;; Upstream's resize hook re-renders WITHOUT erasing (no force),
+;; stacking duplicate dashboards on every resize. Ours erases via
+;; `dashboard-open', and runs first (banner/art); this setup call
+;; re-adds upstream's, so drop it here where setup wins, and keep it
+;; off if anything reinstalls it later.
+(remove-hook 'window-size-change-functions #'dashboard-resize-on-hook)
+(remove-hook 'window-setup-hook #'dashboard-resize-on-hook)
+(defun cyberdeck--drop-upstream-resize-hook (&rest _)
+  "Keep upstream's appending resize hook off the hooks."
+  (remove-hook 'window-size-change-functions #'dashboard-resize-on-hook)
+  (remove-hook 'window-setup-hook #'dashboard-resize-on-hook))
+(advice-add 'dashboard-setup-startup-hook :after
+            #'cyberdeck--drop-upstream-resize-hook)
 #+end_src
