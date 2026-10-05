@@ -896,7 +896,6 @@ itself."
   (define *core-modules*
     (scheme-node "guix-core"
                  '((guix)
-                   (guix monad-repl)
                    (guix packages)
                    (guix download)
                    (guix discovery)

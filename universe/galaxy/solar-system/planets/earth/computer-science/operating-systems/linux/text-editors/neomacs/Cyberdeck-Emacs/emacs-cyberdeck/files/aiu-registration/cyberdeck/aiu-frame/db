@@ -284,6 +284,10 @@ when file missing."
                     (ignore-errors (cyberdeck-db--parse-file path))
                   (with-temp-buffer
                     (insert-file-contents (cyberdeck-db--resolve-path path))
+                    ;; org-element requires org-mode (its cache API
+                    ;; errors in fundamental-mode); without it every
+                    ;; parse emits an org-element warning.
+                    (org-mode)
                     (let ((ast (ignore-errors (org-element-parse-buffer))))
                       (make-cyberdeck-parse-ctx :path path :ast ast)))))
            (_ast (and ctx (cyberdeck-parse-ctx-ast ctx)))

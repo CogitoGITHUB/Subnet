@@ -48,12 +48,13 @@
   #:use-module (guix git)
   #:use-module (guix hash)
   #:use-module ((guix i18n) #:select (G_))
-  #:use-module (guix store)
-  #:use-module (guix download)
+  #:use-module ((guix download) #:select (download-to-temporary-file))
   #:use-module (guix sets)
   #:use-module ((guix ui) #:select (fill-paragraph))
   #:use-module (gnu packages)
   #:autoload   (ice-9 control) (let/ec)
+  #:use-module (ice-9 popen)
+  #:autoload   (guix build utils) (mkdir-p)
   #:use-module (ice-9 match)
   #:use-module (ice-9 rdelim)
   #:use-module (ice-9 receive)
@@ -239,17 +240,40 @@ corresponding Git repository or #f if it could not be guessed."
           #f)))
       (_ #f))))
 
+(define (vcs-checkout-directory url)
+  "Return a persistent cache directory for the VCS checkout at URL,
+creating it if needed."
+  (let ((dir (string-append (or (getenv "XDG_CACHE_HOME")
+                                (string-append (getenv "HOME") "/.cache"))
+                            "/guix-vcs-checkouts/"
+                            (string-map (lambda (c)
+                                          (if (or (char-alphabetic? c)
+                                                  (char-numeric? c))
+                                              c
+                                              #\_))
+                                        url))))
+    (unless (file-exists? dir)
+      (mkdir-p dir))
+    dir))
+
 (define* (download-git-repository url ref #:key recursive?)
   "Fetch the given REF from the Git repository at URL.  Return three values :
 the commit hash, the downloaded directory and its content hash."
-  (with-store store
-    (let (((values checkout commit-hash)
-           (latest-repository-commit store url #:ref ref
-                                     #:recursive? recursive?)))
+  (let ((dir (vcs-checkout-directory url)))
+    (unless (file-exists? (string-append dir "/.git"))
+      (unless (zero? (system* "git" "clone" url dir))
+        (leave (G_ "~A: git download failed~%") url)))
+    (unless (null? ref)
+      (unless (zero? (system* "git" "-C" dir "checkout" ref))
+        (leave (G_ "~A: git checkout of ~A failed~%") url ref)))
+    (let* ((port (open-pipe* OPEN_READ "git" "-C" dir
+                             "rev-parse" "HEAD"))
+           (commit-hash (read-line port)))
+      (close-pipe port)
       (values commit-hash
-              checkout
+              dir
               (bytevector->nix-base32-string
-               (query-path-hash store checkout))))))
+               (file-hash* dir #:recursive? (or recursive? 'auto)))))))
 
 (define* (git-origin url commit hash #:key recursive?)
   "Simple helper to generate a Git origin s-expression."
@@ -680,7 +704,7 @@ either be a simple URL string, #F, or an alist containing entries for each of
 the expected fields of an <origin> object."
   (match source
     ((? string? source-url)
-     (let ((tarball (with-store store (download-to-store store source-url))))
+     (let ((tarball (download-to-temporary-file source-url)))
        (origin
          (method url-fetch)
          (uri source-url)

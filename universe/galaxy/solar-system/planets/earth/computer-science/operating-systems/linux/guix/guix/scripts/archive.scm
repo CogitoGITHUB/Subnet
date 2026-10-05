@@ -65,16 +65,8 @@
     (debug . 0)))
 
 (define (show-help)
-  (display (G_ "Usage: guix archive [OPTION]... PACKAGE...
-Export/import one or more packages from/to the store.\n"))
-  (display (G_ "
-      --export           export the specified files/packages to stdout"))
-  (display (G_ "
-  -r, --recursive        combined with '--export', include dependencies"))
-  (display (G_ "
-      --import           import from the archive passed on stdin"))
-  (display (G_ "
-      --missing          print the files from stdin that are missing"))
+  (display (G_ "Usage: guix archive [OPTION]...
+Inspect the archive passed on stdin.\n"))
   (display (G_ "
   -x, --extract=DIR      extract the archive on stdin to DIR"))
   (display (G_ "
@@ -86,10 +78,6 @@ Export/import one or more packages from/to the store.\n"))
   (display (G_ "
       --authorize        authorize imports signed by the public key on stdin"))
   (newline)
-  (display (G_ "
-  -e, --expression=EXPR  build the package or derivation EXPR evaluates to"))
-  (display (G_ "
-  -S, --source           build the packages' source derivations"))
   (display (G_ "
   -v, --verbosity=LEVEL  use the given verbosity LEVEL"))
 
@@ -124,18 +112,6 @@ Export/import one or more packages from/to the store.\n"))
          (option '(#\V "version") #f #f
                  (lambda args
                    (show-version-and-exit "guix archive")))
-         (option '("export") #f #f
-                 (lambda (opt name arg result)
-                   (alist-cons 'export #t result)))
-         (option '(#\r "recursive") #f #f
-                 (lambda (opt name arg result)
-                   (alist-cons 'export-recursive? #t result)))
-         (option '("import") #f #f
-                 (lambda (opt name arg result)
-                   (alist-cons 'import #t result)))
-         (option '("missing") #f #f
-                 (lambda (opt name arg result)
-                   (alist-cons 'missing #t result)))
          (option '("extract" #\x) #t #f
                  (lambda (opt name arg result)
                    (alist-cons 'extract arg result)))
@@ -160,12 +136,6 @@ Export/import one or more packages from/to the store.\n"))
                  (lambda (opt name arg result)
                    (alist-cons 'authorize #t result)))
 
-         (option '(#\S "source") #f #f
-                 (lambda (opt name arg result)
-                   (alist-cons 'source? #t result)))
-         (option '(#\e "expression") #t #f
-                 (lambda (opt name arg result)
-                   (alist-cons 'expression arg result)))
          (option '(#\v "verbosity") #t #f
                  (lambda (opt name arg result)
                    (let ((level (string->number* arg)))
@@ -179,85 +149,8 @@ Export/import one or more packages from/to the store.\n"))
                  %standard-cross-build-options
                  %standard-native-build-options)))
 
-(define (derivation-from-expression store str package-derivation
-                                    system source?)
-  "Read/eval STR and return the corresponding derivation path for SYSTEM.
-When SOURCE? is true and STR evaluates to a package, return the derivation of
-the package source; otherwise, use PACKAGE-DERIVATION to compute the
-derivation of a package."
-  (match (read/eval str)
-    ((? package? p)
-     (if source?
-         (let ((source (package-source p)))
-           (if source
-               (package-source-derivation store source)
-               (leave (G_ "package `~a' has no source~%")
-                      (package-name p))))
-         (package-derivation store p system)))
-    ((? procedure? proc)
-     (run-with-store store
-       (mbegin %store-monad
-         (set-guile-for-build (default-guile))
-         (proc)) #:system system))))
-
-(define (options->derivations+files store opts)
-  "Given OPTS, the result of 'args-fold', return a list of derivations to
-build and a list of store files to transfer."
-  (define package->derivation
-    (match (assoc-ref opts 'target)
-      (#f package-derivation)
-      (triplet
-       (cut package-cross-derivation <> <> triplet <>))))
-
-  (define src? (assoc-ref opts 'source?))
-  (define sys  (assoc-ref opts 'system))
-
-  (fold2 (lambda (arg derivations files)
-           (match arg
-             (('expression . str)
-              (let ((drv (derivation-from-expression store str
-                                                     package->derivation
-                                                     sys src?)))
-                (values (cons drv derivations)
-                        (cons (derivation->output-path drv) files))))
-             (('argument . (? store-path? file))
-              (values derivations (cons file files)))
-             (('argument . (? string? spec))
-              (let-values (((p output)
-                            (specification->package+output spec)))
-                (if src?
-                    (let* ((s   (package-source p))
-                           (drv (package-source-derivation store s)))
-                      (values (cons drv derivations)
-                              (cons (derivation->output-path drv)
-                                    files)))
-                    (let ((drv (package->derivation store p sys)))
-                      (values (cons drv derivations)
-                              (cons (derivation->output-path drv output)
-                                    files))))))
-             (_
-              (values derivations files))))
-         '()
-         '()
-         opts))
-
-
-;;;
 ;;; Entry point.
 ;;;
-
-(define (export-from-store store opts)
-  "Export the packages or derivations specified in OPTS from STORE.  Write the
-resulting archive to the standard output port."
-  (let-values (((drv files)
-                (options->derivations+files store opts)))
-    (when (null? files)
-      (warning (G_ "no arguments specified; creating an empty archive~%")))
-
-    (if (build-derivations store drv)
-        (export-paths store files (current-output-port)
-                      #:recursive? (assoc-ref opts 'export-recursive?))
-        (leave (G_ "unable to export the given packages~%")))))
 
 (define (generate-key-pair parameters)
   "Generate a key pair with PARAMETERS, a canonical sexp, and store it in the
@@ -279,29 +172,15 @@ this may take time...~%"))
                             (error-source err)
                             (error-string err)))))
          (public (find-sexp-token pair 'public-key))
-         (secret (find-sexp-token pair 'private-key))
-         (store  (stat (%store-prefix) #f)))
-    (define (ensure-daemon-ownership file)
-      ;; Ensure FILE is readable by the daemon, by changing ownership either
-      ;; to root or to the owner of the store.
-      (when store
-        (chown file
-               (stat:uid store)
-               (match (stat:uid store)
-                 ;; When the store is root-owned, use 0 as the GID for the
-                 ;; keys (the store's GID is usually that of 'guixbuild').
-                 (0 0)
-                 (_ (stat:gid store))))))
+         (secret (find-sexp-token pair 'private-key)))
 
     ;; Create the following files as #o400.
     (umask #o266)
 
     (mkdir-p (dirname %public-key-file))
-    (ensure-daemon-ownership (dirname %public-key-file))
 
     (with-atomic-file-output %public-key-file
       (lambda (port)
-        (ensure-daemon-ownership port)
         (display (canonical-sexp->string public) port)))
     (with-atomic-file-output %private-key-file
       (lambda (port)
@@ -382,16 +261,7 @@ output port."
 
 (define-command (guix-archive . args)
   (category plumbing)
-  (synopsis "manipulate, export, and import normalized archives (nars)")
-
-  (define (lines port)
-    ;; Return lines read from PORT.
-    (let loop ((line   (read-line port))
-               (result '()))
-      (if (eof-object? line)
-          (reverse result)
-          (loop (read-line port)
-                (cons line result)))))
+  (synopsis "inspect normalized archives (nars) and manage archive keys")
 
   (with-error-handling
     (let ((opts (parse-command-line args %options (list %default-options))))
@@ -401,33 +271,13 @@ output port."
                generate-key-pair)
               ((assoc-ref opts 'authorize)
                (authorize-key))
+              ((assoc-ref opts 'list)
+               (list-contents (current-input-port)))
+              ((assoc-ref opts 'extract)
+               =>
+               (lambda (target)
+                 (restore-file (current-input-port) target)))
               (else
-               (with-status-verbosity (assoc-ref opts 'verbosity)
-                 (with-store store
-                   (set-build-options-from-command-line store opts)
-                   (with-build-handler
-                       (build-notifier #:use-substitutes?
-                                       (assoc-ref opts 'substitutes?)
-                                       #:verbosity
-                                       (assoc-ref opts 'verbosity)
-                                       #:dry-run?
-                                       (assoc-ref opts 'dry-run?))
-                     (cond ((assoc-ref opts 'export)
-                            (export-from-store store opts))
-                           ((assoc-ref opts 'import)
-                            (import-paths store (current-input-port)))
-                           ((assoc-ref opts 'missing)
-                            (let* ((files   (lines (current-input-port)))
-                                   (missing (remove (cut valid-path? store <>)
-                                                    files)))
-                              (format #t "~{~a~%~}" missing)))
-                           ((assoc-ref opts 'list)
-                            (list-contents (current-input-port)))
-                           ((assoc-ref opts 'extract)
-                            =>
-                            (lambda (target)
-                              (restore-file (current-input-port) target)))
-                           (else
-                            (leave
-                             (G_ "either '--export' or '--import' \
-must be specified~%")))))))))))))
+               (leave
+                (G_ "only '--list', '--extract', '--generate-key', and '--authorize' \
+are supported without a build daemon~%"))))))))

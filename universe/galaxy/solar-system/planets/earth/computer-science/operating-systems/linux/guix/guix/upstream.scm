@@ -27,7 +27,7 @@
   #:autoload   (guix discovery) (fold-module-public-variables)
   #:autoload   (guix describe) (modules-from-current-profile)
   #:use-module ((guix download)
-                #:select (download-to-store url-fetch))
+                #:select (download-to-temporary-file url-fetch))
   #:use-module (guix git-download)
   #:use-module (guix svn-download)
   #:use-module (guix gnupg)
@@ -287,63 +287,33 @@ than that of PACKAGE."
     (_
      #f)))
 
-(define (uncompressed-tarball name tarball)
-  "Return a derivation that decompresses TARBALL."
-  (define (ref package)
-    (module-ref (resolve-interface '(gnu packages compression))
-                package))
-
-  (define compressor
-    (cond ((or (string-suffix? ".gz" tarball)
-               (string-suffix? ".tgz" tarball))
-           (file-append (ref 'gzip) "/bin/gzip"))
-          ((string-suffix? ".bz2" tarball)
-           (file-append (ref 'bzip2) "/bin/bzip2"))
-          ((string-suffix? ".xz" tarball)
-           (file-append (ref 'xz) "/bin/xz"))
-          ((string-suffix? ".lz" tarball)
-           (file-append (ref 'lzip) "/bin/lzip"))
-          (else
-           (error "unknown archive type" tarball))))
-
-  (gexp->derivation (file-sans-extension name)
-                    #~(begin
-                        (copy-file #+tarball #+name)
-                        (and (zero? (system* #+compressor "-d" #+name))
-                             (copy-file #+(file-sans-extension name)
-                                        #$output)))))
-
-(define* (download-tarball store url signature-url
+(define* (download-tarball url signature-url
                            #:key (key-download 'auto) key-server)
-  "Download the tarball at URL to the store; check its OpenPGP signature at
-SIGNATURE-URL, unless SIGNATURE-URL is false.  On success, return the tarball
-file name; return #f on failure (network failure or authentication failure).
+  "Download the tarball at URL to a temporary file; check its OpenPGP
+signature at SIGNATURE-URL, unless SIGNATURE-URL is false.  On success,
+return the tarball file name; return #f on failure (network failure or
+authentication failure).
 
 KEY-DOWNLOAD specifies a download policy for missing OpenPGP keys; allowed
 values: 'auto' (default), 'always', 'interactive' and 'never'; KEY-SERVER
 specifies the OpenPGP key server where the key should be looked up."
-  (let ((tarball (download-to-store store url)))
-    (if (not signature-url)
-        tarball
-        (let* ((sig  (download-to-store store signature-url))
-
-               ;; Sometimes we get a signature over the uncompressed tarball.
-               ;; In that case, decompress the tarball in the store so that we
-               ;; can check the signature.
-               (data (if (string-prefix? (basename url)
-                                         (basename signature-url))
-                         tarball
-                         (run-with-store store
-                           (mlet %store-monad ((drv (uncompressed-tarball
-                                                     (basename url) tarball)))
-                             (mbegin %store-monad
-                               (built-derivations (list drv))
-                               (return (derivation->output-path drv))))))))
-          (let ((status data (if sig
-                                 (gnupg-verify* sig data
-                                                #:server key-server
-                                                #:key-download key-download)
-                                 (values 'missing-signature data))))
+  (let ((tarball (download-to-temporary-file url)))
+    (if (not tarball)
+        #f
+        (if (not signature-url)
+            tarball
+            (if (not (string-prefix? (basename url)
+                                     (basename signature-url)))
+                (begin
+                  (warning (G_ "cannot check the signature of '~a' without a store~%")
+                           url)
+                  #f)
+                (let ((sig (download-to-temporary-file signature-url)))
+                  (let ((status data (if sig
+                                         (gnupg-verify* sig tarball
+                                                        #:server key-server
+                                                        #:key-download key-download)
+                                         (values 'missing-signature tarball))))
             (match status
               ('valid-signature
                tarball)
@@ -358,7 +328,7 @@ specifies the OpenPGP key server where the key should be looked up."
               ('missing-key
                (warning (G_ "missing public key ~a for '~a'~%")
                         data url)
-               #f)))))))
+               #f)))))))))
 
 (define (upstream-source-compiler/url-fetch source system)
   "Lower SOURCE, an <upstream-source> pointing to a tarball, as a
@@ -367,7 +337,7 @@ fixed-output derivation that would fetch it, and verify its authenticity."
                        (signature
                         -> (and=> (upstream-source-signature-urls source)
                                   first))
-                       (tarball ((store-lift download-tarball) url signature)))
+                       (tarball -> (download-tarball url signature)))
     (unless tarball
       (raise (formatted-message (G_ "failed to fetch source from '~a'")
                                 url)))

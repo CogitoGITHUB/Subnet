@@ -2314,16 +2314,6 @@ case when generations have been deleted (there are \"holes\")."
   (make-time time-utc 0
              (stat:ctime (stat (generation-file-name profile number)))))
 
-(define (link-to-empty-profile store generation)
-  "Link GENERATION, a string, to the empty profile.  An error is raised if
-that fails."
-  (let* ((drv  (run-with-store store
-                 (profile-derivation (manifest '())
-                                     #:locales? #f)))
-         (prof (derivation->output-path drv "out")))
-    (build-derivations store (list drv))
-    (switch-symlinks generation prof)))
-
 (define (switch-to-generation profile number)
   "Atomically switch PROFILE to the generation NUMBER.  Return the number of
 the generation that was current before switching."
@@ -2347,7 +2337,7 @@ generation number and the current one."
     (values (switch-to-generation profile previous)
             previous)))
 
-(define (roll-back store profile)
+(define (roll-back profile)
   "Roll back to the previous generation of PROFILE.  Return the number of the
 generation that was current before switching and the new generation number."
   (let* ((number              (generation-number profile))
@@ -2360,12 +2350,11 @@ generation that was current before switching and the new generation number."
            (values number number))
           ((or (zero? previous-number)            ;going to emptiness
                (not (file-exists? previous-generation)))
-           (link-to-empty-profile store previous-generation)
            (switch-to-previous-generation profile))
           (else                                   ;anything else
            (switch-to-previous-generation profile)))))
 
-(define (delete-generation store profile number)
+(define (delete-generation profile number)
   "Delete generation with NUMBER from PROFILE.  Return the file name of the
 generation that has been deleted, or #f if nothing was done (for instance
 because the NUMBER is zero.)"
@@ -2380,11 +2369,10 @@ because the NUMBER is zero.)"
     (cond ((zero? number) #f)                     ;do not delete generation 0
           ((and (= number current-number)
                 (not (file-exists? previous-generation)))
-           (link-to-empty-profile store previous-generation)
            (switch-to-previous-generation profile)
            (delete-and-return))
           ((= number current-number)
-           (roll-back store profile)
+           (roll-back profile)
            (delete-and-return))
           (else
            (delete-and-return)))))

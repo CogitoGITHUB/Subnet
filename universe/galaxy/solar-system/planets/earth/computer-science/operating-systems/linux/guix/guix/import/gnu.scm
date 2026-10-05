@@ -23,7 +23,6 @@
   #:use-module (guix gnu-maintenance)
   #:use-module (guix import utils)
   #:use-module (guix i18n)
-  #:use-module (guix store)
   #:use-module (guix upstream)
   #:use-module (srfi srfi-1)
   #:use-module (srfi srfi-26)
@@ -78,9 +77,8 @@ download policy (see 'download-tarball' for details.)"
     (find (cute string-suffix? (string-append archive-type ".sig") <>)
           (upstream-source-signature-urls release)))
 
-  (with-store store
-    (match (download-tarball store url sig-url
-                             #:key-download key-download)
+  (match (download-tarball url sig-url
+                         #:key-download key-download)
       ((? string? tarball)
        `(package
           (name ,name)
@@ -100,7 +98,7 @@ download policy (see 'download-tarball' for details.)"
                         ((head . tail) (qualified-url head))))
           (license find-by-yourself!)))
       (#f                     ;failure to download or authenticate the tarball
-       #f))))
+       #f)))
 
 (define* (gnu->guix-package name
                             #:key (key-download 'auto)

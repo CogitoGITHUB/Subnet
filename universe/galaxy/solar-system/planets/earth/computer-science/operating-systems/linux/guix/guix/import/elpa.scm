@@ -43,7 +43,7 @@
   #:use-module (srfi srfi-35)
   #:use-module (guix i18n)
   #:use-module (guix diagnostics)
-  #:use-module ((guix download) #:select (download-to-store))
+  #:use-module ((guix download) #:select (download-to-temporary-file))
   #:use-module (guix import utils)
   #:use-module (guix http-client)
   #:use-module (guix git)
@@ -397,8 +397,7 @@ type '<elpa-package>'."
       (name ,(elpa-name->package-name name))
       (version ,version)
       (source ,(or melpa-source
-                   (let ((tarball (with-store store
-                                    (download-to-store store source-url))))
+                   (let ((tarball (download-to-temporary-file source-url)))
                      `(origin
                         (method url-fetch)
                         (uri (string-append ,@(factorize-uri source-url version)))

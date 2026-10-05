@@ -22,7 +22,7 @@
   #:use-module (json)
   #:use-module (guix build-system composer)
   #:use-module ((guix diagnostics) #:select (warning))
-  #:use-module ((guix download) #:select (download-to-store))
+  #:use-module ((guix download) #:select (download-to-temporary-file))
   #:use-module (guix i18n)
   #:use-module (guix import json)
   #:use-module (guix import utils)
@@ -139,7 +139,7 @@ COMPOSER-PACKAGE."
              (git->origin (composer-source-url source)
                           (const (composer-source-reference source)))
              (let* ((source (composer-source-url source))
-                    (tarball (with-store store (download-to-store store source))))
+                    (tarball (download-to-temporary-file source)))
                `(origin
                   (method url-fetch)
                   (uri ,source)

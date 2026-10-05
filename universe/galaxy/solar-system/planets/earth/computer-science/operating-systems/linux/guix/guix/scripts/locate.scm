@@ -36,7 +36,6 @@
   #:use-module (guix monads)
   #:autoload   (guix combinators) (fold2)
   #:autoload   (guix grafts) (%graft?)
-  #:autoload   (guix store roots) (gc-roots)
   #:use-module (guix derivations)
   #:use-module (guix packages)
   #:use-module (guix profiles)
@@ -351,37 +350,6 @@ VALUES (:name, :basename, :directory);"
                directories)))
   (sqlite-exec db "commit;"))
 
-(define (insert-package db package)
-  "Insert all the files of PACKAGE into DB."
-  (define stmt-select-package-output
-    (sqlite-prepare db "\
-SELECT output FROM Packages WHERE name = :name AND version = :version"
-                    #:cache? #t))
-
-  (define (known-outputs package)
-    ;; Return the list of outputs of PACKAGE already in DB.
-    (sqlite-bind-arguments stmt-select-package-output
-                           #:name (package-name package)
-                           #:version (package-version package))
-    (match (sqlite-fold cons '() stmt-select-package-output)
-      ((#(outputs ...)) outputs)
-      (() '())))
-
-  (with-monad %store-monad
-    ;; Since calling 'package->derivation' is expensive, do not call it if the
-    ;; outputs of PACKAGE at VERSION are already in DB.
-    (munless (lset= string=?
-                    (known-outputs package)
-                    (package-outputs package))
-      (mlet %store-monad ((drv (package->derivation package #:graft? #f)))
-        (match (derivation->output-paths drv)
-          (((labels . directories) ...)
-           (when (every file-exists? directories)
-             (insert-files
-              db (package-name package) (package-version package) (package-outputs package)
-              directories))
-           (return #t)))))))
-
 (define (insert-packages-with-progress db packages insert-package)
   "Insert PACKAGES into DB with progress bar reporting, calling INSERT-PACKAGE
 for each package to insert."
@@ -395,37 +363,25 @@ for each package to insert."
                     (report))
                   packages)))))
 
-(define (index-packages-from-store-with-db db)
-  "Index local store packages using DB."
-  (with-store store
-    (parameterize ((%graft? #f))
-      (define (insert-package-from-store db package)
-        (run-with-store store (insert-package db package)))
-      (let ((packages (fold-packages
-                       cons
-                       '()
-                       #:select? (lambda (package)
-                                   (and (not (hidden-package? package))
-                                        (not (package-superseded package))
-                                        (supported-package? package))))))
-        (insert-packages-with-progress
-         db packages insert-package-from-store)))))
-
-
-;;;
 ;;; Indexing from local profiles.
 ;;;
 
 (define (all-profiles)
   "Return the list of system profiles."
-  (delete-duplicates
-   (filter-map (lambda (root)
-                 (if (file-exists? (string-append root "/manifest"))
-                     root
-                     (let ((root (string-append root "/profile")))
-                       (and (file-exists? (string-append root "/manifest"))
-                            root))))
-               (gc-roots))))
+  (let ((home (getenv "HOME")))
+    (delete-duplicates
+     (filter-map (lambda (root)
+                   (and root
+                        (if (file-exists? (string-append root "/manifest"))
+                            root
+                            (let ((profile (string-append root "/profile")))
+                              (and (file-exists?
+                                    (string-append profile "/manifest"))
+                                   profile)))))
+                 (if home
+                     (list (string-append home "/.guix-profile")
+                           "/run/current-system/profile")
+                     (list "/run/current-system/profile"))))))
 
 (define (profiles->manifest-entries profiles)
   "Return deduplicated manifest entries across all PROFILES."
@@ -551,7 +507,7 @@ Locate FILE and return the list of packages that contain it.\n"))
   (newline)
   (display (G_ "
       --method=METHOD use METHOD to select packages to index; METHOD can
-                      be 'manifests' (fast) or 'store' (slower)"))
+                      be 'manifests'."))
   (newline)
   (display (G_ "
   -h, --help          display this help and exit"))
@@ -584,7 +540,7 @@ Locate FILE and return the list of packages that contain it.\n"))
         (option '(#\m "method") #f #t
                 (lambda (opt name arg result)
                   (match arg
-                    ((or "manifests" "store")
+                    ("manifests"
                      (alist-cons 'method (string->symbol arg)
                                  (alist-delete 'method result)))
                     (_
@@ -640,8 +596,6 @@ Locate FILE and return the list of packages that contain it.\n"))
             (match method
               ('manifests
                (index-packages-from-manifests-with-db db))
-              ('store
-               (index-packages-from-store-with-db db))
               (_
                (leave (G_ "~a: unknown indexing method~%") method))))))
 

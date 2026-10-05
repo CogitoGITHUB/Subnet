@@ -28,7 +28,6 @@
   #:use-module (guix build-system)
   #:use-module (guix profiles)
   #:use-module (guix diagnostics)
-  #:autoload   (guix download) (download-to-store)
   #:autoload   (guix git-download) (git-reference?
                                     git-reference-url
                                     git-reference-recursive?)
@@ -115,16 +114,6 @@ extensions."
   downloaded-file?
   (uri        downloaded-file-uri)
   (recursive? downloaded-file-recursive?))
-
-(define download-to-store*
-  (store-lift download-to-store))
-
-(define-gexp-compiler (compile-downloaded-file (file <downloaded-file>)
-                                               system target)
-  "Download FILE and return the result as a store item."
-  (match file
-    (($ <downloaded-file> uri recursive?)
-     (download-to-store* uri #:recursive? recursive?))))
 
 (define* (package-with-source p uri #:optional version)
   "Return a package based on P but with its source taken from URI.  Extract

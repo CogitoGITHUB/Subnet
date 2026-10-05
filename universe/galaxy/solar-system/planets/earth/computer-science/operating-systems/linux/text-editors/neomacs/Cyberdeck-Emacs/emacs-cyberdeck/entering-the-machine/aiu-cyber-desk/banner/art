@@ -144,8 +144,10 @@ narrow only the inner box.  Every line shares one string-width."
     (when (buffer-live-p buf)
       (let ((win (get-buffer-window buf)))
         (when (and (window-live-p win) (fboundp 'dashboard-open))
-          (with-selected-window win
-            (dashboard-open)))))))
+          ;; Never steal focus: render, then give the window back.
+          (save-window-excursion
+            (with-selected-window win
+              (dashboard-open))))))))
 
 (defun cyberdeck/banner--on-size-change (&optional _frame)
   "Debounce dashboard banner re-render after a window size change."

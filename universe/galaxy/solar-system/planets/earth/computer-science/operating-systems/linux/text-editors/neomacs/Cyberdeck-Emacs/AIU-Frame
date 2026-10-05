@@ -7,7 +7,7 @@ foundation-init.el.
 - On every save of THIS FILE, org-auto-tangle regenerates both
   targets automatically (it only fires for files carrying the
   ~#+auto_tangle: t~ property above).
-- At every startup, the static seed ~init.el~ tangles this file
+- At every startup, the static seed ~init.el~ loads this file
   again (belt and suspenders) and then loads the freshly generated
   ~foundation-init.el~.
 - ~early-init.el~ is loaded by Emacs BEFORE init.el, so it can be at
@@ -28,7 +28,7 @@ subsystem in one directory.
 :END:
 
 Loaded by Emacs automatically before init.el.  Refreshed by the
-save/startup tangles; purely visual, so worst case it is one save
+save/startup loads; purely visual, so worst case it is one save
 stale.  Runs before the package system.
 
 #+begin_src emacs-lisp
@@ -191,7 +191,7 @@ Filters message / display-warning / lwarn. Errors are untouched.
 :header-args:emacs-lisp: :tangle ~/.config/emacs/foundation-init.el
 :END:
 
-Tangled to ~foundation-init.el~ and loaded at the end of the static
+Generated into ~foundation-init.el~ and loaded at the end of the static
 seed ~init.el~.  Everything the boot needs before modules run.
 
 ** Header & boot order
@@ -350,7 +350,7 @@ Must be here — cyberdeck-emacs-boot generates leaf forms.
 ** Literate loader
 Loads the package manager source from next to this file (extensionless
 ~cyberdeck~ preferred, ~cyberdeck-emacs~ backcompat, legacy ~.org~
-fallbacks), tangles to ~.el~ in ~.config/emacs~, then loads it.
+fallbacks), writes to ~.el~ in ~.config/emacs~, then loads it.
 ~lisp/~, ~straight/~ and all generated dirs stay under
 ~user-emacs-directory~ (~/.config/emacs) — only the literate sources
 live in the vault.

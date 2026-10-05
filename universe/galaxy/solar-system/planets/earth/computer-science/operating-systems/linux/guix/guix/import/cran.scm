@@ -43,11 +43,12 @@
   #:use-module (guix i18n)
   #:use-module (guix store)
   #:use-module (guix base32)
-  #:use-module ((guix download) #:select (download-to-store))
+  #:use-module ((guix download) #:select (download-to-temporary-file))
   #:use-module (guix import utils)
   #:use-module ((guix build utils)
                 #:select (find-files
                           delete-file-recursively
+                          mkdir-p
                           with-directory-excursion))
   #:use-module (guix utils)
   #:use-module (guix git)
@@ -259,36 +260,61 @@ the threshold.  Return the size if the source is too big."
                             'content-length))))
     (and (> size (%max-source-size)) size)))
 
-;; Little helper to download URLs only once.
+;; Little helper to download URLs only once.  Version-control checkouts
+;; are kept in a persistent cache directory so repeated lookups of the
+;; same repository reuse them.
+(define (vcs-checkout-directory url)
+  "Return a persistent cache directory for the VCS checkout at URL,
+creating it if needed."
+  (let ((dir (string-append (or (getenv "XDG_CACHE_HOME")
+                                (string-append (getenv "HOME") "/.cache"))
+                            "/guix-vcs-checkouts/"
+                            (string-map (lambda (c)
+                                          (if (or (char-alphabetic? c)
+                                                  (char-numeric? c))
+                                              c
+                                              #\_))
+                                        url))))
+    (unless (file-exists? dir)
+      (mkdir-p dir))
+    dir))
+
 (define download
   (memoize
    (lambda* (url #:key method (ref '()))
-     (with-store store
-       (cond
-        ((eq? method 'git)
-         (latest-repository-commit store url #:ref ref))
-        ((eq? method 'hg)
-         (call-with-temporary-directory
-          (lambda (dir)
-            (unless (zero? (system* "hg" "clone" url dir))
-              (leave (G_ "~A: hg download failed~%") url))
-            (with-directory-excursion dir
-              (let* ((port (open-pipe* OPEN_READ "hg" "id" "--id"))
-                     (changeset (string-trim-right (read-string port))))
-                (close-pipe port)
-                (for-each delete-file-recursively
-                          (find-files dir "^\\.hg$" #:directories? #t))
-                (let ((store-directory
-                       (add-to-store store (basename url) #t "sha256" dir)))
-                  (values store-directory changeset)))))))
+     (cond
+      ((eq? method 'git)
+       (let ((dir (vcs-checkout-directory url)))
+         (unless (file-exists? (string-append dir "/.git"))
+           (unless (zero? (apply system* "git" "clone"
+                                 (append (if (null? ref)
+                                             '()
+                                             (list "--branch" ref))
+                                         (list url dir))))
+             (leave (G_ "~A: git download failed~%") url)))
+         (let* ((port (open-pipe* OPEN_READ "git" "-C" dir
+                                  "rev-parse" "HEAD"))
+                (commit (string-trim-right (read-string port))))
+           (close-pipe port)
+           (values dir commit))))
+      ((eq? method 'hg)
+       (let ((dir (vcs-checkout-directory url)))
+         (unless (file-exists? (string-append dir "/.hg"))
+           (unless (zero? (system* "hg" "clone" url dir))
+             (leave (G_ "~A: hg download failed~%") url)))
+         (with-directory-excursion dir
+           (let* ((port (open-pipe* OPEN_READ "hg" "id" "--id"))
+                  (changeset (string-trim-right (read-string port))))
+             (close-pipe port)
+             (values dir changeset)))))
         (else
          (match url
-           ((? string?)
-            (download-to-store store url))
+         ((? string?)
+          (download-to-temporary-file url))
            ((urls ...)
             ;; Try all the URLs.  A use case where this is useful is when one
             ;; of the URLs is the /Archive CRAN URL.
-            (any (cut download-to-store store <>) urls)))))))))
+            (any download-to-temporary-file urls))))))))
 
 (define* (fetch-description-from-tarball url #:key (download download))
   "Fetch the tarball at URL, extra its 'DESCRIPTION' file, parse it, and

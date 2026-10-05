@@ -43,10 +43,7 @@
   #:use-module (srfi srfi-71)
   #:autoload   (guix base16) (base16-string->bytevector)
   #:autoload   (guix base32) (bytevector->nix-base32-string)
-  #:autoload   (guix derivations) (built-derivations
-                                   derivation->output-path)
-  #:autoload   (guix gexp) (lower-object)
-  #:use-module ((guix download) #:select (download-to-store))
+  #:use-module ((guix download) #:select (download-to-temporary-file))
   #:use-module (guix utils)
   #:use-module (guix memoization)
   #:use-module (guix monads)
@@ -291,15 +288,7 @@ not succeed."
     ;; in the closure of this module.
     (module-ref (resolve-interface '(gnu packages compression))
                 'unzip))
-  (let ((unzip-cmd
-         (or (which "unzip")
-             (with-store store
-               (run-with-store store
-                 (mlet* %store-monad
-                     ((drv (lower-object unzip))
-                      (built (built-derivations (list drv))))
-                   (return (string-append (derivation->output-path drv)
-                                          "/bin/unzip"))))))))
+  (let ((unzip-cmd (which "unzip")))
     (apply invoke unzip-cmd args)))
 
 (define (parse-requires.txt requires.txt)
@@ -603,8 +592,7 @@ VERSION."
          (sha256 (and=> release distribution-sha256))
          (sha256 (or (and=> sha256 bytevector->nix-base32-string)
                      (guix-hash-url
-                      (with-store store
-                        (download-to-store store source-url))))))
+                      (download-to-temporary-file source-url)))))
     `(origin
        (method url-fetch)
        (uri (pypi-uri

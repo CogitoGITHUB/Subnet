@@ -137,22 +137,10 @@ held."
     template))
 
 (define-syntax-rule (with-temporary-store-file name body ...)
-  "Evaluate BODY with NAME bound to the file name of a temporary store item
-protected from GC."
-  (with-store store
-    (let loop ((name (temporary-store-file)))
-      ;; Add NAME to the current process' roots.  (Opening this connection to
-      ;; the daemon allows us to reuse its code that deals with the
-      ;; per-process roots file.)
-      (add-temp-root store name)
-
-      ;; There's a window during which GC could delete NAME.  Try again when
-      ;; that happens.
-      (if (file-exists? name)
-          (begin
-            (delete-file name)
-            body ...)
-          (loop (temporary-store-file))))))
+  "Evaluate BODY with NAME bound to the file name of a temporary file."
+  (let ((name (temporary-store-file)))
+    (delete-file name)
+    body ...))
 
 (define* (restore-one-item port
                            #:key acl (verify-signature? #t) (lock? #t)

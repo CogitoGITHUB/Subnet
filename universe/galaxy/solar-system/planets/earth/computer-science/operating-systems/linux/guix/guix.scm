@@ -31,7 +31,6 @@
         download
         gexp
         monads
-        monad-repl
         packages
         store
         utils))

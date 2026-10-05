@@ -613,7 +613,6 @@ reports."))
               "guix/man-db.scm"
               "guix/memoization.scm"
               "guix/modules.scm"
-              "guix/monad-repl.scm"
               "guix/monads.scm"
               "guix/narinfo.scm"
               "guix/nar.scm"

@@ -34,7 +34,7 @@
   #:use-module (guix i18n)
   #:use-module (guix store)
   #:use-module (guix utils)
-  #:use-module ((guix download) #:select (download-to-store url-fetch))
+  #:use-module ((guix download) #:select (download-to-temporary-file))
   #:use-module ((guix import utils)
                 #:select (factorize-uri guix-hash-url recursive-import))
   #:use-module (guix import json)
@@ -188,11 +188,10 @@ depend on (gnu packages perl)."
 
 (define %corelist
   (delay
-    (let* ((perl (with-store store
-                   (derivation->output-path
-                    (package-derivation store (perl-package)))))
-           (core (string-append perl "/bin/corelist")))
-      (and (access? core X_OK)
+    (let ((core (or (which "corelist")
+                    "corelist")))
+      (and (or (access? core X_OK)
+               (string=? core "corelist"))
            core))))
 
 (define core-module?
@@ -284,8 +283,7 @@ in RELEASE, a <cpan-release> record."
                                             upstream-input-downstream-name)
                                    inputs)))))))
 
-  (let* ((tarball (with-store store
-                   (download-to-store store source-url)))
+  (let* ((tarball (download-to-temporary-file source-url))
          (inputs (cpan-module-inputs release))
          (synopsis-text (cpan-release-abstract release))
          (sexp

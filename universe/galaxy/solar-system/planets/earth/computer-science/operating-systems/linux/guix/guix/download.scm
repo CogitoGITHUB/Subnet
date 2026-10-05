@@ -42,7 +42,7 @@
             url-fetch/executable
             url-fetch/tarbomb
             url-fetch/zipbomb
-            download-to-store))
+            download-to-temporary-file))
 
 ;;; Commentary:
 ;;;
@@ -618,19 +618,17 @@ own.  This helper makes it easier to deal with \"zip bombs\"."
                       #:graft? #f
                       #:local-build? #t)))
 
-(define* (download-to-store store url #:optional (name (basename url))
-                            #:key (log (current-error-port)) recursive?
-                            (verify-certificate? #t))
-  "Download from URL to STORE, either under NAME or URL's basename if
-omitted.  Write progress reports to LOG.  RECURSIVE? has the same effect as
-the same-named parameter of 'add-to-store'.  VERIFY-CERTIFICATE? determines
-whether or not to validate HTTPS server certificates."
+(define* (download-to-temporary-file url
+                                            #:key (log (current-error-port))
+                                            (verify-certificate? #t))
+  "Download URL to a temporary file and return its name, or #f on failure.
+Write progress reports to LOG.  VERIFY-CERTIFICATE? determines whether or
+not to validate HTTPS server certificates."
   (define uri
     (string->uri url))
 
   (if (or (not uri) (memq (uri-scheme uri) '(file #f)))
-      (add-to-store store name recursive? "sha256"
-                    (if uri (uri-path uri) url))
+      (if uri (uri-path uri) url)
       (call-with-temporary-output-file
        (lambda (temp port)
          (let ((result
@@ -639,7 +637,6 @@ whether or not to validate HTTPS server certificates."
                              #:mirrors %mirrors
                              #:verify-certificate? verify-certificate?))))
            (close port)
-           (and result
-                (add-to-store store name recursive? "sha256" temp)))))))
+           (and result temp))))))
 
 ;;; download.scm ends here

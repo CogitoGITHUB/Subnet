@@ -1,0 +1,519 @@
+#+TITLE: FOUNDATIONS: rules for building the package manager in Racket
+#+AUTHOR: Shape (rules researched with Claude, October 2026)
+#+STARTUP: overview
+
+* 0. How to use this file (read first, every session)
+- This is the contract between the user and any AI working in this repo.
+- Rules have IDs (P-1, E-5, ...). Cite them in commit messages and whenever you deviate.
+- If a user instruction conflicts with a rule: name the rule, ask once, then do what the
+  user decides and log it in =docs/DECISIONS.org=.
+- [VERIFY] = researched in the docs but not tested. Test in the REPL before relying on it.
+- [PROPOSAL] = a default to confirm with the user, not a fact.
+- If reality disagrees with this file, say so. Fix reality, or amend this file through
+  DECISIONS.org. Never drift silently.
+- Mistakes are expected. Follow P-10: fix, add a test, record it in =docs/LESSONS.org=.
+
+* 1. Environment (pinned)
+- Racket 9.3 (CS), minimal distribution, aarch64 Linux, inside Termux proot Ubuntu.
+- Upgrades are deliberate: record them in DECISIONS.org.
+- Install (tarball, no installer prompts):
+#+begin_src sh
+mkdir -p ~/opt && cd ~/opt
+curl -fLO https://download.racket-lang.org/releases/9.3/installers/racket-minimal-9.3-aarch64-linux-buster-cs.tgz
+echo "221a1f77ba11ab090ec5ff77c5a95abfe1f72d3b8b879d694fc5d807567015be  racket-minimal-9.3-aarch64-linux-buster-cs.tgz" | sha256sum -c -
+tar xzf racket-minimal-9.3-aarch64-linux-buster-cs.tgz
+ls    # see which directory appeared; do not assume its name
+# then append (do not overwrite) to the shell rc:  export PATH="$HOME/opt/<dir>/bin:$PATH"
+racket --version    # expect 9.3
+raco pkg install --auto rackunit-lib
+#+end_src
+- Alternative installer script has SHA256 =ae2c5eeb04f6c19045c49da985de3bf189d17efb2a7ee80a0bdf2d11d2875c05=
+  (file =racket-minimal-9.3-aarch64-linux-buster-cs.sh=). Always verify the hash before running.
+- Do not use apt's racket (older). Do not install the full distribution (huge) or docs
+  unless the user asks.
+- [VERIFY] Which package provides =raco test= in minimal Racket. Check, install what is
+  needed, and record the result in DECISIONS.org.
+- Dev tooling for Emacs: =racket-mode= (MELPA / NonGNU ELPA) gives REPL, =racket-xp-mode=
+  (errors and binding arrows), logger and profiler modes. It will be the first package the
+  Emacs target installs (dogfooding).
+
+* 2. Prime directives
+- *P-1* Small steps. Every step ends with a green =scripts/check.sh= and a commit.
+- *P-2* Plan as data, effects at the edge. Anything that changes the machine is first an
+  =action= value. The default backend is =dry-run=.
+- *P-3* Errors are a feature. Every failure says WHAT, WHERE, WHY, NEXT, with the exact
+  value or command involved.
+- *P-4* Data first. Specs are plain data, validated at the boundary, never evaluated unless
+  they are trusted code (S-1).
+- *P-5* One core, two targets (Emacs, system), plus swappable backends. The core knows
+  nothing about Emacs or the OS.
+- *P-6* Pin everything. Every fetched thing is hashed and recorded.
+- *P-7* Fail loudly. No catch-all handlers. Nothing is swallowed (E-5).
+- *P-8* Verify, do not assume. Run it. Do not invent library functions. Read the docs.
+- *P-9* =reference/= is read-only. Extract from it, never edit it.
+- *P-10* Mistakes become rules: fix, add a test, record in LESSONS.org.
+
+* 3. Architecture
+- *A-1* Dependency direction: =cli= -> =core= <- =backends=; =targets= -> =core=.
+  =core= never requires =targets=, =backends= or =cli=. Plug-ins reach the core through
+  interfaces (structs of functions or parameters).
+- *A-2* Pipeline: read -> validate -> resolve -> plan -> (dry-run: print | execute via
+  backend) -> record (lockfile).
+- *A-3* A plan is a list of immutable action structs (fetch, verify, extract, run-step,
+  install-file, write-file, symlink, remove-path). The executor is a dumb interpreter.
+  Plans can be printed, diffed and golden-tested.
+- *A-4* A backend implements the effects (fetch, run a command, write a file, ...). It is
+  chosen with a parameter =current-backend=. Default: =dry-run=. Second: =local=.
+  A =fake= backend (records actions) exists for tests.
+- *A-5* A target says how a package is built (step vocabulary), where it is installed
+  (layout), and what post-install hooks run. The core treats a target as an opaque struct.
+- *A-6* Emacs target first. The system target stays a stub until real hardware. ZFS, bwrap,
+  namespaces never leak into the core.
+- *A-7* Interfaces before implementations: write the =provide= contracts and purpose
+  statements, get approval, then implement.
+- *A-8* No global mutable state. Configuration flows through parameters and explicit
+  arguments.
+- *A-9* Prefer structs and plain functions. No =racket/class= and no units without a
+  DECISIONS entry.
+
+* 4. Code and module laws
+(Source: Racket Style Guide, docs.racket-lang.org/style)
+- *M-1* =#lang racket/base= plus explicit =require=s. Never =#lang racket= in the package
+  (footprint and startup, see X-1).
+- *M-2* Module layout, in this order: one-line purpose statement; =provide= (contracts +
+  a purpose comment per identifier); imports; implementation, important functions first
+  (top-down); =(module+ test ...)= at the very end. =(module+ main ...)= only in =cli/=.
+- *M-3* Every =provide= goes through =contract-out=, at least predicate-level. Internal
+  boundaries use submodules or =define/contract= when a module gets large.
+- *M-4* Never =(provide (all-defined-out))=.
+- *M-5* Size: module about 500 lines (hard stop 1000). Function about 66 lines (one
+  screen). Lines at most 102 characters. No tabs. No trailing spaces. File ends with a
+  newline. All closing parentheses on the last line of the code.
+- *M-6* Names: full words in kebab-case. Predicates end in =?=. Mutators end in =!=.
+  Conversions are =a->b=. Prefix functions with their data type (=package-name=,
+  =spec->plan=). Suffix ambiguous variables with their type (=name-string=,
+  =name-symbol=). No underscores or camelCase. No plural library names.
+- *M-7* Prefer =define= over =let=. Prefer =cond= / =match= / =case= over =if= chains.
+  Use =match= to destructure. Use =for= forms (=for/list=, =for/fold=) over =map= +
+  =lambda= when clearer; use =in-list= when speed matters.
+- *M-8* Functions over macros. A macro is allowed only to define the declaration syntax or
+  to remove real boilerplate. Every macro uses =syntax-parse= with syntax classes that have
+  =#:description=, and has tests for good and bad input.
+- *M-9* More than two parameters, or two or more optional ones: use keyword arguments.
+  Keep argument order consistent inside a module.
+- *M-10* Structs for small fixed-size data. Immutable by default. Use =#:guard= (or a
+  smart constructor) so an invalid value cannot exist. =#:transparent= for plain data.
+- *M-11* Comments: =;;= for whole lines, =;= for end of line. Every function has a purpose
+  statement plus a signature comment (=;; Spec Path -> Plan=). =#;= is for debugging only
+  and is never committed.
+- *M-12* Scoped settings use =parameterize=. Never mutate a module-level variable or call
+  a parameter to set it.
+- *M-13* No =eval=, no =namespace-require=, and no =dynamic-require= except on module
+  paths the code itself names (see S-1).
+- *M-14* Paths are =path?= values built with =build-path=. Never concatenate strings into
+  paths. Convert at the edges only.
+- *M-15* Indentation follows Racket's standard style. In Emacs use =racket-mode= and
+  =(setq indent-tabs-mode nil)=.
+
+** Module template (shape, not final code)
+#+begin_src racket
+#lang racket/base
+;; fetch.rkt -- downloads a source and hands back its local path.
+
+(require racket/contract/base)
+
+(provide
+ (contract-out
+  ;; Source Path -> Path   downloads src into dest and returns the file path
+  [fetch-source (-> source? path? path?)]))
+
+;; ---------------------------------------------------------------------------
+;; imports and implementation
+
+(require racket/file
+         "errors.rkt")
+
+(define (fetch-source src dest)
+  ...)
+
+;; ---------------------------------------------------------------------------
+(module+ test
+  (require rackunit)
+  ...)
+#+end_src
+
+* 5. Data laws
+- *D-1* A package spec is an immutable struct, parsed from an S-expression data file
+  (extension =.rktd= [PROPOSAL]). The file grammar is documented in =docs/= and enforced
+  by syntax classes.
+- *D-2* Unknown keys are errors. A typo must fail loudly instead of being ignored.
+- *D-3* Declaration files are read with =read-syntax= using the default read parameters,
+  through a size-limited port (=make-limited-input-port=). Never enable
+  =read-accept-reader=, =read-accept-lang= or =read-accept-compiled=. (Racket's defaults
+  disable code execution through =#lang= / =#reader=, which is what makes reading
+  untrusted data safe.)
+- *D-4* Validation errors carry source locations (file:line:col), because the data was read
+  with =read-syntax= and is checked with =syntax-parse= / =raise-syntax-error=.
+  [VERIFY] Runtime use of =syntax-parse= and its load-time cost (see X-1).
+- *D-5* Every on-disk format has a version marker (=(format-version 1)=). Migrations are
+  explicit functions with tests.
+- *D-6* Write plain data (lists, strings, symbols, numbers, keywords) with =write= /
+  =pretty-write=. No =racket/serialize= for lockfiles. Sort keys and entries so diffs are
+  meaningful.
+- *D-7* Hashes are SHA-256, lowercase hex, 64 characters, with the algorithm named in the
+  data. A network source without a hash is an error unless explicitly marked unpinned; an
+  unpinned source is a warning and is rejected in lockfile mode.
+- *D-8* Package names are symbols matching =[a-z0-9][a-z0-9-]*=. Versions have their own
+  type with a total order and tests.
+- *D-9* [PROPOSAL] Spec fields: =name=, =version=, =summary=, =source= (url or git),
+  =sha256= or =rev=, =deps= (name + constraint), =build= (steps), =install=
+  (target-specific), =license=, =homepage=. Finalize in DECISIONS.org.
+
+** Reading a declaration file (shape)
+#+begin_src racket
+(require racket/port syntax/parse)
+
+(define-syntax-class dep
+  #:description "dependency: a package name or (name \"constraint\")"
+  (pattern name:id)
+  (pattern (name:id constraint:str)))
+
+;; Path -> Syntax   reads one datum, safely, with source locations
+(define (read-spec-syntax path)
+  (call-with-input-file path
+    (lambda (in)
+      (define limited (make-limited-input-port in 1000000 #f))
+      (port-count-lines! limited)
+      (parameterize ([read-accept-reader #f]
+                     [read-accept-lang #f]
+                     [read-accept-compiled #f])
+        (read-syntax path limited)))))
+#+end_src
+
+* 6. Error laws
+(Sources: Racket Reference 10.2 "Exceptions" error message conventions; Style Guide 4.10;
+syntax/parse docs)
+- *E-1* Message shape follows Racket's convention: =who: message;= then continuation lines
+  =  field: value=. Field names are short and end with a colon.
+- *E-2* Every user-facing error answers four questions: WHAT failed, WHERE (package, step,
+  file:line:col), WHY (cause, exit code, last lines of stderr), NEXT (a hint or command).
+- *E-3* Exception types live only in =core/errors.rkt=. One struct =exn:fail:pm= with
+  fields =kind=, =fields=, =hint=, =cause=. Kinds: =spec resolve fetch verify build
+  install config internal=. Export one predicate per kind (=fetch-error?= ...) so handlers
+  can be narrow.
+- *E-4* Raise only through =raise-pm-error=. Never =(error "text" ...)= with string
+  concatenation. For misuse of our own functions use Racket's =raise-argument-error= /
+  =raise-arguments-error=.
+- *E-5* Catch narrowly. Never =(lambda (_) #t)=, never =exn?= (it also catches Ctrl-C),
+  never =void=. Use the most specific predicate. =exn:fail?= is allowed only in the CLI
+  top level, and its handler must report unknown failures, not silence them.
+  Ctrl-C (=exn:break=) is caught only to clean up and exit 130.
+- *E-6* Wrap, do not replace. When translating a lower-level exception, keep it in
+  =cause= and show its message on a =cause:= line.
+- *E-7* User/data errors (bad spec, network, hash mismatch, failed build) print a clean
+  message with no stack trace. Internal errors (contract violations in our code,
+  impossible states) print full context plus a "this is a bug" banner.
+- *E-8* Build failures always show: package, step number and name, exact argv, working
+  directory, exit code, the last N lines of output, and the path of the full saved log.
+- *E-9* Declaration errors point at the offending sub-form with file:line:col, say what
+  was expected (from =#:description=), and, where cheap, show a valid example.
+- *E-10* The full exception (with context) is always logged at debug level to the log
+  file, even when the screen shows a clean message.
+- *E-11* Warnings are neither errors nor silent. Collect them, print them at the end,
+  count them. =--strict= turns them into errors.
+- *E-12* Every error kind has a constructor path, a test asserting the message text and
+  exit code, and a sample in =docs/ERRORS.org=.
+- *E-13* Messages are written for a phone screen: short lines, one fact per line.
+- *E-14* Every network call and subprocess has a timeout, and the timeout error names the
+  operation and the limit.
+- *E-15* [PROPOSAL] Exit codes, frozen in ERRORS.org:
+
+| Code | Meaning                         |
+|------+---------------------------------|
+|    0 | success                         |
+|    2 | usage (bad command line)        |
+|    3 | spec invalid                    |
+|    4 | resolve (dependencies)          |
+|    5 | fetch (network / source)        |
+|    6 | verify (hash mismatch)          |
+|    7 | build failed                    |
+|    8 | install failed                  |
+|   70 | internal bug                    |
+|  130 | interrupted (Ctrl-C)            |
+
+** =core/errors.rkt= (shape, not final code)
+#+begin_src racket
+#lang racket/base
+;; errors.rkt -- the only module that defines exception types and formats messages.
+
+(require racket/contract/base)
+
+(provide
+ (struct-out exn:fail:pm)
+ (contract-out
+  [raise-pm-error
+   (->* (symbol? symbol? string?)
+        (#:fields (listof (cons/c string? any/c))
+         #:hint (or/c string? #f)
+         #:cause (or/c exn? #f))
+        any)]))
+
+(struct exn:fail:pm exn:fail (kind fields hint cause))
+;; kind   : 'spec 'resolve 'fetch 'verify 'build 'install 'config 'internal
+;; fields : (Listof (Pairof String Any))   shown as "  field: value" lines
+;; hint   : (U String #f)                  the NEXT line
+;; cause  : (U exn #f)                     wrapped lower-level exception
+
+;; kind who message -> never returns
+(define (raise-pm-error kind who message
+                        #:fields [fields '()] #:hint [hint #f] #:cause [cause #f])
+  (raise (exn:fail:pm (render-message who message fields hint cause)
+                      (current-continuation-marks)
+                      kind fields hint cause)))
+
+;; who message fields hint cause -> String
+(define (render-message who message fields hint cause)
+  (string-append
+   (format "~a: ~a;" who message)
+   (apply string-append
+          (for/list ([f (in-list fields)])
+            (format "\n  ~a: ~a" (car f) (cdr f))))
+   (if cause (format "\n  cause: ~a" (exn-message cause)) "")
+   (if hint (format "\n  hint: ~a" hint) "")))
+
+(module+ test
+  (require rackunit)
+  (check-exn #rx"fetch-source: download failed;\n  url: https://x.test/a.tgz"
+             (lambda ()
+               (raise-pm-error 'fetch 'fetch-source "download failed"
+                               #:fields '(("url" . "https://x.test/a.tgz"))))))
+#+end_src
+
+Target output for a failed build (this is what "clean errors" means here):
+#+begin_example
+build: step failed;
+  package: htop 3.3.0
+  step: 3 of 4 (make)
+  command: make -j4
+  cwd: /home/user/.cache/pm/build/htop-3.3.0
+  exit code: 2
+  last output:
+    htop.c:12:10: fatal error: ncurses.h: No such file or directory
+  log: /home/user/.cache/pm/logs/htop-3.3.0.log
+  hint: package 'ncurses' provides this header; is it in deps?
+#+end_example
+
+* 7. Effects, filesystem and processes
+- *F-1* All effects go through backend interfaces. Pure modules never open ports, touch the
+  filesystem, read environment variables, the clock or randomness.
+- *F-2* Subprocesses: =subprocess= / =system*= / =process*= with an argv list. Never
+  =system= or =process= with a shell string (quoting and injection; they may also create
+  an intermediate shell, so killing them can miss the real process). Find the executable
+  with =find-executable-path= and fail clearly if it is missing. Capture stdout and
+  stderr. Set cwd and environment explicitly with =parameterize=.
+- *F-3* Atomic writes: write a temp file in the same directory, then rename
+  (=call-with-atomic-output-file=). Never leave half-written files.
+- *F-4* Transactions: build in a staging directory (=make-temporary-directory*=) on the
+  same filesystem as the target, verify, then rename into place. On failure remove staging
+  (=dynamic-wind=) and leave the old state intact.
+- *F-5* One pm process per prefix at a time: =call-with-file-lock/timeout= with
+  =make-lock-file-name=. The error names the lock path.
+- *F-6* Idempotence: running the same plan twice gives the same result. A re-run after a
+  crash must resume or clean up, not corrupt.
+- *F-7* Path confinement: every install path is resolved and checked to be inside the
+  target prefix (reject =..=, absolute paths, symlink escapes). Test with hostile inputs.
+- *F-8* Cleanup uses =dynamic-wind= or custodians. Temp dirs are always removed. Logs are
+  kept.
+- *F-9* Network access lives only in the fetch backend. Bounded retries, timeouts,
+  https by default, hash verified before extraction.
+- *F-10* Do not require root, and do not refuse root either (proot usually looks like
+  root). The rule is: never write outside the configured prefix.
+
+* 8. Security
+- *S-1* Two trust tiers.
+  Tier A (data): read, validated, never executed. All remote or third-party specs.
+  Tier B (code): =.rkt= / =#lang= modules, executed. Only files the user wrote or approved.
+  Tier B is never loaded from fetched content.
+- *S-2* A =#lang= file is code: loading it runs its reader and its body. =require= or
+  =dynamic-require= of a spec means executing it.
+- *S-3* Tier A builds use a closed vocabulary of steps (configure, make, cmake, cargo,
+  copy, ...). An explicit =(run argv ...)= step exists but is highlighted in plan output.
+- *S-4* Pin everything: SHA-256 for tarballs, full commit hash (not branch or tag) for git.
+  The lockfile records both. Verify before extract or compile.
+- *S-5* Archives: reject absolute paths, =..=, special files, escaping symlinks, and
+  oversize contents.
+- *S-6* Builds run with an allowlisted environment, so inherited secrets do not leak.
+- *S-7* No =curl | sh= anywhere. Download, hash-check, then run.
+- *S-8* Secrets never appear in logs. Redact credentials in URLs inside messages.
+
+* 9. Testing
+- *T-1* Every module has =(module+ test ...)= using =rackunit=. Run with =raco test=.
+  Tests need no network and write only to temp directories.
+- *T-2* Test the unhappy paths first. Every error kind has a test (=check-exn= with a
+  predicate or a regexp on the message).
+- *T-3* Golden tests: given a spec fixture, the dry-run plan text equals the stored golden
+  file. Update goldens deliberately, in their own commit.
+- *T-4* Hostile-input tests for the parser and for path handling (F-7, S-5).
+- *T-5* Fixtures live in =tests/fixtures/=. Temp dirs come from =make-temporary-directory*=
+  and are removed in =dynamic-wind=.
+- *T-6* A bug fix starts with a failing test.
+- *T-7* =scripts/check.sh= runs: =raco make -v= on everything, =raco test=, and a text
+  lint (no tabs, no trailing spaces, no line over 102 characters, final newline). It must
+  pass before every commit.
+- *T-8* The core is tested with the =fake= backend. Core tests never need real effects.
+- *T-9* Optional property tests for version ordering and resolver determinism.
+
+* 10. Literate Org
+- *L-1* [PROPOSAL] Org files are the source of truth. Tangled =.rkt= files are committed,
+  start with =;; GENERATED FROM <file>.org -- DO NOT EDIT=, and the AI never edits them.
+  Confirm in DECISIONS.org.
+- *L-2* One concept per Org file. Every source block is named (=#+NAME:=) and tangles to
+  exactly one module.
+- *L-3* Tangling runs in batch mode (=emacs --batch=) so the AI and scripts can run it
+  without an interactive Emacs. =check.sh= regenerates and diffs to prove the tangled files
+  are current.
+- *L-4* Racket error locations refer to the tangled =.rkt= lines, not the Org lines. Keep
+  blocks small, and [VERIFY] =:comments link= in the user's Org setup so tangled files carry
+  back-references.
+- *L-5* Documentation examples should be runnable, and tested when practical.
+
+* 11. Performance and the phone
+- *X-1* Startup is a feature. =racket/base= with explicit requires, always =raco make=,
+  =racket/lazy-require= for rarely used heavy libraries (for example the syntax-parse
+  validation path, if measurement says so). Racket's docs recommend a smaller base language
+  and compiled bytecode for fast startup, and =raco demod= for more. Even so, expect
+  Racket's startup to be noticeably slower than Guile's, and slower on a phone than on a
+  laptop.
+- *X-2* Measure before optimizing. Record baselines in =docs/PERF.org=:
+  =time racket -l racket/base -e '(void)'= and =time racket cli/main.rkt --help=. Do not
+  regress without a DECISIONS entry.
+- *X-3* [VERIFY] Keep Typed Racket, =racket/gui= and =racket/class= out of the CLI path
+  unless measured acceptable.
+- *X-4* Assume small storage and memory: stream downloads through ports, cap sizes, clean
+  caches.
+- *X-5* proot has no user namespaces, no ZFS, no real sandbox. Anything needing them lives
+  behind a backend and is stubbed.
+
+* 12. Git and process
+- *G-1* A branch per phase, a commit per step. Message: =area: change (rule IDs)=.
+- *G-2* Before any destructive step (stage 2, big moves): clean tree, push to the remote,
+  tag.
+- *G-3* =reference/= is read-only (=chmod -R a-w=). Extraction scripts read from it and
+  write elsewhere.
+- *G-4* No force-push, no rewriting pushed history, no deleting branches unasked.
+- *G-5* Use =git mv=. Moves and edits go in separate commits.
+- *G-6* Never commit =compiled/=, secrets or large binaries.
+- *G-7* Guix is GPL-3.0-or-later. Anything extracted or derived from it carries that
+  license; note provenance in file headers.
+
+* 13. AI working agreement
+- *W-1* Ask before assuming. The user's Emacs setup shapes the structure: interview first.
+- *W-2* Show the plan before executing. Wait for approval on anything touching more than
+  three files, public interfaces, deletions or moves.
+- *W-3* One concern per step. Report: what changed, how it was verified, what is next.
+- *W-4* Verify by running. Paste real command output. Never write "should work".
+- *W-5* Do not invent library functions or flags. Check the docs or the REPL
+  (=racket -e '...'=). Say plainly when unsure.
+- *W-6* Report errors verbatim, then diagnose. Never "fix" by suppressing (E-5).
+- *W-7* Mistake protocol (P-10): fix, add a test, add a LESSONS.org entry (what happened,
+  root cause, new rule).
+- *W-8* Stop and ask when: touching =reference/=; deleting anything; installing from the
+  network outside the approved list; changing a =provide=d interface; a rule seems wrong;
+  intent is ambiguous.
+- *W-9* Keep the user's naming and Org conventions. Do not rename things unasked.
+- *W-10* Definition of Done for any change: interface documented; tests (including error
+  cases) pass; =check.sh= green; no rule violated or the deviation logged; commit made;
+  next step stated.
+
+* 14. Open decisions (seed =docs/DECISIONS.org= with these)
+| ID    | Decision                                                                  |
+|-------+---------------------------------------------------------------------------|
+| D-001 | Project name (directory name below is a working name)                      |
+| D-002 | Source of truth: Org tangled to .rkt (L-1) or .rkt directly                |
+| D-003 | Spec format: S-expression data files now, custom =#lang= later?            |
+| D-004 | Lockfile format and location                                               |
+| D-005 | Emacs install layout, and how the user's loader finds installed packages   |
+| D-006 | Supported sources: git, tarball, ELPA/MELPA recipe import?                 |
+| D-007 | Version constraint syntax                                                  |
+| D-008 | Exit-code table (E-15)                                                     |
+| D-009 | Trust model for third-party specs (S-1)                                    |
+| D-010 | Where =raco test= comes from in minimal Racket (section 1)                 |
+
+** Emacs target notes (for later, all [VERIFY])
+- Byte-compile with =emacs --batch= in a clean process (=-Q=), with the package directory
+  on =load-path=. Collect compiler warnings and show them with the E-11 rules.
+- Generate autoloads, and let the user's loader do the =load-path= wiring. The package
+  manager never edits the user's init files.
+- First real package: =racket-mode=.
+
+* 15. First files to create
+Working directory name: =cyberdeck-pm/= (D-001). Create it next to the Guix clone. At first,
+every code file is a stub holding only its purpose statement and an empty =provide=.
+
+#+begin_example
+cyberdeck-pm/
+  README.org              purpose, status, how to run check.sh
+  FOUNDATIONS.org         this file
+  info.rkt                package metadata: collection, version, deps, build-deps
+  .gitignore              compiled/, *.zo, *.dep, tmp/
+  docs/
+    DECISIONS.org         decision log (seed with section 14)
+    ERRORS.org            error kinds, exit codes, message samples
+    GLOSSARY.org          spec, plan, action, backend, target, prefix, pin, tier
+    LESSONS.org           mistakes -> rules, append-only
+    PERF.org              startup and memory baselines
+  scripts/
+    check.sh              raco make + raco test + text lint
+    tangle.el             batch tangle Org -> .rkt (if L-1 is accepted)
+  reference/
+    guix/                 frozen originals, read-only (G-3)
+  core/
+    errors.rkt            exception type, raise helper, message formatter
+    log.rkt               define-logger + helpers
+    ui.rkt                the only module that prints user-facing output
+    version.rkt           version type and ordering
+    hash.rkt              sha256 helpers
+    spec.rkt              package struct and contracts (data only)
+    spec-read.rkt         read-syntax + validation (D-3, D-4)
+    plan.rkt              action structs and pure planning
+    resolve.rkt           dependency resolution
+    lock.rkt              lockfile read/write (atomic)
+    execute.rkt           interprets a plan through the current backend
+  backends/
+    dry-run.rkt           prints the plan, performs nothing
+    fake.rkt              records actions, for tests
+    local.rkt             real effects (after dry-run is solid)
+  targets/
+    emacs/                build, compile, autoloads, install (first real target)
+    system/               README.org only, until real hardware
+  cli/
+    main.rkt              argument parsing, top-level error handler, exit codes
+  tests/
+    fixtures/
+    golden/
+  examples/
+    racket-mode.rktd     first real spec
+#+end_example
+
+** Build order (each step must pass T-7 before the next)
+1. Docs and scaffold: README, DECISIONS (seeded), ERRORS, GLOSSARY, LESSONS, PERF,
+   =info.rkt=, =.gitignore=, =scripts/check.sh=.
+2. =core/errors.rkt= + =core/log.rkt= + =core/ui.rkt=, with tests.
+3. =core/version.rkt= + =core/hash.rkt=, with tests.
+4. =core/spec.rkt= + =core/spec-read.rkt=, with hostile-input and error-message tests.
+5. =core/plan.rkt= + =backends/dry-run.rkt= + =backends/fake.rkt=, with golden tests.
+6. =core/resolve.rkt= + =core/lock.rkt=.
+7. =cli/main.rkt= (top-level error handler and exit codes).
+8. =targets/emacs/= and =backends/local.rkt=, proven on =racket-mode=.
+
+* 16. Reading list (in this order)
+1. Racket Style Guide: https://docs.racket-lang.org/style/
+2. Reference 10.2 Exceptions (error message conventions): https://docs.racket-lang.org/reference/exns.html
+3. syntax/parse introduction: https://docs.racket-lang.org/syntax/stxparse-intro.html
+4. Guide, modules and the main/test submodules: https://docs.racket-lang.org/guide/Module_Syntax.html
+5. Guide, contracts: https://docs.racket-lang.org/guide/contracts.html
+6. Reference 13.4 Reading (safe reading parameters): https://docs.racket-lang.org/reference/Reading.html
+7. Reference, filesystem (atomic output, locks, temp dirs): https://docs.racket-lang.org/reference/Filesystem.html
+8. Reference, subprocesses: https://docs.racket-lang.org/reference/subprocess.html
+9. raco exe and startup advice: https://docs.racket-lang.org/raco/exe.html
+10. Guide, macros: https://docs.racket-lang.org/guide/macros.html

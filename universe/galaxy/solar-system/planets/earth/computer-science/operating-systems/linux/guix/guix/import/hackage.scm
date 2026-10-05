@@ -34,7 +34,7 @@
   #:use-module (srfi srfi-26)
   #:use-module (srfi srfi-1)
   #:use-module (guix diagnostics)
-  #:use-module ((guix download) #:select (download-to-store url-fetch))
+  #:use-module ((guix download) #:select (download-to-temporary-file))
   #:use-module ((guix utils) #:select (package-name->name+version
                                        canonical-newline-port))
   #:use-module (guix http-client)
@@ -310,8 +310,7 @@ the hash of the Cabal file."
       (() '())
       (args `((arguments (,'quasiquote ,args))))))
 
-  (let ((tarball (with-store store
-                   (download-to-store store source-url))))
+  (let ((tarball (download-to-temporary-file source-url)))
     (values
      `(package
         (name ,(hackage-name->package-name name))

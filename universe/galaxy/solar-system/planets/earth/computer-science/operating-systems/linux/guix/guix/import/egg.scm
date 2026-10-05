@@ -36,7 +36,7 @@
   #:use-module (guix upstream)
   #:use-module (guix build-system chicken)
   #:use-module (guix store)
-  #:use-module ((guix download) #:select (download-to-store url-fetch))
+  #:use-module ((guix download) #:select (download-to-temporary-file))
   #:use-module (guix import utils)
   #:export (egg->guix-package
             egg-recursive-import
@@ -197,9 +197,8 @@ not work."
              (source-url (if source #f `(egg-uri ,name version)))
              (tarball (if source
                           #f
-                          (with-store store
-                            (download-to-store
-                             store (egg-uri name version))))))
+                          (download-to-temporary-file
+                           (egg-uri name version)))))
 
         (define egg-home-page
           (string-append (%eggs-home-page) "/" name))

@@ -18,7 +18,7 @@ and re-applies on manual save. The banner is structural and always
 renders first — it never belongs here.
 #+begin_src emacs-lisp
 (defvar aiu-cyber-desk--default-items
-  '((recents . 10) (bookmarks . 10) (registers . 10) (projects . 10)
+  '((bookmarks . 10) (registers . 10) (projects . 10)
     (cyberdeck-status . 1) (cyberdeck-todos . 1) (cyberdeck-sartre . 1))
   "Seed and empty-file fallback for the section order. Mirrors the
 aiu-context default key list.")
@@ -179,7 +179,6 @@ find-file installer."
             (when (fboundp 'olivetti-mode)
               (setq-local olivetti-body-width 120)
               (olivetti-mode 1))
-            (local-set-key (kbd "r") #'dashboard-jump-to-recents)
             (local-set-key (kbd "m") #'dashboard-jump-to-bookmarks)
             (local-set-key (kbd "e") #'dashboard-jump-to-registers)
             (local-set-key (kbd "p") #'dashboard-jump-to-projects)
