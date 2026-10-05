@@ -102,6 +102,11 @@ Single function everything asks. Self-locating: renames never break it."
 
 ** Engine configuration and require
 #+begin_src emacs-lisp
+;; Declared for compiles that run before the defining unit loads.
+(defvar cyberdeck-db-sync-external-method)
+(defvar cyberdeck-db-sync-verbose)
+(defvar cyberdeck-db-parse-method)
+(defvar cyberdeck-db--active-parse-method)
 (setq cyberdeck-db-location
       (expand-file-name "admin/cyberdeck.db"
                         (my/cyberdeck-root-dir)))
@@ -130,13 +135,40 @@ Single function everything asks. Self-locating: renames never break it."
               (lambda ()
                 (cyberdeck--autosync-mode 1)))))
 
-;; Boot backfill, idle and one-shot: historical rows predate drawer
-;; capture, so AIU Subnet reads would miss their MM_* data. One
-;; background walk re-indexes everything; autosync plus explicit
-;; creation updates keep it fresh after that. Never throws, never
-;; blocks boot (idle 60s, silent unless it fails).
+;; Boot backfill, gated and one-shot: historical rows predate drawer
+;; capture, so AIU Subnet reads would miss their MM_* data. A full
+;; re-index walk costs ~60s on this phone, so it runs only when the
+;; vault actually changed since the last one (early-exit find check,
+;; milliseconds when fresh). Autosync plus explicit creation updates
+;; keep things fresh after that. Never throws.
 (defvar my/cyberdeck--backfill-timer nil
   "Idle timer for the one-shot boot backfill.")
+(defvar my/cyberdeck--backfill-stamp-file
+  (locate-user-emacs-file ".cyberdeck-backfill-stamp")
+  "Touch file recording the last successful backfill.")
+
+(defun my/cyberdeck--backfill-needed-p ()
+  "Non-nil when the vault changed since the last backfill.
+Early-exit shell find: instant when fresh. Falls back to t
+(backfill, preserving old behavior) when find is unavailable."
+  (condition-case nil
+      (or (not (file-exists-p my/cyberdeck--backfill-stamp-file))
+          (let* ((stamp (format-time-string
+                         "@%s" (float-time
+                                (file-attribute-modification-time
+                                 (file-attributes my/cyberdeck--backfill-stamp-file)))))
+                 (root (and (fboundp 'my/cyberdeck-root-dir)
+                            (ignore-errors (my/cyberdeck-root-dir))))
+                 (hit (and (stringp root) (file-directory-p root)
+                           (with-temp-buffer
+                             (ignore-errors
+                               (call-process "find" nil t nil root
+                                             "(" "-path" "*/.git" "-o" "-path" "*/WIP" ")"
+                                             "-prune" "-o" "-type" "f"
+                                             "-newermt" stamp "-print" "-quit"))
+                             (> (buffer-size) 0)))))
+            (and hit t)))
+    (error t)))
 
 (defun my/cyberdeck--backfill-vault ()
   "Re-index every vault file's DB row (drawers included)."
@@ -154,10 +186,16 @@ Single function everything asks. Self-locating: renames never break it."
                 (ignore-errors
                  (cyberdeck-db-update-file f)
                  (setq n (1+ n)))))
+            (ignore-errors
+              (with-temp-file my/cyberdeck--backfill-stamp-file
+                (insert "backfilled\n")))
             (message "Cyberdeck DB backfill: %d files re-indexed" n))))
     (error nil)))
 
-(when (null my/cyberdeck--backfill-timer)
+;; Schedule the one-shot idle backfill only when the vault is stale;
+;; common boots schedule nothing and stay quiet afterwards.
+(when (and (null my/cyberdeck--backfill-timer)
+           (my/cyberdeck--backfill-needed-p))
   (setq my/cyberdeck--backfill-timer
         (run-with-idle-timer 60 nil #'my/cyberdeck--backfill-vault)))
 
