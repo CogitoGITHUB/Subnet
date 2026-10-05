@@ -466,7 +466,7 @@ total number of emacs-lisp blocks loaded."
     (when (or (not (file-exists-p el))
               (cl-some (lambda (m) (file-newer-than-file-p m el)) mods))
       (with-demoted-errors "[init] load failed: %s"
-        (let ((tangled (my/load-loader-files mods el))
+        (let ((loaded (my/load-loader-files mods el))
               (source  (let ((n 0))
                          (dolist (m mods)
                            (with-temp-buffer
@@ -477,13 +477,13 @@ total number of emacs-lisp blocks loaded."
                                      nil t)
                                (setq n (1+ n)))))
                          n)))
-          (when (and tangled (= source 0))
+          (when (and loaded (= source 0))
             (lwarn 'foundation :warning
-                   "loader tangle produced nothing from %s" file))
-          (when (< source (or tangled 0))
+                   "loader load produced nothing from %s" file))
+          (when (< source (or loaded 0))
             (lwarn 'foundation :warning
-                   "loader tangle dropped blocks: %d of %d emacs-lisp src blocks from %s"
-                   (or tangled 0) source (file-name-nondirectory file))))))
+                   "loader load dropped blocks: %d of %d emacs-lisp src blocks from %s"
+                   (or loaded 0) source (file-name-nondirectory file))))))
     ;; (my/init-aiu "[init] loading literate loader…")
     (message "AIU Cyberdeck: loading cyberdeck-emacs.el…")
     (redisplay t)

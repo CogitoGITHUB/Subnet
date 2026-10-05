@@ -983,1077 +983,6 @@
   :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
   :END:
 
-* TODO [[id:"d7653f4e-f84c-496f-8019-724812dace64"]["Drawer order :EMACS_MECHANISM::AIU_CONTEXT_DRAWER:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"ebcda311-dffa-4be3-a904-fce142018e06"]["STATE_CHECKLIST > :TODO:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"ebbe917a-199a-46c0-99e6-472eb069782e"]["STATE_DEPENDENCY > :TODO:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"bd268090-e9d6-4e8b-a165-7b109e33205b"]["STATE_GENERAL > :TODO:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"e0d9d0d9-5a53-4b22-9896-230e9e682adb"]["STATE_INTELLIGENCE > :TODO:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"b347337b-b857-422a-99c4-b060fe0271e1"]["STATE_OPERATIONAL > :TODO:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"4ba85966-90b3-41b7-b759-d1492f0eaf36"]["STATE_SOURCE > :TODO:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"b2ed3dbf-f9c7-49b2-9ee3-732a69ae16ee"]["STATE_VALIDATION > :TODO:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"500a86f6-f062-439f-b064-8f30398efc0b"]["STATE_WORK > :TODO:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"2cd66525-e4d3-421e-b535-9d2190b821bf"]["Manifolding-Emacs Agent Guide :EMACS_MECHANISM:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"fa51fce4-2f2b-4e0e-b897-66b3bf0523d7"]["comment-tags :EMACS_MECHANISM:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"9c88feba-7096-41bb-90bd-17d9dd912c8d"]["Editing Programs ( ams mode ✓✓✓ ) :EMACS_MECHANISM:S2:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"63d77a08-0e57-4fb3-aae9-e0b8d00d9016"]["Helpful :EMACS_MECHANISM:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"8f9a0b1c-2d3e-4f5a-6b7c-8d9e0f1a2b3c"]["Emacs OpenCode — OpenCode client inside Emacs :EMACS_MECHANISM:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"56108386-ac4e-4b4f-b231-fff219ca5d4f"]["GIT-GUTTER — Git Change Indicators :EMACS_MECHANISM:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"1b6ef507-3a46-4356-b9e6-48b7e693c336"]["hl-todo :EMACS_MECHANISM:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"3f7a2d1e-8b4c-4e9a-cd12-5b3e7a1f4c8d"]["EMACS-MAGIT-TODOS — Show TODOs in Magit Status :EMACS_MECHANISM:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"7085bdf4-04ce-45ec-bb36-607c301ff70c"]["Maintaining Large Programs :EMACS_MECHANISM:S2:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"5033fb8b-5fbd-4ee9-84fb-8f491e4b055a"]["mmm-mode :EMACS_MECHANISM:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"78ad8cde-78ea-4c8d-8c19-8ac9eacf44eb"]["Preparing Lisp code for distribution :EMACS_MECHANISM:S2:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"daff702e-18eb-4b26-ae0f-aad41340d914"]["Project :EMACS_MECHANISM:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"1a85b5c2-f33c-4e49-a44d-57f06c4a0a11"]["PROJECTILE — Project Interaction Library :EMACS_MECHANISM:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"608da83c-2ac2-4d92-be3c-9fc3c490add5"]["Universal Launcher :EMACS_MECHANISM:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"ba3e323e-0425-4b9a-a1e9-476c1e9c6be8"]["Recursive Editing Levels :EMACS_MECHANISM:S2:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"b9110d79-0568-4790-9ebd-69edc679552f"]["Text Editing and Kill Ring :EMACS_MECHANISM:S2:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"9ab853f6-2646-4b4a-8a54-cd77793e9cf2"]["Filling and Indentation :EMACS_MECHANISM:S2:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"0c2393e1-9347-43d4-b8c4-f5bb399f24f5"]["Text Properties :EMACS_MECHANISM:S2:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"7d3b1a64-a7cb-454d-8993-7610aaec5920"]["Encoding and Cryptography :EMACS_MECHANISM:S2:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"e2952193-522d-4e1a-b2b6-b9cf4ba31610"]["Data Formats and Hooks :EMACS_MECHANISM:S2:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"df8ac580-3ad4-43e2-9b86-04ed13829d4d"]["Point and Misc Commands :EMACS_MECHANISM:S2:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"7a50cefa-ba14-4d5d-b1f6-b4d15ad9eb1f"]["Abbrev :EMACS_MECHANISM:S2:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"7776408f-460c-4d90-8d5d-8dae68ff826d"]["book-mode :EMACS_MECHANISM:S2:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"8567643c-c701-4555-beb8-b3cb1caa3424"]["Commands for Fixing Typos :EMACS_MECHANISM:S2:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"a8791add-53f5-409e-81cd-1e24986b2985"]["Commands for Human Languages :EMACS_MECHANISM:S2:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"e4e1bbf8-0d03-41ad-b616-03fd0c314655"]["dmacro :EMACS_MECHANISM:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"de49e7ae-d4b4-4d1c-a6e3-2ff99cf36448"]["Ispell — Spell Checker Interface :EMACS_MECHANISM:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"3a7f85b8-78d7-4e75-adb2-ef5d729a1203"]["Indentation :EMACS_MECHANISM:S2:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"a589fee5-3a10-4beb-a2d9-2d43799a01ec"]["Killing and Moving Text :EMACS_MECHANISM:S2:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"d14d0ad4-b63b-4a6f-bfbc-c78339d9290e"]["The Mark and the Region ✓✓✓ {IMPORTANT !!!} :EMACS_MECHANISM:S2:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"4a77025c-ee6b-47cd-99d5-5e47a22e52fa"]["multiple-cursors :EMACS_MECHANISM:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"f31b81a3-3f4c-4467-8abf-2321429a59ae"]["Registers :EMACS_MECHANISM:S2:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"d4aa598a-6558-4f0e-8449-fc050d18d4aa"]["Searching and Matching :EMACS_MECHANISM:S2:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"ff3b2d7e-6c6d-4ddf-8d81-7415207caa2d"]["Searching and Replacement :EMACS_MECHANISM:S2:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"cedb3377-0c46-41a4-bd9e-5aef96b929dc"]["Sorting Text :EMACS_MECHANISM:S2:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"6d5c87a2-d52e-4b92-93bd-2b6748bfa181"]["TODO Vundo :EMACS_MECHANISM:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"addbea6c-e0f3-41dd-842a-2743ee1f0e0d"]["Cyberdeck Banner :EMACS_MECHANISM:S0:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"0b98bf86-b4fc-4c34-b36f-6fa07ff8f7f4"]["AIU Cyber Desk Upstream Main :EMACS_MECHANISM:S0:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"6984212e-fcea-4fd3-87e4-394b91b50247"]["AIU Cyber Desk Upstream Widgets :EMACS_MECHANISM:S0:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"aa22d145-ead7-4293-a7c8-e5230a7da69c"]["AIU Cyber Desk Widget DSL :EMACS_MECHANISM:S0:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"797e199d-e94f-4e23-b316-d07a0694270f"]["AIU Cyber Desk Setup :EMACS_MECHANISM:S0:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"0809668a-5c9d-4b8e-a305-f7905d8b5085"]["Cyberdeck Sartre Widget :EMACS_MECHANISM:S0:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"fb239a3d-e3c8-4537-b65a-107f06a2dd44"]["Cyberdeck Status Widget :EMACS_MECHANISM:S0:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"a3778d44-33b7-49d8-bf7f-2ac3277046ef"]["Cyberdeck TODOs Widget :EMACS_MECHANISM:S0:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"1069b25a-f16b-4095-a688-061d0aebaa8a"]["AIU Cyber Desk Faces :EMACS_MECHANISM:S0:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"7c1e4a92-3b58-4d6f-9a02-5e83c1d47b60"]["Emergency Escape :EMACS_MECHANISM:S2:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"7cdefe71-a198-4127-8a24-cd4b178b19ab"]["Entering :EMACS_MECHANISM:S2:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"1622fe75-636c-4b0d-8f72-c2a5d4f26610"]["Introduction :EMACS_MECHANISM:S2:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"68fb288d-2179-4b0e-ba76-17cf28303712"]["Quitting and Aborting :EMACS_MECHANISM:S2:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"e9b66fce-f0dd-482b-9b65-a60109351a6d"]["restart-emacs :EMACS_MECHANISM:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"0f61b097-0352-4112-8224-36a0d4fd1559"]["BODY_AGENT :AIU_CONTEXT_DRAWER:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"3296bd12-82f7-480e-af4e-53303b14d4b6"]["BODY_EMACS_MECHANISM_LOCAL :AIU_CONTEXT_DRAWER:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"e1555fa3-427c-482d-bf2a-20cf7a155f91"]["BODY_EMACS_MECHANISM_MODULE :AIU_CONTEXT_DRAWER:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"9a6412e8-393c-4a4b-bb15-4a25d4425e2c"]["BODY_JOURNAL :AIU_CONTEXT_DRAWER:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"26c4fe1d-f93e-4c61-ae37-0e1a550a4e6b"]["BODY_MATH :AIU_CONTEXT_DRAWER:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"37e64a91-7f43-422f-abb9-92895f87a330"]["BODY_NOTES :AIU_CONTEXT_DRAWER:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"bfc6b597-6c92-4256-8106-7b92d50af314"]["BODY_PROTOCOL :AIU_CONTEXT_DRAWER:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"3f8be1ed-8844-4be9-8019-9f654385ecab"]["BODY_RECIPES :AIU_CONTEXT_DRAWER:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"5354c0eb-8886-4fd2-a63a-4f3f57f10743"]["BODY_REFERENCE :AIU_CONTEXT_DRAWER:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"d5efd677-9109-41c0-990e-bf9334c9ab08"]["BODY_TASK :AIU_CONTEXT_DRAWER:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"aiu-run-domain"]["ROUTINE_DOMAIN :inline:routine:EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"d0831ad1-c065-4676-9450-bdb162667ec2"]["ROUTINE_TEMPORAL :inline:routine:EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"contact-birthday"]["BIRTHDAY :free:contact:EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"contact-email"]["EMAIL :free:contact:EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"contact-nickname"]["NICKNAME :free:contact:EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"contact-aiu"]["AIU :free:contact:EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"contact-phone"]["PHONE :free:contact:EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"abf3b4ad-e8bd-4058-bf52-953f6509ce8a"]["ETYMOLOGY :unfolding:dictionary:EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"examples"]["EXAMPLE :scoped:dictionary:EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"019eb4e8-3ac2-48bf-8ce0-de47048ebf77"]["FREQUENCY :unfolding:dictionary:EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"0a90a47a-59ca-40ac-be86-121ee0b969b5"]["POS :unfolding:dictionary:EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"pronunciation"]["PRONUNCIATION :scoped:dictionary:EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"1bca67a3-729b-4b57-bd88-2ea660d29e98"]["REGISTER :unfolding:dictionary:EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"synonyms"]["SYNONYMS :scoped:dictionary:EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"6a312fe3-85ec-43d0-8749-46b141ba1590"]["Cook Time Prompt :EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"388d7058-c485-4118-8a6a-61505dd84977"]["Prep Time Prompt :EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"4c5c84e0-af19-48b1-b32c-e4306f68a8ea"]["Ready In Prompt :EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"d097b80f-f941-4eb4-a57e-7bf7b7d3487c"]["Servings Prompt :EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"24424009-629e-49f9-b047-ba2b2d525f84"]["File Override Prompt :EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"rule-level"]["LEVEL :tagopt:rule:EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"rule-scope"]["SCOPE :tagopt:rule:EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"rule-topics"]["RULE_TOPICS :topics:rule:EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"ddf98724-2bfe-4782-89db-b8c698931e35"]["ADVANTAGES :inline:file:heading:task:EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"29c8f5b8-6075-4c22-98be-eb23d7c7b482"]["AIU CONTEXT :inline:file:heading:task:EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"15251b14-086b-4808-a42f-3b2fa1cb4b00"]["Extra AIU Contexts :EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"30466b0c-f3cc-43a1-8a72-340f325446c4"]["AIU_SUBNET_PLACEMENT :aiu-subnet:file:task:EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"8fae0926-af43-4ea2-b9c1-931567c06300"]["AIU_SUBNET_SELECT :aiu-subnet:file:task:EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"b8a3c606-c97e-4a1a-8bcc-875b058c5f98"]["Aliases Prompt :EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"c89c6b85-9bd5-4ddd-80cb-ec79eacccfb8"]["CONTEXT :inline:file:heading:task:EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"98b89c84-39b3-4371-9ee5-679da9e80245"]["COUNTERS :inline:file:heading:task:EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"0bdda1bf-37d4-44ab-8da0-ac6e83baa25b"]["DECISIONS :inline:file:heading:task:EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"5a4e8493-4190-4214-87bd-605854ff89f7"]["EVIDENCE :inline:file:heading:task:EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"133edc8b-4086-4d33-a0da-555a8b886f8c"]["EXPERIMENTS :inline:file:heading:task:EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"eb685191-33f3-43eb-8353-7ce78812bc75"]["FAILURES :inline:file:heading:task:EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"ac220e81-8f45-4975-94e6-f71376db03c7"]["File Name :EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"49093fbb-88e6-4a8b-870f-c023a615a320"]["FLOWTEST_EPSILON :inline:file:heading:task:EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"09d53f25-7d05-431c-ad16-0070fb6e899e"]["HYPOTHESES :inline:file:heading:task:EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"9c7f9d10-e86a-4c97-89c0-5572bc28f702"]["MASTERY :inline:file:heading:task:EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"9e5d9ba4-9d77-46d3-9ba9-6952f6732ffc"]["STAGE :mastering:file:heading:task:EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"4e921f47-dee6-4ccb-a8a7-5c74502cb71d"]["JOURNAL :inline:file:heading:task:EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"64919b4c-95a7-4888-b98c-daa9bef62a2a"]["LAWS :inline:file:heading:task:EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"9c858374-ec89-443b-b46e-a1e375edb2a4"]["LEVERAGE :inline:file:heading:task:EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"2c30c44f-09a4-4a54-afad-bc8781769e5b"]["OBJECTIVES :inline:file:heading:task:EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"a8419bf6-0a1f-4f5d-9053-064170e55460"]["PHILOSOPHY :inline:file:heading:task:EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"c755ea67-16c0-4e07-804f-2b4d5120b1df"]["Insert Position (headings only) :EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"54e09d81-4d73-4073-91b4-eb91c59006ad"]["PRIORITY :inline:file:heading:task:EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"309c9ccc-6eb9-4115-ae73-65eb82007590"]["QUOTES :inline:file:heading:task:EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"b1f44cda-d800-4837-846e-3a8b40536351"]["RULES :inline:file:heading:task:EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"2ee4fc9c-7c4c-4633-b19d-174f66ac60a0"]["Scheduled / Deadline :EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"994e22e7-1771-4993-86bc-fc64762f4e00"]["SIGNALS :inline:file:heading:task:EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"c59e8fcb-df04-47cb-9224-f5efb90c7eab"]["SOURCES :inline:file:heading:task:EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"67d9a126-fd05-4d7a-abb4-4ac9bf1c45d0"]["STATE_CHECKLIST :unfolding:file:heading:task:EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"7819dec9-1da9-48c9-a358-9ba82a97ff66"]["STATE_DEPENDENCY :unfolding:file:heading:task:EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"6a6b447d-a535-4a33-978d-6886c217da64"]["STATE_GENERAL :unfolding:file:heading:task:EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"cc80173f-8178-4c47-ae38-3f6aa25cc18a"]["STATE_INTELLIGENCE :unfolding:file:heading:task:EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"73e076fb-a4c4-4083-b1fe-1bf169fc6654"]["STATE_OPERATIONAL :unfolding:file:heading:task:EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"ce67cedd-9d17-427a-99de-8ffbe12548b3"]["STATE_SOURCE :unfolding:file:heading:task:EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"0dd729fa-6dfd-4bb6-9393-a78ba6b5f083"]["STATE_VALIDATION :unfolding:file:heading:task:EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"b73fe4fb-ce49-488a-a85c-d4f9d06b9a0c"]["STATE_WORK :unfolding:file:heading:task:EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"89201d7f-c7fe-418e-abef-d0178d9ba3c3"]["STATUS :inline:file:heading:task:EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"8168e2e0-0b48-4d18-8c46-5696d71e250d"]["Subdirectory :EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"tags"]["TAGS :tags:file:heading:task:EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"7709c2c8-cbde-4177-888e-5d7fc85aecb2"]["THINKING_TYPES :multi:file:heading:EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"547ee271-c65b-4b84-9c40-d96cebd3174c"]["thinking-types :EMACS_MECHANISM:S2:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"todo"]["TODO_STATE :todo:file:heading:task:EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"4e687415-2b78-4d72-b017-2bcc74fe2ae6"]["TRAPS_EXTERNAL :inline:file:heading:task:EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"db3c7031-5e63-4628-8ef5-f17a692d5d3c"]["TRAPS_INTERNAL :inline:file:heading:task:EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"8808e72d-3849-4834-a08c-56e735c71199"]["Emacs Mechanism Agent Files :EMACS_MECHANISM:S0:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"41910229-d0f6-4d3f-a2ca-55e1ab5048a5"]["Emacs Mechanism Auto Cyberdeck :EMACS_MECHANISM:S0:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"0af52924-1b98-4118-8f7e-9f3fb38b7e6c"]["Emacs Mechanism Local Files :EMACS_MECHANISM:S0:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"081bd698-04d5-47db-88ae-f6c5f76e0fb3"]["Emacs Mechanism Module Files :EMACS_MECHANISM:S0:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"78a4dff8-4eb5-4e96-a222-2c1b1fbfece4"]["Core :EMACS_MECHANISM:S0:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"e5e19820-1b3f-4936-beb2-11b26d077933"]["Core :EMACS_MECHANISM:S0:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"cbe0cc2e-7ef9-4cca-a808-0904ea69c27a"]["Core :EMACS_MECHANISM:S0:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"a7e4da39-3bf2-4682-bb55-9098bb7d7949"]["Schema Bootstrap :EMACS_MECHANISM:S0:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"248d4130-d415-4b92-89a5-2879c0a96f7c"]["State :EMACS_MECHANISM:S0:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"99af7a1d-ed28-47f6-bec8-aefa275c7932"]["State :EMACS_MECHANISM:S0:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"9e476382-9604-4d49-8d53-e3151cd093ba"]["State :EMACS_MECHANISM:S0:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"6b2d7bc9-7c42-4dd0-80b3-dd1bfc16cda5"]["Agent API :EMACS_MECHANISM:S0:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"e48f8756-8956-4776-aa39-412cf8c307a1"]["AI Proposals :EMACS_MECHANISM:S0:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"52e2269f-9ad9-4b15-9abe-74c57c506b62"]["AIU Contexts :EMACS_MECHANISM:S0:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"3846581a-2a0e-411c-abe5-9f4e049da55c"]["AIU Context Core Library :EMACS_MECHANISM:S0:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"5406ae0c-1e28-4765-887f-df24c24c0c1b"]["Vendored aiu-proxy-clone engine :EMACS_MECHANISM:S0:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
-* TODO [[id:"dfa66ca4-bbca-4b87-8e75-bcbe978cf759"]["AIU Registration :EMACS_MECHANISM:S0:"]]
-  :PROPERTIES:
-  :CREATED:       <2026-10-05 Mon>
-  :SCHEMAS:       base
-  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
-  :END:
-
 * TODO [[id:"f14d38b9-f954-4dde-bfeb-50fc8919ef0c"]["Schema & Extractor :EMACS_MECHANISM:S0:"]]
   :PROPERTIES:
   :CREATED:       <2026-10-05 Mon>
@@ -3861,6 +2790,1070 @@
   :END:
 
 * TODO [[id:"1a3f2c4e-7d5b-4a8e-bf23-6c1e9f2a4d7b"]["The Self"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"d7653f4e-f84c-496f-8019-724812dace64"]["Drawer order :EMACS_MECHANISM::AIU_CONTEXT_DRAWER:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"ebcda311-dffa-4be3-a904-fce142018e06"]["STATE_CHECKLIST > :TODO:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"ebbe917a-199a-46c0-99e6-472eb069782e"]["STATE_DEPENDENCY > :TODO:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"bd268090-e9d6-4e8b-a165-7b109e33205b"]["STATE_GENERAL > :TODO:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"e0d9d0d9-5a53-4b22-9896-230e9e682adb"]["STATE_INTELLIGENCE > :TODO:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"b347337b-b857-422a-99c4-b060fe0271e1"]["STATE_OPERATIONAL > :TODO:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"4ba85966-90b3-41b7-b759-d1492f0eaf36"]["STATE_SOURCE > :TODO:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"b2ed3dbf-f9c7-49b2-9ee3-732a69ae16ee"]["STATE_VALIDATION > :TODO:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"500a86f6-f062-439f-b064-8f30398efc0b"]["STATE_WORK > :TODO:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"2cd66525-e4d3-421e-b535-9d2190b821bf"]["Manifolding-Emacs Agent Guide :EMACS_MECHANISM:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"fa51fce4-2f2b-4e0e-b897-66b3bf0523d7"]["comment-tags :EMACS_MECHANISM:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"9c88feba-7096-41bb-90bd-17d9dd912c8d"]["Editing Programs ( ams mode ✓✓✓ ) :EMACS_MECHANISM:S2:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"63d77a08-0e57-4fb3-aae9-e0b8d00d9016"]["Helpful :EMACS_MECHANISM:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"8f9a0b1c-2d3e-4f5a-6b7c-8d9e0f1a2b3c"]["Emacs OpenCode — OpenCode client inside Emacs :EMACS_MECHANISM:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"56108386-ac4e-4b4f-b231-fff219ca5d4f"]["GIT-GUTTER — Git Change Indicators :EMACS_MECHANISM:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"1b6ef507-3a46-4356-b9e6-48b7e693c336"]["hl-todo :EMACS_MECHANISM:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"3f7a2d1e-8b4c-4e9a-cd12-5b3e7a1f4c8d"]["EMACS-MAGIT-TODOS — Show TODOs in Magit Status :EMACS_MECHANISM:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"7085bdf4-04ce-45ec-bb36-607c301ff70c"]["Maintaining Large Programs :EMACS_MECHANISM:S2:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"5033fb8b-5fbd-4ee9-84fb-8f491e4b055a"]["mmm-mode :EMACS_MECHANISM:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"78ad8cde-78ea-4c8d-8c19-8ac9eacf44eb"]["Preparing Lisp code for distribution :EMACS_MECHANISM:S2:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"daff702e-18eb-4b26-ae0f-aad41340d914"]["Project :EMACS_MECHANISM:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"1a85b5c2-f33c-4e49-a44d-57f06c4a0a11"]["PROJECTILE — Project Interaction Library :EMACS_MECHANISM:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"608da83c-2ac2-4d92-be3c-9fc3c490add5"]["Universal Launcher :EMACS_MECHANISM:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"ba3e323e-0425-4b9a-a1e9-476c1e9c6be8"]["Recursive Editing Levels :EMACS_MECHANISM:S2:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"b9110d79-0568-4790-9ebd-69edc679552f"]["Text Editing and Kill Ring :EMACS_MECHANISM:S2:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"9ab853f6-2646-4b4a-8a54-cd77793e9cf2"]["Filling and Indentation :EMACS_MECHANISM:S2:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"0c2393e1-9347-43d4-b8c4-f5bb399f24f5"]["Text Properties :EMACS_MECHANISM:S2:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"7d3b1a64-a7cb-454d-8993-7610aaec5920"]["Encoding and Cryptography :EMACS_MECHANISM:S2:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"e2952193-522d-4e1a-b2b6-b9cf4ba31610"]["Data Formats and Hooks :EMACS_MECHANISM:S2:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"df8ac580-3ad4-43e2-9b86-04ed13829d4d"]["Point and Misc Commands :EMACS_MECHANISM:S2:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"7a50cefa-ba14-4d5d-b1f6-b4d15ad9eb1f"]["Abbrev :EMACS_MECHANISM:S2:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"7776408f-460c-4d90-8d5d-8dae68ff826d"]["book-mode :EMACS_MECHANISM:S2:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"8567643c-c701-4555-beb8-b3cb1caa3424"]["Commands for Fixing Typos :EMACS_MECHANISM:S2:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"a8791add-53f5-409e-81cd-1e24986b2985"]["Commands for Human Languages :EMACS_MECHANISM:S2:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"e4e1bbf8-0d03-41ad-b616-03fd0c314655"]["dmacro :EMACS_MECHANISM:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"de49e7ae-d4b4-4d1c-a6e3-2ff99cf36448"]["Ispell — Spell Checker Interface :EMACS_MECHANISM:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"3a7f85b8-78d7-4e75-adb2-ef5d729a1203"]["Indentation :EMACS_MECHANISM:S2:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"a589fee5-3a10-4beb-a2d9-2d43799a01ec"]["Killing and Moving Text :EMACS_MECHANISM:S2:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"d14d0ad4-b63b-4a6f-bfbc-c78339d9290e"]["The Mark and the Region ✓✓✓ {IMPORTANT !!!} :EMACS_MECHANISM:S2:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"4a77025c-ee6b-47cd-99d5-5e47a22e52fa"]["multiple-cursors :EMACS_MECHANISM:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"f31b81a3-3f4c-4467-8abf-2321429a59ae"]["Registers :EMACS_MECHANISM:S2:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"d4aa598a-6558-4f0e-8449-fc050d18d4aa"]["Searching and Matching :EMACS_MECHANISM:S2:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"ff3b2d7e-6c6d-4ddf-8d81-7415207caa2d"]["Searching and Replacement :EMACS_MECHANISM:S2:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"cedb3377-0c46-41a4-bd9e-5aef96b929dc"]["Sorting Text :EMACS_MECHANISM:S2:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"6d5c87a2-d52e-4b92-93bd-2b6748bfa181"]["TODO Vundo :EMACS_MECHANISM:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"addbea6c-e0f3-41dd-842a-2743ee1f0e0d"]["Cyberdeck Banner :EMACS_MECHANISM:S0:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"0b98bf86-b4fc-4c34-b36f-6fa07ff8f7f4"]["AIU Cyber Desk Upstream Main :EMACS_MECHANISM:S0:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"6984212e-fcea-4fd3-87e4-394b91b50247"]["AIU Cyber Desk Upstream Widgets :EMACS_MECHANISM:S0:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"aa22d145-ead7-4293-a7c8-e5230a7da69c"]["AIU Cyber Desk Widget DSL :EMACS_MECHANISM:S0:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"797e199d-e94f-4e23-b316-d07a0694270f"]["AIU Cyber Desk Setup :EMACS_MECHANISM:S0:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"0809668a-5c9d-4b8e-a305-f7905d8b5085"]["Cyberdeck Sartre Widget :EMACS_MECHANISM:S0:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"fb239a3d-e3c8-4537-b65a-107f06a2dd44"]["Cyberdeck Status Widget :EMACS_MECHANISM:S0:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"a3778d44-33b7-49d8-bf7f-2ac3277046ef"]["Cyberdeck TODOs Widget :EMACS_MECHANISM:S0:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"1069b25a-f16b-4095-a688-061d0aebaa8a"]["AIU Cyber Desk Faces :EMACS_MECHANISM:S0:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"7c1e4a92-3b58-4d6f-9a02-5e83c1d47b60"]["Emergency Escape :EMACS_MECHANISM:S2:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"7cdefe71-a198-4127-8a24-cd4b178b19ab"]["Entering :EMACS_MECHANISM:S2:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"1622fe75-636c-4b0d-8f72-c2a5d4f26610"]["Introduction :EMACS_MECHANISM:S2:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"68fb288d-2179-4b0e-ba76-17cf28303712"]["Quitting and Aborting :EMACS_MECHANISM:S2:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"e9b66fce-f0dd-482b-9b65-a60109351a6d"]["restart-emacs :EMACS_MECHANISM:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"0f61b097-0352-4112-8224-36a0d4fd1559"]["BODY_AGENT :AIU_CONTEXT_DRAWER:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"3296bd12-82f7-480e-af4e-53303b14d4b6"]["BODY_EMACS_MECHANISM_LOCAL :AIU_CONTEXT_DRAWER:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"e1555fa3-427c-482d-bf2a-20cf7a155f91"]["BODY_EMACS_MECHANISM_MODULE :AIU_CONTEXT_DRAWER:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"9a6412e8-393c-4a4b-bb15-4a25d4425e2c"]["BODY_JOURNAL :AIU_CONTEXT_DRAWER:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"26c4fe1d-f93e-4c61-ae37-0e1a550a4e6b"]["BODY_MATH :AIU_CONTEXT_DRAWER:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"37e64a91-7f43-422f-abb9-92895f87a330"]["BODY_NOTES :AIU_CONTEXT_DRAWER:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"bfc6b597-6c92-4256-8106-7b92d50af314"]["BODY_PROTOCOL :AIU_CONTEXT_DRAWER:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"3f8be1ed-8844-4be9-8019-9f654385ecab"]["BODY_RECIPES :AIU_CONTEXT_DRAWER:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"5354c0eb-8886-4fd2-a63a-4f3f57f10743"]["BODY_REFERENCE :AIU_CONTEXT_DRAWER:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"d5efd677-9109-41c0-990e-bf9334c9ab08"]["BODY_TASK :AIU_CONTEXT_DRAWER:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"aiu-run-domain"]["ROUTINE_DOMAIN :inline:routine:EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"d0831ad1-c065-4676-9450-bdb162667ec2"]["ROUTINE_TEMPORAL :inline:routine:EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"contact-birthday"]["BIRTHDAY :free:contact:EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"contact-email"]["EMAIL :free:contact:EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"contact-nickname"]["NICKNAME :free:contact:EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"contact-aiu"]["AIU :free:contact:EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"contact-phone"]["PHONE :free:contact:EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"abf3b4ad-e8bd-4058-bf52-953f6509ce8a"]["ETYMOLOGY :unfolding:dictionary:EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"examples"]["EXAMPLE :scoped:dictionary:EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"019eb4e8-3ac2-48bf-8ce0-de47048ebf77"]["FREQUENCY :unfolding:dictionary:EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"0a90a47a-59ca-40ac-be86-121ee0b969b5"]["POS :unfolding:dictionary:EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"pronunciation"]["PRONUNCIATION :scoped:dictionary:EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"1bca67a3-729b-4b57-bd88-2ea660d29e98"]["REGISTER :unfolding:dictionary:EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"synonyms"]["SYNONYMS :scoped:dictionary:EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"6a312fe3-85ec-43d0-8749-46b141ba1590"]["Cook Time Prompt :EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"388d7058-c485-4118-8a6a-61505dd84977"]["Prep Time Prompt :EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"4c5c84e0-af19-48b1-b32c-e4306f68a8ea"]["Ready In Prompt :EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"d097b80f-f941-4eb4-a57e-7bf7b7d3487c"]["Servings Prompt :EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"24424009-629e-49f9-b047-ba2b2d525f84"]["File Override Prompt :EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"rule-level"]["LEVEL :tagopt:rule:EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"rule-scope"]["SCOPE :tagopt:rule:EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"rule-topics"]["RULE_TOPICS :topics:rule:EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"ddf98724-2bfe-4782-89db-b8c698931e35"]["ADVANTAGES :inline:file:heading:task:EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"29c8f5b8-6075-4c22-98be-eb23d7c7b482"]["AIU CONTEXT :inline:file:heading:task:EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"15251b14-086b-4808-a42f-3b2fa1cb4b00"]["Extra AIU Contexts :EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"30466b0c-f3cc-43a1-8a72-340f325446c4"]["AIU_SUBNET_PLACEMENT :aiu-subnet:file:task:EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"8fae0926-af43-4ea2-b9c1-931567c06300"]["AIU_SUBNET_SELECT :aiu-subnet:file:task:EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"b8a3c606-c97e-4a1a-8bcc-875b058c5f98"]["Aliases Prompt :EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"c89c6b85-9bd5-4ddd-80cb-ec79eacccfb8"]["CONTEXT :inline:file:heading:task:EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"98b89c84-39b3-4371-9ee5-679da9e80245"]["COUNTERS :inline:file:heading:task:EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"0bdda1bf-37d4-44ab-8da0-ac6e83baa25b"]["DECISIONS :inline:file:heading:task:EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"5a4e8493-4190-4214-87bd-605854ff89f7"]["EVIDENCE :inline:file:heading:task:EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"133edc8b-4086-4d33-a0da-555a8b886f8c"]["EXPERIMENTS :inline:file:heading:task:EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"eb685191-33f3-43eb-8353-7ce78812bc75"]["FAILURES :inline:file:heading:task:EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"ac220e81-8f45-4975-94e6-f71376db03c7"]["File Name :EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"49093fbb-88e6-4a8b-870f-c023a615a320"]["FLOWTEST_EPSILON :inline:file:heading:task:EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"09d53f25-7d05-431c-ad16-0070fb6e899e"]["HYPOTHESES :inline:file:heading:task:EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"9c7f9d10-e86a-4c97-89c0-5572bc28f702"]["MASTERY :inline:file:heading:task:EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"9e5d9ba4-9d77-46d3-9ba9-6952f6732ffc"]["STAGE :mastering:file:heading:task:EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"4e921f47-dee6-4ccb-a8a7-5c74502cb71d"]["JOURNAL :inline:file:heading:task:EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"64919b4c-95a7-4888-b98c-daa9bef62a2a"]["LAWS :inline:file:heading:task:EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"9c858374-ec89-443b-b46e-a1e375edb2a4"]["LEVERAGE :inline:file:heading:task:EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"2c30c44f-09a4-4a54-afad-bc8781769e5b"]["OBJECTIVES :inline:file:heading:task:EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"a8419bf6-0a1f-4f5d-9053-064170e55460"]["PHILOSOPHY :inline:file:heading:task:EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"c755ea67-16c0-4e07-804f-2b4d5120b1df"]["Insert Position (headings only) :EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"54e09d81-4d73-4073-91b4-eb91c59006ad"]["PRIORITY :inline:file:heading:task:EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"309c9ccc-6eb9-4115-ae73-65eb82007590"]["QUOTES :inline:file:heading:task:EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"b1f44cda-d800-4837-846e-3a8b40536351"]["RULES :inline:file:heading:task:EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"2ee4fc9c-7c4c-4633-b19d-174f66ac60a0"]["Scheduled / Deadline :EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"994e22e7-1771-4993-86bc-fc64762f4e00"]["SIGNALS :inline:file:heading:task:EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"c59e8fcb-df04-47cb-9224-f5efb90c7eab"]["SOURCES :inline:file:heading:task:EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"67d9a126-fd05-4d7a-abb4-4ac9bf1c45d0"]["STATE_CHECKLIST :unfolding:file:heading:task:EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"7819dec9-1da9-48c9-a358-9ba82a97ff66"]["STATE_DEPENDENCY :unfolding:file:heading:task:EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"6a6b447d-a535-4a33-978d-6886c217da64"]["STATE_GENERAL :unfolding:file:heading:task:EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"cc80173f-8178-4c47-ae38-3f6aa25cc18a"]["STATE_INTELLIGENCE :unfolding:file:heading:task:EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"73e076fb-a4c4-4083-b1fe-1bf169fc6654"]["STATE_OPERATIONAL :unfolding:file:heading:task:EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"ce67cedd-9d17-427a-99de-8ffbe12548b3"]["STATE_SOURCE :unfolding:file:heading:task:EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"0dd729fa-6dfd-4bb6-9393-a78ba6b5f083"]["STATE_VALIDATION :unfolding:file:heading:task:EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"b73fe4fb-ce49-488a-a85c-d4f9d06b9a0c"]["STATE_WORK :unfolding:file:heading:task:EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"89201d7f-c7fe-418e-abef-d0178d9ba3c3"]["STATUS :inline:file:heading:task:EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"8168e2e0-0b48-4d18-8c46-5696d71e250d"]["Subdirectory :EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"tags"]["TAGS :tags:file:heading:task:EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"7709c2c8-cbde-4177-888e-5d7fc85aecb2"]["THINKING_TYPES :multi:file:heading:EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"547ee271-c65b-4b84-9c40-d96cebd3174c"]["thinking-types :EMACS_MECHANISM:S2:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"todo"]["TODO_STATE :todo:file:heading:task:EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"4e687415-2b78-4d72-b017-2bcc74fe2ae6"]["TRAPS_EXTERNAL :inline:file:heading:task:EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"db3c7031-5e63-4628-8ef5-f17a692d5d3c"]["TRAPS_INTERNAL :inline:file:heading:task:EMACS_MECHANISM:AIU_CONTEXT_DRAWER:S2:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"8808e72d-3849-4834-a08c-56e735c71199"]["Emacs Mechanism Agent Files :EMACS_MECHANISM:S0:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"41910229-d0f6-4d3f-a2ca-55e1ab5048a5"]["Emacs Mechanism Auto Cyberdeck :EMACS_MECHANISM:S0:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"0af52924-1b98-4118-8f7e-9f3fb38b7e6c"]["Emacs Mechanism Local Files :EMACS_MECHANISM:S0:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"081bd698-04d5-47db-88ae-f6c5f76e0fb3"]["Emacs Mechanism Module Files :EMACS_MECHANISM:S0:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"78a4dff8-4eb5-4e96-a222-2c1b1fbfece4"]["Core :EMACS_MECHANISM:S0:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"e5e19820-1b3f-4936-beb2-11b26d077933"]["Core :EMACS_MECHANISM:S0:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"cbe0cc2e-7ef9-4cca-a808-0904ea69c27a"]["Core :EMACS_MECHANISM:S0:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"a7e4da39-3bf2-4682-bb55-9098bb7d7949"]["Schema Bootstrap :EMACS_MECHANISM:S0:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"248d4130-d415-4b92-89a5-2879c0a96f7c"]["State :EMACS_MECHANISM:S0:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"99af7a1d-ed28-47f6-bec8-aefa275c7932"]["State :EMACS_MECHANISM:S0:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"9e476382-9604-4d49-8d53-e3151cd093ba"]["State :EMACS_MECHANISM:S0:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"6b2d7bc9-7c42-4dd0-80b3-dd1bfc16cda5"]["Agent API :EMACS_MECHANISM:S0:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"e48f8756-8956-4776-aa39-412cf8c307a1"]["AI Proposals :EMACS_MECHANISM:S0:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"52e2269f-9ad9-4b15-9abe-74c57c506b62"]["AIU Contexts :EMACS_MECHANISM:S0:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"3846581a-2a0e-411c-abe5-9f4e049da55c"]["AIU Context Core Library :EMACS_MECHANISM:S0:"]]
+  :PROPERTIES:
+  :CREATED:       <2026-10-05 Mon>
+  :SCHEMAS:       base
+  :VIOLATIONS:    Required field "STATE_WORK" is missing; Required field "STATE_GENERAL" is missing; Required field "STATE_INTELLIGENCE" is missing; Required field "STATE_OPERATIONAL" is missing; Required field "STATE_VALIDATION" is missing; Required field "STATE_SOURCE" is missing
+  :END:
+
+* TODO [[id:"5406ae0c-1e28-4765-887f-df24c24c0c1b"]["Vendored aiu-proxy-clone engine :EMACS_MECHANISM:S0:"]]
   :PROPERTIES:
   :CREATED:       <2026-10-05 Mon>
   :SCHEMAS:       base
