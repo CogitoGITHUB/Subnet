@@ -373,7 +373,7 @@ live in the vault.
     "compiler-extract" "compiler-eval" "compiler-cache" "compiler-parts"
     "compiler-validate" "compiler-gates" "compiler-loop"
     "splash" "doctor" "entry")
-  "Loader modules in tangle order.  Tangle order IS load order: the
+  "Loader modules in load order.  Load order IS evaluation order: the
 concatenated artifact must read exactly as the old single file did.")
 
 (defun my/loader-module-dir ()
@@ -387,13 +387,13 @@ Messages only: never throws, never changes control flow."
     (message "AIU Cyberdeck: %s took %.1fs…" label secs)
     (redisplay t)))
 
-(defun my/tangle-loader-files (files target)
-  "Tangle FILES (Org, in order) and write the concatenation to TARGET.
-Each file tangles to its own temp file with an explicit target, so no
+(defun my/load-loader-files (files target)
+  "Load FILES (Org, in order) and write the concatenation to TARGET.
+Each file loads to its own temp file with an explicit target, so no
 file-level tangle property can redirect a block elsewhere; the temps
 are concatenated in order and TARGET is replaced by rename, never
 partially written.  Readers never see a half artifact.  Returns the
-total number of emacs-lisp blocks tangled."
+total number of emacs-lisp blocks loaded."
   (require 'ob-tangle)
   (let ((total 0)
         (tmp-target (make-temp-file "cyberdeck-loader-")))
@@ -402,7 +402,7 @@ total number of emacs-lisp blocks tangled."
           (let ((n (length files)) (i 0))
             (dolist (f files)
               (setq i (1+ i))
-              (message "AIU Cyberdeck: tangling loader %d/%d %s"
+              (message "AIU Cyberdeck: loading loader %d/%d %s"
                        i n (file-name-nondirectory f))
               (redisplay t)
               (let ((tmp (make-temp-file "cyberdeck-module-"))
@@ -412,7 +412,7 @@ total number of emacs-lisp blocks tangled."
                       ;; Explicit target: this Org ignores dynamically bound
                       ;; default header args, so the target goes on the call.
                       (org-babel-tangle-file f tmp)
-                      (my/note-slow (format "tangle %s" (file-name-nondirectory f))
+                      (my/note-slow (format "load %s" (file-name-nondirectory f))
                                     (- (float-time) t0))
                       (push (with-temp-buffer
                               (insert-file-contents tmp)
@@ -442,7 +442,7 @@ total number of emacs-lisp blocks tangled."
     total))
 
 (defun my/load-literate-loader (&optional file)
-  "Tangle the loader org to ~/.config/emacs/cyberdeck-emacs.el, then load it."
+  "Load the loader org to ~/.config/emacs/cyberdeck-emacs.el, then load it."
   (or file (setq file
                  (let ((dir my/emacs-root))
                    (or (let ((f (expand-file-name "cyberdeck" dir)))
@@ -459,14 +459,14 @@ total number of emacs-lisp blocks tangled."
                         (expand-file-name (concat m ".org")
                                           (my/loader-module-dir)))
                       my/loader-modules)))
-    ;; (my/init-aiu "[init] tangling loader…")
-    ;; Guarded like the AIU Frame tangle: with explicit sync allowed,
-    ;; re-tangling an up-to-date loader every boot is pure waste.
+    ;; (my/init-aiu "[init] loading loader…")
+    ;; Guarded like the AIU Frame load: with explicit sync allowed,
+    ;; re-loading an up-to-date loader every boot is pure waste.
     ;; Freshness compares the NEWEST module against the artifact.
     (when (or (not (file-exists-p el))
               (cl-some (lambda (m) (file-newer-than-file-p m el)) mods))
-      (with-demoted-errors "[init] tangle failed: %s"
-        (let ((tangled (my/tangle-loader-files mods el))
+      (with-demoted-errors "[init] load failed: %s"
+        (let ((tangled (my/load-loader-files mods el))
               (source  (let ((n 0))
                          (dolist (m mods)
                            (with-temp-buffer
