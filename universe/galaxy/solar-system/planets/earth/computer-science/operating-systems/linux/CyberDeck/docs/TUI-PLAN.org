@@ -1,0 +1,32 @@
+#+TITLE: PHASE 6: GUIX-PKGS-TUI remaster plan (design only, no code)
+#+AUTHOR: Shape
+
+* Inventory (read-only; current tree under GUIX-PKGS-TUI/)
+KEEP: src/search.rs (nucleo fuzzy worker pattern), src/index.rs
+(in-memory index plus BFS), src/graph.rs (deterministic layout),
+src/cache.rs (gzipped-cache pattern, retargeted at pm state),
+src/theme.rs (palettes plus NO_COLOR), src/app.rs (state plus keys
+shape), web/ static UI plus deep links, tests/ layout with fixture
+and live split.
+DELETE: src/indexer.rs (guix repl subprocess), data/guix-index.scm
+(Guile walker), channel-commit cache key, Guix-only fields (source
+locations, propagated/native dep kinds become our deps model),
+live_guix tests (replaced by pm-backed live tests).
+
+* IPC: DECIDED
+Operations go through the CLI as s-expressions, one call per
+operation, the same API and review gate as Emacs. No long-lived
+stdio child: Racket startup cost is accepted and batched with
+progress UI. Inventory and status read lockfile plus manifest
+directly (read-only, no fork cost). No TUI-only capabilities:
+anything the TUI shows, the CLI prints.
+
+* Screens map to operations
+List shows check output; detail shows review output; apply runs the
+gated flow with confirmation; history shows the log. Offline mode
+marks stale data, like the CLI.
+
+* Safety
+Remaster happens in place (history kept). The pm never shells out
+to the TUI and the TUI never writes vault state except through
+CLI apply/rollback.
