@@ -5,6 +5,7 @@
 (require racket/contract/base
          racket/system
          racket/string
+         racket/file
          "../core/errors.rkt")
 
 (provide (struct-out run-result)
@@ -20,7 +21,16 @@
                      #:timeout exact-positive-integer?
                      #:operation string?)
                     (#:env (listof (cons/c string? string?)))
-                    run-result?)]))
+                    run-result?)]
+  ;; Same shapes through output files instead of pipes: immune to
+  ;; pipe-EOF starvation (batch tools whose pipes never close).
+  [run-command/redirect (->* (path-string? (listof string?)
+                              #:cwd path-string?
+                              #:kind pm-kind/c
+                              #:timeout exact-positive-integer?
+                              #:operation string?)
+                             (#:env (listof (cons/c string? string?)))
+                             run-result?)]))
 
 (struct run-result (exit stdout-lines stderr-lines) #:transparent)
 ;; exit         : exact-integer?    process exit code
@@ -166,6 +176,108 @@
                                                   " ")))))))
 
 ;; ---------------------------------------------------------------------------
+;; File redirect mode: same shapes as above, immune to pipe-EOF
+;; starvation (batch tools whose output pipes never close). Temp files
+;; die on every exit path; tails stay bounded; secrets stay redacted.
+;; Mirrors run-command preamble, timeout, kill and error shapes exactly.
+
+;; input-port (or/c output-port #f) exact-positive-integer
+;; -> (listof string), oldest-first bounded tail plus log forwarding
+(define (collect-file in log-port limit)
+  (let loop ([grown '()])
+    (define line (read-line in 'any))
+    (if (eof-object? line)
+        (reverse grown)
+        (let ((clean (redact-credentials line)))
+          (when log-port (displayln clean log-port))
+          (define next (cons clean grown))
+          (loop (if (> (length next) limit)
+                    (reverse (cdr (reverse next)))
+                    next))))))
+
+;; path-string (listof string) -> run-result, batch tools via files
+(define (run-command/redirect exe argv
+                              #:cwd cwd
+                              #:kind kind
+                              #:timeout timeout
+                              #:operation operation
+                              #:env [extras '()])
+  (check-env-names extras)
+  (define setsid-exe (find-helper "setsid"))
+  (define pkill-exe (find-helper "pkill"))
+  (define env-exe (find-helper "env"))
+  (unless (file-exists? exe)
+    (raise-pm-error 'config 'run-command/redirect "executable not found"
+                    #:fields `(("exe" . ,exe))))
+  (define limit (current-captured-lines))
+  (define log-port (current-run-log-port))
+  (define exe-string (if (path? exe) (path->string exe) exe))
+  (define out-path (make-temporary-file "pm-run-out~a.log"))
+  (define err-path (make-temporary-file "pm-run-err~a.log"))
+  (define (cleanup)
+    (when (file-exists? out-path) (delete-file out-path))
+    (when (file-exists? err-path) (delete-file err-path)))
+  (define (timeout-error)
+    (raise-pm-error kind 'run-command "command timed out"
+                    #:fields `(("operation" . ,operation)
+                               ("timeout-seconds" . ,(number->string timeout))
+                               ("command" . ,(string-join
+                                              (map (lambda (a)
+                                                     (if (path? a)
+                                                         (path->string a)
+                                                         a))
+                                                   (cons exe-string argv))
+                                              " ")))))
+  (define (kill-tree pgid)
+    (define killer
+      (process* (path->string pkill-exe) "-KILL" "-g"
+                (number->string pgid)))
+    ((list-ref killer 4) 'wait)
+    (close-input-port (list-ref killer 0))
+    (close-output-port (list-ref killer 1))
+    (close-input-port (list-ref killer 3)))
+  (dynamic-wind
+    void
+    (lambda ()
+      (define out-file
+        (open-output-file out-path #:exists 'truncate/replace))
+      (define err-file
+        (open-output-file err-path #:exists 'truncate/replace))
+      (define in-file (open-input-file "/dev/null"))
+      (define r
+        (parameterize ([current-directory cwd])
+          (apply process*/ports out-file in-file err-file
+                 (path->string setsid-exe)
+                 (append (list (path->string env-exe) "-i")
+                         (env-assignments extras)
+                         (cons exe-string argv)))))
+      (define pgid (list-ref r 2))
+      (define ctl (list-ref r 4))
+      (close-input-port in-file)
+      (define deadline (+ (current-milliseconds) (* timeout 1000)))
+      (define (finish)
+        (close-output-port out-file)
+        (close-output-port err-file)
+        (run-result (ctl 'exit-code)
+                    (call-with-input-file out-path
+                      (lambda (p) (collect-file p log-port limit)))
+                    (call-with-input-file err-path
+                      (lambda (p) (collect-file p log-port limit)))))
+      (define (child-status)
+        (with-handlers ([exn:fail? (lambda (_) 'running)])
+          (ctl 'status)))
+      (let wait-loop ()
+        (define status-now (child-status))
+        (cond [(eq? status-now 'running)
+               (if (> (current-milliseconds) deadline)
+                   (begin (kill-tree pgid)
+                          (finish)
+                          (timeout-error))
+                   (begin (sleep 0.5) (wait-loop)))]
+              [else (finish)])))
+    (lambda () (cleanup))))
+
+;; ---------------------------------------------------------------------------
 (module+ test
   (require rackunit
            racket/file
@@ -186,6 +298,46 @@
   (check-equal? (run-result-exit basic) 0)
   (check-equal? (run-result-stdout-lines basic) '("hi"))
   (check-equal? (run-result-stderr-lines basic) '())
+
+  ;; File redirect mode: same shapes without pipes.
+  (define (run-redirect-ok exe argv)
+    (run-command/redirect exe argv
+                          #:cwd cwd #:kind 'fetch #:timeout 60
+                          #:operation "test-redirect"))
+  (define redirect-basic
+    (run-redirect-ok echo-exe '("hi-redirect")))
+  (check-equal? (run-result-exit redirect-basic) 0)
+  (check-equal? (run-result-stdout-lines redirect-basic) '("hi-redirect"))
+  (check-equal? (run-result-stderr-lines redirect-basic) '())
+
+  ;; Redirect timeouts kill the tree and name the operation.
+  (define redirect-timeout-exn
+    (with-handlers ([exn:fail:pm? (lambda (e) e)])
+      (run-command/redirect sh-exe '("-c" "sleep 30")
+                            #:cwd cwd #:kind 'fetch #:timeout 2
+                            #:operation "test-redirect-sleep")
+      'no-error))
+  (check-pred fetch-error? redirect-timeout-exn)
+  (check-regexp-match #rx"test-redirect-sleep"
+                      (exn-message redirect-timeout-exn))
+
+  ;; Redirect mode redacts secrets from tails and logs alike.
+  (define redirect-secret-url "https://user:s3cret@example.com/x")
+  (define redirect-log (make-temporary-file "pm-redirect~a.log"))
+  (define redirect-out
+    (open-output-file redirect-log #:exists 'truncate/replace))
+  (define redirect-redacted
+    (parameterize ([current-run-log-port redirect-out])
+      (run-redirect-ok echo-exe
+                       (list redirect-secret-url "token=abc123"))))
+  (close-output-port redirect-out)
+  (for ([line (in-list (run-result-stdout-lines redirect-redacted))])
+    (check-false (regexp-match? #rx"s3cret|abc123" line)))
+  (define redirect-logged (file->string redirect-log))
+  (check-false (regexp-match? #rx"s3cret" redirect-logged))
+  (check-false (regexp-match? #rx"abc123" redirect-logged))
+  (check-true (regexp-match? #rx"<redacted>" redirect-logged))
+  (delete-file redirect-log)
 
   ;; Exit codes pass through.
   (check-equal? (run-result-exit

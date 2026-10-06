@@ -13,6 +13,10 @@ fi
 if ! command -v git >/dev/null 2>&1; then
   echo "GATE: git executable not found"; fail=1
 fi
+# The Emacs target tests need emacs.
+if ! command -v emacs >/dev/null 2>&1; then
+  echo "GATE: emacs executable not found (targets/emacs needs it)"; fail=1
+fi
 # backends/run.rkt spawns through setsid/env and kills trees with pkill.
 for tool in env setsid pkill; do
   if ! command -v "$tool" >/dev/null 2>&1; then
