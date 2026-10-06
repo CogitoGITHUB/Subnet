@@ -165,9 +165,10 @@ raco pkg install --auto rackunit-lib
   unpinned source is a warning and is rejected in lockfile mode.
 - *D-8* Package names are symbols matching =[a-z0-9][a-z0-9-]*=. Versions have their own
   type with a total order and tests.
-- *D-9* [PROPOSAL] Spec fields: =name=, =version=, =summary=, =source= (url or git),
-  =sha256= or =rev=, =deps= (name + constraint), =build= (steps), =install=
-  (target-specific), =license=, =homepage=. Finalize in DECISIONS.org.
+- *D-9* [PROPOSAL] Spec fields: =name=, =version=, =summary=, =source= (git url),
+  =rev= (full commit id), =deps= (names only, exact versions), =build= (steps),
+  =install= (target-specific), =license=, =homepage=. Finalize in DECISIONS.org.
+  Sources are git only (D-006).
 
 ** Reading a declaration file (shape)
 #+begin_src racket
@@ -324,8 +325,9 @@ build: step failed;
   target prefix (reject =..=, absolute paths, symlink escapes). Test with hostile inputs.
 - *F-8* Cleanup uses =dynamic-wind= or custodians. Temp dirs are always removed. Logs are
   kept.
-- *F-9* Network access lives only in the fetch backend. Bounded retries, timeouts,
-  https by default, hash verified before extraction.
+- *F-9* Network access lives only in the fetch backend and is git only.
+  Bounded retries, timeouts, commit verified against the pin (D-012)
+  before export. Never fetch at install time; install from the vault.
 - *F-10* Do not require root, and do not refuse root either (proot usually looks like
   root). The rule is: never write outside the configured prefix.
 
@@ -338,10 +340,14 @@ build: step failed;
   =dynamic-require= of a spec means executing it.
 - *S-3* Tier A builds use a closed vocabulary of steps (configure, make, cmake, cargo,
   copy, ...). An explicit =(run argv ...)= step exists but is highlighted in plan output.
-- *S-4* Pin everything: SHA-256 for tarballs, full commit hash (not branch or tag) for git.
-  The lockfile records both. Verify before extract or compile.
-- *S-5* Archives: reject absolute paths, =..=, special files, escaping symlinks, and
-  oversize contents.
+- *S-4* Pin everything: full commit id (40 hex, 64 for sha256 repos),
+  never a branch or tag alone. The lockfile records it. Each installed
+  commit gets a private ref =refs/cyberdeck/pinned/<commit>= (D-012).
+  Verify before extract or compile.
+- *S-5* Exports come from the vault mirror at the pinned commit, never the
+  network. Reject absolute paths, =..=, special files, escaping symlinks,
+  and oversize contents. Export method (git archive vs checkout) and
+  submodules/shallow policy: see D-011 open questions in DECISIONS.org.
 - *S-6* Builds run with an allowlisted environment, so inherited secrets do not leak.
 - *S-7* No =curl | sh= anywhere. Download, hash-check, then run.
 - *S-8* Secrets never appear in logs. Redact credentials in URLs inside messages.
@@ -433,11 +439,13 @@ build: step failed;
 | D-003 | Spec format: S-expression data files now, custom =#lang= later?            |
 | D-004 | Lockfile format and location                                               |
 | D-005 | Emacs install layout, and how the user's loader finds installed packages   |
-| D-006 | Supported sources: git, tarball, ELPA/MELPA recipe import?                 |
-| D-007 | Version constraint syntax                                                  |
+| D-006 | git ONLY; full mirror per package; export at pin (decided)      |
+| D-007 | Exact commit id only (git); versions match by equality (decided) |
 | D-008 | Exit-code table (E-15)                                                     |
 | D-009 | Trust model for third-party specs (S-1)                                    |
 | D-010 | Where =raco test= comes from in minimal Racket (section 1)                 |
+| D-011 | Vault mirrors, export method, submodules, shallow policy        |
+| D-012 | Pin refs against force-push and gc (decided)                    |
 
 ** Emacs target notes (for later, all [VERIFY])
 - Byte-compile with =emacs --batch= in a clean process (=-Q=), with the package directory
@@ -471,8 +479,8 @@ cyberdeck-pm/
     errors.rkt            exception type, raise helper, message formatter
     log.rkt               define-logger + helpers
     ui.rkt                the only module that prints user-facing output
-    version.rkt           version type and ordering
-    hash.rkt              sha256 helpers
+    version.rkt           version labels, numeric compare where needed
+    git-id.rkt            commit id validation (40/64 hex)
     spec.rkt              package struct and contracts (data only)
     spec-read.rkt         read-syntax + validation (D-3, D-4)
     plan.rkt              action structs and pure planning
@@ -499,7 +507,7 @@ cyberdeck-pm/
 1. Docs and scaffold: README, DECISIONS (seeded), ERRORS, GLOSSARY, LESSONS, PERF,
    =info.rkt=, =.gitignore=, =scripts/check.sh=.
 2. =core/errors.rkt= + =core/log.rkt= + =core/ui.rkt=, with tests.
-3. =core/version.rkt= + =core/hash.rkt=, with tests.
+3. =core/version.rkt= + =core/git-id.rkt=, with tests.
 4. =core/spec.rkt= + =core/spec-read.rkt=, with hostile-input and error-message tests.
 5. =core/plan.rkt= + =backends/dry-run.rkt= + =backends/fake.rkt=, with golden tests.
 6. =core/resolve.rkt= + =core/lock.rkt=.
