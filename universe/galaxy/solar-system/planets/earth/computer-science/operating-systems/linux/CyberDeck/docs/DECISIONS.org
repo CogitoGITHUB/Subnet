@@ -4,6 +4,10 @@
 * Log
 Append-only. Newest first. Every entry names the rule IDs it touches.
 
+** 2026-10-06 GUIX-PKGS-TUI stays as CyberDeck TUI to remaster
+Stays in CyberDeck/GUIX-PKGS-TUI/, not moved or deleted. Rebrand for
+CyberDeck in Phase 6. Tracking/gitignore decided with remaster. W-9.
+
 ** 2026-10-06 Prompt suppression: offline proof only, networked proof open
 GIT_TERMINAL_PROMPT=0 plus ssh BatchMode fails fast offline with no
 prompt attempted. Full proof (an actual auth challenge answered with
