@@ -32,7 +32,11 @@
 ;; path string -> void, idempotent pin ref; missing means kind 'verify
   [git-pin-commit (->* (path-string? string?)
                          (#:timeout exact-positive-integer?)
-                         void?)]))
+                         void?)]
+  ;; path string path -> void, checkout pin into empty staging (STEP C)
+  [git-export-commit (->* (path-string? string? path-string?)
+                          (#:timeout exact-positive-integer?)
+                          void?)]))
 
 ;; ---------------------------------------------------------------------------
 ;; Locating git and the vault
@@ -326,6 +330,165 @@
                 #:operation "git update-ref pin"))))
 
 ;; ---------------------------------------------------------------------------
+;; Export (STEP C): checkout-based, faithful, refuses danger
+
+;; -> path, cp for faithful tree copies (modes and links kept as links)
+(define (cp-executable-path)
+  (or (find-executable-path "cp")
+      (raise-pm-error 'config 'git-export-commit "cp executable not found"
+                      #:hint "install coreutils so export can copy trees")))
+
+;; string path -> boolean, TARGET stays inside ROOT (absolute text)
+(define (inside-root? root target)
+  (define t (if (path? target) (path->string target) target))
+  (or (string=? root t)
+      (string-prefix? t (string-append root "/"))))
+
+;; path path string exact-positive-integer -> void, gitlinks refused
+(define (check-no-submodules git work commit timeout)
+  (define res
+    (git-run git 'git-export-commit work '("ls-files" "-s" "--" ".")
+             #:kind 'fetch #:timeout timeout
+             #:operation "git ls-files export"
+             #:git-dir (build-path work ".git")))
+  (if (not (zero? (run-result-exit res)))
+      (raise-git-failure 'git-export-commit work "ls-files -s" res 'fetch)
+      (for ([line (in-list (run-result-stdout-lines res))])
+        (when (string-prefix? line "160000 ")
+          (raise-pm-error 'fetch 'git-export-commit
+                          "submodule in source tree"
+                          #:fields `(("commit" . ,commit)
+                                     ("entry" . ,line))
+                          #:hint "submodules are future work, fix or wait")))))
+
+;; path -> (or/c path #f), absolute final target or #f past 40 hops.
+;; resolve-path reads one raw level here, so join relative targets
+;; against each link's own directory and walk to a fixed point.
+(define (resolve-fully start)
+  (let loop ([current start] [n 0])
+    (cond [(>= n 40) #f]
+          [(link-exists? current)
+           (define raw-text (path->string (resolve-path current)))
+           (define parent
+             (let-values ([(base _name _dir?) (split-path current)])
+               base))
+           (define next-text
+             (if (string-prefix? raw-text "/")
+                 raw-text
+                 (path->string (build-path parent raw-text))))
+           (loop (simplify-path (string->path next-text)) (+ n 1))]
+          [else (simplify-path current)])))
+
+;; path string -> void, every link must stay inside the staging tree.
+;; Loops are refused; dangling links are refused too (broken either
+;; way, and the author fix is trivial). Staging itself must be a real
+;; dir, never a link (callers pass absolute scratch dirs).
+(define (check-no-escaping-links staging commit)
+  (when (link-exists? staging)
+    (raise-pm-error 'config 'git-export-commit
+                    "staging must not be a symlink"
+                    #:fields `(("staging" . ,(dir-string staging)))))
+  (define root (path->string (simplify-path (resolve-path staging))))
+  (define (walk dir)
+    (for ([entry (in-list (directory-list dir))])
+      (define full (build-path dir entry))
+      (cond [(link-exists? full)
+             (define target (resolve-fully full))
+             (cond [(not target)
+                    (raise-pm-error 'fetch 'git-export-commit
+                                    "symlink loop detected"
+                                    #:fields `(("commit" . ,commit)
+                                               ("link" . ,(dir-string full))))]
+                   [(not (inside-root? root target))
+                    (raise-pm-error 'fetch 'git-export-commit
+                                    "symlink escapes the exported tree"
+                                    #:fields `(("commit" . ,commit)
+                                               ("link" . ,(dir-string full))))]
+                   [(not (or (file-exists? target)
+                             (directory-exists? target)))
+                    (raise-pm-error 'fetch 'git-export-commit
+                                    "dangling symlink in source tree"
+                                    #:fields `(("commit" . ,commit)
+                                               ("link" . ,(dir-string full))))]
+                   [else (void)])]
+            [(directory-exists? full) (walk full)]
+            [else (void)])))
+  (walk staging))
+
+;; path path string path path exact-positive-integer -> void, five steps
+(define (export-commit-tree git cp mirror commit work staging timeout)
+  (define-values (work-parent _name _dir?) (split-path work))
+  (git-run! git 'git-export-commit work-parent
+            `("-c" "core.autocrlf=false"
+              "-c" "core.attributesFile=/dev/null"
+              "clone" "--quiet" "--no-checkout" "--"
+              ,(dir-string mirror) ,(dir-string work))
+            #:kind 'fetch #:timeout timeout
+            #:operation "git clone export"
+            #:git-dir #f)
+  (git-run! git 'git-export-commit work
+            `("-c" "core.autocrlf=false"
+              "-c" "core.attributesFile=/dev/null"
+              "checkout" "--quiet" ,commit)
+            #:kind 'fetch #:timeout timeout
+            #:operation "git checkout export"
+            #:git-dir (build-path work ".git"))
+  (check-no-submodules git work commit timeout)
+  (define git-dir (build-path work ".git"))
+  (when (directory-exists? git-dir)
+    (delete-directory/files git-dir))
+  (git-run! cp 'git-export-commit work
+            `("-a" "--" ,(string-append (dir-string work) "/.")
+              ,(dir-string staging))
+            #:kind 'fetch #:timeout timeout
+            #:operation "cp export tree"
+            #:git-dir #f)
+  (call-with-output-file (build-path staging ".cyberdeck-commit")
+    (lambda (out) (displayln commit out)))
+  (check-no-escaping-links staging commit))
+
+;; path string path -> void, checkout pin into empty staging (STEP C)
+;; Mirror untouched; work-tmp dies always; staging emptied on failure.
+;; Staging should be an absolute empty dir the caller owns.
+(define (git-export-commit dir commit staging #:timeout [timeout 300])
+  (check-commit 'git-export-commit commit)
+  (define git (git-executable-path))
+  (define cp (cp-executable-path))
+  (define-values (parent _name _dir?) (split-path staging))
+  (unless (directory-exists? staging)
+    (raise-pm-error 'config 'git-export-commit "staging dir missing"
+                    #:fields `(("staging" . ,(dir-string staging)))
+                    #:hint "create the empty staging dir first"))
+  (unless (null? (directory-list staging))
+    (raise-pm-error 'config 'git-export-commit "staging dir not empty"
+                    #:fields `(("staging" . ,(dir-string staging)))
+                    #:hint "export writes into an empty dir only"))
+  (with-mirror-lock dir 'fetch 'git-export-commit timeout
+    (lambda ()
+      (unless (git-has-commit? dir commit #:timeout timeout)
+        (raise-pm-error 'verify 'git-export-commit
+                        "commit missing from mirror"
+                        #:fields `(("commit" . ,commit)
+                                   ("mirror" . ,(dir-string dir)))
+                        #:hint "fetch the mirror first"))
+      (define work-tmp
+        (build-path parent (format ".tmp-export-~a-~a"
+                                   (current-milliseconds) (gensym))))
+      (define failed? #t)
+      (dynamic-wind
+        void
+        (lambda ()
+          (export-commit-tree git cp dir commit work-tmp staging timeout)
+          (set! failed? #f))
+        (lambda ()
+          (when (directory-exists? work-tmp)
+            (delete-directory/files work-tmp))
+          (when failed?
+            (for ([entry (in-list (directory-list staging))])
+              (delete-directory/files
+               (build-path staging entry)))))))))
+
+;; ---------------------------------------------------------------------------
 (module+ test
   (require rackunit
            racket/file
@@ -544,6 +707,115 @@
                       (git-fetch-mirror not-repo))))
       (check-equal? (outer-snapshot) before)
       (delete-directory/files safety-vault)))
+
+  ;; Export fixtures shared by the export tests below (good tree only;
+  ;; refusal branches are built inside their own tests further down).
+  (define export-up (build-path fixture-root "export-up"))
+  (make-directory export-up)
+  (define (write-tree-text path text)
+    (call-with-output-file path
+      (lambda (port) (displayln text port))))
+  (make-directory (build-path export-up "sub"))
+  (write-tree-text (build-path export-up "a.txt") "A")
+  (write-tree-text (build-path export-up "sub" "b.txt") "B")
+  (write-tree-text (build-path export-up "ignored.tmp") "I")
+  (write-tree-text (build-path export-up ".export-ignore") "*.tmp")
+  (write-tree-text (build-path export-up "run.sh") "#!/bin/sh")
+  (file-or-directory-permissions (build-path export-up "run.sh") #o755)
+  (make-file-or-directory-link "a.txt" (build-path export-up "good-link"))
+  (fixture-git export-up "init" "-b" "main" ".")
+  (fixture-git export-up "add" "-A")
+  (fixture-git export-up "commit" "-qm" "good")
+  (define good-commit
+    (car (run-result-stdout-lines
+          (fixture-git export-up "rev-parse" "HEAD"))))
+  (define export-mirror (vault-mirror-dir fixture-root "exportpkg"))
+  (parameterize ([current-allow-file-urls #t])
+    (git-clone-mirror (string-append "file://" (path->string export-up))
+                      export-mirror))
+  (check-true (git-has-commit? export-mirror good-commit))
+
+  ;; Export success: faithful tree, pin stamp, no .git, no leftovers.
+  (define staging-good (build-path fixture-root "staging-good"))
+  (make-directory staging-good)
+  (git-export-commit export-mirror good-commit staging-good)
+  (check-true (file-exists? (build-path staging-good "a.txt")))
+  (check-true (file-exists? (build-path staging-good "sub" "b.txt")))
+  (check-true (file-exists? (build-path staging-good "ignored.tmp")))
+  (check-true (link-exists? (build-path staging-good "good-link")))
+  (check-false (directory-exists? (build-path staging-good ".git")))
+  (check-equal? (file->string (build-path staging-good ".cyberdeck-commit"))
+                (string-append good-commit "\n"))
+  (define exec-perms
+    (file-or-directory-permissions (build-path staging-good "run.sh")))
+  (check-true (if (list? exec-perms)
+                  (and (memq 'execute exec-perms) #t)
+                  (= exec-perms #o755)))
+  (check-false
+   (ormap (lambda (p)
+            (regexp-match? #rx"tmp-export" (path->string p)))
+          (directory-list fixture-root)))
+  ;; Export refusals: escaping links and submodules fail loud.
+  (define outside-file (build-path fixture-root "outside.txt"))
+  (write-tree-text outside-file "OUT")
+  (fixture-git export-up "checkout" "-qb" "escape")
+  (make-file-or-directory-link (path->string outside-file)
+                               (build-path export-up "escape-link"))
+  (fixture-git export-up "add" "-A")
+  (fixture-git export-up "commit" "-qm" "escape")
+  (define escape-commit
+    (car (run-result-stdout-lines
+          (fixture-git export-up "rev-parse" "HEAD"))))
+  (fixture-git export-up "checkout" "-q" "main")
+  (define subrepo (build-path fixture-root "subrepo"))
+  (make-directory subrepo)
+  (write-tree-text (build-path subrepo "s.txt") "S")
+  (fixture-git subrepo "init" "-b" "main" ".")
+  (fixture-git subrepo "add" "-A")
+  (fixture-git subrepo "commit" "-qm" "sub-upstream")
+  (fixture-git export-up "-c" "protocol.file.allow=always"
+               "submodule" "add" "../subrepo" "vendor")
+  (fixture-git export-up "add" "-A")
+  (fixture-git export-up "commit" "-qm" "sub")
+  (define sub-commit
+    (car (run-result-stdout-lines
+          (fixture-git export-up "rev-parse" "HEAD"))))
+  (git-fetch-mirror export-mirror)
+  (define staging-escape (build-path fixture-root "staging-escape"))
+  (make-directory staging-escape)
+  (define staging-sub (build-path fixture-root "staging-sub"))
+  (make-directory staging-sub)
+  (define escape-error
+    (with-handlers ([exn:fail:pm? (lambda (e) e)])
+      (git-export-commit export-mirror escape-commit staging-escape)
+      'no-error))
+  (check-pred fetch-error? escape-error)
+  (check-regexp-match #rx"escap" (exn-message escape-error))
+  (check-equal? (directory-list staging-escape) '())
+  (define sub-error
+    (with-handlers ([exn:fail:pm? (lambda (e) e)])
+      (git-export-commit export-mirror sub-commit staging-sub)
+      'no-error))
+  (check-pred fetch-error? sub-error)
+  (check-regexp-match #rx"submodule" (exn-message sub-error))
+  ;; Export boundaries: occupied staging and unknown commits fail fast.
+  (define staging-full (build-path fixture-root "staging-full"))
+  (make-directory staging-full)
+  (write-tree-text (build-path staging-full "sentinel.txt") "taken")
+  (check-pred config-error?
+              (with-handlers ([exn:fail:pm? (lambda (e) e)])
+                (git-export-commit export-mirror good-commit staging-full)
+                'no-error))
+  (define staging-missing (build-path fixture-root "staging-missing"))
+  (make-directory staging-missing)
+  (define missing-error
+    (with-handlers ([exn:fail:pm? (lambda (e) e)])
+      (git-export-commit export-mirror (make-string 40 #\b) staging-missing)
+      'no-error))
+  (check-pred verify-error? missing-error)
+  (check-equal? (cdr (assoc "commit" (exn:fail:pm-fields missing-error)))
+                (make-string 40 #\b))
+
 
   ;; GIT_CONFIG_GLOBAL is honored (item 7): a controlled global file
   ;; supplies a value nothing else could provide.
