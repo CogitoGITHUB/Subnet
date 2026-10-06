@@ -4,11 +4,30 @@
 * Log
 Append-only. Newest first. Every entry names the rule IDs it touches.
 
-** 2026-10-06 srcloc columns print raw Racket values (already 1-based)
-Probes (read-syntax + port-count-lines!): datum at file offset 0
-reports column 1; at offset 2 reports column 3. No +1 is added; this
-matches editor/GCC convention. Pinned by the spec.rktd:1:1 and 1:3
-tests in core/errors.rkt. P-8.
+** 2026-10-06 D-006 git ONLY; D-011 vault; D-012 pin refs
+Sources are git and nothing else: no tarballs, no MELPA, no other
+archive or manager. Every package keeps a full mirror (=git clone
+--mirror=) in =~/.local/share/cyberdeck/vault/<name>.git=. Installs
+export from the mirror at the pinned commit, never from the network;
+updates are =git fetch= into the mirror (D-011). Installing a commit
+creates a private ref =refs/cyberdeck/pinned/<commit>= so force-pushes
+and gc cannot make it unreachable (D-012). Pin = full commit id
+(40 hex, 64 for sha256 repos), never a branch or tag alone. D-006.
+
+** 2026-10-06 Open questions (defaults proposed, user picks)
+Export method: =git archive= can silently omit files (export-ignore);
+test it against a checkout-based export and pick the faithful one
+[VERIFY]. Default: checkout-based export unless archive proves
+faithful. Submodules: error out by default (loud, P-7); mirroring
+them too is future work. Shallow clones: default NO, full original
+always; explicit per-package opt-in only. D-011.
+
+** 2026-10-06 CORRECTION: srcloc columns are 0-based, ui prints +1
+The earlier entry was wrong: the probe measured the INNER culprit
+form (span 2 at offset 1), so column 1 meant 0-based, not 1-based.
+A span-printing probe confirmed it. Racket lines are 1-based;
+columns get +1 for humans at the spec-read boundary. Pinned by the
+spec.rktd:1:2 and 1:4 tests. See LESSONS.org. P-8, P-10.
 
 ** 2026-10-06 Log macros bypass contract-out (M-3 exception)
 Verified in the REPL: =define-logger= level forms (=log-pm-debug=,
@@ -67,7 +86,9 @@ boundary) and pushed. G-2, G-4.
 | D-003 | S-expr .rktd now; custom #lang deferred; Tier A default |
 | D-004 | lockfile.rktd, sorted, in the state dir (not prefix) |
 | D-005 | ~/.local/share/cyberdeck; versioned dirs; current link |
-| D-006 | git ONLY; always full clone on install (keep source) |
-| D-007 | Exact versions only, no ranges |
+| D-006 | git ONLY; full mirror per package; export at pin |
+| D-007 | Exact commit id only (git); versions match equal |
 | D-008 | Exit-code table (E-15 proposal)                           |
 | D-009 | Data-only default; Tier B own-repo files only |
+| D-011 | Vault: full mirror in vault/<name>.git; fetch updates |
+| D-012 | Pin refs: refs/cyberdeck/pinned/<commit> against gc/force |

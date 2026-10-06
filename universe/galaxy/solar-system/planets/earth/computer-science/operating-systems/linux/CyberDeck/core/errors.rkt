@@ -93,12 +93,15 @@
 ;; Wrap a declaration failure for the spec-read boundary: srcloc in fields,
 ;; original exn in cause, so ui only handles one type.
 (define (syntax-error->pm-error e kind #:who [who 'read-spec])
+  ;; Racket columns are 0-based; humans get +1 (lines already 1-based).
+  (define (location-string x)
+    (format "~a:~a:~a"
+            (or (syntax-source x) "?")
+            (or (syntax-line x) "?")
+            (let ((c (syntax-column x))) (if c (+ c 1) "?"))))
   (define locs
     (for/list ([x (in-list (exn:fail:syntax-exprs e))])
-      (format "~a:~a:~a"
-              (or (syntax-source x) "?")
-              (or (syntax-line x) "?")
-              (or (syntax-column x) "?"))))
+      (location-string x)))
   (define fields `(("at" . ,(string-join locs ", "))))
   (exn:fail:pm (render-message who "invalid declaration" fields #f e)
                (current-continuation-marks)
@@ -160,7 +163,7 @@
       (syntax-parse bad-syntax [({~datum define} _.id) "matched"])))
   (check-pred spec-error? wrapped)
   (check-equal? (exn:fail:pm-kind wrapped) 'spec)
-  (check-equal? (exn:fail:pm-fields wrapped) '(("at" . "spec.rktd:1:1")))
+  (check-equal? (exn:fail:pm-fields wrapped) '(("at" . "spec.rktd:1:2")))
   (check-pred exn:fail:syntax? (exn:fail:pm-cause wrapped))
 
   ;; Leading spaces move the column; columns count from 1.
@@ -170,4 +173,4 @@
   (define spaced-wrapped
     (with-handlers ([exn:fail:syntax? (lambda (e) (syntax-error->pm-error e 'spec))])
       (syntax-parse spaced-syntax [({~datum define} _.id) "matched"])))
-  (check-equal? (exn:fail:pm-fields spaced-wrapped) '(("at" . "spec.rktd:1:3"))))
+  (check-equal? (exn:fail:pm-fields spaced-wrapped) '(("at" . "spec.rktd:1:4"))))

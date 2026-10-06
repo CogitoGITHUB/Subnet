@@ -2,4 +2,11 @@
 #+AUTHOR: Shape
 
 Append-only. Every entry: what happened, root cause, new rule.
-Empty on purpose: the first entry will be a real mistake (P-10).
+
+** 2026-10-06 Assumed the measured syntax form's offset (P-10)
+The srcloc probe measured the INNER culprit (=42=, span 2 at offset 1),
+not the outer datum (offset 0). I concluded columns were 1-based and
+committed a test pinning it. A span-printing probe proved 0-based.
+Root cause: asserted about data I had not fully identified. New rule:
+when a probe surprises, print the span/identity of the measured form
+before concluding. P-8, P-10.
