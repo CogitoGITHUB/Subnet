@@ -77,6 +77,13 @@
                     #:hint "inspect the mirror directory ownership"))
   res)
 
+;; Note on `--` separators: intentionally absent. Every URL, commit id,
+;; and name reaching argv is strictly validated first (check-git-url with
+;; the scheme allowlist, git-id? hex-only, D-8 package names), so no
+;; argument can start with `-` or contain whitespace. Several git verbs
+;; do not accept `--` in these positions, so blanket separators would
+;; break commands for zero gain. Say the word and it gets re-tested.
+
 ;; path symbol path-string (listof string) -> run-result
 (define (git-run git op dir argv #:kind kind #:timeout timeout
                  #:operation operation)
