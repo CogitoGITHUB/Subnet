@@ -161,4 +161,13 @@
   (check-pred spec-error? wrapped)
   (check-equal? (exn:fail:pm-kind wrapped) 'spec)
   (check-equal? (exn:fail:pm-fields wrapped) '(("at" . "spec.rktd:1:1")))
-  (check-pred exn:fail:syntax? (exn:fail:pm-cause wrapped)))
+  (check-pred exn:fail:syntax? (exn:fail:pm-cause wrapped))
+
+  ;; Leading spaces move the column; columns count from 1.
+  (define spaced-in (open-input-string "  (42 oops)"))
+  (port-count-lines! spaced-in)
+  (define spaced-syntax (read-syntax "spec.rktd" spaced-in))
+  (define spaced-wrapped
+    (with-handlers ([exn:fail:syntax? (lambda (e) (syntax-error->pm-error e 'spec))])
+      (syntax-parse spaced-syntax [({~datum define} _.id) "matched"])))
+  (check-equal? (exn:fail:pm-fields spaced-wrapped) '(("at" . "spec.rktd:1:3"))))

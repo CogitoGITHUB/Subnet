@@ -4,6 +4,12 @@
 * Log
 Append-only. Newest first. Every entry names the rule IDs it touches.
 
+** 2026-10-06 srcloc columns print raw Racket values (already 1-based)
+Probes (read-syntax + port-count-lines!): datum at file offset 0
+reports column 1; at offset 2 reports column 3. No +1 is added; this
+matches editor/GCC convention. Pinned by the spec.rktd:1:1 and 1:3
+tests in core/errors.rkt. P-8.
+
 ** 2026-10-06 Log macros bypass contract-out (M-3 exception)
 Verified in the REPL: =define-logger= level forms (=log-pm-debug=,
 =log-pm-info=, ...) are macros, so they cannot go through
