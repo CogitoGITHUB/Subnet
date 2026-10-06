@@ -4,6 +4,28 @@
 * Log
 Append-only. Newest first. Every entry names the rule IDs it touches.
 
+** 2026-10-06 Columns print +1 to match Emacs next-error (deliberate)
+Raw Racket columns are 0-based; ui adds 1, lines stay raw. Matches
+Emacs next-error and GCC convention. Pinned by the 1:2/1:4 tests. P-8.
+
+** 2026-10-06 Export experiment verdict: checkout-based (D-011)
+Fixture repo (nested dir, exec bit, export-ignore file): =git archive=
+silently omits export-ignored files, modes and other contents
+identical. Checkout-based export (clone/checkout at pin, copy tree
+minus .git) is fully faithful. =git archive= only if a package
+explicitly opts into export-ignore semantics (future work). P-8.
+
+** 2026-10-06 git env + exit codes probed live (git 2.53.0)
+GIT_ALLOW_PROTOCOL=https:ssh:file: ext:: denied with and without it
+(default-deny noted); file:// works under it. GIT_TERMINAL_PROMPT=0
+plus ssh BatchMode fails fast offline with no prompt; full
+prompt-suppression proof needs an auth challenge (deferred).
+Exit codes: present commit = =cat-file -t= exit 0 printing "commit";
+absent id = exit 1 silent; tree/blob = exit 0 with other type
+(existence is NOT enough, must check the type); not-a-repo = exit
+128 with fatal message. Mapping: commit->#t, absent/non-commit->#f,
+anything else raises kind 'fetch with E-8 fields. P-8, E-8, E-14.
+
 ** 2026-10-06 D-006 git ONLY; D-011 vault; D-012 pin refs
 Sources are git and nothing else: no tarballs, no MELPA, no other
 archive or manager. Every package keeps a full mirror (=git clone
@@ -14,13 +36,12 @@ creates a private ref =refs/cyberdeck/pinned/<commit>= so force-pushes
 and gc cannot make it unreachable (D-012). Pin = full commit id
 (40 hex, 64 for sha256 repos), never a branch or tag alone. D-006.
 
-** 2026-10-06 Open questions (defaults proposed, user picks)
-Export method: =git archive= can silently omit files (export-ignore);
-test it against a checkout-based export and pick the faithful one
-[VERIFY]. Default: checkout-based export unless archive proves
-faithful. Submodules: error out by default (loud, P-7); mirroring
-them too is future work. Shallow clones: default NO, full original
-always; explicit per-package opt-in only. D-011.
+** 2026-10-06 Open questions (one decided, two still open)
+Export method: DECIDED checkout-based by experiment (see verdict
+above); =git archive= only on explicit per-package opt-in (future).
+Submodules: error out by default (loud, P-7); mirroring them too is
+future work. Shallow clones: default NO, full original always;
+explicit per-package opt-in only. D-011.
 
 ** 2026-10-06 CORRECTION: srcloc columns are 0-based, ui prints +1
 The earlier entry was wrong: the probe measured the INNER culprit
