@@ -217,7 +217,7 @@
             (lambda ()
               ;; Bare repo with an empty template: no hooks installed (7).
               (git-run! git 'git-clone-mirror parent
-                        `("init" "--bare" "--template="
+                        `("init" "--bare" "--template=" "--"
                           ,(path->string tmp))
                         #:kind 'fetch #:timeout timeout
                         #:operation "git init mirror")
@@ -232,12 +232,12 @@
                           #:kind 'fetch #:timeout timeout
                           #:operation "git config mirror"))
               (git-run! git 'git-clone-mirror tmp
-                        `("remote" "add" "origin" ,url)
+                        `("remote" "add" "origin" "--" ,url)
                         #:kind 'fetch #:timeout timeout
                         #:operation "git remote add")
               ;; Upstream refs land under refs/upstream/*; never --prune (4).
               (git-run! git 'git-clone-mirror tmp
-                        `("fetch" "origin" "+refs/*:refs/upstream/*")
+                        `("fetch" "origin" "--" "+refs/*:refs/upstream/*")
                         #:kind 'fetch #:timeout timeout
                         #:operation "git fetch mirror")))
           (rename-file-or-directory tmp dir))
@@ -254,7 +254,7 @@
       (with-ssh-timeout-hint url 'fetch 'git-fetch-mirror
         (lambda ()
           (git-run! git 'git-fetch-mirror dir
-                    '("fetch" "origin" "+refs/*:refs/upstream/*")
+                    '("fetch" "origin" "--" "+refs/*:refs/upstream/*")
                     #:kind 'fetch #:timeout timeout
                     #:operation "git fetch mirror"))))))
 
@@ -265,7 +265,7 @@
   ;; Existence first (-e: absent means 1), then the type (-t: a missing
   ;; object there means 128, so -t alone cannot tell absent from broken).
   (define exists
-    (git-run git 'git-has-commit? dir `("cat-file" "-e" ,commit)
+    (git-run git 'git-has-commit? dir `("cat-file" "-e" "--" ,commit)
              #:kind 'fetch #:timeout timeout #:operation "git cat-file"))
   (cond [(not (zero? (run-result-exit exists)))
          (if (= 1 (run-result-exit exists))
@@ -275,7 +275,7 @@
                                 exists 'fetch))]
         [else
          (let ([typed
-                (git-run git 'git-has-commit? dir `("cat-file" "-t" ,commit)
+                (git-run git 'git-has-commit? dir `("cat-file" "-t" "--" ,commit)
                          #:kind 'fetch #:timeout timeout
                          #:operation "git cat-file")])
            (cond [(and (zero? (run-result-exit typed))
@@ -300,7 +300,8 @@
                                    ("mirror" . ,(path->string dir)))
                         #:hint "upstream may have rewritten history"))
       (git-run! git 'git-pin-commit dir
-                `("update-ref" ,(string-append "refs/cyberdeck/pinned/" commit)
+                `("update-ref" "--"
+                  ,(string-append "refs/cyberdeck/pinned/" commit)
                   ,commit)
                 #:kind 'verify #:timeout timeout
                 #:operation "git update-ref pin"))))
@@ -365,6 +366,21 @@
   (for ([bad (in-list '("Bad!" "../escape" "" "a/b"))])
     (check-exn exn:fail:pm?
                (lambda () (vault-mirror-dir "/v/root" bad))))
+
+  ;; Hostile argv never reaches git: validation rejects before any spawn.
+  (for ([hostile (in-list '("--upload-pack=evil"
+                             "$(touch /tmp/pm-pwned)"
+                             "a;b"
+                             "https://example.org/x.git\nMALICIOUS"))])
+    (check-pred spec-error?
+                (with-handlers ([exn:fail:pm? (lambda (e) e)])
+                  (git-clone-mirror hostile
+                                    (build-path fixture-root "hostile.git")))))
+  (check-pred spec-error?
+              (with-handlers ([exn:fail:pm? (lambda (e) e)])
+                (git-has-commit? (build-path fixture-root "hostile.git")
+                                 "--not-a-commit")))
+  (check-false (file-exists? "/tmp/pm-pwned"))
 
   (parameterize ([current-allow-file-urls #t])
     ;; Clone, fetch, and the four commit-probe cases (item 5).
