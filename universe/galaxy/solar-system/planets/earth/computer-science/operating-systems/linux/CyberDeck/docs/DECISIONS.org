@@ -4,6 +4,13 @@
 * Log
 Append-only. Newest first. Every entry names the rule IDs it touches.
 
+** 2026-10-06 Remaining implementation order after plan docs
+Plan docs landed through Phase 6 (D-003, W-9). Build next, in order:
+core/plan.rkt, backends/dry-run.rkt plus fake, core/resolve.rkt plus
+lock.rkt, cli/main.rkt, backends/local.rkt, targets/emacs/ proven on
+racket-mode, git export plus log/diffstat ops, tangle.el, Emacs front
+end, TUI remaster. No code starts ahead of its design. P-1.
+
 ** 2026-10-06 STEP C: export interface (design only) + D-014 decided
 Export is checkout-based from the mirror at the pin into an empty
 staging dir (no implementation yet). Interface for backends/git.rkt:
