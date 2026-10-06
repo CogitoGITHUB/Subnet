@@ -62,6 +62,20 @@
     ("GIT_CONFIG_GLOBAL" . ,(path->string (git-global-config-path)))
     ("GIT_TERMINAL_PROMPT" . "0")))
 
+;; path-string -> string, directory itself as plain text
+(define (dir-string d)
+  (if (path? d) (path->string d) d))
+
+;; path-string -> string, the explicit --git-dir flag value
+(define (git-dir-flag d)
+  (string-append "--git-dir=" (dir-string d)))
+
+;; path-string -> (listof (cons string string))
+;; Discovery stops above the target dir, so cwd inside CyberDeck never
+;; resolves to the outer Subnet repo (STEP B safety).
+(define (ceiling-env dir)
+  `(("GIT_CEILING_DIRECTORIES" . ,(dir-string dir))))
+
 ;; ---------------------------------------------------------------------------
 ;; Running git with uniform failure handling
 
@@ -85,15 +99,19 @@
 ;; break commands for zero gain. Say the word and it gets re-tested.
 
 ;; path symbol path-string (listof string) -> run-result
+;; Explicit --git-dir plus ceiling on every call (STEP B safety); only
+;; creation (init) passes #:git-dir #f and relies on ceiling alone.
 (define (git-run git op dir argv #:kind kind #:timeout timeout
-                 #:operation operation)
+                 #:operation operation #:git-dir [git-dir dir])
+  (define full-argv
+    (if git-dir (cons (git-dir-flag git-dir) argv) argv))
   (define res
-    (run-command git argv
+    (run-command git full-argv
                  #:cwd dir
                  #:kind kind
                  #:timeout timeout
                  #:operation operation
-                 #:env (git-env)))
+                 #:env (append (git-env) (ceiling-env dir))))
   (check-dubious op res)
   res)
 
@@ -110,9 +128,9 @@
 
 ;; path symbol path-string (listof string) -> void, nonzero raises kind (E-8)
 (define (git-run! git op dir argv #:kind kind #:timeout timeout
-                  #:operation operation)
+                  #:operation operation #:git-dir [git-dir dir])
   (define res (git-run git op dir argv #:kind kind #:timeout timeout
-                       #:operation operation))
+                       #:operation operation #:git-dir git-dir))
   (unless (zero? (run-result-exit res))
     (raise-pm-error kind op "git command failed"
                     #:fields `(("command" . ,(string-join
@@ -220,7 +238,8 @@
                         `("init" "--bare" "--template=" "--"
                           ,(path->string tmp))
                         #:kind 'fetch #:timeout timeout
-                        #:operation "git init mirror")
+                        #:operation "git init mirror"
+                        #:git-dir #f)
               ;; Keep everything so original code is never lost (item 8).
               (for ([kv (in-list '(("core.logAllRefUpdates" . "always")
                                     ("transfer.fsckObjects" . "true")
@@ -310,6 +329,7 @@
 (module+ test
   (require rackunit
            racket/file
+           racket/runtime-path
            racket/string
            racket/system
            "../core/errors.rkt")
@@ -321,6 +341,10 @@
   (define fixture-root (make-temporary-directory "pm-git~a"))
   (define fixture-home (build-path fixture-root "home"))
   (make-directory fixture-home)
+  ;; CyberDeck dir: backends/ is this file's dir, its parent is the root.
+  (define-runtime-path test-dir ".")
+  (define-values (cyberdeck-dir _here-name _here-dir?)
+    (split-path test-dir))
 
   ;; Extra env for fixture git commands: identity, isolated HOME,
   ;; no system config (item 8).
@@ -475,6 +499,51 @@
       (git-clone-mirror (string-append "file://" (path->string upstream))
                         hostile-mirror)
       (check-true (git-has-commit? hostile-mirror head-commit))))
+
+  ;; Safety (STEP B): cwd inside CyberDeck must never touch outer Subnet.
+  ;; Vault under CyberDeck/tmp/ (ignored) so discovery would reach outer
+  ;; without explicit --git-dir plus GIT_CEILING_DIRECTORIES.
+  (parameterize ([current-allow-file-urls #t])
+    (define top-res
+      (run-command git-exe
+                   (list "-C" (dir-string cyberdeck-dir)
+                         "rev-parse" "--show-toplevel")
+                   #:cwd (dir-string cyberdeck-dir)
+                   #:kind 'fetch #:timeout 30
+                   #:operation "test-outer-top"))
+    (when (zero? (run-result-exit top-res))
+      (define outer-top (car (run-result-stdout-lines top-res)))
+      (define (outer-run . args)
+        (run-result-stdout-lines
+         (run-command git-exe (cons "-C" (cons outer-top args))
+                      #:cwd (dir-string cyberdeck-dir)
+                      #:kind 'fetch #:timeout 30
+                      #:operation "test-outer-snapshot")))
+      (define (outer-snapshot)
+        (list (outer-run "rev-parse" "HEAD")
+              (outer-run "status" "--porcelain")
+              (outer-run "for-each-ref" "--format=%(refname)")))
+      (define before (outer-snapshot))
+      (define safety-vault
+        (build-path cyberdeck-dir "tmp"
+                    (format "pm-safety-~a" (current-milliseconds))))
+      (make-directory* safety-vault)
+      (define-values (safety-up safety-head)
+        (make-upstream "safety-up" '(("s.txt" . "S"))))
+      (parameterize ([current-directory cyberdeck-dir])
+        (define smirror (vault-mirror-dir safety-vault "safety"))
+        (git-clone-mirror (string-append "file://" (dir-string safety-up))
+                          smirror)
+        (git-fetch-mirror smirror)
+        (check-true (git-has-commit? smirror safety-head))
+        (git-pin-commit smirror safety-head)
+        (define not-repo (build-path safety-vault "plain"))
+        (make-directory not-repo)
+        (check-pred fetch-error?
+                    (with-handlers ([exn:fail:pm? (lambda (e) e)])
+                      (git-fetch-mirror not-repo))))
+      (check-equal? (outer-snapshot) before)
+      (delete-directory/files safety-vault)))
 
   ;; GIT_CONFIG_GLOBAL is honored (item 7): a controlled global file
   ;; supplies a value nothing else could provide.
