@@ -1,0 +1,26 @@
+#+TITLE: Glossary
+#+AUTHOR: Shape
+
+- *spec*: an immutable package description (name, version, source,
+  deps, build steps, install layout). Plain data (D-1, P-4).
+- *plan*: a list of immutable action structs (fetch, verify,
+  extract, run-step, install-file, write-file, symlink,
+  remove-path). Printable, diffable, golden-tested (A-3).
+- *action*: one step of a plan. Data first, effects at the edge.
+- *backend*: implements effects (fetch, run, write). Chosen with
+  =current-backend=. Default =dry-run=, then =local=, plus =fake=
+  for tests (A-4).
+- *target*: says how a package is built (step vocabulary), where it
+  is installed (layout), and which hooks run. Opaque to the core.
+- *prefix*: the root directory a target installs into. Nothing is
+  ever written outside it (F-10).
+- *pin*: a hash (tarball) or full commit (git) fixing a source
+  exactly, recorded in the lockfile (P-6, S-4).
+- *tier*: trust tier. Tier A is data (never executed); tier B is
+  code the user wrote or approved (S-1).
+- *dry-run*: the default backend. Prints the plan, performs
+  nothing (P-2).
+- *lockfile*: records pins and versions so a plan reproduces
+  exactly (A-2, D-4).
+- *golden*: a stored dry-run plan text that tests compare
+  against (T-3).

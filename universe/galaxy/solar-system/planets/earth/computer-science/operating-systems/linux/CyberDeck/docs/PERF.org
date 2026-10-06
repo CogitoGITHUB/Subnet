@@ -1,0 +1,11 @@
+#+TITLE: Performance baselines
+#+AUTHOR: Shape
+
+Do not regress without a DECISIONS entry (X-2). Phone, proot Ubuntu,
+Racket 9.3 CS minimal, 2026-10-06.
+
+| Command                              | real  | user  | sys   |
+|--------------------------------------+-------+-------+-------|
+| =racket -l racket/base -e '(void)'=  | 2.14s | 0.42s | 0.27s |
+
+=cli/main.rkt --help= baseline: pending, no CLI yet.

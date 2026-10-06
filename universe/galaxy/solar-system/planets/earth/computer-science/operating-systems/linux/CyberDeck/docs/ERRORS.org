@@ -1,0 +1,28 @@
+#+TITLE: Errors
+#+AUTHOR: Shape
+
+Kinds live in =core/errors.rkt= (E-3): =spec resolve fetch verify build
+install config internal=. One struct =exn:fail:pm= with =kind=, =fields=,
+=hint=, =cause=. Raise only through =raise-pm-error= (E-4). Catch
+narrowly (E-5). User errors print clean messages; internal errors print
+full context plus a bug banner (E-7).
+
+Message shape (E-1, E-2): =who: message;= then =  field: value= lines,
+then =  hint:=. Every error answers WHAT, WHERE, WHY, NEXT.
+
+* Exit codes (E-15 proposal, see D-008)
+
+| Code | Meaning              |
+|------+----------------------|
+|    0 | success              |
+|    2 | usage (bad CLI)      |
+|    3 | spec invalid         |
+|    4 | resolve (deps)       |
+|    5 | fetch (network)      |
+|    6 | verify (hash)        |
+|    7 | build failed         |
+|    8 | install failed       |
+|   70 | internal bug         |
+|  130 | interrupted (Ctrl-C) |
+
+Samples will be collected here as error paths are implemented (E-12).

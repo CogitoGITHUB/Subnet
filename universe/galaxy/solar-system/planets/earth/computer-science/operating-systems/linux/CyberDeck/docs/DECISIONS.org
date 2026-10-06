@@ -1,0 +1,41 @@
+#+TITLE: Decisions
+#+AUTHOR: Shape
+
+* Log
+Append-only. Newest first. Every entry names the rule IDs it touches.
+
+** 2026-10-06 0.FOUNDATION.org exempt from the length lint (T-7)
+The contract file keeps its long install URLs and SHAs. Tabs,
+trailing spaces and final newlines are still checked. W-8.
+
+** 2026-10-06 =raco test= ships with minimal Racket (D-010 closed)
+Verified on Racket 9.3 CS minimal: =raco test --help= works with no
+extra package. P-8.
+
+** 2026-10-06 Racket 9.3 minimal via tarball (section 1)
+A same-day 9.1 installer detour was removed; =~/opt/racket= now holds
+9.3 CS minimal. =rackunit-lib= installed via =raco pkg install --auto=;
+nothing else. No apt racket, no full distribution (P-8).
+
+** 2026-10-06 Org tangles to .rkt (D-002, L-1 accepted)
+Org files are the source of truth. Tangled =.rkt= files are committed,
+start with a GENERATED header, and are never edited by hand. W-9.
+
+** 2026-10-06 Keep =CyberDeck/= (D-001)
+Project directory stays as created, next to the Guix clone. W-9.
+
+** 2026-10-06 G-2 push and tag for the Guix stages
+=origin/main= already held everything (=24ee3ef=). Tag
+=stage-1-complete= created on =bd5a6b7= (last verified stage
+boundary) and pushed. G-2, G-4.
+
+* Open
+| ID    | Decision                                                  |
+|-------+-----------------------------------------------------------|
+| D-003 | Spec format: S-expression data now, custom =#lang= later?  |
+| D-004 | Lockfile format and location                              |
+| D-005 | Emacs install layout and loader wiring                    |
+| D-006 | Supported sources: git, tarball, ELPA/MELPA import?       |
+| D-007 | Version constraint syntax                                 |
+| D-008 | Exit-code table (E-15 proposal)                           |
+| D-009 | Trust model for third-party specs                         |

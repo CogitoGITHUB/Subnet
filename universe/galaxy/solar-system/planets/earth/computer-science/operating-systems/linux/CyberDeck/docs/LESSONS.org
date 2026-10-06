@@ -1,0 +1,5 @@
+#+TITLE: Lessons
+#+AUTHOR: Shape
+
+Append-only. Every entry: what happened, root cause, new rule.
+Empty on purpose: the first entry will be a real mistake (P-10).
