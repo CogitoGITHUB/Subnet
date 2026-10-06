@@ -19,16 +19,17 @@ for tool in env setsid pkill; do
     echo "GATE: $tool executable not found (run.rkt needs it)"; fail=1
   fi
 done
-# Vault mirrors live in sources/ (D-011): gitignored, never tracked,
-# never an embedded repo. Outer repo tracks specs/lockfile/manifest only.
-if ! grep -qx "sources/" .gitignore 2>/dev/null; then
-  echo "GATE: .gitignore must list sources/ (D-011)"; fail=1
-fi
-if git ls-files -- sources 2>/dev/null | grep -q .; then
-  echo "GATE: sources/ must never be tracked"; fail=1
+# Sources live in sources/ tracked via subtree (D-011): pushed with the
+# outer repo, so a dead phone loses nothing. Never ignored, never an
+# embedded repo, never bare-mirror internals (*.git/objects).
+if grep -qx "sources/" .gitignore 2>/dev/null; then
+  echo "GATE: .gitignore must not list sources/ (D-011 tracked)"; fail=1
 fi
 if git ls-files -s -- sources 2>/dev/null | grep -q "^16"; then
-  echo "GATE: sources/ must never embed a git repo"; fail=1
+  echo "GATE: sources/ must never embed a git repo (use subtree)"; fail=1
+fi
+if git ls-files -- sources 2>/dev/null | grep -q "\.git/objects"; then
+  echo "GATE: sources/ must never track bare-mirror objects"; fail=1
 fi
 # 1. Text lint: no tabs, no trailing spaces, no line over 102 characters,
 # final newline. Applies to .org, .rkt and .sh files.

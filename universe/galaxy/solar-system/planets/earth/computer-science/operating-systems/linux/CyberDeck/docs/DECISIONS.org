@@ -4,6 +4,13 @@
 * Log
 Append-only. Newest first. Every entry names the rule IDs it touches.
 
+** 2026-10-06 D-011 corrected: sources/ tracked, pushed with outer repo
+Supersedes the gitignored-vault entry: CyberDeck/sources/<name>/ is
+tracked in the outer Subnet repo via subtree, full upstream history
+merged and pushed with it. Machine loss = clone outer, everything back.
+No separate backup to forget. Bare mirror internals are never tracked
+directly; history lives in the subtree, not in *.git/objects. D-011.
+
 ** 2026-10-06 D-011 amended: vault in CyberDeck/sources/, per-package backup
 Mirrors live in CyberDeck/sources/<name>.git (bare, gitignored by outer
 Subnet repo; outer tracks specs, lockfile, manifest only). Backup is one

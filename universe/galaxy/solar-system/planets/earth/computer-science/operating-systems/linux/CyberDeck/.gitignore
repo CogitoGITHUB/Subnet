@@ -2,4 +2,3 @@ compiled/
 *.zo
 *.dep
 tmp/
-sources/
