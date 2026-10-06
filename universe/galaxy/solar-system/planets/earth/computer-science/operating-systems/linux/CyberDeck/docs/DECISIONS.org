@@ -4,6 +4,29 @@
 * Log
 Append-only. Newest first. Every entry names the rule IDs it touches.
 
+** 2026-10-06 STEP C: export interface (design only) + D-014 decided
+Export is checkout-based from the mirror at the pin into an empty
+staging dir (no implementation yet). Interface for backends/git.rkt:
+#+begin_example
+(provide (contract-out
+ [git-export-commit (->* (path-string? string? path-string?)
+                         (#:timeout exact-positive-integer?)
+                         void?)]))
+;; mirror-dir commit-id staging-dir -> void
+#+end_example
+Exact commands: git --git-dir=<mirror> cat-file -t <commit> (must be
+commit, else kind 'verify); git clone --quiet --no-checkout
+-c core.autocrlf=false -c core.attributesFile=/dev/null -- <mirror>
+<work-tmp>; git --git-dir=<work-tmp> with the same -c flags checkout
+--quiet <commit>; refuse mode 160000 (submodules) kind 'fetch with a
+future-work hint; delete work-tmp/.git; copy the tree (modes and
+symlinks kept) into staging; stamp staging/.cyberdeck-commit with the
+id; symlinks escaping the tree are kind 'fetch; work-tmp is removed
+always, staging is left empty on failure. Staging must sit on the same
+filesystem as the final target (caller ensures it). STEP C.
+D-014 DECIDED: no runtime syntax/parse (+4.4s); spec validation is a
+hand-written table-driven validator over read-syntax objects. D-014.
+
 ** 2026-10-06 D-011 corrected: sources/ tracked, pushed with outer repo
 Supersedes the gitignored-vault entry: CyberDeck/sources/<name>/ is
 tracked in the outer Subnet repo via subtree, full upstream history
@@ -169,3 +192,4 @@ boundary) and pushed. G-2, G-4.
 | D-011 | Vault: full mirror in vault/<name>.git; fetch updates |
 | D-012 | Pin refs: refs/cyberdeck/pinned/<commit> against gc/force |
 | D-013 | Alternate upstream URLs per package (open) |
+| D-014 | Hand validator, no runtime syntax/parse (decided) |
