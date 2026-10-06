@@ -8,6 +8,14 @@ Append-only. Newest first. Every entry names the rule IDs it touches.
 Raw Racket columns are 0-based; ui adds 1, lines stay raw. Matches
 Emacs next-error and GCC convention. Pinned by the 1:2/1:4 tests. P-8.
 
+** 2026-10-06 proot findings: no process groups, no environ constructor
+=subprocess-group-enabled= is #f, so tree-kill uses setsid plus
+=pkill -g=. =make-environment-variables= segfaults, so the S-6
+allowlist is enforced with =env -i= (values visible in ps output;
+never pass secrets via =#:env=). P-8.
+Raw Racket columns are 0-based; ui adds 1, lines stay raw. Matches
+Emacs next-error and GCC convention. Pinned by the 1:2/1:4 tests. P-8.
+
 ** 2026-10-06 Mirror safety: keep everything (item 8)
 Mirrors set core.logAllRefUpdates=always, transfer.fsckObjects=true,
 gc.pruneExpire=never, gc.reflogExpire=never,

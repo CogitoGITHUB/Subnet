@@ -46,22 +46,15 @@
       (raise-pm-error 'internal 'run-command "invalid environment variable name"
                       #:fields `(("name" . ,(car p)))))))
 
-;; (listof (cons string string)) -> environment-variables
-(define (restricted-env extras)
+;; (listof (cons string string)) -> (listof string), NAME=value assignments
+(define (env-assignments extras)
   (define table (make-hash))
   (for ([n (in-list fixed-env-names)])
     (define v (getenv n))
     (when v (hash-set! table n v)))
   (for ([p (in-list extras)])
     (hash-set! table (car p) (cdr p)))
-  (define env
-    (apply make-environment-variables
-           (map (lambda (n) (string->bytes/utf-8 n)) (hash-keys table))))
-  (for ([(n v) (in-hash table)])
-    (environment-variables-set! env
-                                (string->bytes/utf-8 n)
-                                (string->bytes/utf-8 v)))
-  env)
+  (hash-map table (lambda (n v) (string-append n "=" v))))
 
 ;; ---------------------------------------------------------------------------
 ;; Redaction (S-8): URL passwords and secret assignments never reach logs.
@@ -99,11 +92,14 @@
 ;; Racket process groups are unavailable under proot
 ;; (subprocess-group-enabled -> #f, probed 2026-10-06), so children launch
 ;; via setsid (own process group) and die via pkill -g on timeout.
+;; make-environment-variables also segfaults under this proot (probed
+;; 2026-10-06), so the allowlist is enforced with env -i instead. Values
+;; passed here are visible in ps output; never pass secrets via #:env.
 
-;; -> path, setsid or pkill, missing means kind 'config
-(define (tree-helper name)
+;; -> path, helper binary or kind 'config when missing
+(define (find-helper name)
   (or (find-executable-path name)
-      (raise-pm-error 'config 'run-command "process-tree helper missing"
+      (raise-pm-error 'config 'run-command "helper executable missing"
                       #:fields `(("helper" . ,name)))))
 
 ;; path-string (listof string) -> run-result
@@ -114,8 +110,9 @@
                      #:operation operation
                      #:env [extras '()])
   (check-env-names extras)
-  (define setsid-exe (tree-helper "setsid"))
-  (define pkill-exe (tree-helper "pkill"))
+  (define setsid-exe (find-helper "setsid"))
+  (define pkill-exe (find-helper "pkill"))
+  (define env-exe (find-helper "env"))
   (unless (file-exists? exe)
     (raise-pm-error 'config 'run-command "executable not found"
                     #:fields `(("exe" . ,exe))))
@@ -125,9 +122,11 @@
   (define err-box (box '()))
   (define exe-string (if (path? exe) (path->string exe) exe))
   (define r
-    (parameterize ([current-environment-variables (restricted-env extras)]
-                   [current-directory cwd])
-      (apply process* setsid-exe (cons exe-string argv))))
+    (parameterize ([current-directory cwd])
+      (apply process* (path->string setsid-exe)
+             (append (list (path->string env-exe) "-i")
+                     (env-assignments extras)
+                     (cons exe-string argv)))))
   (define out-port (list-ref r 0))
   (define in-port (list-ref r 1))
   (define pgid (list-ref r 2))
@@ -148,7 +147,7 @@
                 (reverse (unbox err-box))))
   (if (sync/timeout timeout (thread-dead-evt waiter))
       (begin (thread-wait waiter) (finish))
-      (let ([k (process* pkill-exe "-KILL" "-g" (number->string pgid))])
+      (let ([k (process* (path->string pkill-exe) "-KILL" "-g" (number->string pgid))])
         ((list-ref k 4) (quote wait))
         (close-input-port (list-ref k 0))
         (close-output-port (list-ref k 1))
