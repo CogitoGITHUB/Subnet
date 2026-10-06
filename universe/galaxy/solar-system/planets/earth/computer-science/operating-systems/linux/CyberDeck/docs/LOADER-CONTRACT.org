@@ -1,0 +1,49 @@
+#+TITLE: PHASE 1: how packages load in Emacs today
+#+AUTHOR: Shape
+
+* Report (read-only recon of the Cyberdeck-Emacs loader)
+1. Loader is literate Org: vault Cyberdeck-Emacs/cyberdeck (4469 lines)
+   plus loader/*.org modules, tangled to
+   ~/.config/emacs/cyberdeck-emacs.el (222KB), evaluated by init.el.
+2. No .el lives in the tree. Units are Org headlines tagged
+   :EMACS_MECHANISM: under the org dir (emacs-cyberdeck/).
+3. Packages live in straight.el dirs (defaults under
+   ~/.config/emacs/straight/{repos,build}); the loader never sets
+   straight-base-dir.
+4. load-path comes from straight (build dirs added on
+   straight-use-package) plus the loader output dir (cyberdeck-emacs/).
+5. A unit declares packages with a :STRAIGHT: recipe body (melpa-style
+   list) and a :DEPENDS: property folded into the recipe; the builder
+   emits (leaf|use-package name ... :preface (straight-use-package
+   'recipe)).
+6. Lazy loading is leaf/use-package defer keys (:bind :hook :mode
+   :commands :after) plus S2 units deferred to first use via generated
+   index-only autoloads (staged boot; full boot runs S2 eagerly).
+7. Changed parts are written as .el, byte-compiled, loaded (.elc);
+   failures fall back to eval with a recorded error. S2 units are
+   evaluated, never byte-compiled. Native compilation is unmanaged.
+8. Autoloads are generated on demand; deleted files keep index
+   autoloads; names owned by real functions are never clobbered.
+9. Install today is first straight-use-package cloning at boot.
+   Update is manual straight-pull per package, no review gate.
+   Versions are straight-freeze-versions (auto on clean boot if
+   enabled) and thaw. Remove has no loader command (manual).
+   Remote Org files come from raw.githubusercontent.com on demand.
+10. Broken blocks fail the boot visibly, never silently; a broken scan
+    refuses boot; errors go to a TODO file and a structured error log;
+    reload/preview/doctor commands repair and inspect.
+
+* CONTRACT: what the loader needs from the package manager
+- One versioned dir per package plus a =current= symlink (D-005); the
+  loader adds the current dir to load-path. Upgrades flip the link;
+  the loader and init files are never edited.
+- Per package: byte-compiled .elc (emacs --batch -Q), a generated
+  autoloads file, a stamp file with the Emacs version (recompile on
+  change), and a provenance file (name, version, commit, source URL).
+- Metadata per package: dependency names, lazy triggers (commands,
+  modes, hooks), build steps, and a smoke-test result (batch load).
+- Behavior: apply installs a new versioned dir, builds in staging,
+  flips =current=, updates the lockfile, appends history; any failure
+  keeps the old version. Rollback flips the link back. No auto-apply.
+- One s-expression CLI output for check/review/apply/rollback/history,
+  the single API for the Emacs and TUI front ends.
