@@ -5,6 +5,14 @@ set -eu
 cd "$(dirname "$0")/.."
 RACO="$HOME/opt/racket/bin/raco"
 fail=0
+# cli/ must never reference the test-only file-URL flag (D-011).
+if [ -d cli ] && grep -rq "current-allow-file-urls" cli/; then
+  echo "GATE: cli/ must never reference current-allow-file-urls"; fail=1
+fi
+# The git backend tests need git.
+if ! command -v git >/dev/null 2>&1; then
+  echo "GATE: git executable not found"; fail=1
+fi
 # 1. Text lint: no tabs, no trailing spaces, no line over 102 characters,
 # final newline. Applies to .org, .rkt and .sh files.
 for f in $(find . -type f \( -name '*.org' -o -name '*.rkt' \

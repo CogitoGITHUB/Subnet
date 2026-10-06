@@ -8,6 +8,29 @@ Append-only. Newest first. Every entry names the rule IDs it touches.
 Raw Racket columns are 0-based; ui adds 1, lines stay raw. Matches
 Emacs next-error and GCC convention. Pinned by the 1:2/1:4 tests. P-8.
 
+** 2026-10-06 Mirror safety: keep everything (item 8)
+Mirrors set core.logAllRefUpdates=always, transfer.fsckObjects=true,
+gc.pruneExpire=never, gc.reflogExpire=never,
+gc.reflogExpireUnreachable=never. Rationale: the vault promise is to
+never lose original code; disk is cheaper than resurrection.
+Storage cost: unreachable objects accumulate forever; acceptable for
+a personal package set, revisit if the vault outgrows the phone.
+Key names cross-checked against long-standing git behavior; the real
+proof is the pin-survival test (prune=now plus fetch.prune=true).
+
+** 2026-10-06 Locking: fcntl via racket/file, proven under proot
+Per-mirror locks use call-with-file-lock/timeout (racket/file), fcntl
+on Linux, released by process death. Proven by the two-process plus
+kill -9 test in backends/git.rkt. If that test ever fails: STOP, the
+whole fetch/pin design needs rethinking. Item 12.
+
+** 2026-10-06 Pending acceptance: dry-run-never-touches-git test
+Needs the dry-run backend, which does not exist yet. Write it with
+the local/dry-run step: inject a failing runner, run a full dry-run,
+assert it never fires. Item 7.
+Raw Racket columns are 0-based; ui adds 1, lines stay raw. Matches
+Emacs next-error and GCC convention. Pinned by the 1:2/1:4 tests. P-8.
+
 ** 2026-10-06 Export experiment verdict: checkout-based (D-011)
 Fixture repo (nested dir, exec bit, export-ignore file): =git archive=
 silently omits export-ignored files, modes and other contents
@@ -113,3 +136,4 @@ boundary) and pushed. G-2, G-4.
 | D-009 | Data-only default; Tier B own-repo files only |
 | D-011 | Vault: full mirror in vault/<name>.git; fetch updates |
 | D-012 | Pin refs: refs/cyberdeck/pinned/<commit> against gc/force |
+| D-013 | Alternate upstream URLs per package (open) |
