@@ -1,0 +1,77 @@
+#+TITLE: Package definition design (design only, no code)
+#+AUTHOR: Shape
+
+* Layers
+Core record: name, version, summary, source (git URL plus full commit),
+deps (name plus exact version), build (data steps), install (opaque per
+target), license, homepage. Composition: (extends NAME) copies a parent,
+local fields win; variants are named override bundles picked by name.
+Conditionals: (when COND FIELD...) with COND from a fixed table
+(platform, emacs-version, feature). Provenance and lock: every pin
+(URL, commit) lands in sorted lockfile.rktd. Targets: install subforms
+are opaque to the core and validated by target modules. Validator: a
+hand-written table (field, arity, types) over read-syntax objects;
+unknown keys are errors with srcloc (D-014, no syntax/parse at runtime).
+
+* Eight example specs (placeholder commit ids)
+Single-file: (spec (format-version 1) (name unfill) (version "1.0")
+(source (git "https://example.org/unfill.el" #x40[1]))
+(build (steps (byte-compile))) (install (emacs (autoloads "u.el"))))).
+Multi-file adds several .el plus an autoloads output name. racket-mode
+adds (system-dep "racket") and a smoke load check. magit adds deps with
+exact versions plus a docs feature. libvterm adds (when (platform
+linux)) native steps (cmake, make) and a conditional dep. Texinfo docs
+add a make-info step plus an info install form. A fork pins the fork
+commit and lists (patches-as-commits (branch "fix")). A monorepo uses
+(subdir "lisp/org") to select one installable tree from the checkout.
+
+* Five exact error messages
+read-spec: invalid declaration;
+  at: pkg.rktd:3:4
+  hint: unknown key 'soruce'
+read-spec: invalid declaration;
+  at: pkg.rktd:4:11
+  hint: invalid version "1..2"
+string->git-id: not a commit id;
+  value: xyz
+read-spec: invalid declaration;
+  at: pkg.rktd:1:1
+  hint: missing required field 'source'
+resolve: unsatisfiable dependency;
+  package: magit 4.0.0
+  dep: compat 1.0.0
+  hint: no spec provides compat 1.0.0
+
+* Honest limits
+No version ranges (equality only); no auto-detected system deps
+(everything explicit); closed build-step vocabulary; no post-install
+elisp evaluation (the loader owns wiring); the validator cannot catch
+wrong file names (the smoke test does that at build time).
+
+* Check, review, apply, rollback, hold
+Check is read-only: fetch into the mirror, compare pin vs upstream tip
+per tracking policy, print per-package status (pinned, tip,
+behind-count, new tags, risk flags). Review prints incoming commits
+plus diffstat, risks first. Apply: export the new commit to a new
+versioned dir, build in staging, pin the new commit keeping the old,
+flip the =current= link, update the lockfile atomically, append to the
+history log; any failure keeps the old version. Rollback flips the link
+to any version still on disk. Hold/skip/unhold marks packages the
+checker skips. Nothing ever applies automatically.
+Offline: everything except fetch works from the mirror; stale results
+are marked. Rate limiting: fetches run one at a time with timeouts and
+a user-confirmed batch size (phone battery and data).
+
+* One s-expression API
+check, review, apply, rollback and history all print one s-expression
+each, the single machine API for the Emacs and TUI front ends.
+
+* New git backend ops (interfaces for approval, no code yet)
+[git-rev-parse (->* (path-string? string?)
+(#:timeout exact-positive-integer?) string?)]
+[git-is-ancestor? (->* (path-string? string? string?)
+(#:timeout exact-positive-integer?) boolean?)]
+[git-log (->* (path-string? string? string?)
+(#:timeout exact-positive-integer?) (listof string?))]
+[git-diffstat (->* (path-string? string? string?)
+(#:timeout exact-positive-integer?) string?)]
