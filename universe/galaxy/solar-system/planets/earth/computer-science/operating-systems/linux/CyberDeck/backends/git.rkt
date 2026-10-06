@@ -36,7 +36,11 @@
   ;; path string path -> void, checkout pin into empty staging (STEP C)
   [git-export-commit (->* (path-string? string? path-string?)
                           (#:timeout exact-positive-integer?)
-                          void?)]))
+                          void?)]
+  ;; string (or/c path string) -> boolean, textual containment check
+  [inside-root? (-> string? (or/c path? string?) boolean?)]
+  ;; path -> (or/c path #f), transitive link resolution (40 hops max)
+  [resolve-fully (-> path? (or/c path? #f))]))
 
 ;; ---------------------------------------------------------------------------
 ;; Locating git and the vault
