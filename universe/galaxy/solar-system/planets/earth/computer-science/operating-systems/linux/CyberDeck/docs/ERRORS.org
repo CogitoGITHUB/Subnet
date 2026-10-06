@@ -26,3 +26,29 @@ then =  hint:=. Every error answers WHAT, WHERE, WHY, NEXT.
 |  130 | interrupted (Ctrl-C) |
 
 Samples will be collected here as error paths are implemented (E-12).
+
+* Samples (from =core/*= tests, exact output)
+
+User error with fields, cause and hint:
+
+#+begin_example
+fetch-source: download failed;
+  url: https://x.test/a.tgz
+  cause: net down
+  hint: check the URL
+#+end_example
+
+Bare message (no continuations, so no =;=):
+
+#+begin_example
+fetch-source: download failed
+#+end_example
+
+Internal bug banner (context varies):
+
+#+begin_example
+internal error: this is a bug in the package manager;
+please report it with the context below.
+broken invariant
+  context: ((|body of top-level| . #f))
+#+end_example

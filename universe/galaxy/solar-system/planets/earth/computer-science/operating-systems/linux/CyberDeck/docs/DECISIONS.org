@@ -4,6 +4,32 @@
 * Log
 Append-only. Newest first. Every entry names the rule IDs it touches.
 
+** 2026-10-06 Log macros bypass contract-out (M-3 exception)
+Verified in the REPL: =define-logger= level forms (=log-pm-debug=,
+=log-pm-info=, ...) are macros, so they cannot go through
+=contract-out= (or even be referenced as values). =core/log.rkt=
+provides them bare; everything else in the module is contracted. M-3.
+
+** 2026-10-06 D-005 details: current symlink, Emacs stamp file
+One =current= symlink per package (=racket-mode -> racket-mode-<v>/=);
+the loader points at =current= so upgrades/rollbacks never touch it.
+A stamp file records the Emacs version; recompile when it changes.
+[VERIFY on the user's Emacs]. Manager state (lockfile, logs, cache)
+lives in a separate state dir, never with installed packages. D-005.
+
+** 2026-10-06 D-006 HARD: git only, always full clone
+No other source or package manager, ever. Every install clones the
+full repo so the source survives even if upstream vanishes. D-006.
+
+** 2026-10-06 D-009 details: data-only, Tier B own-repo only
+Tier B is only for files in our own repo, never fetched. A =(run ...)=
+step gets a visible plan marker and warns in =--strict= mode (E-11).
+Dry-run is the default for outside-repo specs. D-009, S-1.
+
+** 2026-10-06 Practice scope: no Guix restructure
+guix/ and reference/ stay untouched (P-9, G-3). No Guix moves, ever;
+practice happens in CyberDeck/ only. W-1.
+
 ** 2026-10-06 0.FOUNDATION.org exempt from the length lint (T-7)
 The contract file keeps its long install URLs and SHAs. Tabs,
 trailing spaces and final newlines are still checked. W-8.
@@ -32,10 +58,10 @@ boundary) and pushed. G-2, G-4.
 * Open
 | ID    | Decision                                                  |
 |-------+-----------------------------------------------------------|
-| D-003 | Spec format: S-expression data now, custom =#lang= later?  |
-| D-004 | Lockfile format and location                              |
-| D-005 | Emacs install layout and loader wiring                    |
-| D-006 | Supported sources: git, tarball, ELPA/MELPA import?       |
-| D-007 | Version constraint syntax                                 |
+| D-003 | S-expr .rktd now; custom #lang deferred; Tier A default |
+| D-004 | lockfile.rktd, sorted, in the state dir (not prefix) |
+| D-005 | ~/.local/share/cyberdeck; versioned dirs; current link |
+| D-006 | git ONLY; always full clone on install (keep source) |
+| D-007 | Exact versions only, no ranges |
 | D-008 | Exit-code table (E-15 proposal)                           |
-| D-009 | Trust model for third-party specs                         |
+| D-009 | Data-only default; Tier B own-repo files only |
