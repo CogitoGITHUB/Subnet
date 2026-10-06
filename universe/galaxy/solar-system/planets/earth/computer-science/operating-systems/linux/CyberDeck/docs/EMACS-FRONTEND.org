@@ -1,0 +1,28 @@
+#+TITLE: PHASE 5b: Emacs front end cyberdeck-pm.el (design only, no code)
+#+AUTHOR: Shape
+
+* Views
+Package list (tabulated-list with per-package status from check),
+review buffer (incoming commits plus diffstat, risks first), history
+log view, hold flags inline. One s-expression per CLI call, read as
+data with =read=, never evaluated (Tier A).
+
+* Operations, one CLI call each
+check, review, apply, hold, unhold, rollback, history. Racket startup
+is slow (see PERF.org), so calls are batched per operation and show
+progress; results stream into their buffers as they arrive.
+
+* Async, never blocking
+Every CLI call runs under =make-process= with a filter and a sentinel;
+no synchronous waits on the UI thread. A call that outlives its buffer
+kills its process. Timeouts mirror the CLI (E-14).
+
+* Never edits init
+The front end only reads loader state and calls the CLI. It never
+writes init files, the loader, or user configuration (contract).
+
+* After an update: DECIDED
+No live reload of updated packages (too risky mid-session). Apply
+finishes with a restart prompt; the staged boot picks up the flipped
+=current= links on the next start. Rollback stays one call away if the
+new build misbehaves. Smoke-test results print before apply.
