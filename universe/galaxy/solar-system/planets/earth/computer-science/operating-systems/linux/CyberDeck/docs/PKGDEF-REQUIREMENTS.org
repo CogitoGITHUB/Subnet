@@ -1,0 +1,58 @@
+#+TITLE: Package definition requirements (read-only study, no design)
+#+AUTHOR: Shape
+
+* 2a. Guix model inventory (from the in-vault Guix clone)
+| Concept | Verdict | Reason |
+|---------+---------+--------|
+| package record | IMPROVE | keep shape; git-only source, exact-commit pins |
+| origin uri/method/hash | IMPROVE | git URI plus commit only; id is the pin |
+| inherit/variants | KEEP | composition without copy-paste |
+| build-system + args + phases | KEEP | named steps plus order and insertion hooks |
+| bags/gexp lowering | DROP | no derivations; backend runs commands |
+| inputs/native/propagated | KEEP | deps vs build-time vs load-path; exact versions |
+| outputs | DROP | one tree per package; no multi-output need |
+| search-paths | DROP/KEEP | drop for Emacs (loader owns load-path); later for system |
+| supported-systems | DROP | elisp is portable; conditionals cover the rest |
+| replacement/grafts | DROP | explicit review-gated updates instead |
+| properties alist | KEEP | open slot: triggers, smoke test, tracking policy |
+| patches/snippets files | IMPROVE | git commits/branches plus build steps, no blobs |
+| transformations CLI | IMPROVE | become spec fields (variants, tracking policy) |
+| manifests/profiles/gens | IMPROVE | sets as specs in git; versioned dirs plus history |
+| channels | IMPROVE | spec collections in git repos, no auth machinery |
+
+* 2b. Eight real Emacs packages (simple to hard)
+1. Single-file (htmlize): one .el, no deps, byte-compile, trivial wiring.
+2. Multi-file (markdown-mode): several .el, autoload cookies needed.
+3. racket-mode: elisp plus an outside Racket binary; run-time system dep.
+4. magit: deep dep chain (compat, section, transient); docs built too.
+5. emacs-libvterm: cmake plus system libvterm, native .so; platform ifs.
+6. Texinfo docs (org manual style): makeinfo at build, info install.
+7. Personal fork with patches: patches as commits on top; pin is fork.
+8. Monorepo (org-style): one repo, several installable subdirs.
+
+* 2c. Beyond-Guix candidates judged against real needs
+- Patches as git commits/branches: YES (case 7 needs it).
+- Variants without copy-paste: YES (inherit layer; case 5 flavors).
+- Conditionals (platform/Emacs version/flags): YES (cases 5, 6).
+- Optional features with conditional deps: YES (case 4 docs).
+- Build steps as data, hooks, insertion points: YES (cases 5, 6).
+- Per-package smoke tests (batch load): YES (loader runs the code).
+- Lazy-loading metadata: YES (PHASE 1 contract demands triggers).
+- Automatic provenance: YES (pin plus URL free from the vault).
+- Spec collections in git (channels): YES. Profiles/sets as specs: YES.
+- Docs embedded in spec: NO (summary only; prose lives in Org).
+- Org as authoring format: YES (Phase 5; specs stay plain data).
+
+* 2d. Emacs target vs system target
+Common: spec record, pins, vault, plan/execute, lockfile, review gate.
+Emacs-only: byte-compile, autoloads, load-path/current link, stamp file.
+System-only (later): binary PATH layout, info/man install, services.
+
+* 2e. Updates and dev checkouts
+Tracking per package: follow branch, latest tag by pattern, hold,
+pinned-forever. Outdated means behind-count plus new tags. Danger:
+pinned commit no longer an ancestor (rewrite), upstream moved or gone,
+new submodules, changed build files. Updates replace code Emacs runs,
+so the review gate is mandatory, never automatic.
+Dev checkouts share vault objects via =git clone --shared= (alternates,
+no copy); local patches live as branches. PROPOSAL, still to confirm.
