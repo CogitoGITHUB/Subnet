@@ -9,3 +9,15 @@ Racket 9.3 CS minimal, 2026-10-06.
 | =racket -l racket/base -e '(void)'=  | 2.14s | 0.42s | 0.27s |
 
 =cli/main.rkt --help= baseline: pending, no CLI yet.
+
+* 2026-10-06 =scripts/startup.sh=, median of 5 (one warmup discarded)
+
+| run | real | user | sys |
+| 1 | 1.13 | 0.53 | 0.27 |
+| 2 | 0.86 | 0.43 | 0.18 |
+| 3 | 1.69 | 0.45 | 0.22 |
+| 4 | 2.10 | 0.58 | 0.28 |
+| 5 | 2.01 | 0.53 | 0.27 |
+| median | 1.69 | 0.53 | 0.27 |
+
+Phone variance is high (real 0.86-2.27); compare medians, not runs.
