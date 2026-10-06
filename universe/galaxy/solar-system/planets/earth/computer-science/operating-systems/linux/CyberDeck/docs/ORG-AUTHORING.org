@@ -1,0 +1,51 @@
+#+TITLE: PHASE 5: Org authoring format (design only, no code)
+#+AUTHOR: Shape
+
+* One Org file per package collection
+Specs stay plain .rktd data files. Authors write Org; an exporter
+emits one .rktd per package headline. Generated files carry the
+L-1 header and are never edited by hand. Validation reuses the single
+spec-read path, so Org and hand-written .rktd cannot disagree.
+
+* Property mapping (headline properties become spec fields)
+| Org              | Spec field |
+|------------------+------------|
+| :NAME:           | name       |
+| :VERSION:        | version    |
+| :SUMMARY:        | summary    |
+| :UPSTREAM:       | source URL |
+| :PIN:            | source commit |
+| :LICENSE:        | license    |
+| :HOMEPAGE:       | homepage   |
+| :DEPENDS:        | deps       |
+| :EXTENDS:        | extends    |
+| :TRACKING:       | tracking policy (branch/tag-pattern/hold/pinned) |
+| :LAZY:           | lazy triggers (commands, modes, hooks) |
+
+* Body blocks
+Build steps live in a =#+begin_src pm-steps= block, one s-expression
+per line, in order. Variants are sub-headlines with :VARIANT: names;
+conditionals are =(when COND ...)= sub-headlines. Loader metadata
+(:STRAIGHT: recipes, defer keys) is derived from the same triggers,
+so the unit declaration and the pm spec share one source.
+
+* Example (racket-mode, placeholder pin)
+#+begin_example
+* racket-mode
+:PROPERTIES:
+:NAME:     racket-mode
+:VERSION:  20250115.1432
+:UPSTREAM: https://github.com/greghendershott/racket-mode
+:PIN:      9edb3f66fd807b096b48283debdcddccfea34bad
+:LICENSE:  gpl-3.0+
+:DEPENDS:  (compat 1.0)
+:LAZY:     commands racket-repl mode racket-mode-hook
+:END:
+#+begin_src pm-steps
+(byte-compile)
+#+end_src
+#+end_example
+
+* Validation flow
+Export writes .rktd, runs read-spec-file, reports errors with Org
+file:line:col. Unknown properties are errors (D-2 for prose).
