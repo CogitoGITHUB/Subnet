@@ -4,6 +4,13 @@
 * Log
 Append-only. Newest first. Every entry names the rule IDs it touches.
 
+** 2026-10-06 Prompt suppression: offline proof only, networked proof open
+GIT_TERMINAL_PROMPT=0 plus ssh BatchMode fails fast offline with no
+prompt attempted. Full proof (an actual auth challenge answered with
+failure instead of a prompt) needs network and is deferred to a
+networked test. Until then, ssh/scp timeouts carry the manual
+host-key hint. Item 14.
+
 ** 2026-10-06 Columns print +1 to match Emacs next-error (deliberate)
 Raw Racket columns are 0-based; ui adds 1, lines stay raw. Matches
 Emacs next-error and GCC convention. Pinned by the 1:2/1:4 tests. P-8.

@@ -13,6 +13,12 @@ fi
 if ! command -v git >/dev/null 2>&1; then
   echo "GATE: git executable not found"; fail=1
 fi
+# backends/run.rkt spawns through setsid/env and kills trees with pkill.
+for tool in env setsid pkill; do
+  if ! command -v "$tool" >/dev/null 2>&1; then
+    echo "GATE: $tool executable not found (run.rkt needs it)"; fail=1
+  fi
+done
 # 1. Text lint: no tabs, no trailing spaces, no line over 102 characters,
 # final newline. Applies to .org, .rkt and .sh files.
 for f in $(find . -type f \( -name '*.org' -o -name '*.rkt' \
