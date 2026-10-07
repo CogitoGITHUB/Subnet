@@ -120,7 +120,7 @@ fn bfs_survives_cycles() {
     let index = load_fixture();
     let a = index.names["pkg-cycle-a"];
     let (nodes, total) = index.deps_bfs(a, 8, 100);
-    assert_eq!(total, 1); // only cyc-b discovered once
+    assert_eq!(total, 1); // only pkg-cycle-b discovered once
     assert_eq!(nodes.len(), 1);
     assert_eq!(nodes[0].id, index.names["pkg-cycle-b"]);
 }

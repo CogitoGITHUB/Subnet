@@ -142,12 +142,12 @@
                 'no-error))
 
   ;; Cycles name the chain and raise kind 'resolve.
-  (define cyc-a (test-spec 'a "1.0" '((b "1.0"))))
-  (define cyc-b (test-spec 'b "1.0" '((a "1.0"))))
+  (define cyc-alpha (test-spec 'pkg-cycle-a "1.0" '((pkg-cycle-b "1.0"))))
+  (define cyc-beta (test-spec 'pkg-cycle-b "1.0" '((pkg-cycle-a "1.0"))))
   (define cycle-error
     (with-handlers ([exn:fail:pm? (lambda (e) e)])
-      (resolve (list cyc-a cyc-b) (list cyc-a))
+      (resolve (list cyc-alpha cyc-beta) (list cyc-alpha))
       'no-error))
   (check-pred resolve-error? cycle-error)
   (check-regexp-match #rx"dependency cycle" (exn-message cycle-error))
-  (check-regexp-match #rx"a 1.0" (exn-message cycle-error)))
+  (check-regexp-match #rx"pkg-cycle-a 1.0" (exn-message cycle-error)))
