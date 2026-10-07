@@ -29,22 +29,24 @@ conditionals are =(when COND ...)= sub-headlines. Loader metadata
 (:STRAIGHT: recipes, defer keys) is derived from the same triggers,
 so the unit declaration and the pm spec share one source.
 
-* Example (racket-mode, placeholder pin)
+* Example (hl-todo: real recipe, pin, and Package-Requires, 2026-10-07)
 #+begin_example
-* racket-mode
+* hl-todo
 :PROPERTIES:
-:NAME:     racket-mode
-:VERSION:  20250115.1432
-:UPSTREAM: https://github.com/greghendershott/racket-mode
-:PIN:      9edb3f66fd807b096b48283debdcddccfea34bad
+:NAME:     hl-todo
+:VERSION:  v3.9.4
+:UPSTREAM: https://github.com/tarsius/hl-todo.git
+:PIN:      527d545b8c2f36243194cbe4a8d0e6ac9d50e6a7
 :LICENSE:  gpl-3.0+
-:DEPENDS:  (compat 1.0)
-:LAZY:     commands racket-repl mode racket-mode-hook
+:DEPENDS:  (compat 31.0)
 :END:
 #+begin_src pm-steps
 (byte-compile)
 #+end_src
 #+end_example
+Version is the tag label at the pin (no MELPA numbers). Deps verified
+against hl-todo.el at that pin: emacs 28.1 (built in, have 30.2),
+compat 31.0, cond-let 1.1 (in set, label by pm later).
 
 * Validation flow
 Export writes .rktd, runs read-spec-file, reports errors with Org

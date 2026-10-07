@@ -38,9 +38,9 @@ read-spec: invalid declaration;
   at: pkg.rktd:1:1
   hint: missing required field 'source'
 resolve: unsatisfiable dependency;
-  package: magit 4.0.0
-  dep: compat 1.0.0
-  hint: no spec provides compat 1.0.0
+  package: hl-todo v3.9.4
+  dep: compat 31.0
+  hint: no spec provides compat 31.0
 
 * Honest limits
 No version ranges (equality only); no auto-detected system deps
