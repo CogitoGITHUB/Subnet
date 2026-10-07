@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="dark">
+  <title>tui — CyberDeck package explorer</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <header id="topbar">
+    <div id="brand">
+      <span class="logo">tui</span>
+      <span id="commit" class="chip" aria-live="polite"></span>
+    </div>
+    <div id="search-wrap">
+      <input id="search" type="text" placeholder="Search CyberDeck packages…"
+             autocomplete="off" spellcheck="false" autocapitalize="off"
+             role="combobox" aria-expanded="false" aria-controls="results"
+             aria-label="Search packages">
+      <ul id="results" role="listbox" aria-label="Search results" hidden></ul>
+    </div>
+    <div id="controls">
+      <button id="copy-link" title="Copy link to this view"
+              aria-label="Copy link to this view">⧉</button>
+      <select id="theme-select" title="Color theme" aria-label="Color theme">
+        <option value="dark">dark</option>
+        <option value="one">one</option>
+        <option value="light">light</option>
+        <option value="dracula">dracula</option>
+        <option value="nord">nord</option>
+        <option value="gruvbox-dark">gruvbox-dark</option>
+        <option value="tokyo-night">tokyo-night</option>
+        <option value="catppuccin-mocha">catppuccin-mocha</option>
+      </select>
+    </div>
+  </header>
+
+  <main id="stage">
+    <div id="detail-wrap">
+      <div id="status" role="status" aria-live="polite"></div>
+      <div id="detail" tabindex="0"></div>
+    </div>
+  </main>
+
+  <script src="/app.js"></script>
+</body>
+</html>

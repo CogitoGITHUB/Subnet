@@ -4,6 +4,17 @@
 * Log
 Append-only. Newest first. Every entry names the rule IDs it touches.
 
+** 2026-10-07 TUI: graph/mind-map removed, snapshot-file seam decided
+Per user order the force-directed graph and mind-map parts are deleted
+from tui/ (graph.rs, ui/graph.rs, web/graph.js, Graph tab, web graph
+API, graph tests); dependency and reverse-dependency trees stay. The
+TUI never shells out: it reads one snapshot JSON file resolving
+--snapshot > $CYBERDECK_SNAPSHOT > ./snapshot.json, caches gzipped
+under ~/.cache/tui/, and shows pm provenance (source_url, commit,
+status) in detail pane plus web API. Schema documented in
+tui/README.md. Unverified on-device: no Rust toolchain on the phone;
+`cargo test` (incl. --features web) must run on a Rust machine. P-1.
+
 ** 2026-10-06 Remaining implementation order after plan docs
 Plan docs landed through Phase 6 (D-003, W-9). Build next, in order:
 core/plan.rkt, backends/dry-run.rkt plus fake, core/resolve.rkt plus

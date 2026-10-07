@@ -35,6 +35,33 @@ fi
 if git ls-files -- sources 2>/dev/null | grep -q "\.git/objects"; then
   echo "GATE: sources/ must never track bare-mirror objects"; fail=1
 fi
+# 0. TUI rebrand gates: no Guix coupling, no graph/mind-map remnants.
+# (the one exception is the serde compat alias in tui/src/model.rs).
+if [ -d tui ]; then
+  if grep -rni "guix" tui/src tui/web tui/tests tui/README.md \
+    tui/README.pt-BR.md tui/Cargo.toml 2>/dev/null \
+    | grep -v 'alias = "guix_commit"' | grep -q .; then
+    echo "GATE: tui/ must not reference guix (see alias exception)"; fail=1
+  fi
+  if grep -rnE "GraphView|crate::graph|ui/graph|web/graph|GraphParams" \
+    tui/src tui/web tui/tests tui/README.md tui/README.pt-BR.md \
+    tui/Cargo.toml 2>/dev/null; then
+    echo "GATE: tui/ still references the removed graph"; fail=1
+  fi
+  if grep -rnE "graph_depth|graph_dirty|graph_follow|ensure_graph" \
+    tui/src tui/web tui/tests 2>/dev/null; then
+    echo "GATE: tui/ still references removed graph state"; fail=1
+  fi
+  if grep -rnE "select_delta|force-directed|module_neighbors|by_module" \
+    tui/src tui/web tui/tests tui/README.md tui/README.pt-BR.md \
+    2>/dev/null; then
+    echo "GATE: tui/ still references removed graph model"; fail=1
+  fi
+  if grep -rnE "DEFAULT_DEPTH|NODE_BUDGET|clamp_depth|GRAPH_JS|graph\.js" \
+    tui/src tui/web tui/tests 2>/dev/null; then
+    echo "GATE: tui/ still references removed graph budget"; fail=1
+  fi
+fi
 # 1. Text lint: no tabs, no trailing spaces, no line over 102 characters,
 # final newline. Applies to .org, .rkt and .sh files.
 for f in $(find . -type f \( -name '*.org' -o -name '*.rkt' \
