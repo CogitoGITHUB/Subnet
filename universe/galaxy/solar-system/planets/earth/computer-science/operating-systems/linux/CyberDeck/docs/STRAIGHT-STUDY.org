@@ -1,0 +1,60 @@
+#+TITLE: straight.el study (read-only, from my own install)
+#+AUTHOR: Shape
+
+* 1. repos vs build (two packages, real listings 2026-10-07)
+repos/hl-todo holds the git checkout (.git + hl-todo.el + Makefile +
+README.org). build/hl-todo holds a SYMLINK to the source file, a
+GENERATED hl-todo-autoloads.el and a COMPILED hl-todo.elc. Same for
+magit: build/magit/*.el are symlinks into repos/magit/lisp (even
+.dir-locals.el), plus generated magit-autoloads.el and .elc files.
+Nothing is ever copied. Build cache: ~/.config/emacs/straight/
+build-cache.el (544K, hash of package -> timestamp, deps, recipe).
+No versions/ lockfile exists: freeze was never run here.
+* 2. Build pipeline (straight.el:5409 straight--build-package)
+Order: :pre-build commands (straight--run-build-commands, :5717),
+symlink files into build/ (straight--symlink-package, :5763, wipes the
+build dir first), compute deps into the build cache, build deps
+recursively, then straight--build-steps (recipe, :5386): :build list or
+defaults minus straight-disable-* flags, mapped to straight--build-*
+functions (autoloads generation :5924 writes only into build/,
+byte-compile). :files selects the linked subset (:defaults = standard
+*.el set plus extras; :exclude removes). :post-build runs last.
+:nonrecursive skips submodule updates (:2884). No :build/:pre-build/
+:post-build/:branch/:local-repo/:remote in my 73 units.
+
+* 3. Modification detection (straight.el:4747)
+Modes: find-at-startup (find(1) over repos at boot, slow without SSD),
+find-when-checking (on explicit check commands), check-on-save
+(before-save-hook, zero cost, misses outside-Emacs edits),
+watch-files (external watcher), nil, only-once.
+No timers or polls anywhere: hooks, explicit commands, one watcher
+process. My config sets it to nil (shaping-the-tool/straight:18,
+"pegs CPU for several seconds on every start"): zero startup cost,
+and outside-Emacs edits are never noticed.
+
+* 4. load-path and autoloads
+straight--add-package-to-load-path (:6170) adds the BUILD dir (never
+repos). straight--load-package-autoloads (:6198) loads build/<pkg>-
+autoloads.el. use-package/leaf call straight-use-package (:6613),
+which clones if absent, builds, wires load-path, then evaluates config.
+
+* 5. Local edits vs upstream (edit-loss inventory)
+Remotes: primary remote (default "origin", :2018) plus upstream/fork
+remotes for forked recipes (:2031). pull = fetch + merge from primary
+(:7248); a dirty tree makes git merge FAIL, so edits block updates
+rather than being overwritten. normalize (:7077) resets the worktree
+to pristine + primary branch (:3236-3240): DISCARDS uncommitted changes
+and abandons local commits' checkout (commits dangle). freeze
+(:7348) writes lockfiles but first PUSHES unpushed changes. thaw
+(:7432) checks out recorded commits. Loss modes: (a) normalize on
+dirty/deviated repo,
+(b) build wipes + relinks build/ (source edits in repos/ survive;
+anything hand-placed in build/ dies), (c) no lockfile in use here, so
+updates move every repo with no record of where it was.
+
+* 6. Recipe keywords in my 73 units (counts, Cyberdeck-Emacs tree)
+:type 86, :host/:repo 83, :files 10 (org-ref, org-ql, vertico, corfu,
+emojify, nerd-icons, interleave, citar, org-remark?, aiu units),
+:defaults 6, :exclude 2, :depends 2. Zero :branch/:local-repo,
+:nonrecursive, :remote, :depth, :fork. The 10 :files users are the
+only non-mechanical imports (COMPLEX per the import rules).
