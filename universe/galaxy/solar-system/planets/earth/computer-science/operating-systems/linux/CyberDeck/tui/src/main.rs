@@ -1,12 +1,11 @@
 //! tui entry point: terminal setup, event loop, clean shutdown.
 
+use std::path::PathBuf;
 use std::time::Duration;
 
 use clap::Parser;
 use crossterm::event::{self, Event, KeyCode, KeyModifiers};
 use ratatui::DefaultTerminal;
-
-use std::path::PathBuf;
 
 use tui::app::App;
 use tui::{ui, VERSION};
@@ -28,44 +27,12 @@ struct Cli {
     /// Defaults to $CYBERDECK_SNAPSHOT, else ./snapshot.json
     #[arg(long, global = true)]
     snapshot: Option<PathBuf>,
-
-    #[command(subcommand)]
-    command: Option<Cmd>,
-}
-
-#[derive(clap::Subcommand, Debug)]
-enum Cmd {
-    /// Serve the local web UI on 127.0.0.1 (requires the `web` cargo feature)
-    Web {
-        /// Port to bind on 127.0.0.1
-        #[arg(long, default_value_t = 8787)]
-        port: u16,
-    },
 }
 
 fn main() -> anyhow::Result<()> {
     let cli = Cli::parse();
     let snapshot = tui::indexer::resolve_snapshot(cli.snapshot);
-    match cli.command {
-        Some(Cmd::Web { port }) => run_web(cli.rebuild, snapshot, port),
-        None => run_tui(cli.rebuild, snapshot),
-    }
-}
-
-#[cfg(feature = "web")]
-fn run_web(rebuild: bool, snapshot: PathBuf, port: u16) -> anyhow::Result<()> {
-    let state = tui::web::AppState::start(rebuild, snapshot);
-    let runtime = tokio::runtime::Runtime::new()?;
-    runtime.block_on(tui::web::serve(state, port))
-}
-
-#[cfg(not(feature = "web"))]
-fn run_web(_rebuild: bool, _snapshot: PathBuf, _port: u16) -> anyhow::Result<()> {
-    eprintln!(
-        "tui was built without the web UI.\n\
-         Reinstall with: cargo install --features web --path ."
-    );
-    std::process::exit(1);
+    run_tui(cli.rebuild, snapshot)
 }
 
 fn run_tui(rebuild: bool, snapshot: PathBuf) -> anyhow::Result<()> {

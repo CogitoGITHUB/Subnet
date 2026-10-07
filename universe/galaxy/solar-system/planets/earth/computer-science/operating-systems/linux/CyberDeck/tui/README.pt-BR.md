@@ -89,32 +89,14 @@ Regras:
 O futuro comando `pm` emitirá exatamente este documento; até lá,
 qualquer ferramenta que escreva o formato acima funciona.
 
-## Interface web
-
-`tui web` serve o mesmo explorador como site local em
-<http://127.0.0.1:8787>: caixa de busca difusa no topo e painel de
-detalhes com chips clicáveis. Links profundos (`#/p/emacs`) podem ser
-compartilhados e funcionam com o botão voltar; o leiaute é responsivo
-até telas de telefone. O servidor escuta só em 127.0.0.1 e rejeita
-cabeçalhos Host não locais.
-
-API (JSON só leitura, toda resposta traz `generation`):
-
-- `GET /api/v1/health` — `{ ok, packages, generation, state, phase }`
-- `GET /api/v1/search?q=…&limit=…` — resultados ordenados com destaques
-- `GET /api/v1/package/{name}` — detalhes com `deps`, `dependents`,
-  `source_url`, `commit`, `status`
-
 ## Temas
 
-As duas interfaces trazem oito temas: **dark** (padrão), **one**,
+O TUI traz oito temas: **dark** (padrão), **one**,
 **light**, **dracula**, **nord**, **gruvbox-dark**, **tokyo-night** e
 **catppuccin-mocha**.
 
-- TUI: `T` alterna (o tema ativo aparece na barra de estado);
+- `T` alterna (o tema ativo aparece na barra de estado);
   `NO_COLOR` é respeitado com paleta em tons de cinza.
-- Web: escolha no seletor da barra superior; a escolha é lembrada
-  entre sessões.
 
 ## Requisitos
 
@@ -135,7 +117,6 @@ tui --snapshot /caminho/para/snapshot.json
 ```
 tui --snapshot snapshot.json       inicia o explorador
 tui --rebuild --snapshot snap.json relê o instantâneo, atualiza o cache
-tui web --snapshot snap.json      serve a web UI em 127.0.0.1:8787
 tui --help                         todas as opções
 ```
 
@@ -187,7 +168,6 @@ silêncio) e o instantâneo é relido.
 cargo fmt --check
 cargo clippy --all-targets -- -D warnings
 cargo test                                   # testes unitários + de fixture
-cargo test --features web                    # inclui testes da API web
 ```
 
 ## Problemas comuns

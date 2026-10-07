@@ -13,8 +13,6 @@ pub mod model;
 pub mod search;
 pub mod theme;
 pub mod ui;
-#[cfg(feature = "web")]
-pub mod web;
 
 /// Canonical name and version, used for `--version` output and UI.
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");

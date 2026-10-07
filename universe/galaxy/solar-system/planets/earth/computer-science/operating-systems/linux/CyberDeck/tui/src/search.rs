@@ -49,8 +49,8 @@ pub struct SearchReply {
 /// Synchronous fuzzy-search engine over one `Index`.
 ///
 /// Owns the nucleo haystacks (name + truncated synopsis per package) and can
-/// be called directly — used by the web API handlers — or driven through
-/// [`SearchWorker`] on a background thread, as the TUI does.
+/// be called directly or driven through [`SearchWorker`] on a background
+/// thread, as the TUI does.
 pub struct SearchEngine {
     hay: Haystacks,
 }

@@ -102,48 +102,18 @@ Reverse dependencies (who depends on this package):
 
 ![tui reverse dependencies — packages that depend on the selected package](assets/tui-reverse.png)
 
-## Web UI
-
-`tui web` serves the same explorer as a local website on
-<http://127.0.0.1:8787>: the fuzzy search box on top and the package
-detail panel with clickable related-package chips. Deep links
-(`#/p/emacs`) are shareable and work with the browser back button; the
-layout is responsive down to phone sizes. The server binds 127.0.0.1
-only and rejects non-local Host headers.
-
-▶ [Watch the web UI demo](assets/tui-web-demo.mp4)
-
-![tui web desktop — package detail with related packages](assets/tui-web-desktop.png)
-
-![tui web packages — click a chip to open that package](assets/tui-web-packages.png)
-
-![tui web mobile — responsive layout](assets/tui-web-mobile.png)
-
-API (read-only JSON, all responses carry `generation`):
-
-- `GET /api/v1/health` — `{ ok, packages, generation, state, phase }`
-- `GET /api/v1/search?q=…&limit=…` — ranked hits with highlight spans
-- `GET /api/v1/package/{name}` — detail incl. `deps`, `dependents`,
-  `source_url`, `commit`, `status`
-
 ## Themes
 
-Both interfaces ship with eight selectable color themes: **dark** (default),
+The TUI ships with eight selectable color themes: **dark** (default),
 **one**, **light**, **dracula**, **nord**, **gruvbox-dark**, **tokyo-night**
 and **catppuccin-mocha**.
 
 - TUI: press `T` to cycle (the active theme is shown in the status bar);
   `NO_COLOR` is honored with a grayscale fallback.
-- Web UI: pick a theme in the topbar selector; the choice is remembered
-  between sessions.
 
 The TUI in the dracula theme:
 
 ![tui TUI — dracula theme](assets/tui-tui-dracula.png)
-
-The web UI in the nord theme:
-
-![tui web — nord theme](assets/tui-web-nord.png)
 
 ## Requirements
 
@@ -168,7 +138,6 @@ tui --snapshot /path/to/snapshot.json
 ```
 tui --snapshot snapshot.json     start the explorer
 tui --rebuild --snapshot snap.json   re-read the snapshot, refresh cache
-tui web --snapshot snap.json     serve the web UI on 127.0.0.1:8787
 tui --help                       all options
 ```
 
@@ -223,7 +192,7 @@ snapshot is re-read.
 Layout: `src/index.rs` (in-memory index + BFS), `src/search.rs` (nucleo
 fuzzy search worker), `src/indexer.rs` (snapshot file loader),
 `src/cache.rs` (gzipped cache), `src/app.rs` (state + keys), `src/ui/*`
-(rendering), `src/web/*` (local web UI).
+(rendering).
 
 ## Development
 
@@ -231,7 +200,6 @@ fuzzy search worker), `src/indexer.rs` (snapshot file loader),
 cargo fmt --check
 cargo clippy --all-targets -- -D warnings
 cargo test                                   # unit + fixture tests
-cargo test --features web                    # incl. web API tests
 ```
 
 ## Troubleshooting

@@ -44,7 +44,7 @@ pub fn resolve_snapshot(explicit: Option<PathBuf>) -> PathBuf {
 }
 
 /// Load the index from cache or the snapshot file; runs on its own
-/// thread and reports through `tx`. Shared by the TUI and the web server.
+/// thread and reports through `tx`.
 pub fn start_loader(
     tx: Sender<IndexEvent>,
     cancel: Cancel,
@@ -151,4 +151,34 @@ pub fn read_snapshot(
     let doc: crate::model::IndexDoc = serde_json::from_slice(&raw)
         .map_err(|e| IndexerError::Exited(format!("cannot parse snapshot JSON: {e}")))?;
     Ok((doc, raw))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn reads_fixture_snapshot() {
+        let path = PathBuf::from("tests/fixtures/small.json");
+        let (doc, raw) = read_snapshot(&path).expect("fixture reads");
+        assert_eq!(doc.packages.len(), 10);
+        assert!(!raw.is_empty());
+        let index = Index::from_doc(doc, 0).expect("fixture validates");
+        assert_eq!(index.len(), 10);
+    }
+
+    #[test]
+    fn missing_snapshot_is_not_found() {
+        let path = PathBuf::from("tests/fixtures/does-not-exist.json");
+        let err = read_snapshot(&path).expect_err("missing file fails");
+        assert!(matches!(err, IndexerError::NotFound(_)));
+    }
+
+    #[test]
+    fn explicit_path_wins_resolution() {
+        let explicit = PathBuf::from("/tmp/custom-snapshot.json");
+        assert_eq!(resolve_snapshot(Some(explicit.clone())), explicit);
+        // Without env or flag, the local default applies.
+        assert_eq!(resolve_snapshot(None), PathBuf::from("snapshot.json"));
+    }
 }
