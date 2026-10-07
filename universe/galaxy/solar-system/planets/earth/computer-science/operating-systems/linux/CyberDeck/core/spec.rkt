@@ -171,24 +171,24 @@
   (require rackunit)
 
   ;; Names accept D-8, reject the rest.
-  (check-true (package-name? 'racket-mode))
+  (check-true (package-name? 'pkg-alpha))
   (check-true (package-name? 'a))
   (check-false (package-name? 'Bad!))
   (check-false (package-name? 'a/b))
-  (check-false (package-name? "racket-mode"))
+  (check-false (package-name? "pkg-alpha"))
   (check-false (package-name? ""))
 
   ;; A full valid spec builds.
   (define good
-    (spec 'racket-mode (string->version "20250115.1432") "Racket in Emacs"
+    (spec 'pkg-alpha (string->version "20250115.1432") "Alpha test package"
           (source "https://example.org/r.git"
                   "9edb3f66fd807b096b48283debdcddccfea34bad")
-          (list (dep 'compat (string->version "1.0")))
+          (list (dep 'pkg-beta (string->version "1.0")))
           (list (build-step 'byte-compile '()))
           (install-spec 'emacs '((autoloads "r-autoloads.el")))
           'gpl-3.0+ "https://example.org/r" #f '() '()))
   (check-true (spec? good))
-  (check-equal? (spec-name good) 'racket-mode)
+  (check-equal? (spec-name good) 'pkg-alpha)
 
   ;; Every guard rejects with kind 'spec.
   (define (spec-kind thunk)

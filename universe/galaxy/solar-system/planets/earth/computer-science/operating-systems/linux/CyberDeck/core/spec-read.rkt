@@ -406,7 +406,7 @@
        "  (summary \"demo package\")"
        "  (source (git \"https://example.org/demo.git\""
        "                  \"9edb3f66fd807b096b48283debdcddccfea34bad\"))"
-       "  (deps ((compat \"1.0\")))"
+       "  (deps ((pkg-beta \"1.0\")))"
        "  (build (steps (byte-compile)))"
        "  (install (emacs (autoloads \"demo-autoloads.el\")))"
        "  (license gpl-3.0+)"
@@ -422,7 +422,7 @@
   (check-equal? (version->string (spec-version golden)) "2.9.1")
   (check-equal? (source-commit (spec-source golden))
                 "9edb3f66fd807b096b48283debdcddccfea34bad")
-  (check-equal? (map dep-name (spec-deps golden)) '(compat))
+  (check-equal? (map dep-name (spec-deps golden)) '(pkg-beta))
   (check-equal? (build-step-name (car (spec-build golden))) 'byte-compile)
   (check-equal? (install-spec-target (spec-install golden)) 'emacs)
   (check-equal? (spec-extends golden) 'base)
@@ -535,7 +535,7 @@
      "  (version \"1.0\")" "  (summary \"s\")"
      "  (source (git \"https://example.org/d.git\""
      "                  \"9edb3f66fd807b096b48283debdcddccfea34bad\"))"
-     "  (deps ((compat)))" "  (build (steps (byte-compile)))"
+     "  (deps ((pkg-beta)))" "  (build (steps (byte-compile)))"
      "  (install (emacs (autoloads \"a.el\")))" "  (license mit)"
      "  (homepage \"https://example.org\"))")
    #rx"dep must be")

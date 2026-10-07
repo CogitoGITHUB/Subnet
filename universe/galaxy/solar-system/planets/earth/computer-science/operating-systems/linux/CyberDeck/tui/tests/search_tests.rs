@@ -25,12 +25,12 @@ fn await_reply(worker: &SearchWorker, last: u64) -> tui::search::SearchReply {
 }
 
 #[test]
-fn emac_ranks_emacs_first() {
+fn alph_ranks_alpha_first() {
     let index = Arc::new(load_fixture());
     let worker = SearchWorker::spawn(index);
-    worker.send("emac".to_string());
+    worker.send("alph".to_string());
     let reply = await_reply(&worker, 0);
-    assert_eq!(reply.query, "emac");
+    assert_eq!(reply.query, "alph");
     assert!(!reply.hits.is_empty());
     let fixture = load_fixture();
     let by_id: std::collections::HashMap<u32, &str> = fixture
@@ -44,9 +44,9 @@ fn emac_ranks_emacs_first() {
         .take(3)
         .map(|h| by_id[&h.hit.id])
         .collect();
-    assert_eq!(top3[0], "emacs");
-    assert!(top3.contains(&"emacs-minimal"));
-    assert!(top3.contains(&"emacs-next"));
+    assert_eq!(top3[0], "pkg-alpha");
+    assert!(top3.contains(&"pkg-alpha-min"));
+    assert!(top3.contains(&"pkg-alpha-next"));
 }
 
 #[test]
@@ -58,24 +58,25 @@ fn empty_query_browses_alphabetically() {
     assert_eq!(reply.hits.len(), 10);
     let index = load_fixture();
     let first = &index.packages[reply.hits[0].hit.id as usize].name;
-    assert_eq!(first.as_ref(), "cyc-a");
+    assert_eq!(first.as_ref(), "pkg-alpha");
 }
 
 #[test]
 fn highlight_ranges_stay_within_name() {
     let index = Arc::new(load_fixture());
     let worker = SearchWorker::spawn(index);
-    worker.send("emac".to_string());
+    worker.send("alph".to_string());
     let reply = await_reply(&worker, 0);
-    let emacs = reply.hits.iter().find(|h| {
+    let alpha = reply.hits.iter().find(|h| {
         let index = load_fixture();
-        index.packages[h.hit.id as usize].name.as_ref() == "emacs"
+        index.packages[h.hit.id as usize].name.as_ref() == "pkg-alpha"
     });
-    let emacs = emacs.expect("emacs among hits");
-    assert!(!emacs.name_ranges.is_empty());
-    for (s, e) in &emacs.name_ranges {
+    let alpha = alpha.expect("pkg-alpha among hits");
+    assert!(!alpha.name_ranges.is_empty());
+    for (s, e) in &alpha.name_ranges {
         assert!(*s < *e);
-        assert!(*e <= 5, "name ranges must lie within \"emacs\" (5 chars)");
+        // "alph" matches at 4..8 inside "pkg-alpha" (9 chars).
+        assert!(*e <= 9, "name ranges must lie within \"pkg-alpha\"");
     }
 }
 
@@ -96,10 +97,10 @@ fn results_are_deterministic() {
 fn stale_replies_are_dropped_by_ticket() {
     let index = Arc::new(load_fixture());
     let worker = SearchWorker::spawn(index);
-    let t1 = worker.send("emac".to_string());
-    worker.send("solo".to_string());
+    let t1 = worker.send("alph".to_string());
+    worker.send("pkg-solo".to_string());
     let reply = await_reply(&worker, 0);
     // Latest-wins: the reply must carry ticket t1 + 1, not t1.
     assert!(reply.ticket > t1);
-    assert_eq!(reply.query, "solo");
+    assert_eq!(reply.query, "pkg-solo");
 }

@@ -36,7 +36,7 @@
          (and (char<=? #\0 c) (char<=? c #\9)))))
 
 ;; string -> (or/c (listof exact-nonnegative-integer?) #f)
-;; Dotted numerics like "2.9.1" or MELPA "20250115.1432".
+;; Dotted numerics like "2.9.1" or date-based "20250115.1432".
 (define (parse-numbers s)
   (define parts (string-split s "." #:trim? #f))
   (and (not (string=? s ""))

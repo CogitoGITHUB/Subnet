@@ -13,14 +13,14 @@ fn parses_fixture() {
     let index = load_fixture();
     assert_eq!(index.len(), 10);
     assert_eq!(index.state, "testcommit");
-    assert_eq!(index.packages[0].name.as_ref(), "emacs");
+    assert_eq!(index.packages[0].name.as_ref(), "pkg-alpha");
     assert_eq!(index.packages[0].inputs.len(), 2);
     assert_eq!(index.packages[0].propagated.len(), 1);
     assert_eq!(index.packages[0].native.len(), 1);
     // Package-manager provenance survives the mapping.
     assert_eq!(
         index.packages[0].source_url.as_ref(),
-        "https://example.org/emacs.git"
+        "https://example.org/alpha.git"
     );
     assert_eq!(index.packages[0].commit.as_ref(), "9edb3f66");
     assert_eq!(index.packages[0].status.as_ref(), "installed");
@@ -32,13 +32,14 @@ fn reverse_edges_are_exact_and_bidirectional() {
     let index = load_fixture();
     let names = dependents_by_name(&index);
 
-    // zlib is depended on by emacs, emacs-minimal, emacs-next and gtk+.
-    let zlib_deps = &names["zlib"];
+    // pkg-epsilon is depended on by pkg-alpha, pkg-alpha-min,
+    // pkg-alpha-next and pkg-delta.
+    let zlib_deps = &names["pkg-epsilon"];
     assert_eq!(zlib_deps.len(), 4);
-    assert!(zlib_deps.contains(&"emacs"));
-    assert!(zlib_deps.contains(&"emacs-minimal"));
-    assert!(zlib_deps.contains(&"emacs-next"));
-    assert!(zlib_deps.contains(&"gtk+"));
+    assert!(zlib_deps.contains(&"pkg-alpha"));
+    assert!(zlib_deps.contains(&"pkg-alpha-min"));
+    assert!(zlib_deps.contains(&"pkg-alpha-next"));
+    assert!(zlib_deps.contains(&"pkg-delta"));
 
     // Bidirectional invariant: for every edge u -> v, v's dependents
     // contain u, and no dependent exists without a matching edge.
@@ -67,11 +68,12 @@ fn reverse_edges_are_exact_and_bidirectional() {
 #[test]
 fn deduplicates_deps_across_input_kinds() {
     let index = load_fixture();
-    // emacs lists zlib only in `inputs`; duplicates would come from the
-    // other kinds if present. Build a package with a dup to verify dedupe.
+    // pkg-alpha lists pkg-epsilon only in `inputs`; duplicates would
+    // come from the other kinds if present. Build a package with a dup
+    // to verify dedupe.
     let p = &index.packages[0];
     let deps: Vec<u32> = p.deps().map(|(d, _)| d).collect();
-    assert_eq!(deps.len(), 4); // gtk+, zlib, pkg-config, texinfo
+    assert_eq!(deps.len(), 4); // pkg-delta, pkg-epsilon, pkg-eta, pkg-zeta
     let mut sorted = deps.clone();
     sorted.sort_unstable();
     sorted.dedup();
@@ -81,14 +83,14 @@ fn deduplicates_deps_across_input_kinds() {
 #[test]
 fn bfs_transitive_closure_matches_naive_fixed_point() {
     let index = load_fixture();
-    // Transitive deps of emacs at depth 3: gtk+, zlib, pkg-config, texinfo
-    // (zlib also reachable via gtk+ -> zlib).
+    // Transitive deps of pkg-alpha at depth 3: pkg-delta, pkg-epsilon,
+    // pkg-eta, pkg-zeta (pkg-epsilon also reachable via pkg-delta).
     let (nodes, total) = index.deps_bfs(0, 3, 100);
     let ids: Vec<u32> = nodes.iter().map(|n| n.id).collect();
-    assert!(ids.contains(&index.names["gtk+"]));
-    assert!(ids.contains(&index.names["zlib"]));
-    assert!(ids.contains(&index.names["pkg-config"]));
-    assert!(ids.contains(&index.names["texinfo"]));
+    assert!(ids.contains(&index.names["pkg-delta"]));
+    assert!(ids.contains(&index.names["pkg-epsilon"]));
+    assert!(ids.contains(&index.names["pkg-eta"]));
+    assert!(ids.contains(&index.names["pkg-zeta"]));
     assert_eq!(total, 4);
 
     // Naive fixed point: expand until stable.
@@ -116,17 +118,17 @@ fn bfs_transitive_closure_matches_naive_fixed_point() {
 #[test]
 fn bfs_survives_cycles() {
     let index = load_fixture();
-    let a = index.names["cyc-a"];
+    let a = index.names["pkg-cycle-a"];
     let (nodes, total) = index.deps_bfs(a, 8, 100);
     assert_eq!(total, 1); // only cyc-b discovered once
     assert_eq!(nodes.len(), 1);
-    assert_eq!(nodes[0].id, index.names["cyc-b"]);
+    assert_eq!(nodes[0].id, index.names["pkg-cycle-b"]);
 }
 
 #[test]
 fn reverse_bfs_depths() {
     let index = load_fixture();
-    let zlib = index.names["zlib"];
+    let zlib = index.names["pkg-epsilon"];
     let (nodes, total) = index.dependents_bfs(zlib, 1, 100);
     assert_eq!(nodes.len(), 4); // direct only at depth 1
     assert_eq!(total, 4);

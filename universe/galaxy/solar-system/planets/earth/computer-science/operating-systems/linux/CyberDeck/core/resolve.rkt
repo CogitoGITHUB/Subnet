@@ -124,21 +124,21 @@
   (check-equal? (resolve (list chain-a) '()) '())
 
   ;; Exact message for a missing dep (design-doc sample).
-  (define magit (test-spec 'magit "4.0.0" '((compat "1.0.0"))))
+  (define pkg-a (test-spec 'pkg-alpha "4.0.0" '((pkg-beta "1.0.0"))))
   (check-equal?
    (with-handlers ([exn:fail:pm? exn-message])
-     (resolve (list magit) (list magit))
+     (resolve (list pkg-a) (list pkg-a))
      "NO-ERROR")
    (string-append "resolve: unsatisfiable dependency;\n"
-                  "  package: magit 4.0.0\n"
-                  "  dep: compat 1.0.0\n"
-                  "  hint: no spec provides compat 1.0.0"))
+                  "  package: pkg-alpha 4.0.0\n"
+                  "  dep: pkg-beta 1.0.0\n"
+                  "  hint: no spec provides pkg-beta 1.0.0"))
 
-  ;; Equality only: compat 2.0 does not satisfy 1.0.
-  (define compat-2 (test-spec 'compat "2.0" '()))
+  ;; Equality only: pkg-beta 2.0 does not satisfy 1.0.
+  (define compat-2 (test-spec 'pkg-beta "2.0" '()))
   (check-pred resolve-error?
               (with-handlers ([exn:fail:pm? (lambda (e) e)])
-                (resolve (list magit compat-2) (list magit))
+                (resolve (list pkg-a compat-2) (list pkg-a))
                 'no-error))
 
   ;; Cycles name the chain and raise kind 'resolve.

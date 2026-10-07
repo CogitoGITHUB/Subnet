@@ -551,8 +551,8 @@
     (string-append "file://" (path->string fixture-root) "/upstream"))
 
   ;; vault-mirror-dir builds and rejects.
-  (check-equal? (vault-mirror-dir "/v/root" "racket-mode")
-                (build-path "/v/root" "racket-mode.git"))
+  (check-equal? (vault-mirror-dir "/v/root" "pkg-alpha")
+                (build-path "/v/root" "pkg-alpha.git"))
   (for ([bad (in-list '("Bad!" "../escape" "" "a/b"))])
     (check-exn exn:fail:pm?
                (lambda () (vault-mirror-dir "/v/root" bad))))
