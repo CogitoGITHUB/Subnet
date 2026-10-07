@@ -1,0 +1,34 @@
+#+TITLE: PKGDEF Emacs sections (archived D-018)
+#+AUTHOR: Shape
+
+* SUPERSEDED (D-018): moved here from PKGDEF-REQUIREMENTS.org (2b, 2d)
+* and PKGDEF-DESIGN.org (examples). The neutral spec (STEP 2) replaces
+* these; this file is history only.
+
+* 2b. Eight real Emacs packages (simple to hard)
+1. Single-file (htmlize): one .el, no deps, byte-compile, trivial wiring.
+2. Multi-file (markdown-mode): several .el, autoload cookies needed.
+3. racket-mode: elisp plus an outside Racket binary; run-time system dep.
+4. magit: deep dep chain (compat, section, transient); docs built too.
+5. emacs-libvterm: cmake plus system libvterm, native .so; platform ifs.
+6. Texinfo docs (org manual style): makeinfo at build, info install.
+7. Personal fork with patches: patches as commits on top; pin is fork.
+8. Monorepo (org-style): one repo, several installable subdirs.
+
+* 2d. Emacs target vs system target
+Common: spec record, pins, vault, plan/execute, lockfile, review gate.
+Emacs-only: byte-compile, autoloads, load-path/current link, stamp file.
+System-only (later): binary PATH layout, info/man install, services.
+
+* Eight example specs (placeholder commit ids)
+Single-file: (spec (format-version 1) (name unfill) (version "1.0")
+(source (git "https://example.org/unfill.el" #x40[1]))
+(build (steps (byte-compile))) (install (emacs (autoloads "u.el"))))).
+Multi-file adds several .el plus an autoloads output name. racket-mode
+adds (system-dep "racket") and a smoke load check. magit adds deps with
+exact versions plus a docs feature. libvterm adds (when (platform
+linux)) native steps (cmake, make) and a conditional dep. Texinfo docs
+add a make-info step plus an info install form. A fork pins the fork
+commit and lists (patches-as-commits (branch "fix")). A monorepo uses
+(subdir "lisp/org") to select one installable tree from the checkout.
+

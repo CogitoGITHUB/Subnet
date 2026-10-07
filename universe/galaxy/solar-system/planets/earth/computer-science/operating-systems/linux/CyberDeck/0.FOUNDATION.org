@@ -33,9 +33,6 @@ raco pkg install --auto rackunit-lib
   unless the user asks.
 - [VERIFY] Which package provides =raco test= in minimal Racket. Check, install what is
   needed, and record the result in DECISIONS.org.
-- Dev tooling for Emacs: =racket-mode= (MELPA / NonGNU ELPA) gives REPL, =racket-xp-mode=
-  (errors and binding arrows), logger and profiler modes. It will be the first package the
-  Emacs target installs (dogfooding).
 
 * 2. Prime directives
 - *P-1* Small steps. Every step ends with a green =scripts/check.sh= and a commit.
@@ -45,8 +42,8 @@ raco pkg install --auto rackunit-lib
   value or command involved.
 - *P-4* Data first. Specs are plain data, validated at the boundary, never evaluated unless
   they are trusted code (S-1).
-- *P-5* One core, two targets (Emacs, system), plus swappable backends. The core knows
-  nothing about Emacs or the OS.
+- *P-5* One core, swappable backends, target-neutral install forms. The core knows
+  nothing about any install target or the OS.
 - *P-6* Pin everything. Every fetched thing is hashed and recorded.
 - *P-7* Fail loudly. No catch-all handlers. Nothing is swallowed (E-5).
 - *P-8* Verify, do not assume. Run it. Do not invent library functions. Read the docs.
@@ -67,8 +64,8 @@ raco pkg install --auto rackunit-lib
   A =fake= backend (records actions) exists for tests.
 - *A-5* A target says how a package is built (step vocabulary), where it is installed
   (layout), and what post-install hooks run. The core treats a target as an opaque struct.
-- *A-6* Emacs target first. The system target stays a stub until real hardware. ZFS, bwrap,
-  namespaces never leak into the core.
+- *A-6* REMOVED (D-018): Emacs-target-first rule. Install forms are target-neutral;
+  nothing OS-specific leaks into the core.
 - *A-7* Interfaces before implementations: write the =provide= contracts and purpose
   statements, get approval, then implement.
 - *A-8* No global mutable state. Configuration flows through parameters and explicit
@@ -112,8 +109,7 @@ raco pkg install --auto rackunit-lib
   paths the code itself names (see S-1).
 - *M-14* Paths are =path?= values built with =build-path=. Never concatenate strings into
   paths. Convert at the edges only.
-- *M-15* Indentation follows Racket's standard style. In Emacs use =racket-mode= and
-  =(setq indent-tabs-mode nil)=.
+- *M-15* Indentation follows Racket's standard style, tabs never.
 
 ** Module template (shape, not final code)
 #+begin_src racket
@@ -370,17 +366,10 @@ build: step failed;
 - *T-9* Optional property tests for version ordering and resolver determinism.
 
 * 10. Literate Org
-- *L-1* [PROPOSAL] Org files are the source of truth. Tangled =.rkt= files are committed,
-  start with =;; GENERATED FROM <file>.org -- DO NOT EDIT=, and the AI never edits them.
-  Confirm in DECISIONS.org.
-- *L-2* One concept per Org file. Every source block is named (=#+NAME:=) and tangles to
-  exactly one module.
-- *L-3* Tangling runs in batch mode (=emacs --batch=) so the AI and scripts can run it
-  without an interactive Emacs. =check.sh= regenerates and diffs to prove the tangled files
-  are current.
-- *L-4* Racket error locations refer to the tangled =.rkt= lines, not the Org lines. Keep
-  blocks small, and [VERIFY] =:comments link= in the user's Org setup so tangled files carry
-  back-references.
+- *L-1* REMOVED (D-018): no Org source of truth, no tangling.
+- *L-2* REMOVED (D-018): no Org source of truth, no tangling.
+- *L-3* REMOVED (D-018): no Org source of truth, no tangling.
+- *L-4* REMOVED (D-018): no Org source of truth, no tangling.
 - *L-5* Documentation examples should be runnable, and tested when practical.
 
 * 11. Performance and the phone
@@ -413,7 +402,7 @@ build: step failed;
   license; note provenance in file headers.
 
 * 13. AI working agreement
-- *W-1* Ask before assuming. The user's Emacs setup shapes the structure: interview first.
+- *W-1* Ask before assuming. Never assume unstated structure: interview first.
 - *W-2* Show the plan before executing. Wait for approval on anything touching more than
   three files, public interfaces, deletions or moves.
 - *W-3* One concern per step. Report: what changed, how it was verified, what is next.
@@ -435,10 +424,10 @@ build: step failed;
 | ID    | Decision                                                                  |
 |-------+---------------------------------------------------------------------------|
 | D-001 | Project name (directory name below is a working name)                      |
-| D-002 | Source of truth: Org tangled to .rkt (L-1) or .rkt directly                |
+| D-002 | .rktd direct (Org source REMOVED, D-018)                              |
 | D-003 | Spec format: S-expression data files now, custom =#lang= later?            |
 | D-004 | Lockfile format and location                                               |
-| D-005 | Emacs install layout, and how the user's loader finds installed packages   |
+| D-005 | Install layout: versioned dirs, current link (decided)                      |
 | D-006 | git ONLY; full history, one monorepo vault; export at pin (decided)|
 | D-007 | Exact commit id only (git); versions match by equality (decided) |
 | D-008 | Exit-code table (E-15)                                                     |
@@ -447,12 +436,6 @@ build: step failed;
 | D-011 | Vault monorepo vault.git, per-package namespaces (decided)      |
 | D-012 | Pin refs refs/vault/<name>/pinned/<commit> vs force-push+gc (decided)|
 
-** Emacs target notes (for later, all [VERIFY])
-- Byte-compile with =emacs --batch= in a clean process (=-Q=), with the package directory
-  on =load-path=. Collect compiler warnings and show them with the E-11 rules.
-- Generate autoloads, and let the user's loader do the =load-path= wiring. The package
-  manager never edits the user's init files.
-- First real package: =racket-mode=.
 
 * 15. First files to create
 Working directory name: =cyberdeck-pm/= (D-001). Create it next to the Guix clone. At first,
@@ -472,7 +455,6 @@ cyberdeck-pm/
     PERF.org              startup and memory baselines
   scripts/
     check.sh              raco make + raco test + text lint
-    tangle.el             batch tangle Org -> .rkt (if L-1 is accepted)
   reference/
     guix/                 frozen originals, read-only (G-3)
   core/
@@ -492,15 +474,12 @@ cyberdeck-pm/
     fake.rkt              records actions, for tests
     local.rkt             real effects (after dry-run is solid)
   targets/
-    emacs/                build, compile, autoloads, install (first real target)
     system/               README.org only, until real hardware
   cli/
     main.rkt              argument parsing, top-level error handler, exit codes
   tests/
     fixtures/
     golden/
-  examples/
-    racket-mode.rktd     first real spec
 #+end_example
 
 ** Build order (each step must pass T-7 before the next)
@@ -512,7 +491,7 @@ cyberdeck-pm/
 5. =core/plan.rkt= + =backends/dry-run.rkt= + =backends/fake.rkt=, with golden tests.
 6. =core/resolve.rkt= + =core/lock.rkt=.
 7. =cli/main.rkt= (top-level error handler and exit codes).
-8. =targets/emacs/= and =backends/local.rkt=, proven on =racket-mode=.
+8. =backends/local.rkt= executes plans under a prefix.
 
 * 16. Reading list (in this order)
 1. Racket Style Guide: https://docs.racket-lang.org/style/

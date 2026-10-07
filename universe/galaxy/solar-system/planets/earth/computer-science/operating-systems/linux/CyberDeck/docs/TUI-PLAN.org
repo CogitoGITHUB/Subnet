@@ -1,32 +1,26 @@
 #+TITLE: PHASE 6: GUIX-PKGS-TUI remaster plan (design only, no code)
 #+AUTHOR: Shape
 
-* Inventory (read-only; current tree under GUIX-PKGS-TUI/)
-KEEP: src/search.rs (nucleo fuzzy worker pattern), src/index.rs
-(in-memory index plus BFS), src/graph.rs (deterministic layout),
-src/cache.rs (gzipped-cache pattern, retargeted at pm state),
-src/theme.rs (palettes plus NO_COLOR), src/app.rs (state plus keys
-shape), web/ static UI plus deep links, tests/ layout with fixture
-and live split.
-DELETE: src/indexer.rs (guix repl subprocess), data/guix-index.scm
-(Guile walker), channel-commit cache key, Guix-only fields (source
-locations, propagated/native dep kinds become our deps model),
-live_guix tests (replaced by pm-backed live tests).
+* Inventory (amended D-018: terminal-only, no web, no graph)
+DONE: rebranded to tui, web UI and graph/mind-map removed, indexer
+reads the snapshot JSON file (--snapshot, $CYBERDECK_SNAPSHOT,
+./snapshot.json), cache under ~/.cache/tui.
+KEEP: src/search.rs (nucleo fuzzy worker), src/index.rs (in-memory
+index plus BFS), src/cache.rs (gzipped cache), src/theme.rs (8
+palettes plus NO_COLOR), src/app.rs (state plus keys), tests/ layout
+with fixture data.
 
-* IPC: DECIDED
-Operations go through the CLI as s-expressions, one call per
-operation, the same API and review gate as Emacs. No long-lived
-stdio child: Racket startup cost is accepted and batched with
-progress UI. Inventory and status read lockfile plus manifest
-directly (read-only, no fork cost). No TUI-only capabilities:
-anything the TUI shows, the CLI prints.
+* IPC: DECIDED (amended D-018)
+The TUI reads one snapshot JSON document (the CLI seam); the package
+manager's s-expression output feeds snapshot producers later. No
+long-lived stdio child. No TUI-only capabilities: anything the TUI
+shows, the CLI prints.
 
 * Screens map to operations
-List shows check output; detail shows review output; apply runs the
-gated flow with confirmation; history shows the log. Offline mode
-marks stale data, like the CLI.
+List shows inventory; detail shows package data (source, pin, status).
+Check/review/apply/history screens wait on the STEP 5 s-expression
+CLI. Offline mode marks stale data, like the CLI.
 
 * Safety
-Remaster happens in place (history kept). The pm never shells out
-to the TUI and the TUI never writes vault state except through
-CLI apply/rollback.
+The pm never shells out to the TUI and the TUI never writes vault
+state. D-015 event loop for the TUI is queued for end of stage.

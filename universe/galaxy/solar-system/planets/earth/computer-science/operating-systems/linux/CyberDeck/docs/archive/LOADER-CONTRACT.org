@@ -1,6 +1,9 @@
 #+TITLE: PHASE 1: how packages load in Emacs today
 #+AUTHOR: Shape
 
+* SUPERSEDED (D-018): the package manager is target-neutral; there is no
+Emacs loader work. Replaced by nothing (cancelled, not moved).
+
 * Report (read-only recon of the Cyberdeck-Emacs loader)
 1. Loader is literate Org: vault Cyberdeck-Emacs/cyberdeck (4469 lines)
    plus loader/*.org modules, tangled to

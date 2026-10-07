@@ -1,6 +1,10 @@
 #+TITLE: PHASE 5: Org authoring format (design only, no code)
 #+AUTHOR: Shape
 
+* SUPERSEDED (D-018): no Org format, no Org reader. The spec reader stays
+a replaceable front end; .rktd is the format for now. Replaced by
+nothing (cancelled, not moved).
+
 * One Org file per package collection
 Specs stay plain .rktd data files. Authors write Org; an exporter
 emits one .rktd per package headline. Generated files carry the

@@ -1,6 +1,9 @@
 #+TITLE: PHASE 5b: Emacs front end cyberdeck-pm.el (design only, no code)
 #+AUTHOR: Shape
 
+* SUPERSEDED (D-018): no Emacs front end. Replaced by nothing
+(cancelled, not moved).
+
 * Views
 Package list (tabulated-list with per-package status from check),
 review buffer (incoming commits plus diffstat, risks first), history
