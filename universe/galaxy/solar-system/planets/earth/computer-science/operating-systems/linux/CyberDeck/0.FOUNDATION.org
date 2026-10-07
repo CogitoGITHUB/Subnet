@@ -342,12 +342,12 @@ build: step failed;
   copy, ...). An explicit =(run argv ...)= step exists but is highlighted in plan output.
 - *S-4* Pin everything: full commit id (40 hex, 64 for sha256 repos),
   never a branch or tag alone. The lockfile records it. Each installed
-  commit gets a private ref =refs/cyberdeck/pinned/<commit>= (D-012).
+  commit gets a private ref =refs/vault/<name>/pinned/<commit>= (D-012).
   Verify before extract or compile.
-- *S-5* Exports come from the vault mirror at the pinned commit, never the
+- *S-5* Exports come from the vault monorepo at the pinned commit, never the
   network. Reject absolute paths, =..=, special files, escaping symlinks,
-  and oversize contents. Export method (git archive vs checkout) and
-  submodules/shallow policy: see D-011 open questions in DECISIONS.org.
+  and oversize contents. Export is checkout-based into an empty staging
+  dir; submodules are refused; no shallow, full history always (D-011).
 - *S-6* Builds run with an allowlisted environment, so inherited secrets do not leak.
 - *S-7* No =curl | sh= anywhere. Download, hash-check, then run.
 - *S-8* Secrets never appear in logs. Redact credentials in URLs inside messages.
@@ -439,13 +439,13 @@ build: step failed;
 | D-003 | Spec format: S-expression data files now, custom =#lang= later?            |
 | D-004 | Lockfile format and location                                               |
 | D-005 | Emacs install layout, and how the user's loader finds installed packages   |
-| D-006 | git ONLY; full mirror per package; export at pin (decided)      |
+| D-006 | git ONLY; full history, one monorepo vault; export at pin (decided)|
 | D-007 | Exact commit id only (git); versions match by equality (decided) |
 | D-008 | Exit-code table (E-15)                                                     |
 | D-009 | Trust model for third-party specs (S-1)                                    |
 | D-010 | Where =raco test= comes from in minimal Racket (section 1)                 |
-| D-011 | Vault mirrors, export method, submodules, shallow policy        |
-| D-012 | Pin refs against force-push and gc (decided)                    |
+| D-011 | Vault monorepo vault.git, per-package namespaces (decided)      |
+| D-012 | Pin refs refs/vault/<name>/pinned/<commit> vs force-push+gc (decided)|
 
 ** Emacs target notes (for later, all [VERIFY])
 - Byte-compile with =emacs --batch= in a clean process (=-Q=), with the package directory

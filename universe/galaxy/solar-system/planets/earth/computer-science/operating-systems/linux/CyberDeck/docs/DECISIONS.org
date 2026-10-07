@@ -4,6 +4,28 @@
 * Log
 Append-only. Newest first. Every entry names the rule IDs it touches.
 
+** 2026-10-07 T-10: fixtures are synthetic, never real packages
+Tests use obviously invented names/versions/commits (demo, unfill,
+40x'a'); real package names, pins and Requires appear only in docs,
+pasted from real output. core/resolve.rkt's hl-todo/compat test data
+reverted for this reason. T-10.
+
+** 2026-10-07 RULING: VAULT MONOREPO (supersedes both D-011 wordings)
+One bare repo CyberDeck/sources/vault.git (outer-gitignored) holds all
+package sources, one namespace per package: refs/vault/<name>/heads/*,
+refs/vault/<name>/tags/*, refs/vault/<name>/pinned/<commit>. Tags stay
+namespaced (v1.0 collides across packages). Never mirror refs/pull/*
+or other hosting refs: measured on magit, heads+tags = 36M, +pull =
+86M (+50M, 2784 junk refs), so provider refs are pure cost. Full
+history always, no shallow. `pm add` is one atomic op under a vault
+lock (validate, fetch namespace, verify pin, pin ref, append manifest,
+print sizes; failure changes nothing; never pushes). Backup is ONE
+user-owned remote: explicit `pm backup` pushes refs/vault/*,
+`pm restore` rebuilds, `pm vault status` compares. Export unchanged
+(--git-dir=vault.git, checkout at pin into empty staging). gc is
+explicit-only (`pm vault gc`, phone-sized limits) plus `pm vault
+verify` (fsck): one repo is a single corruption point. D-011, D-012.
+
 ** 2026-10-07 TUI: graph/mind-map removed, snapshot-file seam decided
 Per user order the force-directed graph and mind-map parts are deleted
 from tui/ (graph.rs, ui/graph.rs, web/graph.js, Graph tab, web graph

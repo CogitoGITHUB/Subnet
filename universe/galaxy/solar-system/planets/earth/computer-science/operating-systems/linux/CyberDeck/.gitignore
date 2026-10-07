@@ -3,3 +3,4 @@ compiled/
 *.dep
 tmp/
 tui/target/
+sources/vault.git/

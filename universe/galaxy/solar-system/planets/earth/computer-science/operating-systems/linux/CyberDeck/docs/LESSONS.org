@@ -3,6 +3,13 @@
 
 Append-only. Every entry: what happened, root cause, new rule.
 
+** 2026-10-07 Real data leaked into a test (T-10)
+The resolve exact-message test used hl-todo v3.9.4 / compat 31.0 after
+the design doc was fixed to real versions. Real pins belong in docs,
+never in test constants: a future upstream change must not break the
+suite, and fixtures must read as invented. Reverted to synthetic
+names. New rule: tests use demo/unfill-style fixtures only. T-10.
+
 ** 2026-10-06 Assumed the measured syntax form's offset (P-10)
 The srcloc probe measured the INNER culprit (=42=, span 2 at offset 1),
 not the outer datum (offset 0). I concluded columns were 1-based and

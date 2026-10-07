@@ -23,17 +23,20 @@ for tool in env setsid pkill; do
     echo "GATE: $tool executable not found (run.rkt needs it)"; fail=1
   fi
 done
-# Sources live in sources/ tracked via subtree (D-011): pushed with the
-# outer repo, so a dead phone loses nothing. Never ignored, never an
-# embedded repo, never bare-mirror internals (*.git/objects).
+# Vault monorepo (D-011 ruling): sources/vault.git holds all package
+# objects and is NEVER tracked by the outer repo. Specs, lockfile and
+# the manifest are tracked; the vault is not.
+if ! grep -qx "sources/vault.git/" .gitignore 2>/dev/null; then
+  echo "GATE: .gitignore must list sources/vault.git/ (D-011 monorepo)"; fail=1
+fi
 if grep -qx "sources/" .gitignore 2>/dev/null; then
-  echo "GATE: .gitignore must not list sources/ (D-011 tracked)"; fail=1
+  echo "GATE: .gitignore must not blanket-list sources/ (specs live there)"; fail=1
+fi
+if git ls-files -- sources/vault.git 2>/dev/null | grep -q .; then
+  echo "GATE: sources/vault.git must never be tracked"; fail=1
 fi
 if git ls-files -s -- sources 2>/dev/null | grep -q "^16"; then
-  echo "GATE: sources/ must never embed a git repo (use subtree)"; fail=1
-fi
-if git ls-files -- sources 2>/dev/null | grep -q "\.git/objects"; then
-  echo "GATE: sources/ must never track bare-mirror objects"; fail=1
+  echo "GATE: sources/ must never embed a git repo (use the monorepo)"; fail=1
 fi
 # 0. TUI rebrand gates: no Guix coupling, no graph/mind-map remnants.
 # (the one exception is the serde compat alias in tui/src/model.rs).
