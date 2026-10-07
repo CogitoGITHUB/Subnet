@@ -17,8 +17,9 @@ fi
 if ! command -v emacs >/dev/null 2>&1; then
   echo "GATE: emacs executable not found (targets/emacs needs it)"; fail=1
 fi
-# backends/run.rkt spawns through setsid/env and kills trees with pkill.
-for tool in env setsid pkill; do
+# backends/run.rkt spawns through setsid/env, kills trees with pkill,
+# and holds child locks with flock.
+for tool in env setsid pkill flock mkfifo; do
   if ! command -v "$tool" >/dev/null 2>&1; then
     echo "GATE: $tool executable not found (run.rkt needs it)"; fail=1
   fi

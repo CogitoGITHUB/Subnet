@@ -29,14 +29,15 @@
   [build-error? (-> any/c boolean?)]
   [install-error? (-> any/c boolean?)]
   [config-error? (-> any/c boolean?)]
-  [internal-error? (-> any/c boolean?)]))
+  [cancelled-error? (-> any/c boolean?)]
+ [internal-error? (-> any/c boolean?)]))
 
 ;; ---------------------------------------------------------------------------
 ;; Exception type and kind contract
 
 ;; contract : the set of error kinds (E-3)
 (define pm-kind/c
-  (or/c 'spec 'resolve 'fetch 'verify 'build 'install 'config 'internal))
+  (or/c 'spec 'resolve 'fetch 'verify 'build 'install 'config 'cancelled 'internal))
 
 (struct exn:fail:pm exn:fail (kind fields hint cause))
 ;; kind   : pm-kind/c                      which stage failed
@@ -73,7 +74,7 @@
 (define (pm-error-exit-code e)
   (case (exn:fail:pm-kind e)
     [(spec) 3] [(resolve) 4] [(fetch) 5] [(verify) 6]
-    [(build) 7] [(install) 8] [(config) 2] [(internal) 70]
+    [(build) 7] [(install) 8] [(config) 2] [(cancelled) 130] [(internal) 70]
     [else 70]))
 
 ;; any -> boolean, one predicate per kind (E-3)
@@ -84,6 +85,7 @@
 (define (build-error? x) (and (exn:fail:pm? x) (eq? (exn:fail:pm-kind x) 'build)))
 (define (install-error? x) (and (exn:fail:pm? x) (eq? (exn:fail:pm-kind x) 'install)))
 (define (config-error? x) (and (exn:fail:pm? x) (eq? (exn:fail:pm-kind x) 'config)))
+(define (cancelled-error? x) (and (exn:fail:pm? x) (eq? (exn:fail:pm-kind x) 'cancelled)))
 (define (internal-error? x) (and (exn:fail:pm? x) (eq? (exn:fail:pm-kind x) 'internal)))
 
 ;; ---------------------------------------------------------------------------
@@ -144,8 +146,24 @@
   (define (code-for kind)
     (pm-error-exit-code
      (exn:fail:pm "m" (current-continuation-marks) kind '() #f #f)))
-  (check-equal? (map code-for '(spec resolve fetch verify build install config internal))
-                '(3 4 5 6 7 8 2 70))
+  (check-equal? (map code-for '(spec resolve fetch verify build install config cancelled internal))
+                '(3 4 5 6 7 8 2 130 70))
+
+  ;; Cancelled carries operation, completed and remaining-state (D-015 sample).
+  (check-equal?
+   (with-handlers ([exn:fail:pm? exn-message])
+     (raise-pm-error 'cancelled 'run-command "cancelled"
+                     #:fields '(("operation" . "fetch demo")
+                                ("completed" . ("spawned" "tree killed"))
+                                ("remaining-state" . ("temp files removed" "no result")))))
+   (string-join '("run-command: cancelled;"
+                  "  operation: fetch demo"
+                  "  completed: (spawned tree killed)"
+                  "  remaining-state: (temp files removed no result)")
+                "\n"))
+  (check-equal? (code-for 'cancelled) 130)
+  (check-pred cancelled-error?
+              (exn:fail:pm "m" (current-continuation-marks) 'cancelled '() #f #f))
 
   ;; Predicates sort by kind.
   (define fetch-exn

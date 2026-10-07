@@ -7,6 +7,7 @@
 (require racket/contract/base
          racket/file
          racket/string
+         "../core/cancel.rkt"
          "../core/errors.rkt"
          "../core/spec.rkt"
          "../core/spec-read.rkt"
@@ -105,8 +106,9 @@
 
 ;; ---------------------------------------------------------------------------
 (module+ main
+  (define-values (cancel-evt trigger-cancel!) (make-cancel-source))
   (define code
-    (with-handlers ([exn:break? (lambda (_) 130)]
+    (with-handlers ([exn:break? (lambda (_) (trigger-cancel!) 130)]
                     [exn:fail:pm?
                      (lambda (e)
                        (display-pm-error e)

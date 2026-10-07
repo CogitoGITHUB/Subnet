@@ -109,7 +109,7 @@
 ;; path symbol path-string (listof string) -> run-result
 ;; Explicit --git-dir plus ceiling on every call (STEP B safety); only
 ;; creation (init) passes #:git-dir #f and relies on ceiling alone.
-(define (git-run git op dir argv #:kind kind #:timeout timeout
+(define (git-run git op dir argv #:kind kind
                  #:operation operation #:git-dir [git-dir dir])
   (define full-argv
     (if git-dir (cons (git-dir-flag git-dir) argv) argv))
@@ -117,7 +117,6 @@
     (run-command git full-argv
                  #:cwd dir
                  #:kind kind
-                 #:timeout timeout
                  #:operation operation
                  #:env (append (git-env) (ceiling-env dir))))
   (check-dubious op res)
@@ -135,9 +134,9 @@
                                            "\n")))))
 
 ;; path symbol path-string (listof string) -> void, nonzero raises kind (E-8)
-(define (git-run! git op dir argv #:kind kind #:timeout timeout
+(define (git-run! git op dir argv #:kind kind
                   #:operation operation #:git-dir [git-dir dir])
-  (define res (git-run git op dir argv #:kind kind #:timeout timeout
+  (define res (git-run git op dir argv #:kind kind
                        #:operation operation #:git-dir git-dir))
   (unless (zero? (run-result-exit res))
     (raise-pm-error kind op "git command failed"
@@ -210,7 +209,7 @@
   (define git (git-executable-path))
   (define res
     (git-run git 'mirror-origin-url dir '("config" "--get" "remote.origin.url")
-             #:kind 'fetch #:timeout 30 #:operation "read remote url"))
+             #:kind 'fetch #:operation "read remote url"))
   (and (zero? (run-result-exit res))
        (pair? (run-result-stdout-lines res))
        (car (run-result-stdout-lines res))))
@@ -245,7 +244,7 @@
               (git-run! git 'git-clone-mirror parent
                         `("init" "--bare" "--template=" "--"
                           ,(path->string tmp))
-                        #:kind 'fetch #:timeout timeout
+                        #:kind 'fetch
                         #:operation "git init mirror"
                         #:git-dir #f)
               ;; Keep everything so original code is never lost (item 8).
@@ -256,16 +255,16 @@
                                     ("gc.reflogExpireUnreachable" . "never")))])
                 (git-run! git 'git-clone-mirror tmp
                           `("config" ,(car kv) ,(cdr kv))
-                          #:kind 'fetch #:timeout timeout
+                          #:kind 'fetch
                           #:operation "git config mirror"))
               (git-run! git 'git-clone-mirror tmp
                         `("remote" "add" "origin" "--" ,url)
-                        #:kind 'fetch #:timeout timeout
+                        #:kind 'fetch
                         #:operation "git remote add")
               ;; Upstream refs land under refs/upstream/*; never --prune (4).
               (git-run! git 'git-clone-mirror tmp
                         `("fetch" "origin" "--" "+refs/*:refs/upstream/*")
-                        #:kind 'fetch #:timeout timeout
+                        #:kind 'fetch
                         #:operation "git fetch mirror")))
           (rename-file-or-directory tmp dir))
         (lambda ()
@@ -282,7 +281,7 @@
         (lambda ()
           (git-run! git 'git-fetch-mirror dir
                     '("fetch" "origin" "--" "+refs/*:refs/upstream/*")
-                    #:kind 'fetch #:timeout timeout
+                    #:kind 'fetch
                     #:operation "git fetch mirror"))))))
 
 ;; path string -> boolean; #t iff the type is commit (exit table probed)
@@ -293,7 +292,7 @@
   ;; object there means 128, so -t alone cannot tell absent from broken).
   (define exists
     (git-run git 'git-has-commit? dir `("cat-file" "-e" "--" ,commit)
-             #:kind 'fetch #:timeout timeout #:operation "git cat-file"))
+             #:kind 'fetch #:operation "git cat-file"))
   (cond [(not (zero? (run-result-exit exists)))
          (if (= 1 (run-result-exit exists))
              #f
@@ -303,7 +302,7 @@
         [else
          (let ([typed
                 (git-run git 'git-has-commit? dir `("cat-file" "-t" "--" ,commit)
-                         #:kind 'fetch #:timeout timeout
+                         #:kind 'fetch
                          #:operation "git cat-file")])
            (cond [(and (zero? (run-result-exit typed))
                        (equal? (run-result-stdout-lines typed) '("commit")))
@@ -330,7 +329,7 @@
                 `("update-ref" "--"
                   ,(string-append "refs/cyberdeck/pinned/" commit)
                   ,commit)
-                #:kind 'verify #:timeout timeout
+                #:kind 'verify
                 #:operation "git update-ref pin"))))
 
 ;; ---------------------------------------------------------------------------
@@ -352,7 +351,7 @@
 (define (check-no-submodules git work commit timeout)
   (define res
     (git-run git 'git-export-commit work '("ls-files" "-s" "--" ".")
-             #:kind 'fetch #:timeout timeout
+             #:kind 'fetch
              #:operation "git ls-files export"
              #:git-dir (build-path work ".git")))
   (if (not (zero? (run-result-exit res)))
@@ -427,14 +426,14 @@
               "-c" "core.attributesFile=/dev/null"
               "clone" "--quiet" "--no-checkout" "--"
               ,(dir-string mirror) ,(dir-string work))
-            #:kind 'fetch #:timeout timeout
+            #:kind 'fetch
             #:operation "git clone export"
             #:git-dir #f)
   (git-run! git 'git-export-commit work
             `("-c" "core.autocrlf=false"
               "-c" "core.attributesFile=/dev/null"
               "checkout" "--quiet" ,commit)
-            #:kind 'fetch #:timeout timeout
+            #:kind 'fetch
             #:operation "git checkout export"
             #:git-dir (build-path work ".git"))
   (check-no-submodules git work commit timeout)
@@ -444,7 +443,7 @@
   (git-run! cp 'git-export-commit work
             `("-a" "--" ,(string-append (dir-string work) "/.")
               ,(dir-string staging))
-            #:kind 'fetch #:timeout timeout
+            #:kind 'fetch
             #:operation "cp export tree"
             #:git-dir #f)
   (call-with-output-file (build-path staging ".cyberdeck-commit")
@@ -528,7 +527,7 @@
     (define res
       (run-command git-exe args
                    #:cwd (path->string dir)
-                   #:kind 'fetch #:timeout 60 #:operation "test-fixture"
+                   #:kind 'fetch #:operation "test-fixture"
                    #:env (fixture-env)))
     (unless (zero? (run-result-exit res))
       (error 'fixture "git failed: ~a" args))
@@ -676,7 +675,7 @@
                    (list "-C" (dir-string cyberdeck-dir)
                          "rev-parse" "--show-toplevel")
                    #:cwd (dir-string cyberdeck-dir)
-                   #:kind 'fetch #:timeout 30
+                   #:kind 'fetch
                    #:operation "test-outer-top"))
     (when (zero? (run-result-exit top-res))
       (define outer-top (car (run-result-stdout-lines top-res)))
@@ -684,7 +683,7 @@
         (run-result-stdout-lines
          (run-command git-exe (cons "-C" (cons outer-top args))
                       #:cwd (dir-string cyberdeck-dir)
-                      #:kind 'fetch #:timeout 30
+                      #:kind 'fetch
                       #:operation "test-outer-snapshot")))
       (define (outer-snapshot)
         (list (outer-run "rev-parse" "HEAD")
@@ -832,7 +831,7 @@
   (define probe-res
     (run-command git-exe '("config" "user.name")
                  #:cwd (path->string fixture-root)
-                 #:kind 'fetch #:timeout 30 #:operation "test-global"
+                 #:kind 'fetch #:operation "test-global"
                  #:env `(("GIT_CONFIG_NOSYSTEM" . "1")
                          ("GIT_CONFIG_GLOBAL" . ,(path->string global-probe))
                          ("HOME" . ,(path->string fixture-home)))))

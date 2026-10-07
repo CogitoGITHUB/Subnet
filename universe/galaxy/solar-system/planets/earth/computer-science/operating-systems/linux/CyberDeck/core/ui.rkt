@@ -80,6 +80,17 @@
                               "\n")
                  "\n"))
 
+  ;; Cancelled prints plainly with NO bug banner (D-015): it is a user
+  ;; action, not a defect. display-pm-error already prints cleanly.
+  (define cancel-out (open-output-string))
+  (display-pm-error
+   (with-handlers ([exn:fail:pm? (lambda (e) e)])
+     (raise-pm-error 'cancelled 'run-command "cancelled"
+                     #:fields '(("operation" . "fetch demo"))))
+   #:port cancel-out)
+  (check-regexp-match #rx"fetch demo" (get-output-string cancel-out))
+  (check-false (regexp-match? #rx"bug" (get-output-string cancel-out)))
+
   ;; Internal errors carry the bug banner.
   (define bug-out (open-output-string))
   (display-internal-error (exn:fail "broken invariant"

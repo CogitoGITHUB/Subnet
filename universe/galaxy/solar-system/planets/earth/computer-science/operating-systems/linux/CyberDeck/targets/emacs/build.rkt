@@ -18,20 +18,17 @@
   ;; every file; nonzero exit is kind 'build with E-8 fields
   [emacs-byte-compile-files
    (->* ((listof string?) path-string?)
-         (#:timeout exact-positive-integer?
-          #:env (listof (cons/c string? string?)))
+         (#:env (listof (cons/c string? string?)))
          (listof string?))]
   ;; path-string path-string -> void, loaddefs-generate output file
   [emacs-generate-autoloads
    (->* (path-string? path-string?)
-         (#:timeout exact-positive-integer?
-          #:env (listof (cons/c string? string?)))
+         (#:env (listof (cons/c string? string?)))
          void?)]
   ;; (listof string) path-string -> void, batch load check, no jit
   [emacs-smoke-load
    (->* ((listof string?) path-string?)
-         (#:timeout exact-positive-integer?
-          #:env (listof (cons/c string? string?)))
+         (#:env (listof (cons/c string? string?)))
          void?)]))
 
 ;; ---------------------------------------------------------------------------
@@ -45,10 +42,10 @@
                       #:hint "install Emacs 29 or later for this target")))
 
 ;; path (listof string) path-string string -> run-result
-(define (emacs-batch exe argv cwd operation #:timeout timeout #:env env)
+(define (emacs-batch exe argv cwd operation #:env env)
   (run-command/redirect exe argv
                #:cwd cwd
-               #:kind 'build #:timeout timeout
+               #:kind 'build
                #:operation operation
                #:env env))
 
@@ -73,7 +70,7 @@
 
 ;; (listof string) path-string -> (listof string)
 (define (emacs-byte-compile-files files srcdir
-                                  #:timeout [timeout 300]
+
                                   #:env [env '()])
   (define emacs (emacs-executable-path))
   (if (null? files)
@@ -83,7 +80,7 @@
                           files)))
         (define res
           (emacs-batch emacs argv (dir-text srcdir) "byte-compile"
-                       #:timeout timeout #:env env))
+                       #:env env))
         (if (zero? (run-result-exit res))
             (warning-lines res)
             (raise-build-failure 'byte-compile
@@ -93,7 +90,7 @@
 
 ;; path-string path-string -> void
 (define (emacs-generate-autoloads srcdir output-file
-                                  #:timeout [timeout 300]
+
                                   #:env [env '()])
   (define emacs (emacs-executable-path))
   (define form
@@ -102,7 +99,7 @@
   (define argv (list "-Q" "--batch" "--eval" form))
   (define res
     (emacs-batch emacs argv (dir-text srcdir) "autoloads"
-                 #:timeout timeout #:env env))
+                 #:env env))
   (cond [(not (zero? (run-result-exit res)))
          (raise-build-failure 'autoloads
                               (string-join (cons (dir-text emacs) argv) " ")
@@ -114,7 +111,7 @@
 
 ;; (listof string) path-string -> void
 (define (emacs-smoke-load load-dirs entry-file
-                          #:timeout [timeout 300]
+
                           #:env [env '()])
   (define emacs (emacs-executable-path))
   (define no-jit
@@ -131,7 +128,7 @@
                      (dir-text entry-file)
                      (dir-text (car load-dirs)))
                  "smoke-load"
-                 #:timeout timeout #:env env))
+                 #:env env))
   (unless (zero? (run-result-exit res))
     (raise-build-failure 'smoke-load
                          (string-join (cons (dir-text emacs) argv) " ")

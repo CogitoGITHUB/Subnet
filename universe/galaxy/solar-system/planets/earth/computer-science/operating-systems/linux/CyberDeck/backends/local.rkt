@@ -98,7 +98,7 @@
     (run-command sha256
                  (list (verify-action-path a))
                  #:cwd (path->string (find-system-path 'temp-dir))
-                 #:kind 'verify #:timeout 300
+                 #:kind 'verify
                  #:operation "sha256sum verify"))
   (if (not (zero? (run-result-exit res)))
       (raise-pm-error 'verify 'local-perform! "hash command failed"
@@ -134,7 +134,7 @@
   (define res
     (run-command exe (cdr argv)
                  #:cwd (run-step-action-cwd a)
-                 #:kind 'build #:timeout 600
+                 #:kind 'build
                  #:operation (run-step-action-name a)))
   (unless (zero? (run-result-exit res))
     (raise-pm-error 'build 'local-perform! "step failed"
@@ -391,7 +391,7 @@
     (define res
       (run-command (git-executable-path) args
                    #:cwd (path->string dir)
-                   #:kind 'fetch #:timeout 60 #:operation "test-fixture"
+                   #:kind 'fetch #:operation "test-fixture"
                    #:env `(("GIT_AUTHOR_NAME" . "t")
                            ("GIT_AUTHOR_EMAIL" . "t@t")
                            ("GIT_COMMITTER_NAME" . "t")
