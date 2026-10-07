@@ -273,7 +273,7 @@
 ;; Pipe mode (default): concurrent drain threads. PRECONDITION: the child
 ;; must not orphan pipe holders (a daemonized grandchild keeps our pipes
 ;; open past the EXIT line and the drainers would never finish). Tools
-;; that fork like that use redirect mode instead (proven: Emacs batch).
+;; that fork like that use redirect mode instead (proven by the daemon test).
 
 ;; path-string (listof string) -> run-result
 ;; exe argv cwd kind operation extras cancel on-progress
