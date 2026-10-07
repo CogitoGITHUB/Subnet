@@ -4,6 +4,15 @@
 * Log
 Append-only. Newest first. Every entry names the rule IDs it touches.
 
+** 2026-10-07 D-018: package manager goes target-neutral
+Emacs integration removed completely: no Emacs target, no Org format or
+reader, no loader contract, no Emacs frontend, no straight replacement,
+no package import. The spec reader stays a replaceable front end over
+the same spec struct; .rktd is the format for now. Rust TUI stays,
+terminal-only, snapshot-file seam. Tag pre-removal marks the last state
+with all of the above; recover with `git checkout pre-removal` or
+`git show pre-removal:<path>`. D-018.
+
 ** 2026-10-07 T-10: fixtures are synthetic, never real packages
 Tests use obviously invented names/versions/commits (demo, unfill,
 40x'a'); real package names, pins and Requires appear only in docs,
