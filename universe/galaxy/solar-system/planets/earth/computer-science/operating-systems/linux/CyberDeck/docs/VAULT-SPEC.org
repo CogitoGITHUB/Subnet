@@ -1,0 +1,159 @@
+#+TITLE: Vault monorepo spec (D-011, D-012, D-013)
+#+AUTHOR: Shape
+
+The approved vault design, timer-free (D-015). Implementation resumes
+from this doc after the Nu design is approved, one commit each in the
+order at the end. Where this doc conflicts with behavior ALREADY
+implemented, the implemented behavior wins; differences are listed last.
+
+* Layout and names
+One bare monorepo sources/vault.git, outer-gitignored (.gitignore lists
+sources/vault.git/ only). Refs per package:
+refs/vault/<name>/heads/*, tags/*, pinned/<commit>,
+superseded/<old-commit-id>/<heads|tags>/<ref>, remote-head
+(bookkeeping, never a pin). <name> matches [a-z0-9][a-z0-9-]*. ONE
+function vault-namespace derives the namespace; it is never passed in.
+Tests assert git check-ref-format on every derived ref. D-011, D-012.
+
+* vault-init
+git init --bare --template= (no hooks), then config:
+core.logAllRefUpdates=always, gc.auto=0, maintenance.auto=false
+[VERIFY], gc.reflogExpire=never, gc.reflogExpireUnreachable=never,
+gc.pruneExpire=never, transfer.fsckObjects=true, fetch.prune=false,
+fetch.pruneTags=false, -c protocol.ext.allow=never. Env:
+GIT_CONFIG_NOSYSTEM=1, GIT_CONFIG_GLOBAL=<pm-owned file>. No remote.*
+config ever: the URL goes on the command line and into the manifest.
+-- before every URL/path argument.
+
+* vault-add and vault-fetch-namespace
+vault-add (vault-root name url [#:pin #:cancel #:on-progress #:holder]):
+writers lock INTERNALLY, try-lock only. One fetch:
+git fetch --no-tags --no-write-fetch-head -- <url>
+"+refs/heads/*:refs/vault/<name>/heads/*"
+"+refs/tags/*:refs/vault/<name>/tags/*" "+HEAD:refs/vault/<name>/remote-head".
+Never fetch provider refs (refs/pull/* and friends are not in the
+refspecs, and --no-tags stops tag-following). pin #f means use
+remote-head after the fetch; the result records pin-source
+('given | 'remote-head).
+The pin must be reachable from fetched heads/tags, else kind 'fetch
+(fields commit, url; hint "not on any branch or tag; upstream may have
+rewritten history, see D-013").
+A non-fast-forward move first keeps the old tip under
+superseded/<old-commit-id>/<heads|tags>/<ref> (content-addressed, no
+clock) and emits one E-11 warning. Directory/file ref conflicts: move
+the stale ref under superseded/ and retry, with a warning. Refs deleted
+upstream stay and are reported as gone-upstream (info). Pins are NEVER
+moved or deleted by add, fetch, rollback or gc.
+Same name with a DIFFERENT url: kind 'config (hint D-013); no replace
+option in v1. Empty remote or unresolvable HEAD: kind 'fetch. fsck
+failures: kind 'fetch with git's message ids; a per-package opt-out of
+SPECIFIC message ids is allowed, recorded as fsck-allow in the
+manifest. A failed add removes ONLY refs that call created. It ends
+with git pack-refs --all.
+Result struct: name namespace pin pin-source refs-created superseded
+gone-upstream warnings size-before size-after. vault-fetch-namespace
+(vault-root name ...) has the same hygiene.
+
+* List, size, verify, gc, export
+vault-list, vault-size (git count-objects -v + loose/packed ref counts;
+struct vault-size-report bytes objects loose-refs packed-refs),
+vault-verify (#:full; default is git fsck --connectivity-only),
+vault-gc (explicit only; pack.threads=1; bounded pack memory; measure
+peak memory on the largest .git available at implementation time, real
+or synthetic copy).
+vault-export-commit: checkout-based with the SAME contract as the
+implemented git-export-commit (empty staging dir, faithful file list,
+staging cleaned on failure, never writes the vault). Test: the vault
+index never exists and the file list is unchanged.
+
+* Locking and cancel
+Writers: try-lock only via core/vault-lock.rkt, fail at once naming the
+holder (informational owner record; liveness is the lock). Readers
+(export, has-commit, list, size, status) never lock. POSIX fcntl
+semantics are probed in Racket under proot (same-process re-entry, two
+threads, closing another port on the same file); vault-lock.rkt adds a
+process-local mutex because same-process re-acquire would otherwise
+succeed silently. Tests: re-entry fails at once; two threads race,
+exactly one wins (25 green, including kill -9 recovery).
+Git children run as flock child.lock sh -c 'exec git ...'. A held
+child.lock means an orphan is alive: the vault is "needs verify"
+(derived live, never stored) and writers refuse until it exits or
+pm vault verify passes. flock joins the check.sh tool gate.
+Cancel: (make-cancel-source) -> (values evt trigger!); kind
+'cancelled, exit 130; Ctrl-C routes through the same path (implemented
+in backends/run.rkt + core/cancel.rkt + core/errors.rkt).
+
+* Jobs (no daemon)
+Operations are a closed set of structs: add, fetch-namespace, verify,
+gc, backup-push, restore. The worker RE-VALIDATES every field when
+loading a job file (name regex, git-url, git-id). Job ids come from
+atomic exclusive create. State and status files are .rktd written with
+write. Liveness: the worker holds an exclusive fcntl lock on
+<state>/jobs/<id>.lock for its whole life; acquirable = dead =
+interrupted. job-wait blocks on that lock. Cancel writes to a per-job
+FIFO opened O_RDWR (probed: returns at once with no peer) after the
+lock-held check; SIGTERM is the documented fallback. One-shot setsid
+worker, strictly serial; it rereads the queue after each job; on empty
+it releases the worker lock and RECHECKS once so no job is stranded.
+Rate limit by count only. ssh jobs always show the static host-key hint.
+Signatures: job-start (state-dir job-op) -> job; job-status (state-dir
+id) -> job; job-list (state-dir) -> (listof job); job-cancel (state-dir
+id) -> job-cancel-result; job-wait (state-dir id #:cancel) -> job;
+queue-resume (state-dir) -> (listof job). struct job: id package op
+state phase percent bytes started updated error.
+
+* Manifest and backup
+manifest.rktd = vault INVENTORY only: name url namespace added
+last-fetched fsck-allow. NO pin. Atomic tmp+rename appends. Single owner
+per datum: the spec declares the source url, the lockfile holds
+resolved pins, the manifest holds the inventory. pm vault status
+cross-checks the three and reports drift (the Org drawer from older
+notes no longer exists).
+Backup, ONE namespace per call, resumable, to ONE remote I own: heads
+and tags pushed with +; superseded/ and pinned/ never with +. Scan each
+namespace for blobs over 100MB before pushing [VERIFY host limit];
+pushing one is allowed only by an explicit flag recorded in the
+manifest. Results: backup-push-result (name ok? reason pushed-refs);
+backup-status-entry (name ref local backup state), state one of
+in-sync, local-only, backup-only, diverged; restore-result (name ok?
+reason refs-restored). vault-restore rebuilds from backup with explicit
+refspecs and --no-tags, or from upstream through vault-add. Ask the user
+for the backup remote URL before code needs it; tests push only to
+local bare repos.
+
+* Tests required (synthetic fixtures, FIFO/file barriers, no sleeps)
+Two fixtures both tagged v1.0 do not collide; force-push and retag give
+superseded refs, including two moves in the same second; D/F conflict;
+failing re-add leaves every ref untouched; pin survives amend/reset +
+gc --prune=now + fetch.prune=true; URL-change refusal; empty remote;
+fsck opt-out with a zero-padded-mode fixture; shared history stored
+once; export leaves vault.git untouched; outer-repo safety rerun; lock
+re-entry and two-thread race; reader works during a writer; orphan git
+child blocks writers until it exits; hostile job file rejected;
+job-wait woken by completion and cancellable; kill -9 worker detected
+as interrupted; enqueue/exit race strands no job; resume skips done;
+on-progress fires per line; remote-head pin resolution; namespace
+derivation.
+
+* Implementation order after approval, one commit each
+vault-init + lock + vault-add; fetch-namespace + verify + gc; manifest;
+jobs/queue; backup/restore/status. #:on-progress (or #f) receives
+(fetch-progress phase percent bytes) once per parsed git progress line,
+on add, fetch-namespace, backup-push and restore. Status files change
+only when phase or percent change.
+
+* Differences: implemented behavior wins
+1. #:timeout everywhere (git ops take 30/300/600; with-mirror-lock
+   blocks up to timeout) vs D-015 #:cancel + try-lock only. Kept: old
+   per-mirror ops keep their signatures until the monorepo migration
+   deletes them. New vault-* functions take #:cancel from birth and lock
+   only through vault-lock.rkt; no new #:timeout anywhere.
+2. Export mechanism: implemented git-export-commit clones --no-checkout
+   + checkout + cp -a (no temp GIT_INDEX_FILE anywhere). Kept: the
+   clone-based contract (empty staging, faithful list, cleanup). The
+   temp-index phrasing in earlier notes is superseded by the code.
+3. Pin namespace: implemented refs/cyberdeck/pinned/<commit> per mirror
+   vs monorepo refs/vault/<name>/. Migration, not preservation: new
+   code uses the refs/vault/ tree; old mirrors die with the old backend.
+4. Cancel path (kind 'cancelled, exit 130, Ctrl-C routing) and the
+   event-based run.rkt already match this doc: no difference.

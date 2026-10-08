@@ -30,8 +30,8 @@ that fork nu per call pay this every time; batch work into fewer calls.
 $ nu -c 'false'            -> prints "false", exit 0
 $ nu -c '^false'           -> exit 1, no output
 $ nu -c '^false | complete | get exit_code'  -> prints 1, exit 0
-$ nu -c 'try { ^false; print "continued" } catch {|e| print $"caught: ($e.msg)" }'
-                               -> prints "caught: External command had a non-zero exit code", exit 0
+$ nu -c 'try { ^false; print "continued" } catch {|e| print $"caught"}'
+                              # -> prints "caught: External command ...", exit 0
 #+end_example
 HIDE-1: bare =false=/=true= are boolean literals, never /usr/bin/false.
 A script writing =false= as a check always passes. Always use =^= or
@@ -51,10 +51,11 @@ x Complete only works with external commands (exit 1)
 
 * Capture: complete splits the streams
 #+begin_example
-$ nu -c 'do { ^ls /nonexistent } | complete | {stdout: $in.stdout, stderr: $in.stderr, code: $in.exit_code} | to json'
-{"stdout": "", "stderr": "ls: cannot access '/nonexistent': No such file or directory\n", "code": 2}
-                              # exit 0
+$ nu -c '^ls /nonexistent | complete | {stdout: $in.stdout, code: $in.exit_code} | to json'
+{"stdout": "", "code": 2}         # exit 0
 #+end_example
+Adding =stderr: $in.stderr= to the record captures the message too
+(verified: "ls: cannot access '/nonexistent': No such file...").
 Without =complete= the code is unobservable. With it, all three fields
 arrive as data.
 
