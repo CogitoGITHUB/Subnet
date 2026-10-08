@@ -160,3 +160,16 @@ only when phase or percent change.
    code uses the refs/vault/ tree; old mirrors die with the old backend.
 4. Cancel path (kind 'cancelled, exit 130, Ctrl-C routing) and the
    event-based run.rkt already match this doc: no difference.
+5. "+HEAD:remote-head" refspec does not work (git: couldn't find remote
+   ref HEAD, probed): remote-head resolves via git ls-remote HEAD and is
+   stored with update-ref. Same layout, same bookkeeping role.
+6. Fetch gains --progress (not in the doc's argv): without it git prints
+   no progress lines to parse and on-progress could never fire.
+7. Non-fast-forward rescue creates the superseded ref but does NOT
+   delete the current one (the fetch already moved it); a run that did
+   delete it destroyed the new tip (caught by test). Delete happens
+   only on the D/F retry path, where the stale ref blocks the fetch.
+8. Probe-before-spawn: vault-add checks child-free before ensure-vault,
+   because ensure-vault itself spawns through blocking flock and would
+   wedge on a live holder before any probe could refuse (deadlock seen
+   live: START with no END, fixed, test-pinned).
