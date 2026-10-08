@@ -1,0 +1,61 @@
+#+TITLE: Nushell adoption design (D-020, for approval)
+#+AUTHOR: Shape
+
+Evidence: docs/NU-NOTES.org. Pinned ~/opt/nushell/0.116.1/nu, always
+with --no-config-file. check.sh stays the gate until check.nu is proven.
+
+* a. Scope
+Nu owns scripts/ (check, startup, env, lib-obs, wrappers, lints) and
+all new tooling. POSIX sh stays ONLY for: the fixed fragments embedded
+in backends/run.rkt (fd redirection, traps, flock, exec on a bare
+machine where no Nu exists) plus scripts/need-nu.sh, which prints one
+clear message when the pinned Nu is missing (it must run under any sh).
+The package manager core stays Racket. Rationale: run.rkt fragments
+execute inside spawned children that cannot depend on ~/opt; everything
+else benefits from structured data and fail-fast externals.
+
+* b. JSON bridge: --format sexp|json on every pm command
+Default sexp (today's output, unchanged). --format json prints the same
+data as JSON: same fields, same order, same error shape (who/message/
+fields/hint become keys). Schema per command is documented in
+docs/ERRORS.org beside the E-15 table as commands land (check first).
+Conformance test: for each command, parse both outputs and diff the
+data (sexp read vs json parse must be equal modulo key order). The TUI
+snapshot producer and Nu scripts consume only the JSON side.
+
+* c. Event log format: JSON Lines proposed (ASK below)
+Today: observability is queued (STEP 6a), no log exists yet. Proposal:
+append-only event log as JSON Lines (one object per line: ts, op, pkg,
+phase, percent, bytes, outcome). Nu reads/writes it natively (open,
+to json, append); the Rust TUI parses it without an s-expression
+parser; Racket reads it with the json library.
+Against D-6 (plain data via write): .rktd round-trips Racket values
+exactly (symbols, exactness) and matches specs/lockfile/manifest; JSON
+needs a symbol<->string convention and loses nothing else we need.
+Specs, lockfile and manifest stay .rktd either way; only the event log
+is in question. ASK: JSON Lines or .rktd for the event log?
+
+* d. Lint: O-9 hidden-discard gate learns Nu
+Banned patterns under the same OBS-OK: reason rule: =| ignore=, =do -i=
+/ =do --ignore-errors=, bare =try= without catch, redirects to
+/dev/null or =null=, and unchecked =$in.exit_code= after =complete=.
+Ban =sleep= and every timeout/timeout-at in Nu too (D-015: waits end on
+process exit, EOF, lock release, explicit cancel). check.sh gains the
+grep gate now (it applies to .nu from the first Nu script); check.nu
+inherits it.
+
+* e. Migration, one script per commit
+New scripts are Nu from now on. Existing scripts (check.sh,
+startup.sh) convert during the end-of-stage items, one per commit, each
+with a parity proof: run the sh and nu versions against a clean tree
+(green both) and a deliberately broken tree (same failure, same exit
+code), paste both outputs in the commit message. check.sh retires only
+after check.nu passes parity plus a full green gate.
+
+* f. Bootstrap on a fresh clone
+The pm cannot build Nu (cargo fetches outside git, D-019). A fresh
+clone gets it by: download the pinned aarch64-gnu asset, verify
+against the recorded sha256 (D-020), unpack the single binary to
+~/opt/nushell/0.116.1/. scripts/need-nu.sh checks presence + version
+and prints the exact three commands when missing. No system install, no
+PATH surgery, no sudo. Vendor nothing (73MB binary stays out of git).

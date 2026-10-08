@@ -1,0 +1,127 @@
+#+TITLE: Nushell probes for project scripts (D-020)
+#+AUTHOR: Shape
+
+Real output only, pinned ~/opt/nushell/0.116.1/nu, --no-config-file
+everywhere. Anything that differs from POSIX sh in a way that could
+hide a failure is marked HIDE.
+
+* Environment (2026-10-08)
+#+begin_example
+/usr/local/bin/nu -> 0.116.0   (proot rootfs, interactive shell)
+/data/data/com.termux/files/usr/bin/nu -> 0.114.1   (Termux)
+uname -m -> aarch64; getconf -> glibc 2.43
+HOME=/root/home/shape; no /.dockerenv, no /run/.containerenv
+Newest stable (ls-remote, sorted -uV): 0.116.1 (prerelease: False)
+gnu asset: 81544024 bytes; musl asset: 80861387 bytes
+SHA256SUMS: e7bbb1639253fb83e2391600b957ba3e918f04a2c81850e9f30a68cb1ef20ef8
+local sha256 of download: identical (verified, [VERIFY])
+installed: ~/opt/nushell/0.116.1/nu, 71M on disk (73412688 bytes)
+#+end_example
+
+* Startup: median 886ms, cold-dominated
+#+begin_example
+7 runs of `nu --no-config-file -c ''` (ms): 7061 4692 182 886 357 151 2219
+#+end_example
+73MB binary, page cache cold after reboot. Warm runs 150-900ms. Scripts
+that fork nu per call pay this every time; batch work into fewer calls.
+
+* Exit codes: externals need ^, fail-fast by default
+#+begin_example
+$ nu -c 'false'            -> prints "false", exit 0
+$ nu -c '^false'           -> exit 1, no output
+$ nu -c '^false | complete | get exit_code'  -> prints 1, exit 0
+$ nu -c 'try { ^false; print "continued" } catch {|e| print $"caught: ($e.msg)" }'
+                               -> prints "caught: External command had a non-zero exit code", exit 0
+#+end_example
+HIDE-1: bare =false=/=true= are boolean literals, never /usr/bin/false.
+A script writing =false= as a check always passes. Always use =^= or
+=complete= for external truth.
+HIDE-2: a failing external aborts the whole script at once (printed
+"before", never "after", exit 1) unless caught, completed or ignored.
+This is set -e by default: good, but every =| ignore=, =do -i= and bare
+=try= below must be treated as a possible swallowed failure (O-9 gate).
+#+begin_example
+$ nu /tmp/opencode/t.nu   # print "before"; ^false; print "after"
+before
+                              # exit 1, "after" never prints
+$ nu -c 'do { false } | complete | get exit_code'
+x Complete only works with external commands (exit 1)
+#+end_example
+=complete= on a non-external is itself an error, exit 1.
+
+* Capture: complete splits the streams
+#+begin_example
+$ nu -c 'do { ^ls /nonexistent } | complete | {stdout: $in.stdout, stderr: $in.stderr, code: $in.exit_code} | to json'
+{"stdout": "", "stderr": "ls: cannot access '/nonexistent': No such file or directory\n", "code": 2}
+                              # exit 0
+#+end_example
+Without =complete= the code is unobservable. With it, all three fields
+arrive as data.
+
+* Clock: ns digits, ns-int timeit
+#+begin_example
+$ nu -c 'date now | to json'   -> "2026-10-08T09:34:46.883630155+03:00"
+$ nu -c 'timeit { sleep 10ms } | to json'  -> 10380000
+#+end_example
+=timeit= returns integer nanoseconds (10ms sleep -> 10.38ms measured).
+=date now= prints 9 digits; sub-second truth on this phone is
+unverified, so never use it for ordering (D-015: uniqueness comes from
+atomic create, never the clock).
+
+* JSON: 1.25MB / 20000 rows in 0.241s
+#+begin_example
+$ open /tmp/opencode/big.json | length   -> 20000   (real 0m0.241s)
+#+end_example
+Snapshot-sized documents are cheap to parse. Fine for the TUI/bridge.
+
+* FIFO: nu reads, same writer-discipline as Racket
+#+begin_example
+$ nu --no-config-file -c 'open --raw /tmp/opencode/nu-fifo' &   # background
+$ printf 'hello-nu' > /tmp/opencode/nu-fifo
+reader-exit: 0; content: hello-nu
+#+end_example
+A writer must be present or the open blocks; keep a writer held open
+across handshakes (same rule as backends/run.rkt).
+
+* Signals: no trap, no signal commands
+#+begin_example
+$ nu -c 'help trap'   -> Error: nu::parser::not_found (no such command)
+$ nu -c 'help commands | where name =~ signal | length'  -> 0
+$ nu -c 'help commands | where name =~ job | get name | to json'
+["job", "job describe", "job flush", "job id", "job kill", "job list",
+ "job recv", "job send", "job spawn", "job unfreeze"]
+#+end_example
+HIDE-3: no trap means no cleanup hook. A Ctrl-C mid-script leaves
+whatever the script left (e.g. a .pm-incomplete marker): by design the
+NEXT explicit command reports it, never a handler.
+
+* exec, with-env, argv: all safe
+#+begin_example
+$ nu -c 'exec echo exec-works'    -> exec-works, exit 0
+$ nu -c 'with-env {FOO: "bar baz"} { ^env | grep FOO }; print $"outer: ($env.FOO? | default MISSING)"'
+FOO=bar baz
+outer: MISSING
+$ nu -c 'let f = "a b;rm -rf"; ^printf "%s\n" $f'   -> a b;rm -rf
+#+end_example
+=with-env= is lexically scoped; variables pass as single argv (no word
+splitting, no re-parse).
+
+* Errors: minimal error make is clean
+#+begin_example
+$ nu -c 'error make {msg: "clean failure"}'
+Error: nu::shell::error
+  x clean failure                        # exit 1
+$ nu -c 'error make {msg: "x", labels: [{text: "here"}]}'
+x Value is missing required columns ... missing `span` column
+#+end_example
+Labels need a span record; plain {msg} is enough for script failures.
+
+* Swallow patterns (O-9 lint targets, all verified above)
+#+begin_example
+$ nu -c 'try { ^false }; print "survived-try"'        -> survived-try, exit 0
+$ nu -c '^false | ignore; print "survived-ignore"'   -> survived-ignore, exit 0
+$ nu -c '^sh -c "exit 3" | ignore; print "lost"'     -> lost, exit 0 (code 3 gone)
+$ nu -c 'do -i { ^false }; print "survived"'         -> survived, exit 0
+#+end_example
+HIDE-4: =| ignore= discards the code entirely (exit 3 became 0). Every
+use needs OBS-OK or a =complete= beside it.

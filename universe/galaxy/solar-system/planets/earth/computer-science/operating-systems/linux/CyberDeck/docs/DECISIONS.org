@@ -4,6 +4,14 @@
 * Log
 Append-only. Newest first. Every entry names the rule IDs it touches.
 
+** 2026-10-08 D-020: scripts pin their own Nushell
+~/opt/nushell/0.116.1/nu (0.116.1, aarch64 gnu, sha256
+e7bbb1639253fb83e2391600b957ba3e918f04a2c81850e9f30a68cb1ef20ef8
+verified against the release SHA256SUMS). Nu is pre-1.0 with breaking
+changes between releases (user runs 0.116.0 in proot, 0.114.1 in
+Termux), so scripts must not depend on whatever Nu is on PATH. All
+project scripts run with nu --no-config-file. D-020.
+
 ** 2026-10-08 D-019 (open): non-git inputs undecided
 cargo, raco, npm and similar tools fetch from outside git. v1 builds
 from git sources only; a package needing such a fetch is refused at
