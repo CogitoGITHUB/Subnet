@@ -97,20 +97,42 @@ WHY it broke, NEXT reinstall), never silently.
 Assumed host tools (not pm deps, documented per spec): lua needs
 gcc/ar/make; cjson needs cc/cmake/make; bats needs bash/install/coreutils.
 
-* 4. ACTIVATION (question for the user, recommendation: profile)
-- Profile (RECOMMENDED): one dir ~/.local/share/cyberdeck/profile/ with
-  bin lib include share libexec man symlink forests, each link pointing
-  into <pkg>/current/<path>. One PATH entry, one -I/-L pair, atomic
-  profile switch, conflicts visible in one place. Cost: forest upkeep,
-  stale-link sweeping on remove.
-- Per-package: user adds each <pkg>/current/bin to PATH etc. No
-  conflicts ever, no forest. Cost: PATH grows without bound, order is
-  fragile shell config, library/header search paths explode.
-Conflicts (profile): two active packages owning the same relative path =
-activate fails closed naming the FILE and BOTH packages (NEXT:
-deactivate one or pass --override FILE PKG). Last-wins silently never.
-=pm status= shows: profile target + per-package version/current/active +
-held/superseded + conflicts + moved-prefix + stale links.
+* 4. ACTIVATION (DECIDED: profile forest with generations)
+Location: $XDG_DATA_HOME/cyberdeck/profile/ (default
+~/.local/share/cyberdeck/profile/), inside the proot rootfs, never on
+shared storage. The engine probes at init that symlinks work there;
+if not, init refuses with a plan-kind error ([VERIFY] on this phone).
+Layout: profile/ holds generation dirs profile-NNN/ plus a =profile=
+symlink pointing at the active one. Each generation holds REAL
+directories (bin lib include share libexec man) containing symlinks to
+FILES inside <pkg>/current/<path>. Never a symlink to a whole package
+directory, so two packages can both provide bin/ or share/man.
+Atomicity: activate builds the next generation dir, then swaps the
+=profile= symlink by rename(2): one atomic step, readers never see a
+half profile. Old generations stay until =pm profile-prune N= deletes
+by explicit command, never by time or age (D-015). Rollback = repoint
+=profile= at a previous generation (=pm rollback N=).
+Conflicts: two active packages owning the same relative path fail
+closed BEFORE anything changes: no precedence rules, no last-wins.
+Exact message, exit 9 (activate failed; E-15 table gains 9 in STEP 5):
+#+begin_example
+activate: file conflict, nothing changed;
+  file: bin/bats
+  owned-by: bats-core 1.14.0
+  claimed-by: pkg-foo 2.0
+  hint: deactivate one package or pass --override 'bin/bats' PKG
+#+end_example
+Dev mode (STEP 4): a dev checkout appears through the SAME <pkg>/current
+link (pointed at the checkout), and =pm status= flags it =dev= with the
+checkout path. Activation treats dev and normal packages identically.
+Explicit only: activation runs on =pm activate= and nothing else. Install,
+update, rollback-stage and dev-link never touch the profile on their own.
+New commands: =pm path NAME= prints that package's current directory (one
+line, for scripts); =pm profile= prints the one shell-rc line to add
+(PATH/MANPATH entries pointing under the profile symlink) for review
+before the user sources it. =pm status= shows: active generation +
+kept generations, per-package version/current/active/held/superseded/dev,
+moved-prefix, stale links.
 
 * 5. Build environment (this phone: no sandbox, honestly)
 Allowlist only: PATH (vault tools + /usr/bin:/bin), CC, MAKEFLAGS/JOBS,
