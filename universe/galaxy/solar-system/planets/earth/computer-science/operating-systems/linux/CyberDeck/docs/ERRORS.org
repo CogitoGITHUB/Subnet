@@ -22,12 +22,24 @@ then =  hint:=. Every error answers WHAT, WHERE, WHY, NEXT.
 |    6 | verify (hash)        |
 |    7 | build failed         |
 |    8 | install failed       |
+|    9 | activate (conflict)    |
 |   70 | internal bug         |
 |  130 | interrupted (Ctrl-C) |
 
 Samples will be collected here as error paths are implemented (E-12).
 
 * Samples (from =core/*= tests, exact output)
+
+Activate conflict (design sample from docs/SPEC-NEUTRAL.org section 4;
+test-pinned when activation lands in STEP 5, exit 9, nothing changed):
+
+#+begin_example
+activate: file conflict, nothing changed;
+  file: bin/bats
+  owned-by: bats-core 1.14.0
+  claimed-by: pkg-foo 2.0
+  hint: deactivate one package or pass --override 'bin/bats' PKG
+#+end_example
 
 User error with fields, cause and hint:
 

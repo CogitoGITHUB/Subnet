@@ -87,11 +87,26 @@ then own DST; one-arg forms own an already-placed path (cmake-install /
 run placements). Modes: 755 bin/libexec, 644 rest, unless (mode ...)
 says otherwise. Every DST/LINK must stay inside the prefix: absolute
 paths and =..= escapes are rejected by the validator.
+Post-install check: optional single =(check PROGRAM ARG ...)= install
+form, run after placement with PREFIX in the environment and cwd set to
+the prefix, under the same allowlisted env. Argv runs without a shell
+(spell out sh -c when shell features are needed; relative paths resolve
+under the prefix). Exit 0 is required and output is captured into the
+build log: a failing check keeps the =.pm-incomplete= marker, fails the
+build (exit 7), and activation stays refused.
 PREFIX = the final versioned dir (~/.local/share/cyberdeck/NAME/VERSION).
-Builds write to the staging prefix directly, no DESTDIR relocation.
-Consequence: prefix text is baked into files (bats bin script, .pc and
-cmake config files). Moving a versioned dir breaks those paths. The
-manifest records the prefix at install; =pm status= re-reads it and
+There is no staging prefix and no DESTDIR relocation: builds and
+placement write into the FINAL directory from the start, so every path
+embedded by a build (bats bin script, .pc and cmake config files) is
+already correct. The directory is created holding a =.pm-incomplete=
+marker; the marker is removed only after build, placement AND the check
+step all succeed. The =current= link and every profile generation never
+reference a directory that still has the marker (activation refuses
+marked dirs, exit 7). Atomicity comes from the link/generation swap,
+not from renaming the directory (F-4 as applied: the object renamed
+into place is the link, never the tree).
+Consequence: moving a versioned dir still breaks baked-in prefix text.
+The manifest records the prefix at install; =pm status= re-reads it and
 reports =moved= (WHAT file still names the old prefix, WHERE it is,
 WHY it broke, NEXT reinstall), never silently.
 Assumed host tools (not pm deps, documented per spec): lua needs
@@ -134,13 +149,44 @@ before the user sources it. =pm status= shows: active generation +
 kept generations, per-package version/current/active/held/superseded/dev,
 moved-prefix, stale links.
 
+[VERIFY] rename-over-symlink under proot (ln -s NEW active.new, then
+mv -T active.new active; concurrent readlink+cat reader). Real output:
+#+begin_example
+reader: 500 reads, 0 failures
+final: gen1 -> one
+#+end_example
+Method: 300 swaps foreground while 500 readlink/cat pairs run
+concurrent; every readlink returned gen1-or-gen2, every cat returned
+one-or-two, the link never dangled. (Cross-read pairing is not asserted:
+readlink-then-cat is two syscalls and may straddle a swap under ANY
+kernel; per-syscall atomicity is what rename(2) guarantees and what the
+probe confirms.) An earlier 400-read run of this probe was vacuous (a
+stray =&= backgrounded the swaps into the wrong directory; its numbers
+are discarded, not trusted). Verdict: the swap primitive holds under
+proot; activation does one rename per generation switch.
+
 * 5. Build environment (this phone: no sandbox, honestly)
 Allowlist only: PATH (vault tools + /usr/bin:/bin), CC, MAKEFLAGS/JOBS,
 LANG=C.UTF-8, HOME=staging-fake, PREFIX/SRCDIR/BUILDDIR pointers (S-6).
 Build runs in $CACHE/cyberdeck/build/<name>-<version>-<short>/ with
-src/ (vault export at pin, S-5), build/, prefix/ (staging prefix).
-Success path: prefix/ renames into the store, =current= flips by
-rename(2): atomic switch, failed builds never visible (F-4).
+src/ (vault export at pin, S-5) and build/ (out-of-tree objects). PREFIX
+points at the final versioned dir, created first with =.pm-incomplete=.
+Steps and placement write only under src/, build/ and PREFIX; nothing
+touches the store, =current= or the profile until success. Order:
+fetch, export, build steps, install placement, check step, remove the
+marker, flip =current= by rename(2), and only on =pm activate= rebuild
+a profile generation. A failed build leaves a marked directory that
+=pm status= reports as =incomplete=; =pm clean-incomplete NAME VERSION=
+removes it by explicit command, never by sweeper or age (D-015).
+Interrupted builds (Ctrl-C cancel, kill -9): the marker survives, and
+the NEXT explicit command touching the package reports it; exact form:
+#+begin_example
+build: interrupted, package left incomplete;
+  package: lua 5.5.1
+  dir: ~/.local/share/cyberdeck/lua/5.5.1
+  marker: .pm-incomplete
+  hint: rerun the build or run 'pm clean-incomplete lua 5.5.1'
+#+end_example
 No sandbox: proot gives no usable mount/pid/net namespaces, so builds
 run as the user with full filesystem access and network present.
 Mitigation is isolation-by-directory (separate staging per build) plus
@@ -180,7 +226,8 @@ stay open; nothing is implemented for them now.
     (include "lua.h" "include/lua.h")
     (include "luaconf.h" "include/luaconf.h")
     (include "lualib.h" "include/lualib.h")
-    (include "lauxlib.h" "include/lauxlib.h")))
+    (include "lauxlib.h" "include/lauxlib.h")
+    (check "bin/lua" "-e" "assert(_VERSION)")))
   (license mit)
   (homepage "https://www.lua.org"))
 #+end_example
@@ -204,7 +251,13 @@ stay open; nothing is implemented for them now.
     (lib "lib/libcjson.so")
     (include "include/cjson/cJSON.h")
     (lib "lib/pkgconfig/libcjson.pc")
-    (lib "lib/cmake/cJSON/cJSONConfig.cmake")))
+    (lib "lib/cmake/cJSON/cJSONConfig.cmake")
+    (check "sh" "-c" "set -e;
+      "printf '#include <cjson/cJSON.h>\\nint main(){cJSON_Delete(' > $PREFIX/.check-t.c;
+      "printf 'cJSON_CreateObject());return 0;}' >> $PREFIX/.check-t.c;
+cc -I$PREFIX/include $PREFIX/.check-t.c -L$PREFIX/lib -lcjson -o $PREFIX/.check-t;
+LD_LIBRARY_PATH=$PREFIX/lib $PREFIX/.check-t;
+rm -f $PREFIX/.check-t.c $PREFIX/.check-t")))
   (license mit)
   (homepage "https://github.com/DaveGamble/cJSON"))
 #+end_example
@@ -223,7 +276,8 @@ stay open; nothing is implemented for them now.
     (libexec "libexec/bats-core/bats")
     (share "lib/bats-core")
     (man "share/man/man1/bats.1")
-    (man "share/man/man7/bats.7")))
+    (man "share/man/man7/bats.7")
+    (check "bin/bats" "--version")))
   (license mit)
   (homepage "https://github.com/bats-core/bats-core"))
 #+end_example
@@ -233,13 +287,14 @@ for the installed trees; exact file lists come from install.sh above.
 
 * 8b. Validator table changes
 | area | old | new |
-| format-version | must be 1 | must be 2 (1 rejected with upgrade hint) |
+| format-version | must be 1 | must be 2; a 1 is rejected naming the change plus migration pointer |
 | deps items | (NAME VERSION) | same (run-time); plus new optional build-deps field, same shape |
 | build steps | byte-compile ... cmake ... (8 old names) | make cmake-configure
 cmake-build cmake-install configure cargo make-info copy run; byte-compile and
 bare cmake rejected with a replacement hint |
 | install head | (emacs ...) / (system ...) | (prefix ...) only; others rejected |
-| install forms | opaque lists | kind-checked, DST confined to prefix |
+| install forms | opaque lists | kind-checked, DST confined to prefix; |
+| | | optional single (check PROGRAM ARG ...) exit 0 required |
 | when cond | platform / emacs-version / feature | platform / feature only |
 | unknown key | bare "unknown key 'x" | same + " (did you mean 'y?)" suggestion |
 | unknown step | bare name | name + full valid list |
@@ -254,7 +309,7 @@ read-spec: invalid declaration;
 read-spec: invalid declaration;
   at: pkg.rktd:9:15
   hint: unknown build step 'frobnicate
-    (valid: cmake-build cmake-configure configure copy make make-info cargo run)
+    (valid: cmake-build cmake-configure cmake-install configure copy make make-info cargo run)
 (the hint is one line in reality; wrapped here for the 102-column lint)
 #+end_example
 #+begin_example
@@ -273,6 +328,21 @@ read-spec: invalid declaration;
 | targets/emacs/build.rkt (whole file) | deleted; local backend executes prefix plans |
 | golden/minimal/edge specs using emacs forms | rewritten to prefix forms in the same commit |
 | check.sh emacs-binary gate | already removed (STEP 1b) |
+
+Migrating v1 to v2: set format-version 2; split deps into deps (run)
+and build-deps (build); replace (install (emacs ...)) with (install
+(prefix ...)) kind forms; replace (byte-compile ...) with make /
+cmake-* steps (bare (cmake ...) splits into the three cmake-* steps);
+replace (emacs-version OP VER) with (feature NAME) or a dep edge; add a
+(check ...) form before first activation. A v1 file is never accepted
+silently; exact rejection:
+#+begin_example
+read-spec: invalid declaration;
+  at: pkg.rktd:2:19
+  hint: unsupported format-version 1 (neutral spec needs 2; see docs/SPEC-NEUTRAL.org section 9)
+#+end_example
+(The =at:= fits a 2-space-indented =(format-version 1)= on line 2; the
+suite pins this message with a synthetic v1 fixture.)
 
 * Next (after approval, in order)
 1. One commit: delete targets/emacs, swap spec structs/reader/validator

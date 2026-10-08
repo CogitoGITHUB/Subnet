@@ -4,6 +4,12 @@
 * Log
 Append-only. Newest first. Every entry names the rule IDs it touches.
 
+** 2026-10-08 D-019 (open): non-git inputs undecided
+cargo, raco, npm and similar tools fetch from outside git. v1 builds
+from git sources only; a package needing such a fetch is refused at
+check/plan time (kind 'plan). Vendored sources, hash-pinned fetch
+steps and toolchain packages stay open. D-019.
+
 ** 2026-10-07 D-018: package manager goes target-neutral
 Emacs integration removed completely: no Emacs target, no Org format or
 reader, no loader contract, no Emacs frontend, no straight replacement,
