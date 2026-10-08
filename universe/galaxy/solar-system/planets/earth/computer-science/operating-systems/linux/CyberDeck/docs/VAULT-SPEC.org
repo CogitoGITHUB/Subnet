@@ -45,7 +45,9 @@ the stale ref under superseded/ and retry, with a warning. Refs deleted
 upstream stay and are reported as gone-upstream (info). Pins are NEVER
 moved or deleted by add, fetch, rollback or gc.
 Same name with a DIFFERENT url: kind 'config (hint D-013); no replace
-option in v1. Empty remote or unresolvable HEAD: kind 'fetch. fsck
+option in v1. D-013 is still open (alternate upstreams undecided), so
+both the URL-change refusal and the rewritten-history hint point at it
+until it is decided. Empty remote or unresolvable HEAD: kind 'fetch. fsck
 failures: kind 'fetch with git's message ids; a per-package opt-out of
 SPECIFIC message ids is allowed, recorded as fsck-allow in the
 manifest. A failed add removes ONLY refs that call created. It ends
@@ -59,8 +61,8 @@ vault-list, vault-size (git count-objects -v + loose/packed ref counts;
 struct vault-size-report bytes objects loose-refs packed-refs),
 vault-verify (#:full; default is git fsck --connectivity-only),
 vault-gc (explicit only; pack.threads=1; bounded pack memory; measure
-peak memory on the largest .git available at implementation time, real
-or synthetic copy).
+peak memory on a synthetic repo of realistic size and report the
+number).
 vault-export-commit: checkout-based with the SAME contract as the
 implemented git-export-commit (empty staging dir, faithful file list,
 staging cleaned on failure, never writes the vault). Test: the vault
@@ -88,7 +90,8 @@ Operations are a closed set of structs: add, fetch-namespace, verify,
 gc, backup-push, restore. The worker RE-VALIDATES every field when
 loading a job file (name regex, git-url, git-id). Job ids come from
 atomic exclusive create. State and status files are .rktd written with
-write. Liveness: the worker holds an exclusive fcntl lock on
+write; pm jobs --format json gives the JSON view (adoption bridge).
+Liveness: the worker holds an exclusive fcntl lock on
 <state>/jobs/<id>.lock for its whole life; acquirable = dead =
 interrupted. job-wait blocks on that lock. Cancel writes to a per-job
 FIFO opened O_RDWR (probed: returns at once with no peer) after the
