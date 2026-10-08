@@ -1,0 +1,259 @@
+#+TITLE: STEP 2: neutral spec design (D-018)
+#+AUTHOR: Shape
+
+* Status
+Design only, no code. targets/emacs/ is NOT removed yet. After approval:
+one commit removes the Emacs forms AND adds the neutral forms with the
+suite rewritten, so check.sh stays green. Real names/pins below come from
+pasted ls-remote output (allowed); tests stay synthetic (T-10).
+
+* Pasted verification (real output)
+#+begin_example
+$ git ls-remote --tags https://github.com/lua/lua.git "refs/tags/v5.5.1"
+7579fc9d7ed90240487251dfb69168f8e64e9294  refs/tags/v5.5.1
+$ git ls-remote --tags https://github.com/DaveGamble/cJSON.git "refs/tags/v1.7.19"
+c859b25da02955fef659d658b8f324b5cde87be3  refs/tags/v1.7.19
+$ git ls-remote --tags https://github.com/bats-core/bats-core.git \
+    "refs/tags/v1.14.0" "refs/tags/v1.14.0^{}"
+7868b95ea08b22bc76f2585e51cf4b7b3ff124ef  refs/tags/v1.14.0
+eb7f42f8d608ac693d7a4b67474f6714ea68cfc5  refs/tags/v1.14.0^{}
+#+end_example
+lua/cJSON tags are lightweight (tag line = commit). bats v1.14.0 is
+annotated (peel ^{}= commit). Shallow clones at each tag report HEAD =
+the pinned commit in all three cases.
+
+* What each repo's own docs say (read, not assumed)
+- lua: root =makefile= (lowercase, no configure, NO install target).
+  Targets: all/o/a/clean/depend/echo. =all= builds =liblua.a= + =lua=.
+  Install is manual copy; public headers are lua.h luaconf.h lualib.h
+  lauxlib.h. No roff manpages in 5.5. Needs host gcc/ar/ranlib.
+- cJSON README: out-of-tree CMake (=mkdir build; cmake ..; make;
+  make install=), GNUInstallDirs, shared ON, utils OFF, tests ON by
+  default, versioned .so ON. Installs include/cjson, lib, pkgconfig .pc,
+  cmake/cJSON config files.
+- bats install.sh: =install.sh <prefix> [base_libdir]=; creates
+  bin libexec/bats-core $LIBDIR/bats-core share/man/man{1,7}; modes 755
+  code / 644 man; then REWRITES BATS_BASE_LIBDIR inside $PREFIX/bin/bats
+  (prefix is baked into the installed script).
+
+* Pins
+| pkg | tag (version label) | commit |
+| lua | 5.5.1 | 7579fc9d7ed90240487251dfb69168f8e64e9294 |
+| cjson | 1.7.19 | c859b25da02955fef659d658b8f324b5cde87be3 |
+| bats-core | 1.14.0 | eb7f42f8d608ac693d7a4b67474f6714ea68cfc5 |
+
+* 1. Spec grammar (.rktd, format-version 2)
+| field | req | meaning |
+| format-version | yes | must be 2 |
+| name | yes | D-8 package name |
+| version | yes | release tag name verbatim, equality match (D-007) |
+| summary | yes | one-line description |
+| source | yes | (git URL COMMIT), full commit id (D-006) |
+| deps | no | run-time edges ((NAME VERSION) ...), default () |
+| build-deps | no | build-time edges ((NAME VERSION) ...), default () |
+| build | yes | (steps STEP ...) from the closed vocabulary |
+| install | yes | (prefix FORM ...) only v1 target |
+| license | yes | SPDX symbol (mit, gpl-3.0+, ...) |
+| homepage | yes | URL string |
+| extends | no | inherit layer name or #f |
+| variants | no | named field overrides (never name/extends/variants) |
+| when | no | (when COND FIELDS...), COND = (platform linux\|darwin\|windows) or (feature NAME) |
+Target extension point: the install head symbol IS the target. =prefix=
+is the only v1 target. A new target = new head symbol + form validator +
+backend; the core still treats forms as data.
+
+* 2. Build-step vocabulary (closed, typed args; plain data)
+| step | args | used by |
+| make | #:dir #:file #:targets #:vars #:jobs | lua (dir . file makefile targets (all)) |
+| cmake-configure | #:srcdir #:builddir #:defines | cjson (out-of-tree, prefix automatic) |
+| cmake-build | #:builddir #:jobs #:targets | cjson |
+| cmake-install | #:builddir | cjson (places into staging prefix) |
+| configure | #:dir #:args | future ./configure projects (none of the three) |
+| cargo | #:dir #:args | retained generic (none of the three) |
+| make-info | #:dir #:targets | retained generic texinfo (none of the three) |
+| copy | SRC DST | staging assembly inside the workdir |
+| run | #:argv #:dir | ESCAPE HATCH: bats only (install.sh + $PREFIX rewrite) |
+$PREFIX in run argv expands to the staging prefix. Every =run= step gets
+a visible plan marker and warns in --strict (S-3, D-009). lua and cjson
+fit the closed set; bats-core needs the hatch (arbitrary install script
+with in-place rewrite is not modelable). REMOVED: =byte-compile=
+(Emacs-only); =cmake= splits into the three cmake-* steps.
+
+* 3. Install forms + PREFIX rule
+Forms: (bin [SRC] DST) (lib [SRC] DST) (include [SRC] DST) (share [SRC]
+DST) (man [SRC] DST) (libexec [SRC] DST) (copy-tree SRC DST) (symlink
+LINK TARGET) (mode RELPATH OCTAL). Two-arg kind forms copy from staging
+then own DST; one-arg forms own an already-placed path (cmake-install /
+run placements). Modes: 755 bin/libexec, 644 rest, unless (mode ...)
+says otherwise. Every DST/LINK must stay inside the prefix: absolute
+paths and =..= escapes are rejected by the validator.
+PREFIX = the final versioned dir (~/.local/share/cyberdeck/NAME/VERSION).
+Builds write to the staging prefix directly, no DESTDIR relocation.
+Consequence: prefix text is baked into files (bats bin script, .pc and
+cmake config files). Moving a versioned dir breaks those paths. The
+manifest records the prefix at install; =pm status= re-reads it and
+reports =moved= (WHAT file still names the old prefix, WHERE it is,
+WHY it broke, NEXT reinstall), never silently.
+Assumed host tools (not pm deps, documented per spec): lua needs
+gcc/ar/make; cjson needs cc/cmake/make; bats needs bash/install/coreutils.
+
+* 4. ACTIVATION (question for the user, recommendation: profile)
+- Profile (RECOMMENDED): one dir ~/.local/share/cyberdeck/profile/ with
+  bin lib include share libexec man symlink forests, each link pointing
+  into <pkg>/current/<path>. One PATH entry, one -I/-L pair, atomic
+  profile switch, conflicts visible in one place. Cost: forest upkeep,
+  stale-link sweeping on remove.
+- Per-package: user adds each <pkg>/current/bin to PATH etc. No
+  conflicts ever, no forest. Cost: PATH grows without bound, order is
+  fragile shell config, library/header search paths explode.
+Conflicts (profile): two active packages owning the same relative path =
+activate fails closed naming the FILE and BOTH packages (NEXT:
+deactivate one or pass --override FILE PKG). Last-wins silently never.
+=pm status= shows: profile target + per-package version/current/active +
+held/superseded + conflicts + moved-prefix + stale links.
+
+* 5. Build environment (this phone: no sandbox, honestly)
+Allowlist only: PATH (vault tools + /usr/bin:/bin), CC, MAKEFLAGS/JOBS,
+LANG=C.UTF-8, HOME=staging-fake, PREFIX/SRCDIR/BUILDDIR pointers (S-6).
+Build runs in $CACHE/cyberdeck/build/<name>-<version>-<short>/ with
+src/ (vault export at pin, S-5), build/, prefix/ (staging prefix).
+Success path: prefix/ renames into the store, =current= flips by
+rename(2): atomic switch, failed builds never visible (F-4).
+No sandbox: proot gives no usable mount/pid/net namespaces, so builds
+run as the user with full filesystem access and network present.
+Mitigation is isolation-by-directory (separate staging per build) plus
+env scrubbing plus exact argv in the plan. Network use by a build is
+UNENFORCED and recorded as a plan assumption, not a guarantee.
+
+* 6. Dependencies: build-time vs run-time
+=deps= are run-time (needed to use the package, activation closure).
+=build-deps= are build-time only (toolchain, generators; present for
+configure/build steps, absent from the activation closure). The resolver
+unions both for build ORDER but only =deps= for activation. Cycle and
+equality tests use SYNTHETIC fixtures (T-10). None of the three proof
+packages takes any edge (lua/cjson: no deps; bats: bash is an assumed
+host tool, not a pm package).
+
+* 7. D-019 OPEN (not decided): non-git inputs
+v1 builds from git sources only. A build needing cargo-fetch, raco pkg,
+npm, or any outside-git fetch is REFUSED at check/plan time: kind
+'plan, WHAT names the tool+step, WHERE the spec line, WHY v1 is git-only,
+NEXT vendor the sources into a git repo or wait for D-019. Future
+options (vendored sources, hash-pinned fetch step, toolchain packages)
+stay open; nothing is implemented for them now.
+
+* 8a. Complete example specs
+#+begin_example
+(spec
+  (format-version 2)
+  (name lua)
+  (version "5.5.1")
+  (summary "Lightweight embeddable scripting language")
+  (source (git "https://github.com/lua/lua.git"
+               "7579fc9d7ed90240487251dfb69168f8e64e9294"))
+  (build (steps (make #:dir "." #:file "makefile" #:targets ("all"))))
+  (install (prefix
+    (bin "lua" "bin/lua")
+    (lib "liblua.a" "lib/liblua.a")
+    (include "lua.h" "include/lua.h")
+    (include "luaconf.h" "include/luaconf.h")
+    (include "lualib.h" "include/lualib.h")
+    (include "lauxlib.h" "include/lauxlib.h")))
+  (license mit)
+  (homepage "https://www.lua.org"))
+#+end_example
+#+begin_example
+(spec
+  (format-version 2)
+  (name cjson)
+  (version "1.7.19")
+  (summary "Ultralight JSON parser in C")
+  (source (git "https://github.com/DaveGamble/cJSON.git"
+               "c859b25da02955fef659d658b8f324b5cde87be3"))
+  (build (steps
+    (cmake-configure #:srcdir "." #:builddir "build"
+      #:defines (("ENABLE_CJSON_TEST" "OFF")
+                 ("ENABLE_CJSON_UTILS" "OFF")
+                 ("BUILD_SHARED_AND_STATIC_LIBS" "OFF")
+                 ("CMAKE_BUILD_TYPE" "Release")))
+    (cmake-build #:builddir "build")
+    (cmake-install #:builddir "build")))
+  (install (prefix
+    (lib "lib/libcjson.so")
+    (include "include/cjson/cJSON.h")
+    (lib "lib/pkgconfig/libcjson.pc")
+    (lib "lib/cmake/cJSON/cJSONConfig.cmake")))
+  (license mit)
+  (homepage "https://github.com/DaveGamble/cJSON"))
+#+end_example
+#+begin_example
+(spec
+  (format-version 2)
+  (name bats-core)
+  (version "1.14.0")
+  (summary "Bash automated testing system")
+  (source (git "https://github.com/bats-core/bats-core.git"
+               "eb7f42f8d608ac693d7a4b67474f6714ea68cfc5"))
+  (build (steps
+    (run #:argv ("./install.sh" "$PREFIX") #:dir ".")))
+  (install (prefix
+    (bin "bin/bats")
+    (libexec "libexec/bats-core/bats")
+    (share "lib/bats-core")
+    (man "share/man/man1/bats.1")
+    (man "share/man/man7/bats.7")))
+  (license mit)
+  (homepage "https://github.com/bats-core/bats-core"))
+#+end_example
+cjson .so/config filenames are shape-shown; exact versioned names get
+verified at implementation (STEP 5). bats libexec/share entries stand
+for the installed trees; exact file lists come from install.sh above.
+
+* 8b. Validator table changes
+| area | old | new |
+| format-version | must be 1 | must be 2 (1 rejected with upgrade hint) |
+| deps items | (NAME VERSION) | same (run-time); plus new optional build-deps field, same shape |
+| build steps | byte-compile ... cmake ... (8 old names) | make cmake-configure
+cmake-build cmake-install configure cargo make-info copy run; byte-compile and
+bare cmake rejected with a replacement hint |
+| install head | (emacs ...) / (system ...) | (prefix ...) only; others rejected |
+| install forms | opaque lists | kind-checked, DST confined to prefix |
+| when cond | platform / emacs-version / feature | platform / feature only |
+| unknown key | bare "unknown key 'x" | same + " (did you mean 'y?)" suggestion |
+| unknown step | bare name | name + full valid list |
+
+* 8c. Three exact error messages (E-1 format)
+#+begin_example
+read-spec: invalid declaration;
+  at: pkg.rktd:3:4
+  hint: unknown key 'soruce (did you mean 'source?)
+#+end_example
+#+begin_example
+read-spec: invalid declaration;
+  at: pkg.rktd:9:15
+  hint: unknown build step 'frobnicate
+    (valid: cmake-build cmake-configure configure copy make make-info cargo run)
+(the hint is one line in reality; wrapped here for the 102-column lint)
+#+end_example
+#+begin_example
+read-spec: invalid declaration;
+  at: pkg.rktd:12:6
+  hint: install path '../etc/passwd escapes the prefix
+#+end_example
+
+* 9. Removal mapping (for the one removal commit after approval)
+| removed | replaced by |
+| (install (emacs ...)) forms | (install (prefix ...)) kind forms |
+| (install (system ...) ...) stub | same prefix target (stub deleted) |
+| (emacs-version OP VER) cond | (feature NAME) or a dep edge |
+| (byte-compile ...) step | make / cmake-* steps |
+| (cmake ...) monolith | cmake-configure + cmake-build (+ cmake-install) |
+| targets/emacs/build.rkt (whole file) | deleted; local backend executes prefix plans |
+| golden/minimal/edge specs using emacs forms | rewritten to prefix forms in the same commit |
+| check.sh emacs-binary gate | already removed (STEP 1b) |
+
+* Next (after approval, in order)
+1. One commit: delete targets/emacs, swap spec structs/reader/validator
+   to sections 1-2-8b, rewrite suite fixtures to prefix forms, gate green.
+2. Dry-run plans for all three proof specs as far as the engine allows.
+3. STEP 3: vault commit (2) with core/vault-lock.rkt.
