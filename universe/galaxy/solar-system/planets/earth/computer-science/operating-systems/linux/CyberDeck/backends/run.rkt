@@ -309,10 +309,12 @@
       (define pgid (list-ref r 2))
       (define err-port (list-ref r 3))
       (close-output-port in-port)
+      (define start-ms (print-run-start exe argv cwd pgid))
       (define cancelled-here
         (lambda ()
           (kill-tree pgid)
           (custodian-shutdown-all cust)
+          (print-run-end exe "cancelled" start-ms)
           (raise-cancelled operation
                            '("spawned" "tree killed")
                            '("no result" "pipes closed"))))
@@ -351,12 +353,14 @@
                (close-input-port out-port)
                (close-input-port err-port)
                (when log-port (flush-output log-port))
+               (print-run-end exe (format "exit:~a" code) start-ms)
                (run-result code
                            (reverse (unbox out-box))
                            (reverse (unbox err-box)))]
               [(eq? outcome 'cancelled) (cancelled-here)]
               [else
                (custodian-shutdown-all cust)
+               (print-run-end exe "no-status" start-ms)
                (command-failed "child died without status line")])))
     (lambda ()
       (when (directory-exists? temp-dir)
@@ -366,6 +370,53 @@
 ;; File redirect mode: same wait logic, output collected from files at the
 ;; end (immune to pipe-EOF starvation). Temp files die on every exit path;
 ;; tails stay bounded; secrets stay redacted.
+
+;; string -> string, two digits, zero-padded
+(define (two-digits n)
+  (if (< n 10)
+      (string-append "0" (number->string n))
+      (number->string n)))
+
+;; -> string, UTC stamp for START lines (display only, D-015)
+(define (utc-stamp)
+  (define d (seconds->date (current-seconds) #t))
+  (format "~a-~a-~aT~a:~a:~aZ"
+          (date-year d)
+          (two-digits (date-month d))
+          (two-digits (date-day d))
+          (two-digits (date-hour d))
+          (two-digits (date-minute d))
+          (two-digits (date-second d))))
+
+;; any -> string, paths and values to plain text
+(define (arg-string a)
+  (cond [(path? a) (path->string a)]
+        [(string? a) a]
+        [else (format "~a" a)]))
+
+;; string -> string, passwords in URLs become *** (S-8)
+(define (redact-arg a)
+  (regexp-replace* #rx"://[^/:@ \t]+:[^/@ \t]+@"
+                   (arg-string a)
+                   "://***@"))
+
+;; path-string (listof string) path-string exact-integer
+;; -> exact-integer, START line plus the start time
+(define (print-run-start exe argv cwd pgid)
+  (eprintf "pm-run-start ~a cwd=~a pid=~a ~a ~a\n"
+           (utc-stamp) (arg-string cwd) pgid
+           (arg-string exe)
+           (string-join (map redact-arg argv) " "))
+  (flush-output (current-error-port))
+  (current-inexact-monotonic-milliseconds))
+
+;; path-string string exact-integer -> void, END line
+(define (print-run-end exe outcome start-ms)
+  (define ms (inexact->exact
+              (round (- (current-inexact-monotonic-milliseconds)
+                        start-ms))))
+  (eprintf "pm-run-end ~a after=~ams ~a\n" outcome ms (arg-string exe))
+  (flush-output (current-error-port)))
 
 ;; path-string (listof string) -> run-result, batch tools via files
 (define (run-command/redirect exe argv
@@ -410,10 +461,12 @@
                               argv)))))
       (define pgid (list-ref r 2))
       (close-input-port in-file)
+      (define start-ms (print-run-start exe argv cwd pgid))
       (define cancelled-here
         (lambda ()
           (kill-tree pgid)
           (custodian-shutdown-all cust)
+          (print-run-end exe "cancelled" start-ms)
           (raise-cancelled operation
                            '("spawned" "tree killed")
                            '("no result" "temp files removed"))))
@@ -442,6 +495,7 @@
                                                  outcome))))
                (close-output-port out-file)
                (close-output-port err-file)
+               (print-run-end exe (format "exit:~a" code) start-ms)
                (run-result code
                            (call-with-input-file out-path
                              (lambda (p) (collect-lines p log-port limit on-progress)))
@@ -450,6 +504,7 @@
               [(eq? outcome 'cancelled) (cancelled-here)]
               [else
                (custodian-shutdown-all cust)
+               (print-run-end exe "no-status" start-ms)
                (command-failed "child died without status line")])))
     (lambda ()
       (when (directory-exists? temp-dir)
@@ -478,6 +533,14 @@
   (check-equal? (run-result-exit basic) 0)
   (check-equal? (run-result-stdout-lines basic) '("hi"))
   (check-equal? (run-result-stderr-lines basic) '())
+
+  ;; Observability: START/END lines on the error port, flushed.
+  (define obs-out (open-output-string))
+  (parameterize ([current-error-port obs-out])
+    (run-ok echo-exe '("watched")))
+  (define obs-text (get-output-string obs-out))
+  (check-regexp-match #rx"pm-run-start .*echo watched" obs-text)
+  (check-regexp-match #rx"pm-run-end exit:0 after=[0-9]+ms" obs-text)
 
   ;; on-progress fires once per output line received.
   (define progress-lines (box '()))

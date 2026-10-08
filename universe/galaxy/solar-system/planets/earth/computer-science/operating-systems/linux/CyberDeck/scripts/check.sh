@@ -77,19 +77,50 @@ for f in $(find . -type f \( -name '*.org' -o -name '*.rkt' \
   fi
   if [ -n "$(tail -c 1 "$f")" ]; then echo "NO FINAL NEWLINE: $f"; fail=1; fi
 done
+# 0b. Git transport allowlist for every test spawn below: file only.
+export GIT_ALLOW_PROTOCOL=file
+
+# Fast set: no subprocesses (in-process only). Slow files spawn and
+# run detached before each commit instead (see TEST-START lines).
+FAST_RKTS="core/errors.rkt core/git-id.rkt core/git-url.rkt core/version.rkt
+core/spec.rkt core/spec-read.rkt core/resolve.rkt core/plan.rkt core/ui.rkt
+core/log.rkt core/lock.rkt core/cancel.rkt cli/main.rkt info.rkt
+backends/dry-run.rkt backends/fake.rkt"
+
+now_ms() { date +%s%N | cut -c1-13; }
+
+mode="full"
+if [ "${1:-}" = "--fast" ]; then mode="fast"; fi
 # 2. Compile every .rkt file.
 rkts=$(find . -type f -name '*.rkt' -not -path './compiled/*' | sort)
+step_start=$(now_ms)
 if [ -n "$rkts" ]; then
   # shellcheck disable=SC2086
   "$RACO" make -v $rkts || fail=1
 fi
-# 3. Run the tests in every .rkt file.
+echo "STEP-END compile after=$(( $(now_ms) - step_start ))ms"
+# 3. Run the tests file by file: TEST-START/END per file with durations,
+# so a hang shows exactly which file and (via pm-run lines) which command.
+if [ "$mode" = "fast" ]; then rkts="$FAST_RKTS"; fi
+times=$(mktemp)
+trap 'rm -f "$times"' EXIT
 if [ -n "$rkts" ]; then
   # shellcheck disable=SC2086
-  "$RACO" test $rkts || fail=1
+  for f in $rkts; do
+    s=$(now_ms)
+    echo "TEST-START $f"
+    if "$RACO" test "$f"; then st=0; else st=1; fail=1; fi
+    e=$(now_ms)
+    echo "TEST-END $f exit=$st after=$((e - s))ms"
+    echo "$((e - s)) $f" >> "$times"
+  done
 fi
+echo "SLOWEST:"
+sort -rn "$times" | head -n 10
+rm -f "$times"
+trap - EXIT
 if [ "$fail" -eq 0 ]; then
-  echo "ALL GREEN"
+  if [ "$mode" = "fast" ]; then echo "FAST GREEN (partial)"; else echo "ALL GREEN"; fi
 else
   echo "CHECK FAILED"
 fi
