@@ -23,17 +23,33 @@ Conformance test: for each command, parse both outputs and diff the
 data (sexp read vs json parse must be equal modulo key order). The TUI
 snapshot producer and Nu scripts consume only the JSON side.
 
-* c. Event log format: JSON Lines proposed (ASK below)
-Today: observability is queued (STEP 6a), no log exists yet. Proposal:
-append-only event log as JSON Lines (one object per line: ts, op, pkg,
-phase, percent, bytes, outcome). Nu reads/writes it natively (open,
-to json, append); the Rust TUI parses it without an s-expression
-parser; Racket reads it with the json library.
-Against D-6 (plain data via write): .rktd round-trips Racket values
-exactly (symbols, exactness) and matches specs/lockfile/manifest; JSON
-needs a symbol<->string convention and loses nothing else we need.
-Specs, lockfile and manifest stay .rktd either way; only the event log
-is in question. ASK: JSON Lines or .rktd for the event log?
+* c. Event log format: JSON Lines (DECIDED)
+Today: observability is queued (STEP 6a), no log exists yet. JSON Lines
+wins: Nu reads/writes it natively (open, to json, append); the Rust TUI
+parses it without an s-expression parser; Racket reads it with the json
+library. Specs, lockfile and manifest stay .rktd.
+Rules (all test-pinned at implementation):
+1. One JSON object per line, UTF-8, never rewritten. Every record
+   carries format-version, run id, event type, a UTC timestamp (ISO
+   8601 string) and, for end events, the monotonic duration as an
+   INTEGER number of nanoseconds (no floats). Readers ignore unknown
+   fields, so the schema can grow.
+2. Fixed conventions: symbols and paths as strings; booleans as
+   true/false; absent as null. A record never embeds large output:
+   full stdout/stderr go to separate raw files, and the record holds
+   the path, byte counts and the tail.
+3. Concurrent writers: one log file PER RUN (named by run id), so a
+   worker and a CLI never interleave lines, plus an index file written
+   with atomic append of short lines (one line per run: run id, op,
+   outcome). pm log list reads the index, then the per-run files.
+4. Redaction stays visible: redacted fields read «redacted:KEY».
+   Redaction runs before anything is written, never after.
+5. One Racket module defines the record schema and writes lines; one Nu
+   helper writes the SAME records for scripts. A conformance test
+   parses a Nu-written and a Racket-written record with BOTH languages
+   (mirrors the --format sexp|json parity rule).
+6. The screen is rendered FROM these records, so screen and log can
+   never disagree: same data, two renderers.
 
 * d. Lint: O-9 hidden-discard gate learns Nu
 Banned patterns under the same OBS-OK: reason rule: =| ignore=, =do -i=
