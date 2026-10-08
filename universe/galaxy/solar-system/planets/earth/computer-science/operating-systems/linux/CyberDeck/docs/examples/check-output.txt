@@ -1,0 +1,5 @@
+$ racket cli/main.rkt check docs/examples/
+ok: bats-core 1.14.0
+ok: cjson 1.7.19
+ok: lua 5.5.1
+exit: 0
