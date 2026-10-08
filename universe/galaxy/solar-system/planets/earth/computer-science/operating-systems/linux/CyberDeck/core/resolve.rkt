@@ -99,8 +99,9 @@
                   "9edb3f66fd807b096b48283debdcddccfea34bad")
           (map (lambda (d) (dep (car d) (string->version (cadr d))))
                deps)
-          (list (build-step 'byte-compile '()))
-          (install-spec 'emacs '())
+          '()
+          (list (build-step 'copy '("a" "b")))
+          (install-spec 'prefix '())
           'mit "https://example.org" #f '() '()))
 
   ;; Linear chain resolves dependency-first.

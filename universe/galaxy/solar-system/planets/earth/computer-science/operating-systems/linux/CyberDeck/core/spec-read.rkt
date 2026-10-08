@@ -5,6 +5,7 @@
 
 (require racket/contract/base
          racket/port
+         racket/string
          "errors.rkt"
          "version.rkt"
          "git-id.rkt"
@@ -72,8 +73,41 @@
 
 ;; Known single-form keys; when-clauses use the head symbol when.
 (define known-keys
-  '(format-version name version summary source deps build
+  '(format-version name version summary source deps build-deps build
                    install license homepage extends variants))
+
+;; string string -> exact-integer, classic edit distance
+(define (levenshtein a b)
+  (define la (string-length a))
+  (define lb (string-length b))
+  (define prev (for/vector ([j (in-range (+ lb 1))]) j))
+  (for ([i (in-range 1 (+ la 1))])
+    (define cur (make-vector (+ lb 1) 0))
+    (vector-set! cur 0 i)
+    (for ([j (in-range 1 (+ lb 1))])
+      (vector-set! cur j
+                   (min (+ (vector-ref prev j) 1)
+                        (+ (vector-ref cur (- j 1)) 1)
+                        (+ (vector-ref prev (- j 1))
+                           (if (char=? (string-ref a (- i 1))
+                                       (string-ref b (- j 1)))
+                               0 1)))))
+    (set! prev cur))
+  (vector-ref prev lb))
+
+;; symbol -> string, closest known key within 2 edits, or ""
+(define (suggest-key head)
+  (define s (symbol->string head))
+  (define best #f)
+  (define best-d 3)
+  (for ([k (in-list known-keys)])
+    (define d (levenshtein s (symbol->string k)))
+    (when (< d best-d)
+      (set! best k)
+      (set! best-d d)))
+  (if best
+      (format " (did you mean '~a?)" best)
+      ""))
 
 ;; (listof syntax) -> void, unknown keys and duplicates are errors (D-2)
 (define (check-keys forms)
@@ -85,7 +119,10 @@
     (define head (syntax->datum (car parts)))
     (cond [(eq? head 'when) (void)]
           [(not (memq head known-keys))
-           (fail (car parts) (format "unknown key '~a" head))]
+           (fail (car parts) (format "unknown key '~a~a" head
+                                     (if (symbol? head)
+                                         (suggest-key head)
+                                         "")))]
           [(memq head seen)
            (fail (car parts) (format "duplicate field '~a" head))]
           [else (set! seen (cons head seen))])))
@@ -156,12 +193,13 @@
 ;; ---------------------------------------------------------------------------
 ;; Field readers (each returns plain data for the struct)
 
-;; syntax -> exact-integer 1
+;; syntax -> exact-integer 2
 (define (read-format-version form)
   (define (v) (car (field-args form 1 'format-version)))
   (define n (syntax->datum (v)))
-  (unless (and (exact-integer? n) (= n 1))
-    (fail (v) (format "unsupported format-version ~s" n)))
+  (unless (and (exact-integer? n) (= n 2))
+    (fail (v) (format "unsupported format-version ~a (neutral spec needs 2; see ~a)"
+                      n "docs/SPEC-NEUTRAL.org section 9")))
   n)
 
 ;; syntax -> source
@@ -185,12 +223,35 @@
         (dep (convert-name (car pair))
              (convert-version (cadr pair)))
         (fail item "dep must be (NAME VERSION)"))))
-;; symbol -> exact-integer, minimum arity from the closed vocabulary
-(define (step-min-arity step)
+
+;; syntax -> (listof dep), same shape as deps, build-time only
+(define (read-build-deps form)
+  (define vals (field-args form 1 'build-deps))
+  (define items (syntax->list (car vals)))
+  (unless items
+    (fail (car vals) "build-deps must be a list"))
+  (for/list ([item (in-list items)])
+    (define pair (syntax->list item))
+    (if (and pair (= (length pair) 2))
+        (dep (convert-name (car pair))
+             (convert-version (cadr pair)))
+        (fail item "build-dep must be (NAME VERSION)"))))
+;; Closed build vocabulary (SPEC-NEUTRAL.org section 2), alphabetical:
+;; the unknown-step hint prints this list verbatim.
+(define valid-steps
+  '(cmake-build cmake-configure cmake-install configure copy make
+                make-info cargo run))
+
+;; symbol -> (listof keyword) or #f, required keys for typed steps.
+;; Plain-data steps (configure cargo make-info copy) take any data args.
+(define (step-required-keys step)
   (case step
-    [(copy) 2] [(run) 1]
-    [(byte-compile make-info cmake make cargo configure) 0]
-    [else #f]))
+    [(make) '(#:targets)]
+    [(cmake-configure) '(#:srcdir #:builddir)]
+    [(cmake-build) '(#:builddir)]
+    [(cmake-install) '(#:builddir)]
+    [(run) '(#:argv)]
+    [else '()]))
 
 ;; syntax -> (listof build-step), (steps STEP ...) with any step count
 (define (read-build form)
@@ -212,38 +273,87 @@
       (fail s "step must be (NAME ARG ...)")
       (read-named-step s (syntax->datum (car parts)))))
 
-;; syntax symbol -> build-step, vocabulary and arity for a known head
+;; syntax symbol -> build-step, vocabulary and required keys
 (define (read-named-step s step-name)
-  (define need (step-min-arity step-name))
-  (if (not need)
-      (fail s (format "unknown build step '~a" step-name))
-      (read-step-args s step-name need)))
+  (unless (memq step-name valid-steps)
+    (fail s (format "unknown build step '~a (valid: ~a)" step-name
+                    (string-join (map symbol->string valid-steps) " "))))
+  (read-step-args s step-name (step-required-keys step-name)))
 
-;; syntax symbol exact-integer -> build-step, arity-checked arguments
+;; syntax symbol (listof keyword) -> build-step, required keys present
 (define (read-step-args s step-name need)
-  (define parts (syntax->list s))
-  (if (< (length (cdr parts)) need)
-      (fail s (format "step '~a needs at least ~a args" step-name need))
-      (build-step step-name (map syntax->datum (cdr parts)))))
+  (define data (map syntax->datum (cdr (syntax->list s))))
+  (for ([k (in-list need)])
+    (unless (member k data)
+      (fail s (format "step '~a needs ~a" step-name k))))
+  (build-step step-name data))
 
-;; syntax -> install-spec, inner forms stay opaque to the core
+;; syntax -> install-spec, (prefix FORM ...) with kind-checked forms
 (define (read-install form)
   (define install-form (car (field-args form 1 'install)))
   (define inner (syntax->list install-form))
   (define head-ok?
     (and inner (pair? inner)
-         (memq (syntax->datum (car inner)) '(emacs system))))
+         (eq? (syntax->datum (car inner)) 'prefix)))
   (if (not head-ok?)
-      (fail install-form "install must be (emacs ...) or (system ...)")
-      (read-install-forms install-form
-                          (syntax->datum (car inner))
-                          (cdr inner))))
+      (fail install-form "install must be (prefix ...)")
+      (read-install-forms install-form (cdr inner))))
 
-;; syntax symbol (listof syntax) -> install-spec, forms stay datums
-(define (read-install-forms form target forms)
-  (if (andmap syntax-list? forms)
-      (install-spec target (map syntax->datum forms))
-      (fail form "install forms must be a list of lists")))
+;; string -> boolean, DST stays inside the prefix (no absolute, no ..)
+(define (prefix-confined? p)
+  (and (string? p)
+       (> (string-length p) 0)
+       (not (string-prefix? p "/"))
+       (not (member ".." (string-split p "/")))))
+
+;; syntax string -> string, confined DST or a located error
+(define (confine-dst stx p)
+  (unless (prefix-confined? p)
+    (fail stx (format "install path '~a escapes the prefix" p)))
+  p)
+
+;; syntax (listof syntax) -> install-spec, one check form at most
+(define (read-install-forms form forms)
+  (define seen-check? #f)
+  (define datums
+    (for/list ([f (in-list forms)])
+      (define parts (syntax->list f))
+      (unless (and parts (pair? parts)
+                   (symbol? (syntax->datum (car parts))))
+        (fail f "install forms must be a list of lists"))
+      (define head (syntax->datum (car parts)))
+      (define args (map syntax->datum (cdr parts)))
+      (case head
+        [(bin lib include share man libexec)
+         (unless (and (<= 1 (length args) 2)
+                      (andmap string? args))
+           (fail f "install kind takes one or two paths"))
+         (confine-dst f (car (reverse args)))]
+        [(copy-tree symlink)
+         (unless (and (= (length args) 2) (andmap string? args))
+           (fail f "install kind takes two paths"))
+         (confine-dst f (if (eq? head 'copy-tree)
+                            (cadr args)
+                            (car args)))
+         (when (eq? head 'symlink)
+           (confine-dst f (cadr args)))]
+        [(mode)
+         (unless (and (= (length args) 2)
+                      (string? (car args))
+                      (exact-integer? (cadr args)))
+           (fail f "mode takes a path and an exact integer"))
+         (confine-dst f (car args))]
+        [(check)
+         (when seen-check?
+           (fail f "only one check form per install"))
+         (set! seen-check? #t)
+         (unless (and (>= (length args) 1) (andmap string? args))
+           (fail f "check takes a program and args"))
+         (void)]
+        [else (fail (car (syntax->list f))
+                    (format "unknown install form '~a" head))])
+      (syntax->datum f)))
+  (install-spec 'prefix datums))
 
 ;; any -> boolean, true for syntax holding a list
 (define (syntax-list? x)
@@ -293,7 +403,7 @@
                     (syntax->datum (car oparts))))
   (cond [(memq head '(name extends variants))
          (format "variant must not override '~a" head)]
-        [(memq head '(version summary source deps build
+        [(memq head '(version summary source deps build-deps build
                       install license homepage when))
          #f]
         [else (format "unknown key '~a" head)]))
@@ -312,11 +422,6 @@
                   (memq (syntax->datum (cadr cond-parts))
                         '(linux darwin windows)))
        (fail (cadr parts) "platform is (platform linux|darwin|windows)"))]
-    [(emacs-version)
-     (unless (and (= (length cond-parts) 3)
-                  (memq (syntax->datum (cadr cond-parts)) '(>= = <=)))
-       (fail (cadr parts) "version cond is (emacs-version >=|=|<= VER)"))
-     (convert-version (caddr cond-parts))]
     [(feature)
      (unless (= (length cond-parts) 2)
        (fail (cadr parts) "feature cond is (feature NAME)"))]
@@ -352,6 +457,9 @@
   (spec name-value version-value summary-value source-value
         (if (find-field body 'deps)
             (read-deps (req 'deps))
+            '())
+        (if (find-field body 'build-deps)
+            (read-build-deps (req 'build-deps))
             '())
         (read-build (req 'build))
         (read-install (req 'install))
@@ -400,15 +508,16 @@
     (write-fixture
      "golden.rktd"
      '("(spec"
-       "  (format-version 1)"
+       "  (format-version 2)"
        "  (name demo)"
        "  (version \"2.9.1\")"
        "  (summary \"demo package\")"
        "  (source (git \"https://example.org/demo.git\""
        "                  \"9edb3f66fd807b096b48283debdcddccfea34bad\"))"
        "  (deps ((pkg-beta \"1.0\")))"
-       "  (build (steps (byte-compile)))"
-       "  (install (emacs (autoloads \"demo-autoloads.el\")))"
+       "  (build-deps ((pkg-gamma \"2.0\")))"
+       "  (build (steps (copy \"a\" \"b\")))"
+       "  (install (prefix (bin \"demo\" \"bin/demo\") (check \"bin/demo\")))"
        "  (license gpl-3.0+)"
        "  (homepage \"https://example.org/demo\")"
        "  (extends base)"
@@ -423,8 +532,10 @@
   (check-equal? (source-commit (spec-source golden))
                 "9edb3f66fd807b096b48283debdcddccfea34bad")
   (check-equal? (map dep-name (spec-deps golden)) '(pkg-beta))
-  (check-equal? (build-step-name (car (spec-build golden))) 'byte-compile)
-  (check-equal? (install-spec-target (spec-install golden)) 'emacs)
+  (check-equal? (map dep-name (spec-build-deps golden)) '(pkg-gamma))
+  (check-equal? (build-step-name (car (spec-build golden))) 'copy)
+  (check-equal? (install-spec-target (spec-install golden)) 'prefix)
+  (check-equal? (length (install-spec-forms (spec-install golden))) 2)
   (check-equal? (spec-extends golden) 'base)
   (check-equal? (length (spec-variants golden)) 1)
   (check-equal? (length (spec-whens golden)) 1)
@@ -435,14 +546,14 @@
     (write-fixture
      "minimal.rktd"
      '("(spec"
-       "  (format-version 1)"
+       "  (format-version 2)"
        "  (name tiny)"
        "  (version \"1.0\")"
        "  (summary \"tiny\")"
        "  (source (git \"https://example.org/t.git\""
        "                  \"9edb3f66fd807b096b48283debdcddccfea34bad\"))"
-       "  (build (steps (byte-compile)))"
-       "  (install (emacs (autoloads \"t.el\")))"
+       "  (build (steps (copy \"a\" \"b\")))"
+       "  (install (prefix (bin \"b\")))"
        "  (license mit)"
        "  (homepage \"https://example.org/t\"))")))
   (define minimal
@@ -454,16 +565,31 @@
   (check-equal? (spec-whens minimal) '())
   (delete-directory/files minimal-dir)
 
-  ;; Exact message 1: unknown key at 3:4.
+  ;; Exact message 1: unknown key at 3:4, with a suggestion.
   (check-equal?
-   (message-for '("(spec" "  (format-version 1)" "  (soruce \"x\"))"))
+   (message-for '("(spec" "  (format-version 2)" "  (soruce \"x\"))"))
    (string-append "read-spec: invalid declaration;\n"
                   "  at: pkg.rktd:3:4\n"
-                  "  hint: unknown key 'soruce"))
+                  "  hint: unknown key 'soruce (did you mean 'source?)"))
+
+  ;; Exact message 1b: a v1 spec is rejected, never silently accepted.
+  (check-equal?
+   (message-for '("(spec" "  (format-version 1)" "  (name demo)"
+                  "  (version \"1.0\")" "  (summary \"s\")"
+                  "  (source (git \"https://example.org/d.git\""
+                  "                  \"9edb3f66fd807b096b48283debdcddccfea34bad\"))"
+                  "  (build (steps (copy \"a\" \"b\")))"
+                  "  (install (prefix (bin \"b\")))"
+                  "  (license mit)"
+                  "  (homepage \"https://example.org\"))"))
+   (string-append "read-spec: invalid declaration;\n"
+                  "  at: pkg.rktd:2:19\n"
+                  "  hint: unsupported format-version 1 (neutral spec needs 2; see "
+                  "docs/SPEC-NEUTRAL.org section 9)"))
 
   ;; Exact message 2: bad version value at 4:11.
   (check-equal?
-   (message-for '("(spec" " (format-version 1)"
+   (message-for '("(spec" " (format-version 2)"
                   " (name demo)" " (version \"1..2\"))"))
    (string-append "read-spec: invalid declaration;\n"
                   "  at: pkg.rktd:4:11\n"
@@ -471,10 +597,10 @@
 
   ;; Exact message 3: missing source points at the top form.
   (check-equal?
-   (message-for '("(spec" "  (format-version 1)" "  (name demo)"
+   (message-for '("(spec" "  (format-version 2)" "  (name demo)"
                   "  (version \"1.0\")" "  (summary \"s\")"
-                  "  (build (steps (byte-compile)))"
-                  "  (install (emacs (autoloads \"a.el\")))"
+                  "  (build (steps (copy \"a\" \"b\")))"
+                  "  (install (prefix (bin \"b\")))"
                   "  (license mit)"
                   "  (homepage \"https://example.org\"))"))
    (string-append "read-spec: invalid declaration;\n"
@@ -485,24 +611,24 @@
   (define (hint-matches? lines pattern)
     (check-regexp-match pattern (message-for lines)))
   (hint-matches?
-   '("(spec" "  (format-version 1)" "  (name demo)"
+   '("(spec" "  (format-version 2)" "  (name demo)"
      "  (version \"1.0\")" "  (summary \"s\")"
      "  (source (git \"https://example.org/d.git\" \"xyz\"))"
-     "  (build (steps (byte-compile)))"
-     "  (install (emacs (autoloads \"a.el\")))" "  (license mit)"
+     "  (build (steps (copy \"a\" \"b\")))"
+     "  (install (prefix (bin \"b\")))" "  (license mit)"
      "  (homepage \"https://example.org\"))")
    #rx"not a commit id")
   (hint-matches?
-   '("(spec" "  (format-version 1)" "  (name demo)"
+   '("(spec" "  (format-version 2)" "  (name demo)"
      "  (version \"1.0\")" "  (summary \"s\")"
      "  (source (git \"ext::sh -c true\""
      "                  \"9edb3f66fd807b096b48283debdcddccfea34bad\"))"
-     "  (build (steps (byte-compile)))"
-     "  (install (emacs (autoloads \"a.el\")))" "  (license mit)"
+     "  (build (steps (copy \"a\" \"b\")))"
+     "  (install (prefix (bin \"b\")))" "  (license mit)"
      "  (homepage \"https://example.org\"))")
    #rx"rejected git URL")
   (hint-matches?
-   '("(spec" "  (format-version 1)" "  (name a)" "  (name b))")
+   '("(spec" "  (format-version 2)" "  (name a)" "  (name b))")
    #rx"duplicate field")
   (hint-matches?
    '("(package" "  (name a))")
@@ -510,63 +636,93 @@
   (hint-matches? '("(((") #rx"cannot read declaration")
   (hint-matches? '() #rx"empty declaration")
   (hint-matches?
-   '("(spec" "  (format-version 1)" "  (name demo)"
+   '("(spec" "  (format-version 2)" "  (name demo)"
      "  (version \"1.0\")" "  (summary \"s\")"
      "  (source (git \"https://example.org/d.git\""
      "                  \"9edb3f66fd807b096b48283debdcddccfea34bad\"))"
      "  (build (steps (frobnicate)))"
-     "  (install (emacs (autoloads \"a.el\")))" "  (license mit)"
+     "  (install (prefix (bin \"b\")))" "  (license mit)"
      "  (homepage \"https://example.org\"))")
-   #rx"unknown build step")
+   (regexp (string-append "unknown build step 'frobnicate \\(valid: "
+                           "cmake-build cmake-configure cmake-install configure "
+                           "copy make make-info cargo run\\)")))
   (hint-matches?
-   '("(spec" "  (format-version 1)" "  (name demo)"
+   '("(spec" "  (format-version 2)" "  (name demo)"
      "  (version \"1.0\")" "  (summary \"s\")"
      "  (source (git \"https://example.org/d.git\""
      "                  \"9edb3f66fd807b096b48283debdcddccfea34bad\"))"
-     "  (build (steps (byte-compile)))"
+     "  (build (steps (make #:dir \".\")))"
+     "  (install (prefix (bin \"b\")))" "  (license mit)"
+     "  (homepage \"https://example.org\"))")
+   #rx"step 'make needs #:targets")
+  (hint-matches?
+   '("(spec" "  (format-version 2)" "  (name demo)"
+     "  (version \"1.0\")" "  (summary \"s\")"
+     "  (source (git \"https://example.org/d.git\""
+     "                  \"9edb3f66fd807b096b48283debdcddccfea34bad\"))"
+     "  (build (steps (copy \"a\" \"b\")))"
+     "  (install (prefix (bin \"../etc/passwd\")))" "  (license mit)"
+     "  (homepage \"https://example.org\"))")
+   #rx"install path '../etc/passwd escapes the prefix")
+  (hint-matches?
+   '("(spec" "  (format-version 2)" "  (name demo)"
+     "  (version \"1.0\")" "  (summary \"s\")"
+     "  (source (git \"https://example.org/d.git\""
+     "                  \"9edb3f66fd807b096b48283debdcddccfea34bad\"))"
+     "  (build (steps (copy \"a\" \"b\")))"
+     "  (install (prefix (check \"bin/a\") (check \"bin/b\")))"
+     "  (license mit)"
+     "  (homepage \"https://example.org\"))")
+   #rx"only one check form per install")
+  (hint-matches?
+   '("(spec" "  (format-version 2)" "  (name demo)"
+     "  (version \"1.0\")" "  (summary \"s\")"
+     "  (source (git \"https://example.org/d.git\""
+     "                  \"9edb3f66fd807b096b48283debdcddccfea34bad\"))"
+     "  (build (steps (copy \"a\" \"b\")))"
      "  (install (web ((x 1))))" "  (license mit)"
      "  (homepage \"https://example.org\"))")
    #rx"install must be")
   (hint-matches?
-   '("(spec" "  (format-version 2)" "  (name demo))")
+   '("(spec" "  (format-version 3)" "  (name demo))")
    #rx"unsupported format-version")
   (hint-matches?
-   '("(spec" "  (format-version 1)" "  (name demo)"
+   '("(spec" "  (format-version 2)" "  (name demo)"
      "  (version \"1.0\")" "  (summary \"s\")"
      "  (source (git \"https://example.org/d.git\""
      "                  \"9edb3f66fd807b096b48283debdcddccfea34bad\"))"
-     "  (deps ((pkg-beta)))" "  (build (steps (byte-compile)))"
-     "  (install (emacs (autoloads \"a.el\")))" "  (license mit)"
+     "  (deps ((pkg-beta)))" "  (build (steps (copy \"a\" \"b\")))"
+     "  (install (prefix (bin \"b\")))" "  (license mit)"
      "  (homepage \"https://example.org\"))")
    #rx"dep must be")
   (hint-matches?
-   '("(spec" "  (format-version 1)" "  (name demo)"
+   '("(spec" "  (format-version 2)" "  (name demo)"
      "  (version \"1.0\")" "  (summary \"s\")"
      "  (source (git \"https://example.org/d.git\""
      "                  \"9edb3f66fd807b096b48283debdcddccfea34bad\"))"
-     "  (build (steps (byte-compile)))"
-     "  (install (emacs (autoloads \"a.el\")))" "  (license mit)"
+     "  (build (steps (copy \"a\" \"b\")))"
+     "  (install (prefix (bin \"b\")))" "  (license mit)"
      "  (homepage \"https://example.org\")"
      "  (when (os linux) ((version \"1.0\"))))")
    #rx"unknown condition")
   (hint-matches?
-   '("(spec" "  (format-version 1)" "  (name demo)"
+   '("(spec" "  (format-version 2)" "  (name demo)"
      "  (version \"1.0\")" "  (summary \"s\")"
      "  (source (git \"https://example.org/d.git\""
      "                  \"9edb3f66fd807b096b48283debdcddccfea34bad\"))"
-     "  (build (steps (byte-compile)))"
-     "  (install (emacs (autoloads \"a.el\")))" "  (license mit)"
+     "  (build (steps (copy \"a\" \"b\")))"
+     "  (install (prefix (bin \"b\")))" "  (license mit)"
      "  (homepage \"https://example.org\")"
      "  (variants ((lite (name other)))))")
    #rx"must not override")
   ;; Trailing data after the form is an error, not silence.
   (hint-matches?
-   '("(spec" "  (format-version 1)" "  (name demo)"
+   '("(spec" "  (format-version 2)" "  (name demo)"
      "  (version \"1.0\")" "  (summary \"s\")"
      "  (source (git \"https://example.org/d.git\""
      "                  \"9edb3f66fd807b096b48283debdcddccfea34bad\"))"
-     "  (build (steps (byte-compile)))"
-     "  (install (emacs (autoloads \"a.el\")))" "  (license mit)"
+     "  (build (steps (copy \"a\" \"b\")))"
+     "  (install (prefix (bin \"b\")))" "  (license mit)"
      "  (homepage \"https://example.org\"))" "42")
    #rx"trailing data")
   ;; Kind is always spec, even for hostile bytes.

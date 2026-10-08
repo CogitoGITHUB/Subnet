@@ -74,15 +74,16 @@
 (struct install-spec (target forms)
   #:transparent
   #:guard (lambda (target forms _n)
-            (unless (memq target '(emacs system))
+            (unless (memq target '(prefix))
               (raise-pm-error 'spec 'install-spec "unknown target"
                               #:fields `(("value" . ,target))))
             (unless (list? forms)
               (raise-pm-error 'spec 'install-spec "forms must be a list"
                               #:fields `(("value" . ,forms))))
             (values target forms)))
-;; target : (or/c 'emacs 'system)  the core treats forms as opaque
-;; forms  : list?                  target-validated later
+;; target : (or/c 'prefix)  v1 has one target: the versioned prefix dir.
+;;   A new target = a new head symbol + form validator + backend.
+;; forms  : list?  kind-checked install forms, validated in spec-read
 
 (struct variant-spec (name overrides)
   #:transparent
@@ -107,13 +108,13 @@
               (raise-pm-error 'spec 'when-spec "fields need a list"
                               #:fields `(("value" . ,fields))))
             (values cond fields)))
-;; cond   : list?  (platform OS) (emacs-version OP VER) (feature NAME)
+;; cond   : list?  (platform OS) (feature NAME)
 ;; fields : list?  field forms applied when cond holds
 
-(struct spec (name version summary source deps build install
+(struct spec (name version summary source deps build-deps build install
               license homepage extends variants whens)
   #:transparent
-  #:guard (lambda (name version summary source deps build install
+  #:guard (lambda (name version summary source deps build-deps build install
                    license homepage extends variants whens _n)
             (unless (package-name? name)
               (raise-pm-error 'spec 'spec "bad package name"
@@ -130,6 +131,9 @@
             (unless (and (list? deps) (andmap dep? deps))
               (raise-pm-error 'spec 'spec "deps must be dep structs"
                               #:fields `(("value" . ,deps))))
+            (unless (and (list? build-deps) (andmap dep? build-deps))
+              (raise-pm-error 'spec 'spec "build-deps must be dep structs"
+                              #:fields `(("value" . ,build-deps))))
             (unless (and (list? build) (andmap build-step? build))
               (raise-pm-error 'spec 'spec "build must be build steps"
                               #:fields `(("value" . ,build))))
@@ -151,13 +155,14 @@
             (unless (and (list? whens) (andmap when-spec? whens))
               (raise-pm-error 'spec 'spec "whens must be when structs"
                               #:fields `(("value" . ,whens))))
-            (values name version summary source deps build install
+            (values name version summary source deps build-deps build install
                     license homepage extends variants whens)))
 ;; name     : package-name?  D-8
 ;; version  : version?       exact matching only (D-007)
 ;; summary  : string?
 ;; source   : source?        git URL plus full commit (D-006)
-;; deps     : (listof dep?)  names plus exact versions
+;; deps     : (listof dep?)  run-time edges, names plus exact versions
+;; build-deps : (listof dep?)  build-time only, absent from activation
 ;; build    : (listof build-step?)  data steps with hooks later
 ;; install  : install-spec?  opaque per target
 ;; license  : symbol?
@@ -184,8 +189,9 @@
           (source "https://example.org/r.git"
                   "9edb3f66fd807b096b48283debdcddccfea34bad")
           (list (dep 'pkg-beta (string->version "1.0")))
-          (list (build-step 'byte-compile '()))
-          (install-spec 'emacs '((autoloads "r-autoloads.el")))
+          '()
+          (list (build-step 'copy '("a" "b")))
+          (install-spec 'prefix '((bin "b")))
           'gpl-3.0+ "https://example.org/r" #f '() '()))
   (check-true (spec? good))
   (check-equal? (spec-name good) 'pkg-alpha)
