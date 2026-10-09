@@ -10,6 +10,15 @@ Racket 9.3 CS minimal, 2026-10-06.
 
 =cli/main.rkt --help= baseline: pending, no CLI yet.
 
+* 2026-10-08 vault-gc memory envelope (VAULT-SPEC.org)
+Synthetic repo: 20 commits + 500 x 100KB blobs (99MB work tree,
+562 loose objects). =git gc= with the code settings
+(-c pack.threads=1 -c pack.windowMemory=256m) completes inside a
+128MB virtual-address envelope (ulimit -v 131072): exit 0, 562
+objects packed (48MB pack). Default-threaded gc flaked under ulimit
+on this phone (thread stacks exhaust virtual; machine heavily loaded),
+which is why the code pins a single thread. Bound stands.
+
 * 2026-10-06 =scripts/startup.sh=, median of 5 (one warmup discarded)
 
 | run | real | user | sys |

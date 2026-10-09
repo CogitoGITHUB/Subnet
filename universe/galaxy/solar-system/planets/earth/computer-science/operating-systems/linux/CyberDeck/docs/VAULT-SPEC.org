@@ -63,10 +63,13 @@ vault-verify (#:full; default is git fsck --connectivity-only),
 vault-gc (explicit only; pack.threads=1; bounded pack memory; measure
 peak memory on a synthetic repo of realistic size and report the
 number).
-vault-export-commit: checkout-based with the SAME contract as the
-implemented git-export-commit (empty staging dir, faithful file list,
-staging cleaned on failure, never writes the vault). Test: the vault
-index never exists and the file list is unchanged.
+vault-export-commit: archive-based (git archive piped through tar
+into the staging dir), same contract as git-export-commit (empty
+staging, faithful file list, staging cleaned on failure, vault never
+written). The clone-based mechanism proved unfit on proot (hardlink
+failure on bitmaps, silent no-op checkout in HEADless clones), so the
+temp work dir is gone too; only a temp .tar beside staging, always
+removed. Test: file list matches, vault refs unchanged.
 
 * Locking and cancel
 Writers: try-lock only via core/vault-lock.rkt, fail at once naming the
@@ -155,6 +158,9 @@ only when phase or percent change.
    + checkout + cp -a (no temp GIT_INDEX_FILE anywhere). Kept: the
    clone-based contract (empty staging, faithful list, cleanup). The
    temp-index phrasing in earlier notes is superseded by the code.
+   vault-export-commit itself uses git archive piped through tar
+   instead of cloning: clones break on proot (hardlink failure on
+   bitmaps, silent no-op checkout in HEADless clones). Same contract.
 3. Pin namespace: implemented refs/cyberdeck/pinned/<commit> per mirror
    vs monorepo refs/vault/<name>/. Migration, not preservation: new
    code uses the refs/vault/ tree; old mirrors die with the old backend.

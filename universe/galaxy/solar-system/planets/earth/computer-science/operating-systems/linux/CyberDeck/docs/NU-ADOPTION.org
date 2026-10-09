@@ -6,10 +6,13 @@ with --no-config-file. check.sh stays the gate until check.nu is proven.
 
 * a. Scope
 Nu owns scripts/ (check, startup, env, lib-obs, wrappers, lints) and
-all new tooling. POSIX sh stays ONLY for: the fixed fragments embedded
-in backends/run.rkt (fd redirection, traps, flock, exec on a bare
-machine where no Nu exists) plus scripts/need-nu.sh, which prints one
-clear message when the pinned Nu is missing (it must run under any sh).
+all new tooling. No version is pinned: scripts/need-nu.sh reports
+which binary they would use (newest ~/opt/nushell/*/nu, else PATH)
+and its version, and fails clearly when none exists. Versions change
+only by hand; nothing ever downloads or updates Nu automatically.
+POSIX sh stays ONLY for: the fixed fragments embedded in
+backends/run.rkt (fd redirection, traps, flock, exec on a bare
+machine where no Nu exists) plus scripts/need-nu.sh itself.
 The package manager core stays Racket. Rationale: run.rkt fragments
 execute inside spawned children that cannot depend on ~/opt; everything
 else benefits from structured data and fail-fast externals.
@@ -69,9 +72,8 @@ code), paste both outputs in the commit message. check.sh retires only
 after check.nu passes parity plus a full green gate.
 
 * f. Bootstrap on a fresh clone
-The pm cannot build Nu (cargo fetches outside git, D-019). A fresh
-clone gets it by: download the pinned aarch64-gnu asset, verify
-against the recorded sha256 (D-020), unpack the single binary to
-~/opt/nushell/0.116.1/. scripts/need-nu.sh checks presence + version
-and prints the exact three commands when missing. No system install, no
-PATH surgery, no sudo. Vendor nothing (73MB binary stays out of git).
+The pm cannot build Nu (cargo fetches outside git, D-019), and nothing
+fetches it automatically either. A fresh clone gets it by hand (any
+recent stable aarch64 build); scripts/need-nu.sh reports which binary
+and version is in effect. No system install, no PATH surgery, no sudo.
+Vendor nothing (Nu binaries stay out of git).

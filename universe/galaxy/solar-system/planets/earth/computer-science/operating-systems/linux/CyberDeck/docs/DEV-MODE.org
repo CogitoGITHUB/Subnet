@@ -1,0 +1,90 @@
+#+TITLE: STEP 4: dev mode design (straight-style checkouts)
+#+AUTHOR: Shape
+
+Design only, no code. Dev mode lands after =pm apply= works end to
+end: it reuses export (source acquisition), build (steps) and install
+(prefix placement) unchanged, swapping only the source (live checkout
+for vault export) and the placement (symlinks for copies).
+
+* What it is
+A package installed from a local working checkout instead of a vault
+pin, for iterating on the code without commit/push cycles. Register
+with =pm dev NAME PATH= (PATH holds the sources); remove with
+=pm undev NAME=. The link record lives in the state dir
+(<state>/dev-links.rktd: name, checkout path, branch policy); it is
+not in the spec, not in the manifest, not in the lockfile.
+
+* How it reuses the pipeline
+Build steps run unmodified with srcdir=checkout instead of a vault
+export: same =make=/=cmake-*= forms, same allowlisted env, same
+PREFIX (the final versioned dir). Install forms with dev set place
+symlinks into the checkout instead of copying (bin/lib/include point
+at checkout files; built artifacts like .a/.so may live beside the
+sources when the build system builds in place, as lua's makefile
+does). =current= keeps pointing at the prefix, which resolves into
+the checkout, so activation, profile and rollback treat dev and
+normal packages identically. =pm status= flags dev packages with the
+checkout path plus dirty state (see Q1).
+
+* Update flow interaction
+=pm update=, =check= and =review= skip dev packages by default and say
+so (one info line each): a dev package has no pin to compare. =pm
+build NAME= rebuilds a dev package from the current checkout contents.
+Switching back is =pm undev NAME= followed by a normal install, which
+replaces the prefix contents wholesale (no merging).
+
+* Guarantees kept
+No vault writes (dev never touches sources/vault.git). No network.
+Failed dev builds keep the previous prefix (same .pm-incomplete
+marker rule as normal builds). Dev entries never enter the manifest
+inventory or the lockfile; =pm vault status= ignores them.
+
+* Open questions: DECIDED (user rulings, no implementation until =pm apply= exists)
+Q1. Dirty checkouts BUILD WITH WARNING (E-11), never fail silently:
+   the warning names modified, untracked and deleted files, the base
+   pin, the fingerprint, and the count of local commits. The build
+   stamp, the lockfile and =pm status= ALWAYS flag the package =dev=
+   with its fingerprint (permanent, not one-time). Reproducibility
+   operations REFUSE dev packages, naming package and file list, with
+   fix =pm undev NAME= or a clean commit: =pm lock= for a release,
+   =pm apply= in pinned mode, =pm backup=, =pm export=. =pm build
+   --strict= turns the dirty warning into an error (for scripts).
+Q2. Branch tip, with a recorded BASE PIN: =pm dev= stores the vault
+   pin; it moves only by explicit rebase/update. Fingerprint = HEAD
+   commit id + hash of tracked diff + untracked files (branch switch,
+   commit, amend, reset all change it and trigger rebuild). =pm status=
+   shows branch, HEAD, commits ahead of base, base-ancestor-or-not,
+   dirty/clean; a non-ancestor base gets flagged plus a =base-changed=
+   marker in the dev record. Detached HEAD allowed and flagged.
+   Checking out an unrelated branch is refused unless --force, naming
+   both commits. No upstream auto-follow, ever; updates only through
+   the explicit flow (check/review/apply), which refuses dirty checkouts
+   and local commits unless the user picks rebase, merge or abandon
+   after local work is saved as refs.
+Q3. In-tree outputs accepted, but NEVER counted as edits: fingerprint
+   untracked set excludes (a) git-ignored files and (b) RECORDED build
+   outputs = untracked-after minus untracked-before each =pm build=,
+   stored in the dev record and refreshed every build, plus written to
+   the checkout's .git/info/exclude (local only, never tracked). Tests:
+   two builds with no edits give identical fingerprints and no
+   rebuild; an edit gives a new one. Race stated: a hand edit made
+   mid-build surfaces as a fingerprint change on the NEXT build, which
+   rebuilds. Prefer out-of-tree build dirs under the cache dir where
+   supported (cJSON: yes, cmake builddir; bats-core: no build at all;
+   lua: in-tree only, plain makefile). =pm clean NAME= removes ONLY
+   recorded outputs (listed first); never broad =git clean=, never
+   unrecorded untracked files; refuses when the record is missing.
+   =pm diff= and =pm patches= exclude recorded outputs and ignored
+   files. Dev checkouts live outside Subnet by default (D-016).
+Q4. Update lists dev packages as skipped, one visible line each:
+   =skipped (dev): NAME  branch=<b>  HEAD=<short>  ahead=<n>
+   dirty=<yes|no>  upstream-has-newer=<yes|no|unknown>=, counted in the
+   summary. upstream-has-newer comes from the read-only check (fetch
+   into the vault namespace, checkout untouched). Skipped dev never
+   changes the exit code; info, not error/warning; machine output
+   carries state "skipped-dev" with the same fields. Updating a dev
+   package is always explicit per-package (=pm update NAME=) with the
+   refuse/rebase/merge/abandon rules. No prompts, no rebuild offers,
+   nothing automatic or scheduled (D-015). Test (synthetic): mixed set
+   with one pinned update + one dev package updates the first, lists
+   the second skipped, leaves its checkout byte-identical.

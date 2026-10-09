@@ -14,8 +14,8 @@ if ! command -v git >/dev/null 2>&1; then
   echo "GATE: git executable not found"; fail=1
 fi
 # backends/run.rkt spawns through setsid/env, kills trees with pkill,
-# and holds child locks with flock.
-for tool in env setsid pkill flock mkfifo; do
+# and holds child locks with flock. Export unpacks through tar.
+for tool in env setsid pkill flock mkfifo tar; do
   if ! command -v "$tool" >/dev/null 2>&1; then
     echo "GATE: $tool executable not found (run.rkt needs it)"; fail=1
   fi
@@ -79,6 +79,9 @@ for f in $(find . -type f \( -name '*.org' -o -name '*.rkt' \
 done
 # 0b. Git transport allowlist for every test spawn below: file only.
 export GIT_ALLOW_PROTOCOL=file
+# 0c. Report the Nushell scripts would use (informational only, D-020
+# amended: manual version control, never fetched, never gated).
+sh scripts/need-nu.sh || true
 
 # Fast set: no subprocesses (in-process only). Slow files spawn and
 # run detached before each commit instead (see TEST-START lines).
