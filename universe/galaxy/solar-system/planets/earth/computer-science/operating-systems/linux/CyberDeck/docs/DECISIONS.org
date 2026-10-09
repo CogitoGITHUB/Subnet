@@ -4,6 +4,87 @@
 * Log
 Append-only. Newest first. Every entry names the rule IDs it touches.
 
+** 2026-10-10 D-028: engine layering, pure core and one effect writer
+=core/= is pure: specs plus flags plus vault pins become a package-level
+plan, the plan becomes lock data, and the package plan lowers to actions.
+No spawn, no filesystem write, no network anywhere in =core/=. The only
+module with effects is =backends/apply.rkt= (plus =activate.rkt= and
+=update.rkt= for their own stages). The lock is written only after the
+whole plan resolves; a partial plan writes nothing. Apply is resumable
+per step through a JSON Lines step journal, one file per package in the
+state dir; a step is skipped only when its input hash matches the hash on
+that step's journal line. Lowering emits the existing action structs plus
+=export-action=, =check-action=, =mark-incomplete-action=,
+=clear-incomplete-action= and =set-current-action=; =verify-action= is
+removed by D-025. D-028, D-025.
+
+** 2026-10-10 D-025: verify-action removed
+The exact git commit id is the verification; a second hash check over the
+same tree is redundant. =verify-action= (=expected-hash=, =algorithm=)
+is deleted from =core/plan.rkt=. Inputs that are not git-stored stay
+D-019 and open: cargo, raco, npm and similar still refuse at check/plan
+time. The build environment attaches in =backends/build.rkt=, not in
+the action, so the same step runs under the same environment without
+the plan carrying an environment. The apply executor reuses
+=local-perform!= as-is; it does not fork a second placement
+implementation. =update.rkt= prints the dev skip-lines itself.
+=--format= is parsed by =racket/cmdline=. D-025, D-019.
+
+** 2026-10-10 D-024: why, owner, verify, remove
+Four extra commands and nothing else. =why= explains why a package is in
+the profile: which spec, which slot, which flags, which pin. =owner=
+answers who owns a relative path (needed by activate to report a
+conflict before changing anything). =verify= re-checks the current tree
+against its pin. =remove= unlinks the package from the profile only: it
+touches no store directory and frees no disk. Freeing disk is a separate
+explicit =pm profile-prune= / clean command, never a side effect of
+remove. D-024.
+
+** 2026-10-10 D-023: slots in v1
+A slot is a named version stream of a package. Different slots install
+side by side; a profile holds at most one version per slot; update and
+hold work per slot, never per package name alone. Install identity is
+name + slot + version + input hash. The input hash covers the resolved
+flags and the identity of every dependency, so changing a flag or a
+dependency cascades into a different identity and therefore a different
+store directory. Slots exist in v1 because two incompatible majors of
+the same package must coexist without renaming. D-023, D-028.
+
+** 2026-10-10 D-022: USE-style flags
+A package declares named flags, each with a default and a one-line
+description, so flags read like a command line rather than a config
+dialect. A flag may add dependencies, change build arguments and add
+install forms, and may declare =conflicts= and =requires= with other
+flags. Flags are set in one config file, globally and per package.
+Precedence is fixed: spec default < global < per-package. A flag that
+the package does not declare is an error, never a silently ignored
+setting. The flags actually used are recorded in the lockfile and are
+part of install identity, so a profile cannot claim to hold a build it
+did not make. D-022, D-023.
+
+** 2026-10-10 D-016: all generated state lives outside the tree
+Everything the tool generates goes outside the repository tree: dev
+checkouts live outside Subnet, the vault sits beside the state dir, and
+caches, targets and profiles live in the XDG dirs. The tree holds
+sources, specs and committed tangles, nothing else. The single exception
+is Racket =compiled/=, which stays in-tree and gitignored (D-027);
+redirecting it was measured and is slower. D-016, D-027.
+
+** 2026-10-10 D-015: no timers anywhere
+No timeouts, no polling, no sleeps, no heartbeats, no scheduled checks.
+Every wait ends on an event: process exit, EOF, lock release, or an
+explicit =#:cancel=. A step that starts and never ends is the only thing
+that looks like a hang, so every step emits a start and an end record.
+Generations are pruned by explicit command, never by age or by a
+sweeper. D-015.
+
+** 2026-10-10 D-008: exit-code table adopted
+The E-15 proposal in docs/ERRORS.org is adopted as written: 0 success,
+2 usage, 3 spec, 4 resolve, 5 fetch, 6 verify, 7 build, 8 install, 9
+activate, 70 internal, 130 interrupted. A failing =check= is a build
+failure and exits 7. An unknown command or a bad =--format= is kind
+='config= and exits 2. D-008, E-15.
+
 ** 2026-10-09 D-027: Racket build output stays in the tree
 Racket =compiled/= stays in-tree (gitignored). Measured on this phone:
 =PLTCOMPILEDROOTS=<cache>:same= made =raco make= 401s and =raco test=
@@ -286,7 +367,6 @@ boundary) and pushed. G-2, G-4.
 | D-005 | ~/.local/share/cyberdeck; versioned dirs; current link |
 | D-006 | git ONLY; full mirror per package; export at pin |
 | D-007 | Exact commit id only (git); versions match equal |
-| D-008 | Exit-code table (E-15 proposal)                           |
 | D-009 | Data-only default; Tier B own-repo files only |
 | D-011 | Vault: full mirror in vault/<name>.git; fetch updates |
 | D-012 | Pin refs: refs/cyberdeck/pinned/<commit> against gc/force |
