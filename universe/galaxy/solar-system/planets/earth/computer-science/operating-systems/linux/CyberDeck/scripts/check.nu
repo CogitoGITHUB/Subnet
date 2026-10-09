@@ -459,3 +459,18 @@ def compile-all [files] {
     print $"STEP-END compile after=($total)ms"
     $recs | get exit
 }
+
+# records, fast -> int
+#
+# The three verdict lines are copied verbatim from check.sh lines 125-130
+# and the exit code is the same 0/1 the old gate exits with. In --fast mode
+# the run is partial by definition, so a clean fast run says so.
+def verdict [records fast] {
+    let bad = ($records | any {|r| $r.exit != 0})
+    if not $bad {
+        if $fast { print "FAST GREEN (partial)" } else { print "ALL GREEN" }
+    } else {
+        print "CHECK FAILED"
+    }
+    (if $bad { 1 } else { 0 })
+}
