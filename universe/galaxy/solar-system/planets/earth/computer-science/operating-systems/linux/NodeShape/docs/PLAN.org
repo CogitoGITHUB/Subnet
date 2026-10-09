@@ -1,0 +1,104 @@
+#+TITLE: NodeShape Plan
+#+OPTIONS: toc:nil
+
+* Phases
+Ordered. Each phase ends with a green gate and a commit. See
+docs/CHECKLIST.org for the items and docs/DECISIONS.org for the reasoning.
+
+** Phase 0 Ground rules and gate
+Establish the rules the rest of the work obeys and the script that proves
+them: docs/AI-RULES.org, docs/DECISIONS.org, docs/PLAN.org,
+docs/CHECKLIST.org, plus the Nu gate and tree scripts. Nothing is built in
+this phase; it only makes the build measurable, so that every later phase can
+be checked by someone who was not there.
+
+** Phase 1 Foundations (observability, error model, test harness)
+Build the three things every later module leans on: a pure event record
+shape, a JSON Lines log sink in backends/, a single error shape with
+structured fields, and a test harness running on one synthetic fixture.
+Doing this first is what makes "observable" and "tested" real rather than
+aspirational, and it fixes the record shape before anything emits one.
+
+** Phase 2 Model, pure core (identity, properties, hierarchy, math and code as first-class content, model level only)
+Define what a thing is: node identity, properties, the hierarchy that
+organizes nodes, and content blocks where text, math and code are distinct
+kinds rather than one string. This is the model layer only, no operations on
+it yet, and no I/O. Everything else in the system is a view or an operation
+over what is fixed here.
+
+** Phase 3 Connections, pure core (relations, references, dependency relations, topology)
+Add the edges between nodes: relations, references, dependency relations and
+the topology they induce. Still pure, still no operations. The model becomes
+a graph, which is what makes traversal, integrity rules and later tangling
+possible at all.
+
+** Phase 4 Engine, pure core (create, modify, validate, query, traverse, integrity rules)
+Add the operations over the model: create, modify, validate, query, traverse,
+and the integrity rules that must hold after any of them. Pure functions
+over the Phase 2-3 data. This is the part that is worth testing hardest,
+because everything later is a thin layer over it.
+
+** Phase 5 Parser/serializer framework with a neutral test form and byte-identical round-trip tests
+Build the reading and writing machinery against a temporary neutral test
+form, and require that a parse followed by a serialize reproduces the input
+bytes exactly. The neutral form is the seam that lets the real syntax be
+swapped in later without touching the engine (D-001). Round-trip is the
+proof that the format layer is lossless.
+
+** Phase 6 Backends, effects only (file I/O, git, clock, log sink)
+Put every effect here: file I/O, git, clock, log sink. core/ stays pure and
+reaches the outside world only through the interfaces these backends
+implement, which is what makes the core testable without a filesystem.
+
+** Phase 7 CLI, thin, over the engine
+A thin command line over the engine: it parses arguments, calls the engine,
+formats the result, and emits observability records. No logic of its own, and
+commands accept --format sexp|json so the same call serves a human and a
+script.
+
+** Phase 8 Migration groundwork (Org corpus analysis, mapping plan)
+Before any format is fixed, analyze the existing Org corpus and write a
+mapping plan from its constructs to the model. This is where the corpus tells
+us what the format must carry. It is groundwork only: no migration is
+performed and no corpus file is modified.
+
+** Phase 9 Format and syntax, last (decide syntax family, how everything is written, format versioning, error reporting, real parser/serializer)
+With a real model and a real corpus in hand, decide the syntax family, how
+everything is written, how the format is versioned, how errors are reported
+to the author, and only then write the real parser and serializer. Last on
+purpose (D-002): the syntax is the cheapest thing to change while it is
+still a question and the most expensive thing to change once it is a promise.
+
+** Phase 10 Tangling and generation, very last
+Tangle the model into generated output and keep generation reproducible and
+checkable against the gate. Very last, after the format is settled and the
+engine is stable, so that generation is a consumer of a finished system
+rather than a driver of it.
+
+* Module tree (draft)
+:PROPERTIES:
+:STATUS: draft, may change per phase
+:END
+** core/ (pure)
+- core/ids.rkt       - node identity: minting, equality, ordering
+- core/properties.rkt- typed property maps attached to a node
+- core/hierarchy.rkt - parent/child structure and paths between nodes
+- core/relations.rkt - typed edges between nodes
+- core/topology.rkt  - the graph induced by relations and dependencies
+- core/engine.rkt    - create, modify, validate, query, traverse
+- core/errors.rkt    - the single error shape with structured fields
+- core/records.rkt   - pure event record shape for observability
+
+** backends/ (effects)
+- backends/fs.rkt     - file read/write, the only place bytes are touched
+- backends/git.rkt    - git operations behind an interface
+- backends/clock.rkt  - UTC and monotonic time source
+- backends/log-sink.rkt - JSON Lines event log writer
+
+** cli/
+- cli/main.rkt        - thin argument handling and output formatting
+
+* Out of scope for now
+- Extensions, including the package manager.
+- Interfaces: TUI, Web, Emacs.
+- The editor.

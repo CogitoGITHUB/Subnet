@@ -1,0 +1,61 @@
+#+TITLE: NodeShape AI Rules
+#+OPTIONS: toc:nil
+
+* Status
+Authoritative. Read this file before doing any work in NodeShape/.
+
+* 1. Workspace boundary
+- Work only inside NodeShape/.
+- Never touch CyberDeck or any other directory.
+- CyberDeck is read-only inspiration and may be consulted only when the user asks for it.
+
+* 2. Commits
+- Small commits, one checklist item each.
+- Explicit paths only, always prefixed NodeShape/ (for example NodeShape/docs/PLAN.org).
+- Never use git add -A, never use git add with a bare directory, never use git commit -a.
+- No pushes unless the user asks.
+
+* 3. Gate
+- The gate script (Nu) must be green before each commit.
+- Scripts are Nu, not sh. No sh scripts, no shell-only tooling.
+
+* 4. Reports
+- 20 lines or fewer.
+- Real output only.
+- Write "not run" for anything that was not run.
+- Never claim "verified" without showing the output that verifies it.
+
+* 5. No scope creep
+- Do exactly the checklist item, then STOP.
+- Do not start the next item, do not refactor neighbouring code, do not improve what was not asked for.
+
+* 6. No timers
+- No timeouts, no polling, no sleeps, no heartbeats.
+- Every wait ends on an event.
+
+* 7. Observability is mandatory
+- Every operation prints a start and an end record with UTC time and monotonic duration.
+- Structured records, one event per line.
+- Redaction is visible: what was redacted must be observable, not silent.
+- Event log is JSON Lines.
+- Commands accept --format sexp|json.
+
+* 8. Pure core
+- core/ has no effects: no file I/O, no clock, no network, no process calls.
+- Effects live only in backends/.
+- Modules stay small and are separately testable.
+- Paren-check after every Racket edit.
+
+* 9. Fixtures
+- Synthetic fixtures only.
+- No real names, no private data, nothing copied from a real corpus into a fixture.
+
+* 10. Racket
+- Racket 9.3, minimal build.
+- Test that an export exists before assuming it.
+- compiled/ output stays in-tree; it is never scattered elsewhere.
+
+* 11. Memory and resumption
+- Decisions go in docs/DECISIONS.org as D-0xx entries, newest first.
+- Designs live in docs/.
+- A fresh session must be able to resume from these files alone.

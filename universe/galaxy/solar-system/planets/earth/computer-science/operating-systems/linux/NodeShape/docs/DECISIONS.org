@@ -1,0 +1,34 @@
+#+TITLE: NodeShape Decisions
+#+OPTIONS: toc:nil
+
+* Status
+Newest first. D-0xx numbering. Any change to a decision gets a new number,
+the old entry stays and is marked superseded.
+
+* D-003 Scope: AI work is confined to NodeShape/
+:PROPERTIES:
+:STATE: accepted
+:END
+AI works only inside NodeShape/. CyberDeck is read-only inspiration and is
+consulted only when the user asks for it. Nothing in CyberDeck is modified,
+moved, or staged. Every path in a report or a commit is prefixed NodeShape/,
+so a run that touches anything else is a bug, not a feature.
+
+* D-002 Order: whole package first, syntax last
+:PROPERTIES:
+:STATE: accepted
+:END
+The whole package comes first. The file format and the syntax are decided
+last. Tangling happens after the format is fixed. Extensions and interfaces
+are out of scope for now. Reason: the engine, the model and the topology only
+earn their shape from real usage; fixing a syntax early would freeze
+guesses into the core.
+
+* D-001 Language: Racket 9.3, modular like pm
+:PROPERTIES:
+:STATE: accepted
+:END
+Racket 9.3, modular in the spirit of pm. The parser and the serializer are
+built against a temporary neutral test form. The real syntax replaces that
+form in the last phase, and the engine is not changed when it does: the
+neutral form is the seam. Racket compiled/ output stays in-tree.

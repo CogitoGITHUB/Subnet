@@ -1,0 +1,82 @@
+#+TITLE: NodeShape Checklist
+#+OPTIONS: toc:nil
+
+* How to use
+One item is one commit. Do the item, run scripts/check.nu, commit with
+explicit paths prefixed NodeShape/, then STOP. Do not start the next item
+without the user asking (see docs/AI-RULES.org).
+
+* Phase 0 Ground rules and gate
+** 0.1 docs skeleton committed
+Create docs/AI-RULES.org, docs/DECISIONS.org, docs/PLAN.org and
+docs/CHECKLIST.org.
+Done when: all four files exist, gate is green, and they are committed with
+explicit NodeShape/ paths.
+
+** 0.2 gate script scripts/check.nu
+A Nu script that fails if any of docs/AI-RULES.org, docs/DECISIONS.org,
+docs/PLAN.org, docs/CHECKLIST.org is missing.
+Done when: deleting any one of the four files makes scripts/check.nu exit
+non-zero and print which file is missing.
+
+** 0.3 tree script
+A Nu script that prints the NodeShape/ tree and hides compiled/.
+Done when: scripts/tree.nu prints no path containing compiled/ and still
+lists core/, backends/ and cli/ when they exist.
+
+* Phase 1 Foundations
+** 1.1 event record shape (pure)
+A pure record in core/records.rkt for one observability event: start/end
+kind, UTC time, monotonic duration, redaction markers.
+Done when: a test constructs a record, shows its fields, and core/ has no
+effect calls.
+
+** 1.2 JSON Lines sink in backends/
+backends/log-sink.rkt writes the event record as one JSON object per line,
+appending, with redaction visible in the output.
+Done when: three synthetic events written and read back are three valid JSON
+lines, and a redacted field is visibly marked in the bytes.
+
+** 1.3 error shape
+core/errors.rkt defines the single error with structured fields, file and
+line when they are known.
+Done when: a test raises the error, catches it, and every field is readable
+from the caught value.
+
+** 1.4 test harness with one synthetic fixture
+A harness that runs modules under test and reports pass/fail, against one
+synthetic fixture only.
+Done when: the harness runs the Phase 1 tests green, and the fixture
+contains no real name or private data.
+
+* Phase 2 Model, pure core
+** 2.1 node identity
+core/ids.rkt mints and compares node identities.
+Done when: a test shows that two mints differ, that the same node yields the
+same id, and ordering is stable.
+
+** 2.2 properties
+core/properties.rkt attaches typed properties to a node.
+Done when: a test sets, reads, rejects a wrong type, and shows a missing
+property is distinguishable from an empty one.
+
+** 2.3 hierarchy
+core/hierarchy.rkt models parent/child structure and paths.
+Done when: a test builds a small tree, walks it, and rejects a cycle or an
+orphan.
+
+** 2.4 content blocks
+Text, math and code as distinct kinds of content block on a node.
+Done when: a test shows the three kinds are not interchangeable and that
+each keeps its own body unmodified.
+
+* Phase 3 to Phase 10
+To be detailed when reached.
+- Phase 3 Connections, pure core (relations, references, dependency relations, topology)
+- Phase 4 Engine, pure core (create, modify, validate, query, traverse, integrity rules)
+- Phase 5 Parser/serializer framework with a neutral test form and byte-identical round-trip tests
+- Phase 6 Backends, effects only (file I/O, git, clock, log sink)
+- Phase 7 CLI, thin, over the engine
+- Phase 8 Migration groundwork (Org corpus analysis, mapping plan)
+- Phase 9 Format and syntax, last
+- Phase 10 Tangling and generation, very last
