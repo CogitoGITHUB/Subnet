@@ -4,6 +4,16 @@
 * Log
 Append-only. Newest first. Every entry names the rule IDs it touches.
 
+** 2026-10-09 D-027: Racket build output stays in the tree
+Racket =compiled/= stays in-tree (gitignored). Measured on this phone:
+=PLTCOMPILEDROOTS=<cache>:same= made =raco make= 401s and =raco test=
+216s on a 2-module project versus 18s unset; the cache kept growing
+(183 -> 223 =.zo=) because the first root is the write root and Racket
+re-emits its own stock libraries there. REJECTED. Cargo output:
+=CARGO_TARGET_DIR=<xdg-cache>/cyberdeck/target= for new builds only; no
+existing =target/= deleted. Revisit only if a faster mechanism is found.
+D-027.
+
 ** 2026-10-09 D-026: startup measurement is wall time only
 =scripts/startup.nu= reports wall time only; the user/sys CPU columns
 are dropped. No pure-Nu source for them exists on this build:
