@@ -19,7 +19,8 @@
          racket/system
          racket/string
          racket/file
-         "../core/errors.rkt")
+         "../core/errors.rkt"
+         "../core/log.rkt")
 
 (provide (struct-out run-result)
  (contract-out
@@ -388,25 +389,17 @@
           (two-digits (date-minute d))
           (two-digits (date-second d))))
 
-;; any -> string, paths and values to plain text
-(define (arg-string a)
-  (cond [(path? a) (path->string a)]
-        [(string? a) a]
-        [else (format "~a" a)]))
-
-;; string -> string, passwords in URLs become *** (S-8)
-(define (redact-arg a)
-  (regexp-replace* #rx"://[^/:@ \t]+:[^/@ \t]+@"
-                   (arg-string a)
-                   "://***@"))
+;; arg-string and redact-arg now live in core/log.rkt (D-021): one
+;; redaction path, so a trace record and a pm-run-start line cannot
+;; drift apart. Required, not redefined.
 
 ;; path-string (listof string) path-string exact-integer
 ;; -> exact-integer, START line plus the start time
 (define (print-run-start exe argv cwd pgid)
   (eprintf "pm-run-start ~a cwd=~a pid=~a ~a ~a\n"
-           (utc-stamp) (arg-string cwd) pgid
-           (arg-string exe)
-           (string-join (map redact-arg argv) " "))
+           (utc-stamp) (trace-arg-string cwd) pgid
+           (trace-arg-string exe)
+           (string-join (map trace-redact argv) " "))
   (flush-output (current-error-port))
   (current-inexact-monotonic-milliseconds))
 
@@ -415,7 +408,7 @@
   (define ms (inexact->exact
               (round (- (current-inexact-monotonic-milliseconds)
                         start-ms))))
-  (eprintf "pm-run-end ~a after=~ams ~a\n" outcome ms (arg-string exe))
+  (eprintf "pm-run-end ~a after=~ams ~a\n" outcome ms (trace-arg-string exe))
   (flush-output (current-error-port)))
 
 ;; path-string (listof string) -> run-result, batch tools via files
