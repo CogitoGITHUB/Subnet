@@ -54,6 +54,12 @@ synthetic fixture only.
 Done when: the harness runs the Phase 1 tests green, and the fixture
 contains no real name or private data.
 
+** 1.5 --format sexp|json on the scripts
+scripts/check.nu and scripts/tree.nu accept --format sexp|json (AI-RULES
+rule 7).
+Done when: each script run with --format json prints valid JSON Lines records
+and exits with the same code as before.
+
 * Phase 2 Model, pure core
 ** 2.1 node identity
 core/ids.rkt mints and compares node identities.

@@ -5,6 +5,15 @@
 Newest first. D-0xx numbering. Any change to a decision gets a new number,
 the old entry stays and is marked superseded.
 
+* D-005 Installed Nu is 0.116.0
+:PROPERTIES:
+:STATE: accepted
+:END
+The installed Nu is 0.116.0, not 0.116.1. Scripts must work on 0.116.0. Do
+not assume newer Nu features. Reason: a script that works only on a Nu the
+user does not have is a broken gate, and the gate is the thing everything
+else trusts.
+
 * D-004 Git root is above NodeShape/
 :PROPERTIES:
 :STATE: accepted
