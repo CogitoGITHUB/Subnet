@@ -310,7 +310,7 @@ def stage-8-files [fast] {
 # command called main and passes the flag through; it must therefore NOT
 # also be called explicitly, or the whole gate runs twice.
 def main [--fast] {
-    let want = ($env | get -o CYBERDECK_STAGES? | default "6")
+    let want = ($env | get -o CYBERDECK_STAGES? | default "1,2,3,4,5,6,7,8,9,10,11")
     let todo = ($want | split row ",")
     let total = (timeit {
         require-pinned-version
@@ -351,8 +351,36 @@ def main [--fast] {
         if "6" in $todo {
             run-stage-6-body
         }
+        # Stages 9-11. --fast switches the test list only: check.sh compiles
+        # every .rkt in both modes, and so does this. The records from the
+        # test run and one record per compiled file are handed to verdict,
+        # so a compile failure fails the gate exactly as the old `fail=1`
+        # on `raco make` did.
+        let full = (stage-8-files false)
+        mut ccodes = []
+        mut recs = []
+        if "9" in $todo {
+            print $"[check] stage 9 compile ($full | length) files"
+            $ccodes = (compile-all $full)
+            let cbad = ($ccodes | any {|c| $c != 0})
+            print $"[check] stage 9 exit=(if $cbad { 1 } else { 0 })"
+        }
+        if "10" in $todo {
+            let testfiles = (if $fast { $FAST_RKTS } else { $full })
+            print $"[check] stage 10 tests ($testfiles | length) files fast=($fast)"
+            $recs = (run-all $testfiles)
+        }
+        if "11" in $todo {
+            let crecs = ($ccodes | each {|c| {file: "(compile)", exit: $c, ms: 0} })
+            let vcode = (verdict ($recs | append $crecs) $fast)
+            print $"[check] stage 11 exit=($vcode)"
+            # timeit discards the closure value and a closure may not
+            # capture a mutable, so the code leaves through $env.
+            $env.CYBERDECK_VERDICT = $vcode
+        }
     })
     print $"[check] end utc=(utc) after=(($total | into int))ns"
+    exit ($env | get -o CYBERDECK_VERDICT? | default 0)
 }
 
 # Stage 9-11 helpers (check.sh lines 97-130). Stages 1-8 stay above; these
