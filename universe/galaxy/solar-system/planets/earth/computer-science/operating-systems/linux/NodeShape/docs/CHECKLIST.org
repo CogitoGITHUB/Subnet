@@ -13,11 +13,13 @@ docs/CHECKLIST.org.
 Done when: all four files exist, gate is green, and they are committed with
 explicit NodeShape/ paths.
 
-** 0.2 gate script scripts/check.nu
+** 0.2 gate script scripts/check.nu [done]
 A Nu script that fails if any of docs/AI-RULES.org, docs/DECISIONS.org,
 docs/PLAN.org, docs/CHECKLIST.org is missing.
 Done when: deleting any one of the four files makes scripts/check.nu exit
 non-zero and print which file is missing.
+Status: done. On the real root all five checks PASS and exit=0. Against an
+empty root all five FAIL and exit=1. timeit supplies the monotonic duration.
 
 ** 0.3 tree script
 A Nu script that prints the NodeShape/ tree and hides compiled/.
