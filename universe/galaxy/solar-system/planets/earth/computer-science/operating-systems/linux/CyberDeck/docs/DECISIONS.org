@@ -10,7 +10,8 @@ value (user now, system later) through ONE function; no other code reads
 HOME or XDG_*. System-wide installs are deferred: a second scope with
 its own store, lock, manifest, profile and root-owned roots; no sharing
 between scopes; the activation target for system scope is decided with
-MappingOS. v1 ships user scope only. D-029, D-016.
+MappingOS. v1 ships user scope only. Nu scripts included in the seam;
+=env.nu= is the Nu side. D-029, D-016.
 
 ** 2026-10-10 D-028: engine layering, pure core and one effect writer
 =core/= is pure: specs plus flags plus vault pins become a package-level

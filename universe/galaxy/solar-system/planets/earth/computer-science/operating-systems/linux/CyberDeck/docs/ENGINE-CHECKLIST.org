@@ -38,12 +38,16 @@ Done when: a test run emits IN/OUT records and a redaction check proves
 no secret reaches the record path.
 
 * PHASE A: pure core
-** TODO E-00 scope seam
-One function maps scope to roots; replace every direct HOME/XDG use
-found in the inventory (check.nu, env.nu, startup.nu, need-nu.nu,
-git.rkt, vault.rkt; the fixture HOMEs in tests stay). / Done when:
-grepping HOME/XDG_ outside that function and outside test blocks finds
-nothing, and the gate is green (D-029).
+** TODO E-00 scope seam, Racket AND Nu
+One Racket function (scope -> roots) used by every =.rkt=, and
+=scripts/env.nu= as the single Nu counterpart used by every =.nu=; the
+only two places in non-test code that read HOME or XDG_*. Replace the
+direct uses found by the inventory (=git.rkt= line 65,
+=backends/vault.rkt= line 157, =check.nu= lines 391 and 397,
+=startup.nu= line 54, =need-nu.nu= line 50, and =env.nu='s own helper). /
+Done when: grepping HOME/XDG_ in non-test code finds only those two
+places; a test shows both resolve identical roots for the user scope;
+gate green (D-029).
 
 ** TODO E-01 flag parser and =--format=
 A real flag parser on the existing commands, plus =--format sexp|json=. /
