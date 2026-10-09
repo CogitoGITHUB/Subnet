@@ -32,6 +32,21 @@ is cancelled. / Done when: each prints TEST-START before and TEST-END
 after, so a start with no end names the stuck job; the queue test file
 goes green.
 
+** BLOCKER P-04 and P-03: jobs.rkt hangs before its own tests finish
+Found 2026-10-10 while proving P-04. The suite stops in the kill -9 fifo
+test and never returns: the parent kills the lock holder, THEN opens
+=k-die= for reading; the holder is already dead, so no writer ever
+appears and =open-input-file= blocks forever. Deterministic, not a race.
+The P-04 trace records stop at the last =job-cancel=, which is the last
+call before that block.
+Evidence the hang predates P-04 (no .rkt was edited before 02:06):
+=/tmp/pm-runs/nu-full.log= (01:31 full gate) ends with TEST-START
+=backends/jobs.rkt= and has 0 TEST-END lines. Eight stale
+=/var/tmp/pm-jobs*= dirs remain, the oldest from 2026-10-09 10:38.
+The P-04 tracing change is written and balanced but NOT committed: the
+gate cannot go green until the fifo test is fixed. Patch kept outside the
+tree. Fix the fifo ordering first, then re-run P-04.
+
 ** TODO P-04 wire tracing at boundaries
 Turn on =with-trace= (D-021) at test boundaries and public entry points. /
 Done when: a test run emits IN/OUT records and a redaction check proves
