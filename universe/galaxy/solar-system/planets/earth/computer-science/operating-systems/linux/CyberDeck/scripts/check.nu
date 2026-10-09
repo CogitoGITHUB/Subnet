@@ -175,6 +175,48 @@ def stage-3 [] {
     1
 }
 
+# Stage 4 (check.sh lines 23-37): the D-011 monorepo rules.
+# `grep -qx` is a whole-line exact match, so the Nu side compares the
+# stripped line to the exact string rather than using str contains.
+# git ls-files has no Nu built-in equivalent; it is run as an external
+# through run-external, which is the Nu way to call it.
+def git-lines [args] {
+    let r = (do { run-external "git" ...$args } | complete)
+    if $r.exit_code != 0 {
+        return []
+    }
+    $r.stdout | lines | where {|l| (($l | str trim) | is-not-empty)}
+}
+
+def stage-4 [] {
+    # local to this function, never captured by a closure
+    mut bad = 0
+    let gi = (if (".gitignore" | path exists) {
+        (open --raw ".gitignore") | lines | each {|l| $l | str trim}
+    } else { [] })
+    if not ("sources/vault.git/" in $gi) {
+        print "GATE: .gitignore must list sources/vault.git/ (D-011 monorepo)"
+        $bad = 1
+    }
+    if "sources/" in $gi {
+        print "GATE: .gitignore must not blanket-list sources/ (specs live there)"
+        $bad = 1
+    }
+    let tracked_vault = (git-lines ["ls-files" "--" "sources/vault.git"])
+    if ($tracked_vault | is-not-empty) {
+        print "GATE: sources/vault.git must never be tracked"
+        $bad = 1
+    }
+    # gitlinks show up as mode 160000 in ls-files -s; "^16" catches them
+    let modes = (git-lines ["ls-files" "-s" "--" "sources"]
+                 | where {|l| ($l | str starts-with "16")})
+    if ($modes | is-not-empty) {
+        print "GATE: sources/ must never embed a git repo (use the monorepo)"
+        $bad = 1
+    }
+    $bad
+}
+
 def run-stages [] {
     let want = ($env | get -o CYBERDECK_STAGES? | default "6")
     let todo = ($want | split row ",")
@@ -195,6 +237,11 @@ def run-stages [] {
             let rc = (stage-3)
             print $"[check] stage 3 exit=($rc)"
         }
+        if "4" in $todo {
+            print $"[check] stage 4 D-011 monorepo rules"
+            let rc = (stage-4)
+            print $"[check] stage 4 exit=($rc)"
+        }
         if "6" in $todo {
             run-stage-6-body
         }
@@ -205,6 +252,9 @@ def run-stages [] {
 # NOT named main: nu auto-runs a command called main, so naming it main
 # AND calling it explicitly runs the whole stage twice (verified 0.116.1).
 run-stages
+
+
+
 
 
 
