@@ -105,8 +105,8 @@ def lint-root [root] {
     print $"lint: ($files | length) files, ($all | length) violations"
 }
 
-def run-stage-6 [] {
-    print $"[check] start utc=(utc) stage=6 lint"
+def run-stage-6-body [] {
+    print $"[check] stage 6 text lint"
     # Roots come from $env, not from arguments: this Nu build exposes no
     # args column on $nu or $env, so a positional path is silently dropped
     # (verified 0.116.1). CYBERDECK_LINT_ROOTS is colon-separated and
@@ -128,10 +128,45 @@ def run-stage-6 [] {
     # second collect pass. It costs a few ms and keeps the timed block to
     # the real work: one lint-and-report pass.
     let violations = ($roots | each {|r| lint-collect $r} | flatten | length)
-    print $"[check] end utc=(utc) stage=6 after=(($total | into int))ns"
     if $violations > 0 { exit $EXIT_VIOLATIONS }
+}
+
+# Stage 1 (check.sh lines 8-11): cli/ must never reference the test-only
+# file-URL flag. The old stage used `grep -rq` over cli/; here the files
+# are read directly and searched with str contains, no external grep.
+def stage-1 [] {
+    if not ("cli" | path exists) {
+        return 0
+    }
+    let files = (glob "cli/**/*.rkt")
+    let hits = ($files | where {|f|
+        (open --raw $f) | str contains "current-allow-file-urls" })
+    if ($hits | is-empty) {
+        return 0
+    }
+    print "GATE: cli/ must never reference current-allow-file-urls"
+    $hits | each {|h| print $"  offender: ($h)"}
+    1
+}
+
+def run-stages [] {
+    let want = ($env | get -o CYBERDECK_STAGES? | default "6")
+    let todo = ($want | split row ",")
+    let total = (timeit {
+        require-pinned-version
+        if "1" in $todo {
+            print $"[check] stage 1 cli file-url flag"
+            let rc = (stage-1)
+            print $"[check] stage 1 exit=($rc)"
+        }
+        if "6" in $todo {
+            run-stage-6-body
+        }
+    })
+    print $"[check] end utc=(utc) after=(($total | into int))ns"
 }
 
 # NOT named main: nu auto-runs a command called main, so naming it main
 # AND calling it explicitly runs the whole stage twice (verified 0.116.1).
-run-stage-6
+run-stages
+
