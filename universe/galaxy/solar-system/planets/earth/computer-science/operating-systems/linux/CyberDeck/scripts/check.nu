@@ -149,6 +149,17 @@ def stage-1 [] {
     1
 }
 
+# Stage 2 (check.sh lines 12-15): git must exist. `command -v` becomes
+# `which`, a Nu built-in; only the exit status matters, as in the old gate.
+def stage-2 [] {
+    let w = (do { ^which git } | complete)
+    if $w.exit_code != 0 {
+        print "GATE: git executable not found"
+        return 1
+    }
+    0
+}
+
 def run-stages [] {
     let want = ($env | get -o CYBERDECK_STAGES? | default "6")
     let todo = ($want | split row ",")
@@ -158,6 +169,11 @@ def run-stages [] {
             print $"[check] stage 1 cli file-url flag"
             let rc = (stage-1)
             print $"[check] stage 1 exit=($rc)"
+        }
+        if "2" in $todo {
+            print $"[check] stage 2 git present"
+            let rc = (stage-2)
+            print $"[check] stage 2 exit=($rc)"
         }
         if "6" in $todo {
             run-stage-6-body
@@ -169,4 +185,5 @@ def run-stages [] {
 # NOT named main: nu auto-runs a command called main, so naming it main
 # AND calling it explicitly runs the whole stage twice (verified 0.116.1).
 run-stages
+
 
