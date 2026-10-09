@@ -77,3 +77,16 @@ fetches it automatically either. A fresh clone gets it by hand (any
 recent stable aarch64 build); scripts/need-nu.nu reports which binary
 and version is in effect. No system install, no PATH surgery, no sudo.
 Vendor nothing (Nu binaries stay out of git).
+
+* check.nu port progress
+Resumable from this file. Each stage is committed on its own; check.sh
+stays the gate until the last stage lands.
+| stage | what | commit |
+|-------+------+--------|
+| 1 | cli/ must not reference current-allow-file-urls | 03b7df4 |
+| 2 | git present | 942f370 |
+| 3 | helper tools present (env setsid pkill flock mkfifo tar) | 0fe527e |
+| 4 | D-011 monorepo rules (.gitignore, vault untracked) | fd17758 |
+| 6 | text lint, also covers .nu | 81a88c3 |
+| 8-11 | NOT STARTED: fast set, raco make, per-file tests, verdict |
+
