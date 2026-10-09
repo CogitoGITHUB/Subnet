@@ -88,5 +88,7 @@ stays the gate until the last stage lands.
 | 3 | helper tools present (env setsid pkill flock mkfifo tar) | 0fe527e |
 | 4 | D-011 monorepo rules (.gitignore, vault untracked) | fd17758 |
 | 6 | text lint, also covers .nu | 81a88c3 |
+| 7 | GIT_ALLOW_PROTOCOL=file + informational nu report | 4d7d005 |
 | 8-11 | NOT STARTED: fast set, raco make, per-file tests, verdict |
+
 

@@ -267,6 +267,25 @@ def stage-5 [] {
     $bad
 }
 
+# Stage 7 (check.sh lines 80-84): export GIT_ALLOW_PROTOCOL=file for every
+# spawn below, then report which Nushell the scripts would use. The report
+# is informational only: `|| true` in the old gate, so a non-zero exit here
+# is recorded and swallowed rather than failing the gate.
+def stage-7 [] {
+    $env.GIT_ALLOW_PROTOCOL = "file"
+    let nu_bin = ($env | get -o CYBERDECK_NU? | default ($nu.current-exe))
+    let r = (do { run-external $nu_bin "--no-config-file" "scripts/need-nu.nu" } | complete)
+    print $"[stage7] GIT_ALLOW_PROTOCOL=(($env | get GIT_ALLOW_PROTOCOL))"
+    print $"[stage7] nu report exit=($r.exit_code)"
+    for l in ($r.stdout | lines) {
+        print $"[stage7] ($l)"
+    }
+    for l in ($r.stderr | lines) {
+        print $"[stage7] stderr: ($l)"
+    }
+    0
+}
+
 def run-stages [] {
     let want = ($env | get -o CYBERDECK_STAGES? | default "6")
     let todo = ($want | split row ",")
@@ -297,6 +316,10 @@ def run-stages [] {
             let rc = (stage-5)
             print $"[check] stage 5 exit=($rc)"
         }
+        if "7" in $todo {
+            let rc = (stage-7)
+            print $"[check] stage 7 exit=($rc)"
+        }
         if "6" in $todo {
             run-stage-6-body
         }
@@ -307,6 +330,8 @@ def run-stages [] {
 # NOT named main: nu auto-runs a command called main, so naming it main
 # AND calling it explicitly runs the whole stage twice (verified 0.116.1).
 run-stages
+
+
 
 
 
