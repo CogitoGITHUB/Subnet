@@ -372,11 +372,12 @@ def gate-log-dir [] {
     $d
 }
 
-# file -> string, log path for one source file. "/" becomes "_", and
-# ".log" is glued onto the name in one piece: path join with a separate
-# ".log" argument yields "name/.log" instead (verified 0.116.1).
-def log-path [f] {
-    (gate-log-dir) | path join (($f | str replace -a "/" "_") + ".log")
+# file, tag -> string, log path for one source file. "/" becomes "_", and
+# the ".tag.log" tail is glued onto the name in one piece: path join with a
+# separate ".log" argument yields "name/.log" instead (verified 0.116.1).
+# The tag keeps the make log and the test log of one file apart.
+def log-path [f tag] {
+    (gate-log-dir) | path join (($f | str replace -a "/" "_") + "." + $tag + ".log")
 }
 
 # file -> record {file, exit, ms}
@@ -391,7 +392,7 @@ def log-path [f] {
 # from disk afterwards. ns -> ms is integer division of the duration.
 def run-child [f] {
     let raco = (raco-exe)
-    let lp = (log-path $f)
+    let lp = (log-path $f "test")
     let rp = ($lp | str replace ".log" ".rec")
     print $"TEST-START ($f)"
     let ns = (timeit {
@@ -420,4 +421,41 @@ def run-all [files] {
         print $"  ($r.ms) ($r.file)"
     }
     $recs
+}
+
+# file -> record {file, exit, ms}, one `raco make -v`.
+#
+# Same shape as run-child and for the same reason: timeit returns only a
+# duration and a closure may not capture a mutable, so the complete record
+# is written inside the timed block and read back after it. Output goes to
+# a "make" log so it does not overwrite the test log of the same file.
+def compile-one [f] {
+    let raco = (raco-exe)
+    let lp = (log-path $f "make")
+    let rp = ($lp | str replace ".log" ".rec")
+    let ns = (timeit {
+        (run-external $raco "make" "-v" $f | complete | to json) | save --force $rp
+    })
+    let r = (open --raw $rp | from json)
+    rm $rp
+    let nl = (char newline)
+    $"exit=($r.exit_code)($nl)($r.stdout)($r.stderr)" | save --force $lp
+    {file: $f, exit: $r.exit_code, ms: (($ns | into int) / 1000000 | into int)}
+}
+
+# list -> list of exit codes, sorted compile of every file.
+#
+# check.sh runs one `raco make -v` over the whole sorted list; this runs
+# one per file so a failure names the file. Racket's compiled/ output
+# stays in-tree (D-027): PLTCOMPILEDROOTS is deliberately not set here.
+# The single STEP-END line is kept exactly as the old gate prints it.
+def compile-all [files] {
+    if ($files | is-empty) {
+        print "STEP-END compile after=0ms"
+        return []
+    }
+    let recs = ($files | sort | each {|f| compile-one $f })
+    let total = ($recs | get ms | math sum)
+    print $"STEP-END compile after=($total)ms"
+    $recs | get exit
 }
