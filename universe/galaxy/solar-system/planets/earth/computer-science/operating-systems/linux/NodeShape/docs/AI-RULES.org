@@ -11,8 +11,9 @@ Authoritative. Read this file before doing any work in NodeShape/.
 
 * 2. Commits
 - Small commits, one checklist item each.
-- Explicit paths only, always prefixed NodeShape/ (for example NodeShape/docs/PLAN.org).
-- Never use git add -A, never use git add with a bare directory, never use git commit -a.
+- Run git from inside NodeShape/ and stage with explicit relative paths (for example `git add docs/PLAN.org`).
+- Never `git add -A` or `git add .`.
+- Never stage anything outside NodeShape/.
 - No pushes unless the user asks.
 
 * 3. Gate

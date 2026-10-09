@@ -5,6 +5,18 @@
 Newest first. D-0xx numbering. Any change to a decision gets a new number,
 the old entry stays and is marked superseded.
 
+* D-004 Git root is above NodeShape/
+:PROPERTIES:
+:STATE: accepted
+:END
+NodeShape/ sits deep inside the Subnet git repo; the git root is several
+levels up. Git commands run from inside NodeShape/ with explicit relative
+paths, for example git add docs/PLAN.org. Never git add -A, never git add .,
+and never stage anything outside NodeShape/. Reason: a path written as
+NodeShape/... is relative to NodeShape/ itself and silently matches nothing,
+while a path relative to the git root is long enough to invite staging the
+wrong directory.
+
 * D-003 Scope: AI work is confined to NodeShape/
 :PROPERTIES:
 :STATE: accepted
