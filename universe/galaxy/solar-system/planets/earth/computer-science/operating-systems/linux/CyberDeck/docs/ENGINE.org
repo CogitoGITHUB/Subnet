@@ -64,6 +64,7 @@ closed before anything changes (D-024 =owner=, exit 9).
 Install identity = name + slot + version + input hash, where the input
 hash covers resolved flags and every dependency identity (D-023). A
 dependency change therefore cascades into a different store directory.
+All roots derive from the scope function (D-029).
 
 * Tree
 #+BEGIN_EXAMPLE

@@ -38,6 +38,13 @@ Done when: a test run emits IN/OUT records and a redaction check proves
 no secret reaches the record path.
 
 * PHASE A: pure core
+** TODO E-00 scope seam
+One function maps scope to roots; replace every direct HOME/XDG use
+found in the inventory (check.nu, env.nu, startup.nu, need-nu.nu,
+git.rkt, vault.rkt; the fixture HOMEs in tests stay). / Done when:
+grepping HOME/XDG_ outside that function and outside test blocks finds
+nothing, and the gate is green (D-029).
+
 ** TODO E-01 flag parser and =--format=
 A real flag parser on the existing commands, plus =--format sexp|json=. /
 Done when: =--format= is parsed in one place and a bad value exits 2

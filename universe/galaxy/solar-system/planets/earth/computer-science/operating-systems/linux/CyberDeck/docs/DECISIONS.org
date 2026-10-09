@@ -4,6 +4,14 @@
 * Log
 Append-only. Newest first. Every entry names the rule IDs it touches.
 
+** 2026-10-10 D-029: scope seam, one function owns every root
+All roots (store, profile, state, config, cache) come from one scope
+value (user now, system later) through ONE function; no other code reads
+HOME or XDG_*. System-wide installs are deferred: a second scope with
+its own store, lock, manifest, profile and root-owned roots; no sharing
+between scopes; the activation target for system scope is decided with
+MappingOS. v1 ships user scope only. D-029, D-016.
+
 ** 2026-10-10 D-028: engine layering, pure core and one effect writer
 =core/= is pure: specs plus flags plus vault pins become a package-level
 plan, the plan becomes lock data, and the package plan lowers to actions.
@@ -189,9 +197,9 @@ Export is checkout-based from the mirror at the pin into an empty
 staging dir (no implementation yet). Interface for backends/git.rkt:
 #+begin_example
 (provide (contract-out
- [git-export-commit (->* (path-string? string? path-string?)
-                         (#:timeout exact-positive-integer?)
-                         void?)]))
+  [git-export-commit (->* (path-string? string? path-string?)
+                          (#:timeout exact-positive-integer?)
+                          void?)]))
 ;; mirror-dir commit-id staging-dir -> void
 #+end_example
 Exact commands: git --git-dir=<mirror> cat-file -t <commit> (must be
@@ -306,7 +314,7 @@ The earlier entry was wrong: the probe measured the INNER culprit
 form (span 2 at offset 1), so column 1 meant 0-based, not 1-based.
 A span-printing probe confirmed it. Racket lines are 1-based;
 columns get +1 for humans at the spec-read boundary. Pinned by the
-spec.rktd:1:2 and 1:4 tests. See LESSONS.org. P-8, P-10.
+spec.rktd:1:2 and 1:4 tests. See LESSONS.org. P-8, T-10.
 
 ** 2026-10-06 Log macros bypass contract-out (M-3 exception)
 Verified in the REPL: =define-logger= level forms (=log-pm-debug=,
