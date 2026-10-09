@@ -4,6 +4,15 @@
 * Log
 Append-only. Newest first. Every entry names the rule IDs it touches.
 
+** 2026-10-09 D-026: startup measurement is wall time only
+=scripts/startup.nu= reports wall time only; the user/sys CPU columns
+are dropped. No pure-Nu source for them exists on this build:
+Nu 0.116.1 has =timeit= (wall duration) and no =bench=, and this
+Racket has no =current-process-*-milliseconds=. REJECTED: shelling out
+to =times= to recover them, because that reintroduces sh. Baselines
+recorded before 2026-10-09 are therefore not comparable; the Nu numbers
+also include Nu's own spawn overhead. D-026.
+
 ** 2026-10-09 D-021: tracing = choke points + test boundaries
 Tracing is explicit with-trace at choke points (spawn, dispatch,
 resolve, lock, raise) plus one boundary per test case. No #lang

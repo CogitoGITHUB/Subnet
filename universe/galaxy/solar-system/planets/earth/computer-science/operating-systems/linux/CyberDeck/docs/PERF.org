@@ -19,7 +19,28 @@ objects packed (48MB pack). Default-threaded gc flaked under ulimit
 on this phone (thread stacks exhaust virtual; machine heavily loaded),
 which is why the code pins a single thread. Bound stands.
 
-* 2026-10-06 =scripts/startup.sh=, median of 5 (one warmup discarded)
+* Startup baselines (wall time only from here)
+
+Baselines recorded before 2026-10-09 include user/sys columns and are not
+comparable (=startup.nu= is wall time only, D-026).
+
+** 2026-10-09 =scripts/startup.nu=, median of 5 (one warmup discarded)
+
+Wall time only. These numbers also include Nu's own process-spawn
+overhead inside the measured window, so they read higher than the sh
+numbers even for the same Racket start.
+
+| run | real |
+| 1 | 2.82 |
+| 2 | 0.61 |
+| 3 | 1.54 |
+| 4 | 2.55 |
+| 5 | 0.67 |
+| median | 0.67 |
+
+Log: /tmp/pm-runs/startup-baseline.log, exit 0, total 8247696847ns.
+
+** 2026-10-06 =scripts/startup.sh=, median of 5 (one warmup discarded)
 
 | run | real | user | sys |
 | 1 | 1.13 | 0.53 | 0.27 |
