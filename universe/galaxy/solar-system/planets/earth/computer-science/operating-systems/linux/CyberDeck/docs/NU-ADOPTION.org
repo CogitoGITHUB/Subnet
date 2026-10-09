@@ -65,7 +65,7 @@ inherits it.
 
 * e. Migration, one script per commit
 New scripts are Nu from now on. Existing scripts (check.sh,
-startup.sh) convert during the end-of-stage items, one per commit, each
+startup.nu) convert during the end-of-stage items, one per commit, each
 with a parity proof: run the sh and nu versions against a clean tree
 (green both) and a deliberately broken tree (same failure, same exit
 code), paste both outputs in the commit message. check.sh retires only
