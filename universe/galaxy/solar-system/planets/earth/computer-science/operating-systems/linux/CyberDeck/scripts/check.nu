@@ -305,10 +305,11 @@ def stage-8-files [fast] {
     }
 }
 
-def run-stages [] {
-    # --fast comes from a flag-style argument; this Nu build exposes no
-    # args column, so CYBERDECK_FAST=1 is the equivalent switch.
-    let fast = (($env | get -o CYBERDECK_FAST?) == "1")
+# Named main with a real --fast flag, so the CLI matches check.sh exactly
+# (`nu scripts/check.nu --fast`). Verified 0.116.1: nu auto-invokes a
+# command called main and passes the flag through; it must therefore NOT
+# also be called explicitly, or the whole gate runs twice.
+def main [--fast] {
     let want = ($env | get -o CYBERDECK_STAGES? | default "6")
     let todo = ($want | split row ",")
     let total = (timeit {
@@ -353,19 +354,3 @@ def run-stages [] {
     })
     print $"[check] end utc=(utc) after=(($total | into int))ns"
 }
-
-# NOT named main: nu auto-runs a command called main, so naming it main
-# AND calling it explicitly runs the whole stage twice (verified 0.116.1).
-run-stages
-
-
-
-
-
-
-
-
-
-
-
-
