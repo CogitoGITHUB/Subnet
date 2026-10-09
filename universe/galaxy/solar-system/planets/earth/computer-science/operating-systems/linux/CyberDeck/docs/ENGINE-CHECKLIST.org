@@ -1,0 +1,162 @@
+#+TITLE: Engine checklist
+#+AUTHOR: Shape
+
+* Rules for a resuming session
+Read =docs/ENGINE-CHECKLIST.org=, =docs/ENGINE.org= and
+=docs/DECISIONS.org= first, in that order. Then do the first item still
+marked TODO. One item is one small commit. The gate must be green before
+the commit: run =--fast= between items and the full gate at the end of
+each phase. Mark the item DONE with its commit hash in the SAME commit
+that does the work, never in a later one. Never skip ahead: an item that
+looks wrong is fixed or reported, not reordered. Stop only if the gate
+goes red or the item is genuinely ambiguous. Synthetic fixtures only
+(T-10). No timers anywhere (D-015). Nothing outside =CyberDeck/=. No
+push.
+
+* PHASE P: prove what is unproven
+Nothing new is designed until the existing code is measured.
+
+** TODO P-01 prove the vault end to end
+Fetch-namespace, verify, gc, export and backup against a synthetic local
+git repo. / Done when: each of the five operations runs against a
+fixture repo and the exact output is pasted into the commit message.
+
+** TODO P-02 prove the manifest store
+Round trip a synthetic manifest through =backends/manifest.rkt=. /
+Done when: a write/read round trip preserves entries and order, and a
+malformed manifest raises kind ='spec=.
+
+** TODO P-03 prove the jobs queue end to end
+Run a synthetic job to completion, then one that fails, then one that
+is cancelled. / Done when: each prints TEST-START before and TEST-END
+after, so a start with no end names the stuck job; the queue test file
+goes green.
+
+** TODO P-04 wire tracing at boundaries
+Turn on =with-trace= (D-021) at test boundaries and public entry points. /
+Done when: a test run emits IN/OUT records and a redaction check proves
+no secret reaches the record path.
+
+* PHASE A: pure core
+** TODO E-01 flag parser and =--format=
+A real flag parser on the existing commands, plus =--format sexp|json=. /
+Done when: =--format= is parsed in one place and a bad value exits 2
+with kind ='config=.
+
+** TODO E-02 spec fields =slot= and =flags=
+Add both fields to the spec struct and validate them in spec-read. /
+Done when: a spec naming an unknown flag or a duplicate slot is rejected
+with kind ='spec= and a srcloc.
+
+** TODO E-03 core/flags.rkt
+Resolve flags from spec defaults, the global config and per-package
+config. / Done when: precedence spec default < global < per-package is
+pinned by one test each, and unknown flag, conflict and unsatisfied
+requires each raise kind ='config= (D-022).
+
+** TODO E-04 package-level plan in core/plan.rkt
+Derive name, slot, version, commit, resolved flags, dependency
+identities, steps, install forms, check and input hash. Confirm first
+that nothing in the tree already derives a plan. / Done when: golden
+=plan->text= output exists for =pkg-alpha= and =pkg-beta=, and
+=pkg-cycle-a= raises kind ='resolve=.
+
+** TODO E-05 inspect core/lock.rkt, then extend it
+The module already reads and writes a lockfile atomically and sorted;
+extend it to the D-028 shape instead of rewriting it. / Done when: the
+lock records base pin, resolved flags, spec build/install hash, input
+hash and dependency identities, and still round trips through
+=list->lock= / =lock->list=.
+
+** TODO E-06 lowering and the new action structs
+Delete =verify-action=; add =export-action=, =check-action=,
+=mark-incomplete-action=, =clear-incomplete-action= and
+=set-current-action=; lower a package plan to them (D-025, D-028). / Done
+when: lowering a synthetic plan yields the action list in a stable
+order and no action is produced twice.
+
+* PHASE B: effects
+** TODO E-07 store.rkt
+Versioned dirs, the =.pm-incomplete= marker and the =current= link. /
+Done when: a failing step keeps the marker, a succeeding run removes
+it, and two slots of one package get two dirs and two links (D-023).
+
+** TODO E-08 build.rkt
+Execute the closed vocabulary, environment attached here. / Done when:
+one synthetic package per SPEC-NEUTRAL section 2 word builds, and an
+out-of-vocabulary step raises kind ='config=.
+
+** TODO E-09 install.rkt
+Install forms into PREFIX, reusing =local-perform!= rather than forking
+it. / Done when: each install form runs once against a synthetic
+package and a path escaping PREFIX raises kind ='config=.
+
+** TODO E-10 journal.rkt
+Append-only JSON Lines step journal per package. / Done when: a killed
+run resumes, skipping only the step whose input hash matches, and a
+truncated final line counts as unfinished.
+
+** TODO E-11 apply.rkt end to end on the fake backend
+Fetch, export, build, install, check, clear marker, current. / Done
+when: the fake backend run goes green and a failing build leaves the
+prefix untouched and resumable.
+
+** TODO E-12 apply on a real local synthetic git fixture
+Same path, real git, synthetic packages only. / Done when: a synthetic
+repo installs through every step and the =current= link resolves.
+
+** TODO E-13 activate.rkt
+Generations, the atomic swap, and conflict detection. / Done when: two
+packages claiming one path fail closed with exit 9 and nothing changes.
+
+** TODO E-14 manifest write by apply
+=apply= writes the manifest itself; no caller writes it. / Done when: a
+synthetic apply leaves the manifest updated on disk and no other module
+writes it.
+
+* PHASE C: flow
+** TODO E-15 rollback, remove, hold
+Rollback repoints =profile= at the previous generation; remove unlinks
+from the profile only; hold pins a slot. / Done when: each works on a
+synthetic profile, and remove frees no disk (D-024).
+
+** TODO E-16 update.rkt
+=check= fetches and compares remote-head to the pin, =review= lists new
+commits, =apply= delegates, =hold= is per slot, dev packages are listed
+as skipped. / Done when: =--all= with a dev package prints the skip
+line and exits unchanged (DEV-MODE).
+
+** TODO E-17 query.rkt
+=why=, =owner=, =verify=, read-only. / Done when: each answers on a
+synthetic profile and raises kind ='config= for an unknown name.
+
+** TODO E-18 CLI commands for every stage
+One command per stage, each with =--format sexp|json=. / Done when:
+one golden per command per format, and an unknown command exits 2
+(D-008).
+
+* PHASE D
+** TODO E-19 dev mode
+Wire docs/DEV-MODE.org unchanged. / Done when: a dev checkout appears
+through the same =current= link, status flags it =dev=, and activation
+treats it as normal.
+
+** TODO E-20 observability pass
+Header and footer per run, redaction check, and the OBS-OK lint. / Done
+when: a full run prints a header and a footer and the lint passes.
+
+** TODO E-21 outputs outside the tree
+Review every generated path against D-016. / Done when: a fresh run on a
+clean tree leaves the tree byte-identical except =compiled/= (D-027).
+
+** TODO E-22 Nu migration leftovers
+Decide what =backends/run.rkt= does about the retired =check.sh=. / Done
+when: the decision is written into DECISIONS.org with its reason.
+
+** TODO E-23 TUI event loop
+The D-015 event loop for the Rust TUI. / Done when: the TUI renders
+from the snapshot with no timer anywhere.
+
+** TODO E-24 gate the Rust TUI
+=cargo test= is not in the gate today. / Done when: =cargo test= runs as
+part of the gate and passes, with its output in the gate log.
