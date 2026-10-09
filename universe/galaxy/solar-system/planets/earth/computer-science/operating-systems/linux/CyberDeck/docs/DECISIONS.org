@@ -15,7 +15,7 @@ logger; =PM_TRACE=0 silences the screen only, never the record.
 D-021.
 
 ** 2026-10-08 D-020 amended: Nu version is manual, never pinned
-No pinned path and no automatic fetch/update: scripts/need-nu.sh
+No pinned path and no automatic fetch/update: scripts/need-nu.nu
 reports the binary in effect (newest ~/opt/nushell/*/nu, else PATH)
 with its version, and fails clearly when none exists. Versions change
 only by hand. The 0.116.1 record below stays as history. D-020.

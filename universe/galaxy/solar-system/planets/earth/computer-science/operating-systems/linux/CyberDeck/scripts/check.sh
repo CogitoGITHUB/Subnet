@@ -81,7 +81,7 @@ done
 export GIT_ALLOW_PROTOCOL=file
 # 0c. Report the Nushell scripts would use (informational only, D-020
 # amended: manual version control, never fetched, never gated).
-sh scripts/need-nu.sh || true
+nu --no-config-file scripts/need-nu.nu || true
 
 # Fast set: no subprocesses (in-process only). Slow files spawn and
 # run detached before each commit instead (see TEST-START lines).
