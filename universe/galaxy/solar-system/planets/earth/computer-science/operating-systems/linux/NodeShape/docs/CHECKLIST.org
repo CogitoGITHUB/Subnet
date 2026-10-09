@@ -21,10 +21,13 @@ non-zero and print which file is missing.
 Status: done. On the real root all five checks PASS and exit=0. Against an
 empty root all five FAIL and exit=1. timeit supplies the monotonic duration.
 
-** 0.3 tree script
+** 0.3 tree script [done]
 A Nu script that prints the NodeShape/ tree and hides compiled/.
 Done when: scripts/tree.nu prints no path containing compiled/ and still
 lists core/, backends/ and cli/ when they exist.
+Status: done. On the real root it prints docs/ and scripts/ with no compiled
+and no .git. Against a synthetic root holding src/ and compiled/ it printed
+src/main.rkt and no compiled entry at all, exit=0.
 
 * Phase 1 Foundations
 ** 1.1 event record shape (pure)
