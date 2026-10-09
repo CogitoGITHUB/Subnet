@@ -12,7 +12,8 @@ Racket =compiled/= stays in-tree (gitignored). Measured on this phone:
 re-emits its own stock libraries there. REJECTED. Cargo output:
 =CARGO_TARGET_DIR=<xdg-cache>/cyberdeck/target= for new builds only; no
 existing =target/= deleted. Revisit only if a faster mechanism is found.
-D-027.
+=tui/target= removed from the tree; cargo output lives in the XDG cache
+via =env.nu=. D-027.
 
 ** 2026-10-09 D-026: startup measurement is wall time only
 =scripts/startup.nu= reports wall time only; the user/sys CPU columns

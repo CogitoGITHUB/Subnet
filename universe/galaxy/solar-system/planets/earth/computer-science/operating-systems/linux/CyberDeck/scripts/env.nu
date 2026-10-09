@@ -28,4 +28,15 @@ export-env {
     mkdir ($dir | into string)
     $env.CARGO_TARGET_DIR = $dir
     print $"[env] CARGO_TARGET_DIR=($dir)"
+    # cargo is installed under ~/.cargo/bin, which is NOT on PATH in this
+    # environment (command -v cargo fails on a bare shell). Appended here
+    # for project scripts only; nothing is installed or fetched (D-020).
+    let cargo_bin = ($nu.home-dir | path join ".cargo" "bin")
+    if ($cargo_bin | path exists) {
+        let have = ($env.PATH | split row ":")
+        if not ($have | any {|p| $p == $cargo_bin }) {
+            $env.PATH = ($have | append $cargo_bin | str join ":")
+            print $"[env] PATH+=(($cargo_bin))"
+        }
+    }
 }
