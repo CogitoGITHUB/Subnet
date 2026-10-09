@@ -405,3 +405,19 @@ def run-child [f] {
     print $"TEST-END ($f) exit=($r.exit_code) ms=($ms)"
     {file: $f, exit: $r.exit_code, ms: $ms}
 }
+
+# list -> list, one record per file, in the order given.
+#
+# `each` keeps the order and returns the list, so no mutable is needed and
+# none may appear here: a closure cannot capture a mut in 0.116.1 (parse
+# error). SLOWEST is the same top-10-by-duration summary check.sh prints
+# from its temporary file, printed here instead of written to a temp file.
+def run-all [files] {
+    let recs = ($files | each {|f| run-child $f })
+    print "SLOWEST:"
+    let top = (if ($recs | is-empty) { [] } else { $recs | sort-by ms | reverse | first 10 })
+    for r in $top {
+        print $"  ($r.ms) ($r.file)"
+    }
+    $recs
+}
