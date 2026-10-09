@@ -286,7 +286,29 @@ def stage-7 [] {
     0
 }
 
+# Stage 8 (check.sh lines 86-96): the fast set and --fast selection.
+# Copied exactly from check.sh, in the same order. Timing is monotonic
+# from timeit, so no `date +%s%N` and no `cut`.
+const FAST_RKTS = [
+  "core/errors.rkt" "core/git-id.rkt" "core/git-url.rkt" "core/version.rkt"
+  "core/spec.rkt" "core/spec-read.rkt" "core/resolve.rkt" "core/plan.rkt" "core/ui.rkt"
+  "core/log.rkt" "core/lock.rkt" "core/cancel.rkt" "cli/main.rkt" "info.rkt"
+  "backends/dry-run.rkt" "backends/fake.rkt"
+]
+
+# -> list, the stage-8 file list for the current mode
+def stage-8-files [fast] {
+    if $fast {
+        $FAST_RKTS
+    } else {
+        glob "**/*.rkt" | where {|f| not ($f | str contains "/compiled/")} | sort
+    }
+}
+
 def run-stages [] {
+    # --fast comes from a flag-style argument; this Nu build exposes no
+    # args column, so CYBERDECK_FAST=1 is the equivalent switch.
+    let fast = (($env | get -o CYBERDECK_FAST?) == "1")
     let want = ($env | get -o CYBERDECK_STAGES? | default "6")
     let todo = ($want | split row ",")
     let total = (timeit {
@@ -320,6 +342,11 @@ def run-stages [] {
             let rc = (stage-7)
             print $"[check] stage 7 exit=($rc)"
         }
+        if "8" in $todo {
+            let fs = (stage-8-files $fast)
+            print $"[check] stage 8 file set ($fs | length) files fast=($fast)"
+            for f in $fs { print $"[check] stage 8 file ($f)" }
+        }
         if "6" in $todo {
             run-stage-6-body
         }
@@ -330,6 +357,7 @@ def run-stages [] {
 # NOT named main: nu auto-runs a command called main, so naming it main
 # AND calling it explicitly runs the whole stage twice (verified 0.116.1).
 run-stages
+
 
 
 
