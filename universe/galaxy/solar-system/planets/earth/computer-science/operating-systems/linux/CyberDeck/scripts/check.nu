@@ -354,3 +354,54 @@ def main [--fast] {
     })
     print $"[check] end utc=(utc) after=(($total | into int))ns"
 }
+
+# Stage 9-11 helpers (check.sh lines 97-130). Stages 1-8 stay above; these
+# are the compile, test and verdict halves, proved on fixtures first.
+#
+# -> string, the raco check.sh uses (line 6), overridable for fixtures.
+def raco-exe [] {
+    $env | get -o CYBERDECK_RACO? | default ($nu.home-dir | path join "opt" "racket" "bin" "raco")
+}
+
+# -> string, the gate log directory, created on demand. Child output goes
+# here, never into the tree; same XDG rule as scripts/env.nu.
+def gate-log-dir [] {
+    let base = ($env | get -o XDG_CACHE_HOME? | default ($nu.home-dir | path join ".cache"))
+    let d = ($base | path join "cyberdeck" "gate")
+    mkdir $d
+    $d
+}
+
+# file -> string, log path for one source file. "/" becomes "_", and
+# ".log" is glued onto the name in one piece: path join with a separate
+# ".log" argument yields "name/.log" instead (verified 0.116.1).
+def log-path [f] {
+    (gate-log-dir) | path join (($f | str replace -a "/" "_") + ".log")
+}
+
+# file -> record {file, exit, ms}
+#
+# TEST-START is printed before the child and TEST-END only after the child
+# has exited, so a START without an END still means "stuck". D-015: no
+# timer, no timeout, no sleep; the wait ends on process exit only.
+#
+# timeit returns a duration and discards the closure value, and a closure
+# may not capture a mutable (that is a parse error in 0.116.1), so the
+# child's complete record is written inside the timed block and read back
+# from disk afterwards. ns -> ms is integer division of the duration.
+def run-child [f] {
+    let raco = (raco-exe)
+    let lp = (log-path $f)
+    let rp = ($lp | str replace ".log" ".rec")
+    print $"TEST-START ($f)"
+    let ns = (timeit {
+        (run-external $raco "test" $f | complete | to json) | save --force $rp
+    })
+    let r = (open --raw $rp | from json)
+    rm $rp
+    let nl = (char newline)
+    $"exit=($r.exit_code)($nl)($r.stdout)($r.stderr)" | save --force $lp
+    let ms = (($ns | into int) / 1000000 | into int)
+    print $"TEST-END ($f) exit=($r.exit_code) ms=($ms)"
+    {file: $f, exit: $r.exit_code, ms: $ms}
+}
