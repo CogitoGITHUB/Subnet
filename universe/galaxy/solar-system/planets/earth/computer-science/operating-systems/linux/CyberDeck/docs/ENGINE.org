@@ -1,0 +1,234 @@
+#+TITLE: Engine
+#+AUTHOR: Shape
+
+* Status
+Draft. Every item marked =OPEN: = was not confirmable from the
+inventory in the prompt that produced this file. Nothing here is
+implemented yet; =plan/= and =lock/= exist only as =core/plan.rkt= and
+=backends/dry-run.rkt=.
+
+* Rules
+These hold for every module below.
+- =plan= and =lock= are pure data. No spawn, no filesystem write, no
+  network. Same inputs, byte-identical output.
+- Only =apply= has effects. =plan/, =lock/, =dry-run= never write.
+- The lockfile is written once, only after the whole plan resolves.
+  A partial plan writes nothing.
+- =apply= is event-driven and resumable per step. No timers, no
+  =sleep=, no =timeout=, no foreground waits; every wait ends on an
+  event and =#:cancel= replaces timeouts (D-015).
+- Every step emits a start and an end record on the record path in
+  =core/log.rkt=, with the same redaction as everything else. A step
+  that starts and never ends is the only thing that looks like a hang.
+- Dev packages are skipped by =update --all=, never rebuilt, and
+  listed with their reason. =update --all= never changes its exit code
+  because of a skip (DEV-MODE).
+- Every =#:format= renderer writes through one encoder, so =sexp= and
+  =json= can never disagree about the same value.
+
+* Tree
+#+BEGIN_EXAMPLE
+core/     pure, no effects
+  plan.rkt        spec + manifest + vault state -> plan
+  lock.rkt        plan -> lockfile data
+backends/
+  build.rkt       executor for the closed step vocabulary
+  install.rkt     install forms into PREFIX
+  store.rkt       versioned dirs, .pm-incomplete, current link
+  apply.rkt       fetch, export, build, install, check, current
+  update.rkt      check, review, apply, rollback, hold
+cli/
+  plan lock apply update rollback
+#+END_EXAMPLE
+
+=update.rkt= sits in =backends/=: every operation it performs is an
+effect. DECIDED: =update.rkt= is its own module. It is not folded into
+=apply.rkt=, and review logic stays inside it rather than moving to
+=core/= or =cli/=.
+
+* core/plan.rkt
+: Purpose
+Take a validated spec plus the manifest and the vault state, and emit
+an ordered list of actions. This is the only place that decides what
+to do.
+: Inputs
+- spec (from =core/spec-read.rkt=, format-version 2)
+- =(listof manifest-entry)= from =backends/manifest.rkt=
+- vault namespace listing from =backends/vault.rkt=
+: Outputs
+=(plan (listof action))= plus =plan->text= for the dry-run view.
+: Errors
+- kind ='resolve= when a =deps= entry has no available package and no
+  pin (E-1 fields naming the package)
+- kind ='fetch= when a pin is not a full commit id (D-007)
+- kind ='spec= for anything the spec reader already rejected
+: Tests
+Synthetic fixtures only: =pkg-alpha=, =pkg-beta=, =pkg-cycle-a= in the
+resolve cycle. Golden =plan->text= output.
+: OPEN
+- No spec-to-plan derivation exists today. =plan.rkt= holds the eight
+  action structs and the text round trip, and nothing constructs a
+  plan from a spec. Confirm nothing else in the tree already derives
+  one.
+- =run-step-action= takes =name/argv/cwd=. OPEN: where the build
+  environment (per SPEC-NEUTRAL section 5) is attached — in the action,
+  or in =build.rkt= from the plan's build root.
+- =verify-action= has =expected-hash= and =algorithm=. OPEN: are these
+  still reachable under the closed build vocabulary, or did format 2
+  replace them with =(check PROGRAM ARG ...)=.
+
+* core/lock.rkt
+: Purpose
+Turn a resolved plan into the lockfile data, and only that.
+: Inputs
+=(plan)=
+: Outputs
+An ordered, sorted association: package, url, commit id, version,
+prefix, namespace. Plain data, no write.
+: Errors
+kind ='config= if the same package resolves twice to different
+commits.
+: Tests
+Round trip through =list->lock= / =lock->list=; sortedness is checked
+because a diff must be stable.
+: OPEN
+- No code writes or reads a lockfile on disk. =lockfile= appears only
+  in docs (0.FOUNDATION.org, DECISIONS.org D-004, GLOSSARY.org).
+  D-004 says =lockfile.rktd= in the state dir, not the prefix.
+  OPEN: the state dir path — =~/.local/share/cyberdeck= per D-005,
+  confirm before writing anything.
+- DECIDED: =lock= records the base pin plus a hash of the spec's
+  build and install forms. It does NOT record the =dev= fingerprint;
+  that fingerprint lives in build state, not in the lockfile.
+
+* backends/build.rkt
+: Purpose
+Execute the closed build-step vocabulary. Nothing else may spawn a
+build.
+: Inputs
+=(listof build-step)= from the spec; the resolved source tree.
+: Outputs
+Effects only: files under the build root. Raises on failure.
+: Errors
+kind ='build= with the failing step name and its exit code.
+kind ='config= for a step name outside the closed vocabulary.
+: Tests
+Synthetic packages only, each exercising one vocabulary word.
+: OPEN
+- The exact closed vocabulary is in SPEC-NEUTRAL section 2; this file
+  did not read that section, so the word list is not restated here.
+- DECIDED: =(check PROGRAM ARG ...)= runs inside =apply=, after
+  placement and before =.pm-incomplete= is cleared. SPEC-NEUTRAL
+  section 3 calls it a post-install check.
+
+* backends/install.rkt
+: Purpose
+Place a built tree into PREFIX under the install forms.
+: Inputs
+Built tree, install form, PREFIX.
+: Outputs
+Files under PREFIX.
+: Errors
+kind ='install= when placement fails; kind ='config' when a path
+escapes PREFIX (=local-perform!= already raises this today).
+: Tests
+Synthetic package, each install form once, in and out of PREFIX.
+: OPEN
+- OPEN: whether this module is new logic or a move of
+  =local-perform!= out of =backends/local.rkt=. =local-perform!= is
+  proven and tested; do not fork it.
+
+* backends/store.rkt
+: Purpose
+Own the on-disk shape: versioned dirs, the =.pm-incomplete= marker,
+and the =current= link.
+: Inputs
+Package name, version, a producer of the finished tree.
+: Outputs
+=~/.local/share/cyberdeck/NAME/VERSION/= created holding
+=.pm-incomplete=, removed only after every step succeeds.
+: Errors
+kind ='install= if the marker is still present after a successful
+apply; kind ='config= if PREFIX already exists with a marker from a
+dead run.
+: Tests
+A failing step keeps the marker. A succeeding run removes it.
+- DECIDED: activation lives in =backends/activate.rkt=, a module
+  separate from =store.rkt=. It owns the profile generations
+  (=profile-NNN/= plus the atomic =profile= link swap) from
+  SPEC-NEUTRAL section 4.
+
+* backends/apply.rkt
+: Purpose
+The only orchestrator with effects: fetch, export, build, install,
+check, current.
+: Inputs
+A locked plan, the vault, a manifest to update.
+: Outputs
+PREFIX dirs, the =current= link, a manifest with new pins.
+: Errors
+Propagates ='fetch=, ='build=, ='install= unchanged. Never swallows.
+: Tests
+End to end on synthetic packages, including one failing build that
+leaves the prefix untouched and resumable.
+: Rules
+Each step is separately resumable: state lives on disk, so a resumed
+apply skips completed steps rather than restarting. Each step emits
+start and end records. =#:cancel= stops between steps, never mid-write.
+- DECIDED: resume is an append-only JSON Lines step journal, one file
+  per package, in the state dir. A step is skipped only when its input
+  hash matches the hash on that step's journal line.
+- DECIDED: =apply= is the only writer of the manifest. It writes; it
+  does not return entries for a caller to write.
+
+* backends/update.rkt
+: Purpose
+=check=, =review=, =apply=, =rollback=, =hold=. Never auto-applies.
+: Inputs
+Manifest, vault state, lockfile.
+: Outputs
+For =check= and =review=, data and rendered text. For =apply=,
+=rollback= and =hold=, effects.
+: Errors
+kind ='config= for an action that is not one of the five.
+: Tests
+=--all= with a dev package prints the skip line and exits unchanged.
+: Rules
+=review= is pure. =apply= delegates to =apply.rkt=. DECIDED:
+=rollback= repoints =current= at the previous generation; the list of
+generations is itself the rollback state, so there is no separate
+rollback record to write.
+: OPEN
+- OPEN: the exact skip-line format for dev packages. DEV-MODE records
+  the content (=skipped (dev): NAME branch=... HEAD=... ahead=...
+  dirty=... upstream-has-newer=...=) but not the module that emits it.
+
+* cli/
+: Purpose
+One command per stage. No stage logic in the CLI.
+: Commands
+=plan=, =lock=, =apply=, =update=, =rollback=, plus the existing
+=check= and =help=.
+: Rules
+Every stage command takes =--format sexp|json=. =--format= is parsed
+once, in one place, and the chosen encoder is passed down; the
+encoders share a value walk so the two formats cannot drift.
+: Errors
+Unknown command or bad =--format= is kind ='config= and exits with
+the D-008 code. OPEN: D-008 is still open, so the code is undecided.
+: Tests
+One golden per command per format, synthetic fixtures only.
+: OPEN
+- =parse-args= dispatches by argv length and literal string. It has no
+  flag parser, so =--format= needs one. OPEN: extend the current
+  dispatch or adopt =racket/cmdline= (already required somewhere in
+  the tree, unconfirmed).
+
+* Sequencing
+1. =core/plan.rkt= derivation, with =plan->text= goldens.
+2. =core/lock.rkt=, pure, then its writer.
+3. =backends/store.rkt=, the marker and =current= link.
+4. =backends/build.rkt=, one vocabulary word at a time.
+5. =backends/install.rkt=, moved from =local-perform!=.
+6. =backends/apply.rkt=, then the CLI flags.
+7. =update.rkt=, last: dev mode waits on a working =apply=.
