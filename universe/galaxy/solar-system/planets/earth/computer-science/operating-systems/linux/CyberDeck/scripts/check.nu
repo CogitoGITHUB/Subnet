@@ -160,6 +160,21 @@ def stage-2 [] {
     0
 }
 
+# Stage 3 (check.sh lines 16-22): the helper tools run.rkt shells out to.
+# Existence only, as in the old gate. which is a Nu built-in; nothing is
+# executed, nothing is installed.
+def stage-3 [] {
+    let tools = ["env" "setsid" "pkill" "flock" "mkfifo" "tar"]
+    let missing = ($tools | where {|t| (do { ^which $t } | complete).exit_code != 0 })
+    if ($missing | is-empty) {
+        return 0
+    }
+    for t in $missing {
+        print $"GATE: ($t) executable not found (run.rkt needs it)"
+    }
+    1
+}
+
 def run-stages [] {
     let want = ($env | get -o CYBERDECK_STAGES? | default "6")
     let todo = ($want | split row ",")
@@ -175,6 +190,11 @@ def run-stages [] {
             let rc = (stage-2)
             print $"[check] stage 2 exit=($rc)"
         }
+        if "3" in $todo {
+            print $"[check] stage 3 helper tools present"
+            let rc = (stage-3)
+            print $"[check] stage 3 exit=($rc)"
+        }
         if "6" in $todo {
             run-stage-6-body
         }
@@ -185,5 +205,6 @@ def run-stages [] {
 # NOT named main: nu auto-runs a command called main, so naming it main
 # AND calling it explicitly runs the whole stage twice (verified 0.116.1).
 run-stages
+
 
 
