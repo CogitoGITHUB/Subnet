@@ -2,7 +2,7 @@
 #+AUTHOR: Shape
 
 Evidence: docs/NU-NOTES.org. Pinned ~/opt/nushell/0.116.1/nu, always
-with --no-config-file. check.sh stays the gate until check.nu is proven.
+with --no-config-file. The gate is now scripts/check.nu; check.sh is gone.
 
 * a. Scope
 Nu owns scripts/ (check, startup, env, lib-obs, wrappers, lints) and
@@ -79,8 +79,8 @@ and version is in effect. No system install, no PATH surgery, no sudo.
 Vendor nothing (Nu binaries stay out of git).
 
 * check.nu port progress
-Resumable from this file. Each stage is committed on its own; check.sh
-stays the gate until the last stage lands.
+Resumable from this file. Each stage is committed on its own. check.sh
+was proven equivalent and deleted; check.nu is the only gate.
 | stage | what | commit |
 |-------+------+--------|
 | 1 | cli/ must not reference current-allow-file-urls | 03b7df4 |
@@ -90,7 +90,12 @@ stays the gate until the last stage lands.
 | 6 | text lint, also covers .nu | 81a88c3 |
 | 7 | GIT_ALLOW_PROTOCOL=file + informational nu report | 4d7d005 |
 | 8 | FAST_RKTS set and --fast selection | 52be29a |
-| 8-11 | NOT STARTED: fast set, raco make, per-file tests, verdict |
+| 9 | raco make -v per file, sorted (compile-all) | 813229c |
+| 10 | per-file raco test, TEST-START/END, SLOWEST (run-all) | 24a8fb4 |
+| 11 | verdict lines + exit code (verdict) | 6bc4da6 |
+| -- | --fast as a real CLI flag (def main [--fast]) | 38eb801 |
+| -- | stages 9-11 wired into main | fb5d902 |
+| -- | check.nu replaces check.sh, --fast proven equal | d9adaf6 |
 
 
 

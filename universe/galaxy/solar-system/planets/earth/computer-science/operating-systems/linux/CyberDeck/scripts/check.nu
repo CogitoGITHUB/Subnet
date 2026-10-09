@@ -1,9 +1,9 @@
 #!/usr/bin/env nu
 # scripts/check.nu -- green gate for CyberDeck (P-1, T-7).
 #
-# Converted from scripts/check.sh, one stage at a time. This file so far
-# implements STAGE 6 ONLY: the text lint. check.sh remains the gate until
-# the last stage lands, and is still expected to pass unchanged.
+# Converted from scripts/check.sh stage by stage and now the only gate;
+# check.sh is deleted. The "check.sh lines N-M" comments below are kept
+# as the map back to the shell original, not as a live dependency.
 #
 # Stage 6 rules, unchanged from check.sh lines 65-79:
 #   - no tabs

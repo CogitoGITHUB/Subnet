@@ -83,7 +83,7 @@ exactly one wins (25 green, including kill -9 recovery).
 Git children run as flock child.lock sh -c 'exec git ...'. A held
 child.lock means an orphan is alive: the vault is "needs verify"
 (derived live, never stored) and writers refuse until it exits or
-pm vault verify passes. flock joins the check.sh tool gate.
+pm vault verify passes. flock joins the check.nu tool gate.
 Cancel: (make-cancel-source) -> (values evt trigger!); kind
 'cancelled, exit 130; Ctrl-C routes through the same path (implemented
 in backends/run.rkt + core/cancel.rkt + core/errors.rkt).

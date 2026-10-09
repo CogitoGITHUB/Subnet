@@ -35,7 +35,7 @@ raco pkg install --auto rackunit-lib
   needed, and record the result in DECISIONS.org.
 
 * 2. Prime directives
-- *P-1* Small steps. Every step ends with a green =scripts/check.sh= and a commit.
+- *P-1* Small steps. Every step ends with a green =scripts/check.nu= and a commit.
 - *P-2* Plan as data, effects at the edge. Anything that changes the machine is first an
   =action= value. The default backend is =dry-run=.
 - *P-3* Errors are a feature. Every failure says WHAT, WHERE, WHY, NEXT, with the exact
@@ -359,7 +359,7 @@ build: step failed;
 - *T-5* Fixtures live in =tests/fixtures/=. Temp dirs come from =make-temporary-directory*=
   and are removed in =dynamic-wind=.
 - *T-6* A bug fix starts with a failing test.
-- *T-7* =scripts/check.sh= runs: =raco make -v= on everything, =raco test=, and a text
+- *T-7* =scripts/check.nu= runs: =raco make -v= on everything, =raco test=, and a text
   lint (no tabs, no trailing spaces, no line over 102 characters, final newline). It must
   pass before every commit.
 - *T-8* The core is tested with the =fake= backend. Core tests never need real effects.
@@ -417,7 +417,7 @@ build: step failed;
   intent is ambiguous.
 - *W-9* Keep the user's naming and Org conventions. Do not rename things unasked.
 - *W-10* Definition of Done for any change: interface documented; tests (including error
-  cases) pass; =check.sh= green; no rule violated or the deviation logged; commit made;
+  cases) pass; =check.nu= green; no rule violated or the deviation logged; commit made;
   next step stated.
 
 * 14. Open decisions (seed =docs/DECISIONS.org= with these)
@@ -443,7 +443,7 @@ every code file is a stub holding only its purpose statement and an empty =provi
 
 #+begin_example
 cyberdeck-pm/
-  README.org              purpose, status, how to run check.sh
+  README.org              purpose, status, how to run check.nu
   FOUNDATIONS.org         this file
   info.rkt                package metadata: collection, version, deps, build-deps
   .gitignore              compiled/, *.zo, *.dep, tmp/
@@ -454,7 +454,7 @@ cyberdeck-pm/
     LESSONS.org           mistakes -> rules, append-only
     PERF.org              startup and memory baselines
   scripts/
-    check.sh              raco make + raco test + text lint
+    check.nu              raco make + raco test + text lint
   reference/
     guix/                 frozen originals, read-only (G-3)
   core/
@@ -484,7 +484,7 @@ cyberdeck-pm/
 
 ** Build order (each step must pass T-7 before the next)
 1. Docs and scaffold: README, DECISIONS (seeded), ERRORS, GLOSSARY, LESSONS, PERF,
-   =info.rkt=, =.gitignore=, =scripts/check.sh=.
+   =info.rkt=, =.gitignore=, =scripts/check.nu=.
 2. =core/errors.rkt= + =core/log.rkt= + =core/ui.rkt=, with tests.
 3. =core/version.rkt= + =core/git-id.rkt=, with tests.
 4. =core/spec.rkt= + =core/spec-read.rkt=, with hostile-input and error-message tests.

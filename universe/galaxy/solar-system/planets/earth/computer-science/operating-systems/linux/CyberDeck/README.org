@@ -8,14 +8,16 @@ cited in commit messages.
 
 * Status
 Core, backends, CLI check, Emacs-free. Environment: Racket 9.3 CS
-minimal in =~/opt/racket=. Run =scripts/check.sh= before every commit.
+minimal in =~/opt/racket=. Run =scripts/check.nu= before every commit.
 
 * Layout
 - =docs/= -- decisions, errors, glossary, lessons, perf baselines
-- =scripts/check.sh= -- green gate (P-1, T-7)
+- =scripts/check.nu= -- green gate (P-1, T-7), Nushell
 - =core/=, =backends/=, =cli/= -- specs, plans, git, execution
 - =tui/= -- terminal package explorer (Rust, snapshot-file seam)
 
 * Verify
-Run =scripts/check.sh= from this directory. It must print ALL GREEN
-before every commit.
+Run =opt/nushell/0.116.1/nu scripts/check.nu= from this directory. Nu
+is pinned to 0.116.1 (D-020) and the gate refuses any other version.
+It must print ALL GREEN before every commit, or FAST GREEN (partial)
+with =--fast=.

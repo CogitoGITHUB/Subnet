@@ -4,7 +4,7 @@
 * Status
 Design only, no code. targets/emacs/ is NOT removed yet. After approval:
 one commit removes the Emacs forms AND adds the neutral forms with the
-suite rewritten, so check.sh stays green. Real names/pins below come from
+suite rewritten, so check.nu stays green. Real names/pins below come from
 pasted ls-remote output (allowed); tests stay synthetic (T-10).
 
 * Pasted verification (real output)
