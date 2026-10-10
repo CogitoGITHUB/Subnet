@@ -1590,8 +1590,14 @@
   (define head-exe (find-executable-path "head"))
   (define big-out
     (open-output-file (build-path big-dir "big") #:exists 'truncate))
+  ;; The blob must be INCOMPRESSIBLE: vault-large-blobs measures the stored
+  ;; object (vault.rkt:905 rejects anything over 100000000 bytes), and a run
+  ;; of zeros compresses to a few KB, so /dev/zero produced a TINY object,
+  ;; the push correctly succeeded and this check failed. /dev/urandom makes
+  ;; the stored object actually large. This cost 7 minutes and a real
+  ;; failure before anyone measured it instead of assuming.
   (define head-proc
-    (process* (path->string head-exe) "-c" "100000001" "/dev/zero"))
+    (process* (path->string head-exe) "-c" "100000001" "/dev/urandom"))
   (copy-port (list-ref head-proc 0) big-out)
   (close-output-port big-out)
   (close-input-port (list-ref head-proc 0))
