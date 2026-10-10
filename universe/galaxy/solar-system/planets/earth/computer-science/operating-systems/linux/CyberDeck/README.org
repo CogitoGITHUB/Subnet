@@ -19,5 +19,13 @@ minimal in =~/opt/racket=. Run =scripts/check.nu= before every commit.
 * Verify
 Run =opt/nushell/0.116.1/nu scripts/check.nu= from this directory. Nu
 is pinned to 0.116.1 (D-020) and the gate refuses any other version.
-It must print ALL GREEN before every commit, or FAST GREEN (partial)
-with =--fast=.
+One shared-process runner tests EVERY =.rkt= in the tree: a slow file
+is an error to investigate, never a reason to give it its own process
+or its own tier. Between checklist items run =nu scripts/check.nu
+--changed= (changed files plus the test blocks of the modules that
+require them); the full gate runs once per phase. The verdict is
+ALL GREEN, ALL GREEN (jobs parked) or CHECK FAILED, and CHECK FAILED
+exits non-zero. The runner prints =TEST-START=/=TEST-END= per file with
+=at= (elapsed since the run started), a =SUSPECT:= line for anything
+over 2000 ms, and a =SLOWEST= block. All of that is information: nothing
+waits on a clock.

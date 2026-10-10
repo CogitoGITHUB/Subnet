@@ -5,6 +5,12 @@
 # check.sh is deleted. The "check.sh lines N-M" comments below are kept
 # as the map back to the shell original, not as a live dependency.
 #
+# ONE shared-process runner tests EVERY .rkt. scripts/test-runner.rkt is
+# the whole test gate (stage 10); there are no fast/slow tiers and no
+# --fast flag. A slow file is an error to investigate, never a reason to
+# give it its own process. Between checklist items run
+# `nu scripts/check.nu --changed`; the full gate runs once per phase.
+#
 # Stage 6 rules, unchanged from check.sh lines 65-79:
 #   - no tabs
 #   - no trailing spaces
@@ -12,6 +18,20 @@
 #   - final newline required
 # Now covering .nu files as well as .org, .rkt and .sh, because this file
 # is one of the things being linted.
+#
+# Stage map:
+#   1  cli/ never references the test-only file-URL flag
+#   2  git is present
+#   3  run.rkt's helper tools are present
+#   4  D-011 monorepo rules
+#   5  tui rebrand gates
+#   6  text lint over .org, .rkt, .sh, .nu
+#   7  pinned-Nu report (informational)
+#   8  the file set: every .rkt, minus the parked list
+#   9  compile every .rkt
+#   10 test every file in ONE shared-process runner
+#   11 verdict: ALL GREEN / ALL GREEN (jobs parked) / CHECK FAILED
+#   12 paren check over every .rkt
 
 # Pinned Nushell (D-020). Change here and nowhere else.
 const PINNED = "0.116.1"
@@ -286,31 +306,34 @@ def stage-7 [] {
     0
 }
 
-# Stage 8 (check.sh lines 86-96): the fast set and --fast selection.
-# Copied exactly from check.sh, in the same order. Timing is monotonic
-# from timeit, so no `date +%s%N` and no `cut`.
-# Test tiers. A SLOW file is one whose production code spawns a process
-# (process*/process/system*/run.rkt); those pay the ~7s init-file cost
-# per child under proot. Everything else runs in-process and is FAST.
-# Measured bare launches on this phone: racket -n -e '' 0.58s,
-# git --version 0.02s, nu -c 1 1.05s; raco cannot take -n, so a file that
-# spawns N children costs about N x 7s.
-const SLOW_SPAWNERS = [
-  "backends/jobs.rkt" "backends/run.rkt" "backends/vault.rkt"
-  "backends/git.rkt" "backends/local.rkt" "core/vault-lock.rkt"
+# Stage 8: the file set. There are no tiers any more. Every .rkt in the
+# tree goes through ONE shared-process runner, so the list is simply every
+# .rkt, derived and never hand-listed.
+#
+# CYBERDECK_TEST_FILES (space separated) replaces the glob. It exists so a
+# failing synthetic fixture outside the repo can drive the gate to
+# CHECK FAILED; nothing else reads it.
+def stage-8-files [] {
+    let given = ($env | get -o CYBERDECK_TEST_FILES?)
+    if $given == null {
+        glob "**/*.rkt" | where {|f| not ($f | str contains "/compiled/")} | sort
+    } else {
+        [$given] | split row " "
+    }
+}
+
+# Files the runner must not be handed, each with the reason it is held
+# back. A parked file is printed every run, never dropped silently, and the
+# reason travels with the name so a reader never has to guess.
+const PARKED = [
+  {file: "backends/jobs.rkt", why: "see ENGINE-CHECKLIST P-03"}
+  {file: "core/vault-lock.rkt",
+   why: "fcntl locks are process-local, so a re-acquire in one shared process blocks forever (P-04)"}
 ]
 
-
-# -> list, the stage-8 file list for the current mode
-def stage-8-files [fast] {
-    let allr = (glob "**/*.rkt" | where {|f| not ($f | str contains "/compiled/")} | sort)
-    if $fast {
-        # Fast tier = every .rkt that is not a known process spawner.
-        # Derived, not hand-listed, so a new file lands automatically.
-        $allr | where {|f| not ($SLOW_SPAWNERS | any {|sp| $f | str ends-with $sp })}
-    } else {
-        $allr
-    }
+# -> list, the parked subset of the stage-8 file set
+def stage-8-parked [] {
+    (stage-8-files) | where {|f| $PARKED | any {|p| $f | str ends-with $p.file }}
 }
 
 # Stage 12: the paren check. scripts/read-check.rkt reads every named .rkt
@@ -321,34 +344,38 @@ def stage-8-files [fast] {
 def stage-12 [] {
     print "[check] stage 12 paren check"
     let racketx = ($nu.home-dir | path join "opt" "racket" "bin" "racket")
-    let fs = (stage-8-files false)
-    let lp = ((gate-log-dir) | path join "paren-check.log")
-    let r = (run-external $racketx "scripts/read-check.rkt" ...$fs | complete)
-    let whole = $"($r.stdout)($r.stderr)"
-    ($whole | save --force $lp)
-    for l in ($r.stdout | lines) {
-        print $"($l)"
-    }
-    for l in ($r.stderr | lines) {
-        print $"[paren stderr] ($l)"
-    }
-    print $"[check] stage 12 exit=($r.exit_code)"
-    (if $r.exit_code == 0 { 0 } else { 1 })
+    let fs = (stage-8-files)
+    let code = (try {
+        ^$racketx "scripts/read-check.rkt" ...$fs
+        0
+    } catch { |e|
+        print $"[check] paren check failed: ($e.msg)"
+        1 })
+    print $"[check] stage 12 exit=($code)"
+    $code
 }
 
-# Named main with a real --fast flag, so the CLI matches check.sh exactly
-# (`nu scripts/check.nu --fast`). Verified 0.116.1: nu auto-invokes a
-# command called main and passes the flag through; it must therefore NOT
-# also be called explicitly, or the whole gate runs twice.
-def main [--fast --changed] {
+# Named main, so the CLI matches check.sh (`nu scripts/check.nu --changed`).
+# Verified 0.116.1: nu auto-invokes a command called main and passes the flag
+# through; it must therefore NOT also be called explicitly, or the whole
+# gate runs twice.
+#
+# The verdict leaves through a `mut` in THIS scope, not through $env: in
+# 0.116.1 an `$env.X = ...` assignment inside a `timeit { }` closure does not
+# persist (measured), so the old shape printed CHECK FAILED and still exited
+# 0. There is no closure here at all, which is why the mut is allowed.
+def main [--changed] {
     let changed_mode = ($changed or (($env | get -o CYBERDECK_CHANGED?) == "1"))
     let want = (if $changed_mode {
         $env | get -o CYBERDECK_STAGES? | default "1,2,3,4,5,7,changed" } else {
         $env | get -o CYBERDECK_STAGES? | default "1,2,3,4,5,6,7,8,9,10,11,12" })
     let todo = ($want | split row ",")
-    let total = (timeit {
-        require-pinned-version
-        if "1" in $todo {
+    # `date now` is read twice and subtracted: measurement only, printed for
+    # the record. Nothing waits on it (D-015).
+    let started = (date now | into int)
+    mut verdict_code = 0
+    require-pinned-version
+    if "1" in $todo {
             print $"[check] stage 1 cli file-url flag"
             let rc = (stage-1)
             print $"[check] stage 1 exit=($rc)"
@@ -378,19 +405,19 @@ def main [--fast --changed] {
             print $"[check] stage 7 exit=($rc)"
         }
         if "8" in $todo {
-            let fs = (stage-8-files $fast)
-            print $"[check] stage 8 file set ($fs | length) files fast=($fast)"
+            let fs = (stage-8-files)
+            print $"[check] stage 8 file set ($fs | length) files"
             for f in $fs { print $"[check] stage 8 file ($f)" }
         }
         if "6" in $todo {
             run-stage-6-body
         }
-        # Stages 9-11. --fast switches the test list only: check.sh compiles
-        # every .rkt in both modes, and so does this. The records from the
-        # test run and one record per compiled file are handed to verdict,
-        # so a compile failure fails the gate exactly as the old `fail=1`
-        # on `raco make` did.
-        let full = (stage-8-files false)
+        # Stages 9-11. Every .rkt is compiled, then every test file is run
+        # through ONE shared-process runner. The runner's records and one
+        # record per compiled file are handed to verdict, so a compile
+        # failure fails the gate exactly as `raco make` used to.
+        let full = (stage-8-files)
+        let parked = (stage-8-parked)
         mut ccodes = []
         mut recs = []
         if "changed" in $todo {
@@ -404,29 +431,30 @@ def main [--fast --changed] {
             print $"[check] stage 9 exit=(if $cbad { 1 } else { 0 })"
         }
         if "10" in $todo {
-            let testfiles = (stage-8-files $fast)
-            print $"[check] stage 10 tests ($testfiles | length) files fast=($fast)"
-            $recs = (if $fast { run-fast-tier $testfiles } else { run-all $testfiles })
+            for p in $parked {
+                print $"PARKED: ($p | path basename)" $" ($p | get why)"
+            }
+            let testfiles = ($full | where {|f| not ($f in $parked)})
+            print $"[check] stage 10 tests ($testfiles | length) files one process"
+            $recs = (if ($testfiles | is-empty) { [] } else { run-runner $testfiles })
             let bad10 = ($recs | any {|r| $r.exit != 0})
             print $"[check] stage 10 records=($recs | length) failed=($bad10)"
         }
         if "11" in $todo {
             let crecs = ($ccodes | each {|c| {file: "(compile)", exit: $c, ms: 0} })
-            let vcode = (verdict ($recs | append $crecs) $fast)
-            print $"[check] stage 11 exit=($vcode)"
-            # timeit discards the closure value and a closure may not
-            # capture a mutable, so the code leaves through $env.
-            $env.CYBERDECK_VERDICT = $vcode
+            $verdict_code = (verdict ($recs | append $crecs) ($parked | length))
+            print $"[check] stage 11 exit=($verdict_code)"
         }
-    if "12" in $todo {
+        if "12" in $todo {
             let rc12 = (stage-12)
+            print $"[check] stage 12 exit=($rc12)"
             if $rc12 != 0 {
-                $env.CYBERDECK_VERDICT = 1
+                $verdict_code = 1
             }
         }
-    })
-    print $"[check] end utc=(utc) after=(($total | into int))ns"
-    exit ($env | get -o CYBERDECK_VERDICT? | default 0)
+    let elapsed = ((date now | into int) - $started)
+    print $"[check] end utc=(utc) after=($elapsed)ms"
+    exit $verdict_code
 }
 
 # Stage 9-11 helpers (check.sh lines 97-130). Stages 1-8 stay above; these
@@ -449,72 +477,65 @@ def gate-log-dir [] {
 # file, tag -> string, log path for one source file. "/" becomes "_", and
 # the ".tag.log" tail is glued onto the name in one piece: path join with a
 # separate ".log" argument yields "name/.log" instead (verified 0.116.1).
-# The tag keeps the make log and the test log of one file apart.
+# Kept because it is the only place that knows where gate logs live; the
+# runner and the compiler stream to the screen instead of writing here.
 def log-path [f tag] {
     (gate-log-dir) | path join (($f | str replace -a "/" "_") + "." + $tag + ".log")
 }
 
-# file -> record {file, exit, ms}
+# list -> list of one record, ONE shared-process runner for every test
+# file.
 #
-# TEST-START is printed before the child and TEST-END only after the child
-# has exited, so a START without an END still means "stuck". D-015: no
-# timer, no timeout, no sleep; the wait ends on process exit only.
+# scripts/test-runner.rkt is the whole test gate. It reuses one linked
+# namespace instead of paying raco's per-file library link (about 5s each
+# on this phone) and prints its own TEST-START / TEST-END / SUSPECT /
+# SLOWEST / SUMMARY lines. Nu prints those lines verbatim and parses
+# NOTHING: the verdict is the runner's process exit code alone, so the two
+# cannot disagree about format.
 #
-# timeit returns a duration and discards the closure value, and a closure
-# may not capture a mutable (that is a parse error in 0.116.1), so the
-# child's complete record is written inside the timed block and read back
-# from disk afterwards. ns -> ms is integer division of the duration.
-def run-child [f] {
-    let raco = (raco-exe)
-    let lp = (log-path $f "test")
-    let rp = ($lp | str replace ".log" ".rec")
-    print $"TEST-START ($f)"
-    let ns = (timeit {
-        (run-external $raco "test" $f | complete | to json) | save --force $rp
-    })
-    let r = (open --raw $rp | from json)
-    rm $rp
-    let nl = (char newline)
-    $"exit=($r.exit_code)($nl)($r.stdout)($r.stderr)" | save --force $lp
-    let ms = (($ns | into int) / 1000000 | into int)
-    print $"TEST-END ($f) exit=($r.exit_code) ms=($ms)"
-    {file: $f, exit: $r.exit_code, ms: $ms}
-}
-
-# list -> list, one record per file, in the order given.
-#
-# `each` keeps the order and returns the list, so no mutable is needed and
-# none may appear here: a closure cannot capture a mut in 0.116.1 (parse
-# error). SLOWEST is the same top-10-by-duration summary check.sh prints
-# from its temporary file, printed here instead of written to a temp file.
-def run-all [files] {
-    let recs = ($files | each {|f| run-child $f })
-    print "SLOWEST:"
-    let top = (if ($recs | is-empty) { [] } else { $recs | sort-by ms | reverse | first 10 })
-    for r in $top {
-        print $"  ($r.ms) ($r.file)"
-    }
-    $recs
+# One process, never one per file. A file that hangs here is a test
+# isolation bug to fix (see ENGINE-CHECKLIST), not a reason for a tier.
+# D-015: no timer, no timeout, no sleep; the wait ends on process exit.
+def run-runner [files] {
+    let racketx = ($nu.home-dir | path join "opt" "racket" "bin" "racket")
+    # The runner is spawned with the ^ short form, NOT `run-external ...
+    # | complete`. Measured in 0.116.1: run-external buffers the child's
+    # stdout until the child EXITS, so TEST-START / TEST-END / SUSPECT
+    # arrived in one lump at the end, when they are useless. ^ streams to
+    # the screen as each line is flushed.
+    #
+    # A non-zero external raises in this build, so try/catch turns that
+    # back into the 0/1 the verdict reports. Nothing is parsed: the
+    # runner's own process exit code is still the only thing that decides.
+    let code = (try {
+        ^$racketx "scripts/test-runner.rkt" ...$files
+        0
+    } catch { |e|
+        print $"[check] shared-runner failed: ($e.msg)"
+        1 })
+    print $"[check] shared-runner exit=($code)"
+    [{file: "shared-runner", exit: $code, ms: 0}]
 }
 
 # file -> record {file, exit, ms}, one `raco make -v`.
 #
-# Same shape as run-child and for the same reason: timeit returns only a
-# duration and a closure may not capture a mutable, so the complete record
-# is written inside the timed block and read back after it. Output goes to
-# a "make" log so it does not overwrite the test log of the same file.
+# Streamed with the ^ short form for the same reason as run-runner: a
+# buffered child means a five-minute silent stage, and a compile failure
+# that only surfaces at the end names no file while it is happening. The
+# per-file log files go with it: the output is on the screen where it is
+# wanted and nothing reads those logs back.
 def compile-one [f] {
     let raco = (raco-exe)
-    let lp = (log-path $f "make")
-    let rp = ($lp | str replace ".log" ".rec")
-    let ns = (timeit {
-        (run-external $raco "make" "-v" $f | complete | to json) | save --force $rp
-    })
-    let r = (open --raw $rp | from json)
-    rm $rp
-    let nl = (char newline)
-    $"exit=($r.exit_code)($nl)($r.stdout)($r.stderr)" | save --force $lp
-    {file: $f, exit: $r.exit_code, ms: (($ns | into int) / 1000000 | into int)}
+    let started = (date now | into int)
+    let code = (try {
+        ^$raco "make" "-v" $f
+        0
+    } catch { |e|
+        print $"COMPILE-FAILED ($f): ($e.msg)"
+        1 })
+    let ms = ((date now | into int) - $started)
+    print $"COMPILE-END ($f) exit=($code) ms=($ms)"
+    {file: $f, exit: $code, ms: $ms}
 }
 
 # list -> list of exit codes, sorted compile of every file.
@@ -542,51 +563,29 @@ def compile-all [files] {
     $recs | get exit
 }
 
-# records, fast -> int
+# records, parked_n -> int
 #
-# The three verdict lines are copied verbatim from check.sh lines 125-130
-# and the exit code is the same 0/1 the old gate exits with. In --fast mode
-# the run is partial by definition, so a clean fast run says so.
-def verdict [records fast] {
+# Exactly three verdict lines. There is no partial run any more: one
+# runner covers every file, so a clean run is ALL GREEN. When a file is
+# parked the green line says so, so a parked file is never silent. Exit
+# code 0 for both green forms, 1 for CHECK FAILED.
+def verdict [records parked_n] {
     let bad = ($records | any {|r| $r.exit != 0})
     if not $bad {
-        if $fast { print "FAST GREEN (partial)" } else { print "ALL GREEN" }
+        if $parked_n > 0 { print "ALL GREEN (jobs parked)" } else { print "ALL GREEN" }
     } else {
         print "CHECK FAILED"
     }
     (if $bad { 1 } else { 0 })
 }
 
-# The fast tier runs in ONE process through scripts/test-runner.rkt, which
-# reuses one linked namespace instead of paying raco's per-file library
-# link (about 5s each on this phone). Nu does NOT parse the runner's
-# output: its lines are printed verbatim and the verdict comes from the
-# process exit code alone, so the two paths cannot disagree about format.
-# The runner prints its own SLOWEST block, so Nu does not build one here.
-# core/vault-lock.rkt is in the slow tier because its fcntl locks are
-# process-local: inside a shared process a re-acquire silently succeeds
-# and its tests block forever.
-def run-fast-tier [files] {
-    let racketx = ($nu.home-dir | path join "opt" "racket" "bin" "racket")
-    let lp = ((gate-log-dir) | path join "fast-tier.log")
-    let r = (run-external $racketx "scripts/test-runner.rkt" ...$files | complete)
-    let whole = $"($r.stdout)($r.stderr)"
-    ($whole | save --force $lp)
-    for l in ($r.stdout | lines) {
-        print $"($l)"
-    }
-    for l in ($r.stderr | lines) {
-        print $"[fast-tier stderr] ($l)"
-    }
-    [{file: "fast-tier", exit: $r.exit_code, ms: 0}]
-}
-
 # --changed: the between-items gate. Only what actually changed is
 # recompiled and tested, so an item costs seconds instead of minutes.
 # Changed files come from git (tracked diff plus untracked); the test
-# blocks of fast-tier modules that DIRECTLY require them are added too,
-# found by reading their require lines, one level only.
-# Slow-tier files are named and skipped, never dropped silently.
+# blocks of modules that DIRECTLY require them are added too, found by
+# reading their require lines, one level only. The result goes through the
+# SAME one-process shared runner as the full gate, never per-file raco.
+# A parked file is named and skipped, never dropped silently.
 
 # -> list of changed .rkt paths, tracked-diff plus untracked
 def changed-rkt [] {
@@ -605,13 +604,13 @@ def changed-rkt [] {
         $parts | skip ($n - 2) | path join }
 }
 
-# list -> list, fast-tier modules whose source directly requires any of them
+# list -> list, modules whose source directly requires any of them
 def direct-dependents [changed] {
     if ($changed | is-empty) {
         return []
     }
-    let fast = (stage-8-files true)
-    $fast | where {|f|
+    let allr = (stage-8-files)
+    $allr | where {|f|
         let body = (open --raw $f)
         if not ($body | str contains "(require") {
             false
@@ -621,7 +620,8 @@ def direct-dependents [changed] {
 }
 
 # The --changed gate: stages 1-5 and 7 still run (they are cheap and
-# gate the tree), then only what changed is compiled and tested.
+# gate the tree), then only what changed is compiled and tested, through
+# the same one-process shared runner the full gate uses.
 def stage-changed [] {
     let changed = (changed-rkt)
     if ($changed | is-empty) {
@@ -633,19 +633,19 @@ def stage-changed [] {
         print $"[changed] ($c)"
     }
     let deps = (direct-dependents $changed)
-    let slow = ($changed | where {|c| $c in (stage-8-files false)})
-    for x in $slow {
-        print $"SKIPPED (slow tier): ($x)"
+    let parked = ($changed | where {|c| $c in (stage-8-parked)})
+    for x in $parked {
+        let why = ($PARKED | where {|p| $x | str ends-with $p.file } | get why | first)
+        print $"PARKED: ($x | path basename)" $" ($why)"
     }
-    let fastset = ($changed | where {|c| not ($c in $slow)})
-    let all = ($fastset | append $deps)
-    if ($all | is-empty) {
-        print "[changed] no fast-tier work to do"
+    let runset = ($changed | where {|c| not ($c in $parked)} | append $deps)
+    if ($runset | is-empty) {
+        print "[changed] nothing to run"
         return 0
     }
-    let ccodes = (compile-all $all)
-    let recs = (run-all $all)
+    let ccodes = (compile-all $runset)
+    let recs = (run-runner $runset)
     let bad = ($ccodes | any {|c| $c != 0}) or ($recs | any {|r| $r.exit != 0})
-    (verdict $recs false)
+    (verdict [$recs] ($parked | length))
     (if $bad { 1 } else { 0 })
 }

@@ -4,15 +4,16 @@
 * Rules for a resuming session
 Read =docs/ENGINE-CHECKLIST.org=, =docs/ENGINE.org= and
 =docs/DECISIONS.org= first, in that order. Then do the first item still
-marked TODO. Between items run =scripts/check.nu --changed=; run the
-full gate at the end of each phase. One item is one small commit. The gate must be green before
-the commit: run =--fast= between items and the full gate at the end of
-each phase. Mark the item DONE with its commit hash in the SAME commit
-that does the work, never in a later one. Never skip ahead: an item that
-looks wrong is fixed or reported, not reordered. Stop only if the gate
-goes red or the item is genuinely ambiguous. Synthetic fixtures only
-(T-10). No timers anywhere (D-015). Nothing outside =CyberDeck/=. No
-push.
+marked TODO. The gate has ONE shared-process runner for all files
+(=scripts/test-runner.rkt=): a slow file is an error to investigate, not
+a tier and not a reason for its own process. Between items run =nu
+scripts/check.nu --changed=; the full gate runs once per phase. One item
+is one small commit. The gate must be green before the commit. Mark the
+item DONE with its commit hash in the SAME commit that does the work,
+never in a later one. Never skip ahead: an item that looks wrong is
+fixed or reported, not reordered. Stop only if the gate goes red or the
+item is genuinely ambiguous. Synthetic fixtures only (T-10). No timers
+anywhere (D-015). Nothing outside =CyberDeck/=. No push.
 
 * PHASE P: prove what is unproven
 Nothing new is designed until the existing code is measured.
@@ -42,6 +43,40 @@ spec =docs/examples/hello.rktd= is written and validates
 (=racket cli/main.rkt check docs/examples= -> =ok: hello 2.12.3.git=) with
 the missing tools named in a comment, not faked. Still open for P-01:
 =backup-push= and =restore= against a real host; a =gc= of the real vault.
+
+** Tiers are GONE: one shared-process runner for every file (2026-10-10)
+=SLOW_SPAWNERS=, =--fast=, =FAST GREEN (partial)=, =run-fast-tier= and the
+per-file =raco test= path are deleted. Stage 10 hands every file to
+=scripts/test-runner.rkt= in ONE process and the verdict is that process's
+exit code. MEASURED in one shared run, 20 files reached before the first
+blocker: =backends/git.rkt= (54), =local.rkt= (15), =run.rkt= (52),
+=cli/main.rkt= (14), =core/errors.rkt= (15), =core/log.rkt= (28),
+=core/lock.rkt= (16), =core/plan.rkt= (11), =core/resolve.rkt= (8),
+=core/spec-read.rkt= (37), =core/spec.rkt= (14), =core/ui.rkt= (8),
+=core/cancel.rkt= (2), =core/git-id.rkt= (14), =core/git-url.rkt= (12)
+= 0 failed. So the spawners were never the problem the tier assumed.
+CORRECTION: =vault.rkt= never hung. It RAN, 431,996 ms (7.2 min), and
+FAILED 1 of 71 at =backends/vault.rkt:1605= (=check-pred config-error?=
+got =no-error=). A 7-minute file read as a hang because the old gate
+printed nothing while it ran. It is a failure, not a hang.
+BLOCKER 1: =core/vault-lock.rkt= is the real hang. =TEST-START= at
+571,522 ms, never a =TEST-END=. Cause is named and known: its fcntl locks
+are PROCESS-LOCAL, so a re-acquire inside one shared process succeeds and
+the blocking wait never returns. Parked in =check.nu= with that reason
+attached to the name, so it is never dropped silently. Fixing it is a
+production change (a lock that can be observed across processes), not a
+gate change.
+BLOCKER 2: =vault.rkt:1605= fails. Whether it also fails ALONE under the
+runner is the isolation question, and it is being measured now; the answer
+decides whether this is a test-isolation bug or a production bug. Per the
+stop rules, if one small commit cannot fix it the reason is written here
+and the run stops.
+Also measured: the gate was printing =CHECK FAILED= and EXITING 0. The
+verdict was smuggled out through =$env.CYBERDECK_VERDICT= inside a
+=timeit { }= closure, and in Nushell 0.116.1 that env write does not
+persist. Fixed: the verdict is a =mut= in the same scope. A gate that
+decides anything is now proved by a failing synthetic fixture under
+=/tmp=, which must exit non-zero.
 
 ** TODO P-02 prove the manifest store
 Round trip a synthetic manifest through =backends/manifest.rkt=. /

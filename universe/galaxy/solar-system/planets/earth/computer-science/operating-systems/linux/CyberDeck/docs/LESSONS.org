@@ -3,6 +3,32 @@
 
 Append-only. Every entry: what happened, root cause, new rule.
 
+** 2026-10-10 A gate that printed CHECK FAILED and exited 0
+The verdict left main through =$env.CYBERDECK_VERDICT = $vcode= inside a
+=timeit { }= closure. In the pinned Nushell 0.116.1 that assignment does
+NOT persist: the env write is discarded, so =exit ($env | get -o
+CYBERDECK_VERDICT? | default 0)= always took the default and every run
+exited 0. The gate had been reporting green by exit code while printing
+failures. Root cause: the exit code was smuggled out through a side
+channel that was never tested, in the one place the exit code is decided.
+New rule: the exit code comes from a value in the same scope that
+computed it, never from an environment write inside a closure; and a gate
+that decides anything is proved by a FIXTURE THAT MAKES IT FAIL. The
+failing synthetic =.rkt= under =/tmp= is now the standing proof and it
+must exit non-zero. Measured the same day in 0.116.1: =length= and
+=where= reject string input, and =split row= needs a list.
+
+** 2026-10-10 The fast/slow test tier was never necessary
+A tier list existed because a spawner-heavy file was assumed not to
+survive a shared test process. Measured: =backends/git.rkt= (54 tests),
+=backends/local.rkt= (15) and =backends/run.rkt= (52) all pass in ONE
+shared process. The tier was a workaround for a problem nobody had
+isolated, and it hid the real bugs: a hang in the shared process read as
+"that file is slow" instead of "that test leaks state". New rule: one
+shared-process runner for every file; a slow file is an isolation bug to
+name and fix (cwd, env, parameter, global state, leftover process, exit
+call), never a tier.
+
 ** 2026-10-07 Real data leaked into a test (T-10)
 The resolve exact-message test used hl-todo v3.9.4 / compat 31.0 after
 the design doc was fixed to real versions. Real pins belong in docs,
