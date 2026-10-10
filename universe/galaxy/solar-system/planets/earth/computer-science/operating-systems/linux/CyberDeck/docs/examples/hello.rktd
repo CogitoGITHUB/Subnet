@@ -1,13 +1,13 @@
 (spec
   (format-version 2)
   (name hello)
-  ;; The tree does not state its own version: configure.ac computes it with
-  ;; build-aux/git-version-gen .tarball-version, which prints UNKNOWN outside
-  ;; a release tarball (measured). NEWS' newest released version is 2.12.3
-  ;; and this commit is development after it, so the .git suffix is the
-  ;; honest reading of "2.12.3 plus whatever git has".
-  (version "2.12.3.git")
-  (summary "GNU Hello, the GNU canonical hello world program")
+  ;; SPEC-NEUTRAL.org section 1 says version is the "release tag name verbatim".
+;; This commit has no release tag: the pinned commit is an unreleased git
+;; checkout (git-version-gen prints UNKNOWN without .tarball-version), and
+;; NEWS' newest release is 2.12.3. So the version is the last release and
+;; the summary says the tree is past it. Nothing here is invented.
+(version "2.12.3")
+(summary "GNU Hello, the GNU canonical hello world program (unreleased git checkout)")
   (source (git "https://git.savannah.gnu.org/git/hello.git"
                "d598de6f9a89f78eafac959adc0376e20c87d6a7"))
   ;; The export of this commit has: bootstrap, configure.ac, Makefile.am,
