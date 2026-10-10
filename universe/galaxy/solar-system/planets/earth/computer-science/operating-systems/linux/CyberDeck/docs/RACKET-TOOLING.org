@@ -11,7 +11,7 @@ of it. Nothing else was needed until the engine work started.
 |---------+--------+-----|
 | =racket-lib= | bundled | the language and collections |
 | =rackunit-lib= | installed | the test framework every test file uses |
-| =data-lib= | installed 2026-10-10 | =data/=, =data/list=, sorting helpers used by the resolver and plan work |
+| =data-lib= | installed 2026-10-10 | =data/=, =data/list=, sorting for resolve/plan |
 
 * What is already there, no install needed
 Measured on this phone, not assumed:
