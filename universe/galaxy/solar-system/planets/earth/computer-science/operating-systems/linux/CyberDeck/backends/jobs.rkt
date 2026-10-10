@@ -392,11 +392,14 @@
     (define sdir (if (path? state-dir)
                      (path->string state-dir)
                      state-dir))
+    ;; Spawn the module's own main submodule with the state dir as its
+    ;; single argument. The previous form used `racket -e "(require
+    ;; (file jobs.rkt)) (worker-main DIR)"`, but worker-main is not
+    ;; provided, so every worker died at module load with
+    ;; "worker-main: undefined" and no job ever ran.
     (define child
       (process* (path->string setsid-exe)
-                (path->string racket-exe) "-e"
-                (format "(require (file ~s)) (worker-main ~s)"
-                        mod-path sdir)))
+                (path->string racket-exe) mod-path sdir))
     ((list-ref child 4) 'wait)))
 
 ;; path-string job-op -> job, rate-limited enqueue plus worker
@@ -701,6 +704,17 @@
   (void))
 
 ;; ---------------------------------------------------------------------------
+;; ---------------------------------------------------------------------------
+;; Entry point for the detached worker (module+ main, D-029 scope untouched)
+(module+ main
+  (define args (vector->list (current-command-line-arguments)))
+  (unless (= (length args) 1)
+    (raise-user-error
+     'jobs.rkt
+     "worker entry point needs exactly one argument: the jobs state dir"
+     "got" args))
+  (worker-main (car args)))
+
 (module+ test
   (require rackunit
            racket/file
