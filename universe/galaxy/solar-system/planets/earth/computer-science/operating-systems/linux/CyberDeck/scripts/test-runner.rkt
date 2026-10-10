@@ -35,19 +35,19 @@
 ;; on a clock and nothing times out (D-015); this only reports.
 (define SUSPECT-MS 2000)
 
-(define (run-one f t0 done)
-  (printf "TEST-START ~a at=~a of=~a\n" f (round (- (now) t0)) done)
+(define (run-one f t-file t-all done)
+  (printf "TEST-START ~a at=~a of=~a\n" f (round (- (now) t-all)) done)
   (flush-output)
   (cond
     [(not (has-test-submodule? f))
      ;; never silently: a file with nothing to run is reported and counts
      ;; as a pass, so a typo in the list cannot hide a test file.
      (printf "NO-TESTS ~a\n" f)
-     (printf "TEST-END ~a failed=0 total=0 ms=0\n" f)
+     (printf "TEST-END ~a failed=0 total=0 ms=0 at=~a\n"
+             f (round (- (now) t-all)))
      (flush-output)
      (list 0 0 0)]
     [else
-     (define t0 (now))
      (define before (rt:test-report))
      (define extra 0)
      (define msg #f)
@@ -65,13 +65,14 @@
      (define after (rt:test-report))
      (define failed (+ extra (- (car after) (car before))))
      (define total (+ extra (- (cdr after) (cdr before))))
+     (define ms (round (- (now) t-file)))
      (printf "TEST-END ~a failed=~a total=~a ms=~a at=~a~a\n"
-             f failed total (round (- (now) t0)) (round (- (now) t0))
+             f failed total ms (round (- (now) t-all))
              (if msg (format " error=~s" msg) ""))
-     (when (> (round (- (now) t0)) SUSPECT-MS)
-       (printf "SUSPECT: ~a ~a\n" f (round (- (now) t0))))
+     (when (> ms SUSPECT-MS)
+       (printf "SUSPECT: ~a ~a\n" f ms))
      (flush-output)
-     (list failed total (round (- (now) t0)))]))
+     (list failed total ms)]))
 
 (module+ main
   (define files (vector->list (current-command-line-arguments)))
@@ -81,7 +82,7 @@
   (define t-all (now))
   (define results
     (for/list ([f (in-list files)] [i (in-naturals 1)])
-      (run-one f t-all i)))
+      (run-one f (now) t-all i)))
   (define n-failed (for/sum ([r (in-list results)]) (car r)))
   (define n-total (for/sum ([r (in-list results)]) (cadr r)))
   ;; SLOWEST, sorted here in Racket so Nu never has to parse anything.
