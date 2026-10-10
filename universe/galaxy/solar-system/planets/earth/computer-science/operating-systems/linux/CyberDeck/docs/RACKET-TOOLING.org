@@ -4,84 +4,85 @@
 * What is installed
 Racket 9.3 CS minimal lives in =~/opt/racket=. It is the tarball
 distribution, chosen on purpose (DECISIONS.org, 2026-10-06 "Racket 9.3
-minimal via tarball"): =rackunit-lib= was the only package added on top
-of it. Nothing else was needed until the engine work started.
+minimal via tarball"). =rackunit-lib= is the only package added on top.
 
 | package | status | why |
 |---------+--------+-----|
 | =racket-lib= | bundled | the language and collections |
 | =rackunit-lib= | installed | the test framework every test file uses |
-| =data-lib= | installed 2026-10-10 | =data/=, =data/list=, sorting for resolve/plan |
+
+=data-lib= was installed and then REMOVED. It does not ship =data/list=
+in this version, so it delivered nothing, and it cost startup:
+=racket -n -e ''= went from 0.299s to 1.178s. Back to baseline after
+removal.
 
 * What is already there, no install needed
 Measured on this phone, not assumed:
 
-- =json= WORKS. =(require json)= loads from the bundled collects, and
+- =json= WORKS. =(require json)= loads from the bundled collects and
   =(jsexpr->string (hasheq 'a 1))= prints ={"a":1}=. The engine's step
   journal (E-10) is JSON Lines, so this is the important one and it cost
   nothing. =raco pkg install json= fails with "cannot find package on
   catalogs" precisely because it is already there.
-- =read-line-evt=, =wrap-evt=, =eof-evt= all live in =racket/port=.
-  Valid line modes are exactly ='(linefeed return return-linefeed any
-  any-one)= (see =collects/racket/port.rkt:252=). ='line= does NOT
-  exist; using it is a contract violation.
+- =read-line-evt=, =wrap-evt=, =eof-evt= are in =racket/port=. Valid line
+  modes are exactly ='(linefeed return return-linefeed any any-one)= (see
+  =collects/racket/port.rkt:252=). ='line= does NOT exist.
 - =exit-handler= and =environment-variables-copy= are in =racket/base=.
   =current-exit-handler= is NOT exported by the =racket/base= language.
+- =racket/contract= and =racket/cmdline= are both present.
 
 * What is NOT available and why
-Minimal distribution has no =racket/glob= and no =racket/environment=,
-and =directory-list-recursively= does not exist in =racket/file=. Do not
-write code that assumes them. Let =scripts/check.nu= list the files (it
-already globs them) and pass the list as arguments, which is what
-=scripts/read-check.rkt= does.
+Minimal has no =racket/glob=, no =racket/environment=, and no
+=directory-list-recursively= in =racket/file=. Do not write code that
+assumes them. Let =scripts/check.nu= list the files (it already globs
+them) and pass the list as arguments.
 
-Packages tried and NOT found on the catalog (network was up, HTTP 200, so
-this is a genuine "not published there", not a connectivity failure):
-=lsp=, =raco-test=, =typed-json=, =json-lib=. The catalog resolves for
-every one of them and then reports "cannot find package on catalogs".
+Packages tried and NOT in the catalog (network was up, HTTP 200, so this
+is genuinely "not published there"): =lsp=, =raco-test=, =typed-json=,
+=json-lib=. Each resolved against four catalog URLs and then reported
+"cannot find package on catalogs".
 
-* Cost of what is installed
-=|-n -e ''= measured 0.299s before =data-lib= and 1.178s after. That is
-the one regression to watch. Startup matters here because every test
-process pays it, and the whole point of =scripts/test-runner.rkt= is to
-pay it once instead of once per file.
+* Scripts and what they are for
+House rules for using them live in =AGENT.md= at the repo root.
+
+| script | job |
+|--------|-----|
+| =check.nu= | the gate; =--fast=, =--changed=, no flag = full |
+| =test-runner.rkt= | one process, many submodules; prints TEST-START/END, SLOWEST, SUMMARY |
+| =read-check.rkt= | reads named .rkt files, reports READ-BAD with file and line; the paren check |
+| =repl.rkt= | loads the core modules once then evaluates stdin expressions |
+| =env.nu= | XDG roots, =CARGO_TARGET_DIR=, cargo on PATH |
+| =tree.nu= | tree view excluding compiled, target and .git |
+| =need-nu.nu= | reports the pinned Nu, fails clearly on mismatch, never fetches |
+
+* REPL measured, honestly
+Five trivial probes, the same work either way:
+
+| how | real time |
+|-----|-----------|
+| 5 expressions through one =repl.rkt= | 11.778s |
+| 5 separate =racket -n -e '(void)= launches | 1.531s |
+
+For trivial work the separate launches win: the REPL pays a heavy one-off
+cost loading 13 core modules. The REPL wins when expressions are not
+trivial, and above all when an expression RAISES and the stack stays
+alive for the next probe. Use it for investigation, not for one-liners.
+
+* Startup cost, measured
+=racket -n -e ''= varies between 0.29s and 1.12s for the same empty
+program on this phone. That spread is filesystem variance under proot,
+not compute, and every separate process pays it. That is the reason
+=test-runner.rkt= runs files in one shared process.
 
 * Not installed, and why
-- Full Racket distribution (~200MB+). It would add libraries we do not
-  need and slow every launch. Revisit only if the engine hits something
-  that genuinely requires it, and record the version and SHA then.
-- =PLTCOMPILEDROOTS= redirection. Measured at 401s make / 216s test
-  versus 18s unset; REJECTED in D-027. =compiled/= stays in-tree.
+- Full Racket distribution, ~200MB or more. Everything the project uses
+  is already present, so it would add size and slow every launch.
+  Revisit only if the engine hits something that truly requires it, and
+  record the version and SHA then.
+- =PLTCOMPILEDROOTS= redirection: measured 401s make and 216s test versus
+  18s unset, REJECTED in D-027. =compiled/= stays in-tree.
 
 * How packages get installed here
 =#~/opt/racket/bin/raco pkg install NAME=, always with
 =GIT_TERMINAL_PROMPT=0= so a network problem fails fast instead of
 waiting for a prompt. No timers, no polling (D-015).
-
-* Scripts that exist, and what they are for
-| script | why it exists |
-|--------+---------------|
-| =scripts/check.nu= | the gate. =--fast= fast set, =--changed= between items, no flag = full |
-| =scripts/test-runner.rkt= | one process, many test submodules; prints TEST-START/END, SLOWEST, SUMMARY; a raise or exit inside a test counts as a failure |
-| =scripts/read-check.rkt= | reads every named .rkt and reports READ-BAD file:line. The paren check. |
-| =scripts/repl.rkt= | loads the core modules once, then evaluates stdin expressions, so probes skip startup |
-| =scripts/env.nu= | XDG roots, =CARGO_TARGET_DIR=, PATH for cargo |
-| =scripts/tree.nu= | tree view excluding compiled/target/.git |
-| =scripts/need-nu.nu= | reports the pinned Nu, fails clearly on mismatch, never fetches |
-
-The house rules for using them live in =AGENT.md= at the repo root.
-
-* Measured: REPL versus separate processes
-Five trivial probes, same work either way:
-
-| how | real time |
-|-----|-----------|
-| 5 exprs via one scripts/repl.rkt | 11.778s |
-| 5 separate racket -n -e (void) | 1.531s |
-
-Read that honestly: for TRIVIAL work the separate launches win, because
-the REPL pays a heavy one-off cost loading 13 core modules. The REPL wins
-when the expressions are not trivial, when the module set is already
-loaded, and above all when an expression RAISES and the stack stays
-alive for the next probe. Use it for investigation, not for one-liners.
-
