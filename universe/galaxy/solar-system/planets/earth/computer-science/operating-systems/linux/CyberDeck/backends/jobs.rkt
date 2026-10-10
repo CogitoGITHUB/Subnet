@@ -958,6 +958,9 @@
   (check-equal? (job-bytes rel-back) 1024)
 
   ;; End to end: three rapid enqueues, one worker, all done, none lost.
+  ;; The file:// fixture needs the test-only URL allowance, so this block
+  ;; is wrapped in it; production never enables it.
+  (parameterize ([current-allow-file-urls #t])
   (define e2e-vault (build-path state-dir "vault.git"))
   (make-directory e2e-vault)
   (vault-init e2e-vault)
@@ -990,7 +993,14 @@
   ;; these enqueues name the synthetic package and point at the local
   ;; fixture path. Nothing here reaches the network.
   (define hello-add
-    (op-add "pkg-hello" (path->string hello-repo) #f '()))
+    ;; check-git-url only accepts a recognised URL shape, so a bare local
+    ;; path is refused; file:// is accepted but is TEST-ONLY unless
+    ;; current-allow-file-urls is on. That is why this whole e2e block is
+    ;; wrapped in the parameterize below. The fixture never touches the
+    ;; network: file:// is the local filesystem.
+    (op-add "pkg-hello"
+            (format "file://~a" (path->string hello-repo))
+            #f '()))
   (define e1 (job-start state-dir hello-add))
   (define e2 (job-start state-dir hello-add))
   (define e3 (job-start state-dir hello-add))
@@ -1028,5 +1038,6 @@
   (close-output-port cx-writer)
   (semaphore-post cx-release)
   (thread-wait cx-holder)
+  ) ;; end of the current-allow-file-urls parameterize
 
   (delete-directory/files test-root))

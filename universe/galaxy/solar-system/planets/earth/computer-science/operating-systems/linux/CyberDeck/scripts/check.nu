@@ -313,6 +313,29 @@ def stage-8-files [fast] {
     }
 }
 
+# Stage 12: the paren check. scripts/read-check.rkt reads every named .rkt
+# and names the exact file and line of the first malformed form, so an
+# unbalanced paren is reported, not guessed at. It exits 1 when anything is
+# bad, which is this stage's verdict. The file list is the same glob stage 9
+# compiles, so a file that cannot even be read is caught before raco.
+def stage-12 [] {
+    print "[check] stage 12 paren check"
+    let racketx = ($nu.home-dir | path join "opt" "racket" "bin" "racket")
+    let fs = (stage-8-files false)
+    let lp = ((gate-log-dir) | path join "paren-check.log")
+    let r = (run-external $racketx "scripts/read-check.rkt" ...$fs | complete)
+    let whole = $"($r.stdout)($r.stderr)"
+    ($whole | save --force $lp)
+    for l in ($r.stdout | lines) {
+        print $"($l)"
+    }
+    for l in ($r.stderr | lines) {
+        print $"[paren stderr] ($l)"
+    }
+    print $"[check] stage 12 exit=($r.exit_code)"
+    (if $r.exit_code == 0 { 0 } else { 1 })
+}
+
 # Named main with a real --fast flag, so the CLI matches check.sh exactly
 # (`nu scripts/check.nu --fast`). Verified 0.116.1: nu auto-invokes a
 # command called main and passes the flag through; it must therefore NOT
@@ -321,7 +344,7 @@ def main [--fast --changed] {
     let changed_mode = ($changed or (($env | get -o CYBERDECK_CHANGED?) == "1"))
     let want = (if $changed_mode {
         $env | get -o CYBERDECK_STAGES? | default "1,2,3,4,5,7,changed" } else {
-        $env | get -o CYBERDECK_STAGES? | default "1,2,3,4,5,6,7,8,9,10,11" })
+        $env | get -o CYBERDECK_STAGES? | default "1,2,3,4,5,6,7,8,9,10,11,12" })
     let todo = ($want | split row ",")
     let total = (timeit {
         require-pinned-version
@@ -394,6 +417,12 @@ def main [--fast --changed] {
             # timeit discards the closure value and a closure may not
             # capture a mutable, so the code leaves through $env.
             $env.CYBERDECK_VERDICT = $vcode
+        }
+    if "12" in $todo {
+            let rc12 = (stage-12)
+            if $rc12 != 0 {
+                $env.CYBERDECK_VERDICT = 1
+            }
         }
     })
     print $"[check] end utc=(utc) after=(($total | into int))ns"
