@@ -825,13 +825,17 @@
       (display "(call-with-file-lock/timeout\n" port)
       (display (format " ~s 'exclusive\n" k-lock-s) port)
       (display " (lambda ()\n" port)
-      ;; open-input-output-file returns TWO ports. Binding it with a
-      ;; single define made the holder die on an arity error before it
-      ;; opened anything, and the parent then waited forever for "up".
+      ;; Markers go to stderr, which the parent captures into
+      ;; k-holder.err and prints on failure, so a failure names exactly
+      ;; how far the holder got instead of guessing.
+      (display "   (define (mk s) (displayln s) (flush-output (current-error-port)))\n" port)
+      (display "   (mk \"H1 in lock\")\n" port)
       (display "   (define-values (die-in die-out)\n     " port)
       (display (format "(open-input-output-file ~s #:exists 'update))\n" k-die-s) port)
+      (display "   (mk \"H2 die opened\")\n" port)
       (display "   (close-input-port die-in)\n" port)
       (display (format "   (define up-hold (open-output-file ~s #:exists 'update))\n" k-up-s) port)
+      (display "   (mk \"H3 up write opened\")\n" port)
       (display "   (displayln \"up\" up-hold)\n" port)
       (display "   (flush-output up-hold)\n" port)
       (display (format "   (define in (open-input-file ~s))\n" k-block-s) port)
@@ -842,13 +846,18 @@
       (display " void\n" port)
       (display " #:max-delay 0)\n" port)))
   (define k-holder-err (build-path test-root "k-holder.err"))
-  (define k-holder
-    (process* "/usr/bin/sh" "-c"
-              (format "~a ~a 2> ~a"
-                      (path->string racket-exe)
-                      (path->string k-holder-path)
-                      (path->string k-holder-err))))
-  (define k-ctl (list-ref k-holder 4))
+  (define-values (k-holder k-holder-out k-holder-in k-holder-err-port)
+    ;; subprocess signature is
+    ;;   (subprocess [stdout-in] [stdin-out] [stderr-in] EXE ARG ...)
+    ;; and it RETURNS four values: the handle plus its three streams.
+    ;; #f means "inherit" for the redirections.
+    (subprocess
+     #f #f #f
+     "/usr/bin/sh" "-c"
+     (format "exec ~a ~a 2> ~a"
+             (path->string racket-exe)
+             (path->string k-holder-path)
+             (path->string k-holder-err))))
   ;; O_RDWR, so the open itself can never block. A read-only open waits
   ;; for a writer while the holder's write-open waits for a reader, and
   ;; with neither end held they wait on each other forever. O_RDWR breaks
@@ -859,43 +868,67 @@
   (define-values (k-up-in k-up-out)
     (open-input-output-file k-up #:exists 'update))
   (define k-up-evt (read-line-evt k-up-in 'linefeed))
-  (define k-holder-exit ((list-ref k-holder 4)))
-  (define k-first (sync k-up-evt k-holder-exit))
+  ;; subprocess returns a HANDLE, not the old process* vector: its 5th
+  ;; element is a procedure that is NOT an evt. So the exit is turned
+  ;; into an event by a reaper thread that blocks in subprocess-wait and
+  ;; posts a semaphore. Still no timer anywhere (D-015).
+  (define k-holder-exited (make-semaphore))
+  (define k-reaper
+    (thread (lambda ()
+              (subprocess-wait k-holder)
+              (semaphore-post k-holder-exited))))
+  (define k-first (sync k-up-evt k-holder-exited))
   (unless (eq? k-first k-up-evt)
     (define k-err (build-path test-root "k-holder.err"))
     (define k-err-s (if (file-exists? k-err) (file->string k-err) "<none>"))
     (error 'jobs-test
            "holder exited before readiness; status=~a stderr=~s"
-           (subprocess-status k-holder-exit) k-err-s))
+           (subprocess-status k-holder)
+           k-err-s))
   ;; The evt fired, so a whole line is ready; read it and check content.
   (define k-up-line (read-line k-up-in))
   (check-equal? k-up-line "up")
   (check-eq? (job-state (job-status state-dir k-id)) 'running)
-  ;; The read end opens BEFORE the kill. A fifo read blocks until some
-  ;; writer appears, so opening first is what turns the holder's death
-  ;; into an EOF event instead of a permanent block. The holder opens
-  ;; k-die before it writes "up", and "up" is already consumed above,
-  ;; so this thread is past its open before the kill can land. No
-  ;; timeout and no polling are involved: the only events are the
-  ;; holder's open and its death (D-015).
-  (define k-died-vec (box #f))
-  (define k-watcher
-    (thread (lambda ()
-              (define in (open-input-file k-die))
-              (define v (read in))
-              (close-input-port in)
-              (set-box! k-died-vec v))))
-  (define k-killer
-    (process* "/usr/bin/sh" "-c"
-              (format "kill -9 ~a" (number->string (list-ref k-holder 2)))))
-  ((list-ref k-killer 4) 'wait)
-  (thread-wait k-watcher)
-  (check-pred eof-object? (unbox k-died-vec))
-  (check-eq? (job-state (job-status state-dir k-id)) 'interrupted)
+  (define k-holder-gone (box #f))
+  ;; dynamic-wind guarantees the holder is gone when this block exits,
+  ;; whether it passed, failed or raised. Without it a failed run leaves
+  ;; the holder alive holding job-killed.lock, and EVERY later run then
+  ;; blocks on k-up forever because that lock can never be taken. That
+  ;; is what produced 16 orphaned holders and the 247s hangs.
+  (dynamic-wind
+    void
+    (lambda ()
+      ;; The read end opens BEFORE the kill. A fifo read blocks until
+      ;; some writer appears, so opening first turns the holder's death
+      ;; into an EOF event rather than a permanent block.
+      (define k-died-vec (box #f))
+      (define k-watcher
+        (thread (lambda ()
+                  (define in (open-input-file k-die))
+                  (define v (read in))
+                  (close-input-port in)
+                  (set-box! k-died-vec v))))
+      (define k-killer
+        (process* "/usr/bin/sh" "-c"
+                  (format "kill -9 ~a" (number->string (subprocess-pid k-holder)))))
+      ((list-ref k-killer 4) 'wait)
+      (thread-wait k-watcher)
+      (check-pred eof-object? (unbox k-died-vec))
+      (check-eq? (job-state (job-status state-dir k-id)) 'interrupted)
+      (subprocess-wait k-holder))
+    (lambda ()
+      ;; Runs on EVERY exit. If the holder is still alive it is killed and
+      ;; reaped, so no run can leave one behind holding the job lock.
+      (unless (unbox k-holder-gone)
+        (set-box! k-holder-gone #t)
+        (with-handlers ([exn:fail? (lambda (_) (void))])
+          (subprocess-kill k-holder 'force))
+        (with-handlers ([exn:fail? (lambda (_) (void))])
+          (subprocess-wait k-holder)))))
   ;; Both ends of the O_RDWR port close at teardown, never before.
   (close-input-port k-up-in)
   (close-output-port k-up-out)
-  (k-ctl 'wait)
+  (thread-wait k-reaper)
 
   ;; Progress relay writes status fields (deterministic unit check).
   (define rel-id "job-relay")

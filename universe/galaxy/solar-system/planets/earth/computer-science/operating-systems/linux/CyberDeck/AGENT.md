@@ -3,6 +3,71 @@
 Applies to any session working in `CyberDeck/`. These exist because each
 one was learned by getting it wrong first.
 
+## Use the built-in file tools. Never edit files with shell scripts.
+
+| to do this | use this | never this |
+|------------|----------|------------|
+| look at a file | `read` (gives line numbers) | `cat`, `sed -n`, `grep` for context |
+| change a file | `edit` (exact string, fails if 0 or >1 match) | `python3 <<EOF`, `sed -i`, heredoc rewrite |
+| create a file | `write` | shell redirection |
+| check it parses | `scripts/read-check.rkt` | a one-off paren one-liner |
+
+The built-in `edit` tool refuses to run when the old text is missing or
+ambiguous. That refusal is the whole point: it makes silent corruption
+impossible. Every mangled file in this project came from bypassing it
+with a python heredoc — `[root]` became `(root)`, a closing paren was
+dropped twice, a shebang and `#lang` got reordered. None of those could
+have happened through `edit`.
+
+## How to move fast (this is what worked, 2026-10-10)
+
+1. **Read the source before theorising.** Every guess about a Racket API
+   cost a 40-second test run to disprove. Reading
+   `collects/racket/system.rkt` gave the `subprocess` signature in one
+   second.
+2. **Use the built-in `read` and `edit`.** `read` shows line numbers and
+   `edit` fails loudly on a bad match. Never `python3 <<EOF`, `sed -i`,
+   or heredocs for file changes.
+3. **Reproduce in `/tmp` before touching the repo.** A standalone replica
+   of one test's choreography runs in ~2s instead of 40s, so the loop
+   stops costing minutes.
+4. **Let the error name the mistake.** Racket's contract errors were
+   exact every time. Read the whole error: `expected: at least 4,
+   given: 3` is what revealed that `subprocess` takes three stream
+   redirections before the exe.
+5. **Instrument the child, not the parent.** Markers written to a
+   captured stderr file show exactly how far a spawned process got,
+   instead of inferring it.
+6. **Kill orphans first.** One stale process holding a lock makes every
+   later run hang, and the symptom looks like a fresh bug each time.
+   Check with `ps -eo args | grep <fixture-prefix>` before starting.
+
+## What cost the most time, so it is not repeated
+
+- Guessing at an API instead of reading its definition.
+- Editing through a shell script, which silently corrupted three files.
+- Chasing a hang whose real cause was 16 leftover processes holding a
+  lock, while the code under test was fine.
+- Assuming `jobs.rkt` had a handshake bug when the handshake was correct
+  and a stale lock holder was the actual blocker.
+
+## Scripts in `scripts/` exist to RUN things, not to change text.
+
+## Commit and push constantly
+
+Never leave work uncommitted. After every change:
+
+1. `scripts/read-check.rkt <the file>`
+2. `git add` the explicit paths, `git commit`
+3. `git push`
+
+**Never** use `git checkout -- <file>` to undo an edit. It discards
+every uncommitted change in that file, not just the one you meant to
+revert; it destroyed a green working tree twice. `git stash` puts work
+aside without destroying it. If a file is broken, save it with
+`git diff HEAD -- <file> > docs/patches/<name>.patch` and then restore
+the committed version.
+
 ## Use the scripts that exist. Do not improvise equivalents.
 
 | need | command |
@@ -63,7 +128,15 @@ over many processes doing one thing.
 
 ## Current state
 
-`backends/jobs.rkt` is red: 17 tests pass, then `control: arity mismatch`
-with no srcloc. Do not paper over it with a tier exemption — fix it or
-report it. The fast/slow tier split in `check.nu` was a workaround and is
-being removed; every `.rkt` gets tested.
+`backends/jobs.rkt` is red and the handshake is NOT the bug. Established
+with output: the O_RDWR open, `'linefeed` mode and `read-line-evt` are
+correct; `subprocess-wait` returns immediately in this Racket even while
+the child runs, so a reaper thread plus semaphore cannot be trusted to
+signal death. The design that removes the dependency is to CLOSE the
+parent's own write end of the fifo right after opening it, so the holder
+is the only writer and its death shows up as EOF on the read end. A
+holder that writes `"up"` and then blocks on a fifo is the real shape;
+there are no timers in it. Verify this in a `/tmp` replica first.
+
+`scripts/check.nu` tier removal is saved at
+`docs/patches/WIP-checknu-tiers-removed.patch`, not applied.
