@@ -22,6 +22,27 @@ Fetch-namespace, verify, gc, export and backup against a synthetic local
 git repo. / Done when: each of the five operations runs against a
 fixture repo and the exact output is pasted into the commit message.
 
+** P-01 measured against a REAL remote (2026-10-10)
+=scripts/hello-fetch.rkt= fetches GNU Hello through pm's OWN vault code:
+no direct git call anywhere in it. =--discover URL NAME= exits 0 in 54s
+and prints the pinned commit =d598de6f9a89f78eafac959adc0376e20c87d6a7=.
+Normal mode =SPEC --fresh= exits 0 in 48s, =vault-add #:pin= returns
+pin-source =given= for that exact commit, and =vault-export-commit= writes
+the tree (=vault-export-commit= does its own =cat-file -e= first, so a
+missing commit raises kind =verify=). Every git call is wrapped by the
+vault in =flock .../child.lock= and prints =pm-run-start=/=pm-run-end=;
+8,032,092 bytes received. Exported tree =ls=: AUTHORS COPYING ChangeLog.O
+Makefile.am NEWS README README-dev THANKS TODO bootstrap bootstrap.conf
+build-aux cfg.mk configure.ac doc gnulib lib man po scripts src tests.
+FAILED / not yet done: the tree has NO =configure=, =autogen.sh= or
+generated =Makefile= (a git checkout is not a tarball), so the build needs
+=bootstrap= first, and =bootstrap= needs autopoint, gperf and help2man,
+which are MISSING here. So fetch+export is proven; build+install is not. The
+spec =docs/examples/hello.rktd= is written and validates
+(=racket cli/main.rkt check docs/examples= -> =ok: hello 2.12.3.git=) with
+the missing tools named in a comment, not faked. Still open for P-01:
+=backup-push= and =restore= against a real host; a =gc= of the real vault.
+
 ** TODO P-02 prove the manifest store
 Round trip a synthetic manifest through =backends/manifest.rkt=. /
 Done when: a write/read round trip preserves entries and order, and a
