@@ -1,0 +1,14 @@
+diff --git a/universe/galaxy/solar-system/planets/earth/computer-science/operating-systems/linux/CyberDeck/backends/jobs.rkt b/universe/galaxy/solar-system/planets/earth/computer-science/operating-systems/linux/CyberDeck/backends/jobs.rkt
+index d5b67f9..8a958ab 100644
+--- a/universe/galaxy/solar-system/planets/earth/computer-science/operating-systems/linux/CyberDeck/backends/jobs.rkt
++++ b/universe/galaxy/solar-system/planets/earth/computer-science/operating-systems/linux/CyberDeck/backends/jobs.rkt
+@@ -813,7 +813,8 @@
+       ;; open-input-output-file returns TWO ports. Binding it with a
+       ;; single define made the holder die on an arity error before it
+       ;; opened anything, and the parent then waited forever for "up".
+-      (display (format "   (define-values (die-in die-out)\n     (open-input-output-file ~s #:exists 'update))\n" k-die-s) port)
++      (display "   (define-values (die-in die-out)\n     " port)
++      (display (format "(open-input-output-file ~s #:exists 'update))\n" k-die-s) port)
+       (display "   (close-input-port die-in)\n" port)
+       (display (format "   (define up-hold (open-output-file ~s #:exists 'update))\n" k-up-s) port)
+       (display "   (displayln \"up\" up-hold)\n" port)

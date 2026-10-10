@@ -810,8 +810,12 @@
       (display "(call-with-file-lock/timeout\n" port)
       (display (format " ~s 'exclusive\n" k-lock-s) port)
       (display " (lambda ()\n" port)
-      (display (format "   (define die (open-input-output-file ~s #:exists 'update))\n" k-die-s) port)
-      (display "   (close-input-port die)\n" port)
+      ;; open-input-output-file returns TWO ports. Binding it with a
+      ;; single define made the holder die on an arity error before it
+      ;; opened anything, and the parent then waited forever for "up".
+      (display "   (define-values (die-in die-out)\n     " port)
+      (display (format "(open-input-output-file ~s #:exists 'update))\n" k-die-s) port)
+      (display "   (close-input-port die-in)\n" port)
       (display (format "   (define up-hold (open-output-file ~s #:exists 'update))\n" k-up-s) port)
       (display "   (displayln \"up\" up-hold)\n" port)
       (display "   (flush-output up-hold)\n" port)
@@ -819,20 +823,39 @@
       (display "   (read-line in)\n" port)
       (display "   (close-input-port in)\n" port)
       (display "   (close-output-port up-hold)\n" port)
-      (display "   (close-output-port die))\n" port)
+      (display "   (close-output-port die-out))\n" port)
       (display " void\n" port)
       (display " #:max-delay 0)\n" port)))
+  (define k-holder-err (build-path test-root "k-holder.err"))
   (define k-holder
-    (process* (path->string racket-exe) (path->string k-holder-path)))
+    (process* "/usr/bin/sh" "-c"
+              (format "~a ~a 2> ~a"
+                      (path->string racket-exe)
+                      (path->string k-holder-path)
+                      (path->string k-holder-err))))
   (define k-ctl (list-ref k-holder 4))
   (define k-up-hold (open-output-file k-up #:exists 'update))
   (define k-up-in (open-input-file k-up))
-  (check-equal? (read-line k-up-in) "up")
+  ;; Hold nothing back: if the holder dies before it writes, the read
+  ;; end must see EOF instead of blocking forever. The holder's stderr
+  ;; is captured so the failure says why, not just that it happened.
+  (close-output-port k-up-hold)
+  (define k-up-line (read-line k-up-in))
+  (unless (equal? k-up-line "up")
+    (define k-err (build-path test-root "k-holder.err"))
+    (define k-err-s (if (file-exists? k-err) (file->string k-err) "<none>"))
+    (error 'jobs-test
+           "holder never reported readiness; line=~s stderr=~s"
+           k-up-line k-err-s))
+  (check-equal? k-up-line "up")
   (check-eq? (job-state (job-status state-dir k-id)) 'running)
-  (define k-killer
-    (process* "/usr/bin/sh" "-c"
-              (format "kill -9 ~a" (number->string (list-ref k-holder 2)))))
-  ((list-ref k-killer 4) 'wait)
+  ;; The read end opens BEFORE the kill. A fifo read blocks until some
+  ;; writer appears, so opening first is what turns the holder's death
+  ;; into an EOF event instead of a permanent block. The holder opens
+  ;; k-die before it writes "up", and "up" is already consumed above,
+  ;; so this thread is past its open before the kill can land. No
+  ;; timeout and no polling are involved: the only events are the
+  ;; holder's open and its death (D-015).
   (define k-died-vec (box #f))
   (define k-watcher
     (thread (lambda ()
@@ -840,11 +863,14 @@
               (define v (read in))
               (close-input-port in)
               (set-box! k-died-vec v))))
+  (define k-killer
+    (process* "/usr/bin/sh" "-c"
+              (format "kill -9 ~a" (number->string (list-ref k-holder 2)))))
+  ((list-ref k-killer 4) 'wait)
   (thread-wait k-watcher)
   (check-pred eof-object? (unbox k-died-vec))
   (check-eq? (job-state (job-status state-dir k-id)) 'interrupted)
   (close-input-port k-up-in)
-  (close-output-port k-up-hold)
   (k-ctl 'wait)
 
   ;; Progress relay writes status fields (deterministic unit check).
