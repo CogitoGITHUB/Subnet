@@ -317,8 +317,11 @@ def stage-8-files [fast] {
 # (`nu scripts/check.nu --fast`). Verified 0.116.1: nu auto-invokes a
 # command called main and passes the flag through; it must therefore NOT
 # also be called explicitly, or the whole gate runs twice.
-def main [--fast] {
-    let want = ($env | get -o CYBERDECK_STAGES? | default "1,2,3,4,5,6,7,8,9,10,11")
+def main [--fast --changed] {
+    let changed_mode = ($changed or (($env | get -o CYBERDECK_CHANGED?) == "1"))
+    let want = (if $changed_mode {
+        $env | get -o CYBERDECK_STAGES? | default "1,2,3,4,5,7,changed" } else {
+        $env | get -o CYBERDECK_STAGES? | default "1,2,3,4,5,6,7,8,9,10,11" })
     let todo = ($want | split row ",")
     let total = (timeit {
         require-pinned-version
@@ -367,6 +370,10 @@ def main [--fast] {
         let full = (stage-8-files false)
         mut ccodes = []
         mut recs = []
+        if "changed" in $todo {
+            let chrc = (stage-changed)
+            print $"[check] stage changed exit=($chrc)"
+        }
         if "9" in $todo {
             print $"[check] stage 9 compile ($full | length) files"
             $ccodes = (compile-all $full)
@@ -543,4 +550,73 @@ def run-fast-tier [files] {
         print $"[fast-tier stderr] ($l)"
     }
     [{file: "fast-tier", exit: $r.exit_code, ms: 0}]
+}
+
+# --changed: the between-items gate. Only what actually changed is
+# recompiled and tested, so an item costs seconds instead of minutes.
+# Changed files come from git (tracked diff plus untracked); the test
+# blocks of fast-tier modules that DIRECTLY require them are added too,
+# found by reading their require lines, one level only.
+# Slow-tier files are named and skipped, never dropped silently.
+
+# -> list of changed .rkt paths, tracked-diff plus untracked
+def changed-rkt [] {
+    let d = (do { run-external "git" "diff" "--name-only" "HEAD" } | complete)
+    let tracked = (if $d.exit_code == 0 { $d.stdout | lines } else { [] })
+    let u = (do { run-external "git" "ls-files" "--others" "--exclude-standard" } | complete)
+    let untracked = (if $u.exit_code == 0 { $u.stdout | lines } else { [] })
+    let all = ($tracked | append $untracked)
+    # git prints paths relative to the REPO root, which is above this
+    # directory; strip everything up to and including the last component
+    # so the path resolves from here.
+    $all | where {|p| ($p | str ends-with ".rkt")} | each {|p|
+        # keep the last two components: DIR/NAME.rkt
+        let parts = ($p | split row "/")
+        let n = ($parts | length)
+        $parts | skip ($n - 2) | path join }
+}
+
+# list -> list, fast-tier modules whose source directly requires any of them
+def direct-dependents [changed] {
+    if ($changed | is-empty) {
+        return []
+    }
+    let fast = (stage-8-files true)
+    $fast | where {|f|
+        let body = (open --raw $f)
+        if not ($body | str contains "(require") {
+            false
+        } else {
+            $changed | any {|c| $body | str contains ($c | path basename) }
+        } }
+}
+
+# The --changed gate: stages 1-5 and 7 still run (they are cheap and
+# gate the tree), then only what changed is compiled and tested.
+def stage-changed [] {
+    let changed = (changed-rkt)
+    if ($changed | is-empty) {
+        print "[changed] nothing changed; nothing to do"
+        return 0
+    }
+    print $"[changed] ($changed | length) changed rkt files"
+    for c in $changed {
+        print $"[changed] ($c)"
+    }
+    let deps = (direct-dependents $changed)
+    let slow = ($changed | where {|c| $c in (stage-8-files false)})
+    for x in $slow {
+        print $"SKIPPED (slow tier): ($x)"
+    }
+    let fastset = ($changed | where {|c| not ($c in $slow)})
+    let all = ($fastset | append $deps)
+    if ($all | is-empty) {
+        print "[changed] no fast-tier work to do"
+        return 0
+    }
+    let ccodes = (compile-all $all)
+    let recs = (run-all $all)
+    let bad = ($ccodes | any {|c| $c != 0}) or ($recs | any {|r| $r.exit != 0})
+    (verdict $recs false)
+    (if $bad { 1 } else { 0 })
 }
