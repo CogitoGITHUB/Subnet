@@ -297,7 +297,7 @@ def stage-7 [] {
 # spawns N children costs about N x 7s.
 const SLOW_SPAWNERS = [
   "backends/jobs.rkt" "backends/run.rkt" "backends/vault.rkt"
-  "backends/git.rkt" "backends/local.rkt"
+  "backends/git.rkt" "backends/local.rkt" "core/vault-lock.rkt"
 ]
 
 
@@ -376,7 +376,7 @@ def main [--fast] {
         if "10" in $todo {
             let testfiles = (stage-8-files $fast)
             print $"[check] stage 10 tests ($testfiles | length) files fast=($fast)"
-            $recs = (run-all $testfiles)
+            $recs = (if $fast { run-fast-tier $testfiles } else { run-all $testfiles })
         }
         if "11" in $todo {
             let crecs = ($ccodes | each {|c| {file: "(compile)", exit: $c, ms: 0} })
@@ -509,4 +509,28 @@ def verdict [records fast] {
         print "CHECK FAILED"
     }
     (if $bad { 1 } else { 0 })
+}
+
+# The fast tier runs in ONE process through scripts/test-runner.rkt, which
+# reuses one linked namespace instead of paying raco's per-file library
+# link (about 5s each on this phone). Nu does NOT parse the runner's
+# output: its lines are printed verbatim and the verdict comes from the
+# process exit code alone, so the two paths cannot disagree about format.
+# The runner prints its own SLOWEST block, so Nu does not build one here.
+# core/vault-lock.rkt is in the slow tier because its fcntl locks are
+# process-local: inside a shared process a re-acquire silently succeeds
+# and its tests block forever.
+def run-fast-tier [files] {
+    let racketx = ($nu.home-dir | path join "opt" "racket" "bin" "racket")
+    let lp = ((gate-log-dir) | path join "fast-tier.log")
+    let r = (run-external $racketx "scripts/test-runner.rkt" ...$files | complete)
+    let whole = $"($r.stdout)($r.stderr)"
+    ($whole | save --force $lp)
+    for l in ($r.stdout | lines) {
+        print $"($l)"
+    }
+    for l in ($r.stderr | lines) {
+        print $"[fast-tier stderr] ($l)"
+    }
+    [{file: "fast-tier", exit: $r.exit_code, ms: 0}]
 }
