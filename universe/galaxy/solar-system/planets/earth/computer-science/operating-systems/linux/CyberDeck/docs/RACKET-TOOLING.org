@@ -57,3 +57,31 @@ pay it once instead of once per file.
 =#~/opt/racket/bin/raco pkg install NAME=, always with
 =GIT_TERMINAL_PROMPT=0= so a network problem fails fast instead of
 waiting for a prompt. No timers, no polling (D-015).
+
+* Scripts that exist, and what they are for
+| script | why it exists |
+|--------+---------------|
+| =scripts/check.nu= | the gate. =--fast= fast set, =--changed= between items, no flag = full |
+| =scripts/test-runner.rkt= | one process, many test submodules; prints TEST-START/END, SLOWEST, SUMMARY; a raise or exit inside a test counts as a failure |
+| =scripts/read-check.rkt= | reads every named .rkt and reports READ-BAD file:line. The paren check. |
+| =scripts/repl.rkt= | loads the core modules once, then evaluates stdin expressions, so probes skip startup |
+| =scripts/env.nu= | XDG roots, =CARGO_TARGET_DIR=, PATH for cargo |
+| =scripts/tree.nu= | tree view excluding compiled/target/.git |
+| =scripts/need-nu.nu= | reports the pinned Nu, fails clearly on mismatch, never fetches |
+
+The house rules for using them live in =AGENT.md= at the repo root.
+
+* Measured: REPL versus separate processes
+Five trivial probes, same work either way:
+
+| how | real time |
+|-----|-----------|
+| 5 exprs via one scripts/repl.rkt | 11.778s |
+| 5 separate racket -n -e (void) | 1.531s |
+
+Read that honestly: for TRIVIAL work the separate launches win, because
+the REPL pays a heavy one-off cost loading 13 core modules. The REPL wins
+when the expressions are not trivial, when the module set is already
+loaded, and above all when an expression RAISES and the stack stays
+alive for the next probe. Use it for investigation, not for one-liners.
+
