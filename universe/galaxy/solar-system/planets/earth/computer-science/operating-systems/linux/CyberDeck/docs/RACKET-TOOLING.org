@@ -1,0 +1,59 @@
+#+TITLE: Racket tooling
+#+AUTHOR: Shape
+
+* What is installed
+Racket 9.3 CS minimal lives in =~/opt/racket=. It is the tarball
+distribution, chosen on purpose (DECISIONS.org, 2026-10-06 "Racket 9.3
+minimal via tarball"): =rackunit-lib= was the only package added on top
+of it. Nothing else was needed until the engine work started.
+
+| package | status | why |
+|---------+--------+-----|
+| =racket-lib= | bundled | the language and collections |
+| =rackunit-lib= | installed | the test framework every test file uses |
+| =data-lib= | installed 2026-10-10 | =data/=, =data/list=, sorting helpers used by the resolver and plan work |
+
+* What is already there, no install needed
+Measured on this phone, not assumed:
+
+- =json= WORKS. =(require json)= loads from the bundled collects, and
+  =(jsexpr->string (hasheq 'a 1))= prints ={"a":1}=. The engine's step
+  journal (E-10) is JSON Lines, so this is the important one and it cost
+  nothing. =raco pkg install json= fails with "cannot find package on
+  catalogs" precisely because it is already there.
+- =read-line-evt=, =wrap-evt=, =eof-evt= all live in =racket/port=.
+  Valid line modes are exactly ='(linefeed return return-linefeed any
+  any-one)= (see =collects/racket/port.rkt:252=). ='line= does NOT
+  exist; using it is a contract violation.
+- =exit-handler= and =environment-variables-copy= are in =racket/base=.
+  =current-exit-handler= is NOT exported by the =racket/base= language.
+
+* What is NOT available and why
+Minimal distribution has no =racket/glob= and no =racket/environment=,
+and =directory-list-recursively= does not exist in =racket/file=. Do not
+write code that assumes them. Let =scripts/check.nu= list the files (it
+already globs them) and pass the list as arguments, which is what
+=scripts/read-check.rkt= does.
+
+Packages tried and NOT found on the catalog (network was up, HTTP 200, so
+this is a genuine "not published there", not a connectivity failure):
+=lsp=, =raco-test=, =typed-json=, =json-lib=. The catalog resolves for
+every one of them and then reports "cannot find package on catalogs".
+
+* Cost of what is installed
+=|-n -e ''= measured 0.299s before =data-lib= and 1.178s after. That is
+the one regression to watch. Startup matters here because every test
+process pays it, and the whole point of =scripts/test-runner.rkt= is to
+pay it once instead of once per file.
+
+* Not installed, and why
+- Full Racket distribution (~200MB+). It would add libraries we do not
+  need and slow every launch. Revisit only if the engine hits something
+  that genuinely requires it, and record the version and SHA then.
+- =PLTCOMPILEDROOTS= redirection. Measured at 401s make / 216s test
+  versus 18s unset; REJECTED in D-027. =compiled/= stays in-tree.
+
+* How packages get installed here
+=#~/opt/racket/bin/raco pkg install NAME=, always with
+=GIT_TERMINAL_PROMPT=0= so a network problem fails fast instead of
+waiting for a prompt. No timers, no polling (D-015).
