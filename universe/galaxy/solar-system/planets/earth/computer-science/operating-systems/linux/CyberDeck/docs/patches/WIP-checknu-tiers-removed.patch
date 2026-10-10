@@ -1,0 +1,68 @@
+diff --git a/universe/galaxy/solar-system/planets/earth/computer-science/operating-systems/linux/CyberDeck/scripts/check.nu b/universe/galaxy/solar-system/planets/earth/computer-science/operating-systems/linux/CyberDeck/scripts/check.nu
+index 19cb5b8..e68771c 100755
+--- a/universe/galaxy/solar-system/planets/earth/computer-science/operating-systems/linux/CyberDeck/scripts/check.nu
++++ b/universe/galaxy/solar-system/planets/earth/computer-science/operating-systems/linux/CyberDeck/scripts/check.nu
+@@ -289,28 +289,15 @@ def stage-7 [] {
+ # Stage 8 (check.sh lines 86-96): the fast set and --fast selection.
+ # Copied exactly from check.sh, in the same order. Timing is monotonic
+ # from timeit, so no `date +%s%N` and no `cut`.
+-# Test tiers. A SLOW file is one whose production code spawns a process
+-# (process*/process/system*/run.rkt); those pay the ~7s init-file cost
+-# per child under proot. Everything else runs in-process and is FAST.
+-# Measured bare launches on this phone: racket -n -e '' 0.58s,
+-# git --version 0.02s, nu -c 1 1.05s; raco cannot take -n, so a file that
+-# spawns N children costs about N x 7s.
+-const SLOW_SPAWNERS = [
+-  "backends/jobs.rkt" "backends/run.rkt" "backends/vault.rkt"
+-  "backends/git.rkt" "backends/local.rkt" "core/vault-lock.rkt"
+-]
+ 
+ 
+ # -> list, the stage-8 file list for the current mode
++# Every .rkt is tested, always, in one shared process. There is no tier
++# split: a file that needed its own process gets that need FIXED (isolated
++# cwd/env, correct handshake), not exempted from the suite. An exemption
++# hides exactly the files most likely to be broken.
+ def stage-8-files [fast] {
+-    let allr = (glob "**/*.rkt" | where {|f| not ($f | str contains "/compiled/")} | sort)
+-    if $fast {
+-        # Fast tier = every .rkt that is not a known process spawner.
+-        # Derived, not hand-listed, so a new file lands automatically.
+-        $allr | where {|f| not ($SLOW_SPAWNERS | any {|sp| $f | str ends-with $sp })}
+-    } else {
+-        $allr
+-    }
++    glob "**/*.rkt" | where {|f| not ($f | str contains "/compiled/")} | sort
+ }
+ 
+ # Named main with a real --fast flag, so the CLI matches check.sh exactly
+@@ -383,7 +370,7 @@ def main [--fast --changed] {
+         if "10" in $todo {
+             let testfiles = (stage-8-files $fast)
+             print $"[check] stage 10 tests ($testfiles | length) files fast=($fast)"
+-            $recs = (if $fast { run-fast-tier $testfiles } else { run-all $testfiles })
++            $recs = (run-fast-tier $testfiles)
+             let bad10 = ($recs | any {|r| $r.exit != 0})
+             print $"[check] stage 10 records=($recs | length) failed=($bad10)"
+         }
+@@ -604,18 +591,13 @@ def stage-changed [] {
+         print $"[changed] ($c)"
+     }
+     let deps = (direct-dependents $changed)
+-    let slow = ($changed | where {|c| $c in (stage-8-files false)})
+-    for x in $slow {
+-        print $"SKIPPED (slow tier): ($x)"
+-    }
+-    let fastset = ($changed | where {|c| not ($c in $slow)})
+-    let all = ($fastset | append $deps)
++    let all = ($changed | append $deps)
+     if ($all | is-empty) {
+         print "[changed] no fast-tier work to do"
+         return 0
+     }
+     let ccodes = (compile-all $all)
+-    let recs = (run-all $all)
++    let recs = (run-fast-tier $all)
+     let bad = ($ccodes | any {|c| $c != 0}) or ($recs | any {|r| $r.exit != 0})
+     (verdict $recs false)
+     (if $bad { 1 } else { 0 })

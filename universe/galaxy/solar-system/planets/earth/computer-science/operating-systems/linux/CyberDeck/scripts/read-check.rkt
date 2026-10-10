@@ -10,7 +10,9 @@
 ;; <message>" per bad file, then exits 1 if anything is bad.
 ;; No timers, no polling (D-015).
 
-(require racket/file)
+(require racket/file
+         racket/list
+         racket/string)
 
 (define files (vector->list (current-command-line-arguments)))
 
@@ -19,23 +21,31 @@
   (flush-output)
   #f)
 
-;; Read every form of one file. A #lang line is module syntax that plain
-;; read-syntax cannot read and it is legal only as the first form, so at
-;; most one such line is skipped. A shebang is not a form at all.
+;; How many leading lines to drop: an optional shebang, then an optional
+;; #lang. Both are legal only at the very start of a file, so dropping at
+;; most those two can never hide a real form.
+(define (header-lines ls)
+  (cond
+    [(null? ls) 0]
+    [(regexp-match? #px"^[ \t]*#!" (car ls)) (add1 (header-lines (cdr ls)))]
+    [(regexp-match? #px"^[ \t]*#lang" (car ls)) 1]
+    [else 0]))
+
+;; Read every form of one file. Line numbers come from each form's own
+;; srcloc plus the number of header lines dropped, so they match the file.
 (define (read-one f)
-  (call-with-input-file f
-    (lambda (in)
-      (define first (read-line in 'any))
-      (if (and first (regexp-match? #px"^[ \t]*#lang" first))
-          (read-line in 'any)
-          (void))
-      (let loop ([line 2])
-        (define v (with-handlers ([exn:fail? (lambda (e) (bad-at f line (exn-message e)))])
-                     (read-syntax (make-base-namespace) in)))
-        (cond [(eof-object? v) #t]
-              [(not v) #f]
-              [else (loop (add1 line))])))
-    #:mode 'binary))
+  (define body (file->string f #:mode 'binary))
+  (define ls (string-split body "\n"))
+  (define skip (header-lines ls))
+  (define in (open-input-string (string-join (drop ls skip) "\n")))
+  (let loop ()
+    (define v
+      (with-handlers ([exn:fail? (lambda (e) (bad-at f skip (exn-message e)))])
+        (read-syntax (make-base-namespace) in)))
+    (cond
+      [(eof-object? v) #t]
+      [(not v) #f]
+      [else (loop)])))
 
 (define bad (filter (lambda (f) (not (read-one f))) files))
 (printf "read-check: ~a files, ~a bad\n" (length files) (length bad))

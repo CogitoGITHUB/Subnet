@@ -10,6 +10,7 @@
 
 (require racket/contract/base
          racket/string
+         racket/port
          racket/file
          racket/system
          racket/runtime-path
@@ -848,19 +849,26 @@
                       (path->string k-holder-path)
                       (path->string k-holder-err))))
   (define k-ctl (list-ref k-holder 4))
-  ;; The parent holds NO write end of k-up. Opening one just to unblock
-  ;; its own read, then closing it, hands the read end a premature EOF
-  ;; before the holder has opened its writer. Without a writer of its
-  ;; own, this open blocks until the holder opens one inside the lock,
-  ;; which is the event we actually want to wait for (D-015).
-  (define k-up-in (open-input-file k-up))
-  (define k-up-line (read-line k-up-in))
-  (unless (equal? k-up-line "up")
+  ;; O_RDWR, so the open itself can never block. A read-only open waits
+  ;; for a writer while the holder's write-open waits for a reader, and
+  ;; with neither end held they wait on each other forever. O_RDWR breaks
+  ;; that symmetry. The wait is on TWO events, the line and the holder's
+  ;; own exit, so a holder that dies before writing "up" fails the test
+  ;; at once with its stderr instead of stranding the run. No timeout
+  ;; anywhere (D-015).
+  (define-values (k-up-in k-up-out)
+    (open-input-output-file k-up #:exists 'update))
+  (define k-up-evt (read-line-evt k-up-in 'linefeed))
+  (define k-holder-exit ((list-ref k-holder 4)))
+  (define k-first (sync k-up-evt k-holder-exit))
+  (unless (eq? k-first k-up-evt)
     (define k-err (build-path test-root "k-holder.err"))
     (define k-err-s (if (file-exists? k-err) (file->string k-err) "<none>"))
     (error 'jobs-test
-           "holder never reported readiness; line=~s stderr=~s"
-           k-up-line k-err-s))
+           "holder exited before readiness; status=~a stderr=~s"
+           (subprocess-status k-holder-exit) k-err-s))
+  ;; The evt fired, so a whole line is ready; read it and check content.
+  (define k-up-line (read-line k-up-in))
   (check-equal? k-up-line "up")
   (check-eq? (job-state (job-status state-dir k-id)) 'running)
   ;; The read end opens BEFORE the kill. A fifo read blocks until some
@@ -884,7 +892,9 @@
   (thread-wait k-watcher)
   (check-pred eof-object? (unbox k-died-vec))
   (check-eq? (job-state (job-status state-dir k-id)) 'interrupted)
+  ;; Both ends of the O_RDWR port close at teardown, never before.
   (close-input-port k-up-in)
+  (close-output-port k-up-out)
   (k-ctl 'wait)
 
   ;; Progress relay writes status fields (deterministic unit check).
