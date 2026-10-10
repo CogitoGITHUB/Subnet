@@ -78,6 +78,35 @@ persist. Fixed: the verdict is a =mut= in the same scope. A gate that
 decides anything is now proved by a failing synthetic fixture under
 =/tmp=, which must exit non-zero.
 
+** STOP (2026-10-10) vault.rkt:1611 large-blob check, 2 attempts spent
+=backends/vault.rkt:1611= =check-pred config-error?= gets =no-error= both
+ALONE and in the shared process, so it is NOT a shared-process isolation
+bug. Two attempts, both measured, both =failed=1 total=71:
+1. as written (100000001 bytes of =/dev/zero=): fails, 469,194 ms.
+2. changed to =/dev/urandom=, incompressible so the STORED object really
+   exceeds the 100,000,000 byte limit at vault.rkt:905: STILL fails at
+   the same check, now line 1611 because the comment block shifted it,
+   471,792 ms.
+Why attempt 2 was reasonable and still wrong: =vault-large-blobs=
+(vault.rkt:905) rejects by MEASURED object size, and =/dev/zero=
+compresses to a few KB, so attempt 1 could never produce a large blob.
+Making the fixture incompressible turned out to be necessary but NOT
+sufficient, which means the size the check reads is still not the size the
+fixture writes. The unexamined step is between them: =fixture-git add=
+and =commit= of the 100 MB file, and the gc / transfer.fsckObjects path
+the vault runs on add. Nobody has measured which of those shrinks or
+skips the object.
+NOT GUESSED FURTHER: a third variation without measuring that step would
+repeat this mistake exactly. The next attempt must first PRINT the
+measured blob size and the objects the vault actually holds, and only
+then decide whether the fixture or =vault-large-blobs= is wrong. That is
+production code plus a new test, so it is a Phase P item, not a gate
+change.
+COST NOTE: this single assertion is why vault.rkt takes ~8 minutes and
+spawns 851 child processes (measured by scripts/where-time.nu: 183s of
+child time plus a 53s stall with no child running). It dominates the cost
+of the whole suite.
+
 ** TODO P-02 prove the manifest store
 Round trip a synthetic manifest through =backends/manifest.rkt=. /
 Done when: a write/read round trip preserves entries and order, and a
