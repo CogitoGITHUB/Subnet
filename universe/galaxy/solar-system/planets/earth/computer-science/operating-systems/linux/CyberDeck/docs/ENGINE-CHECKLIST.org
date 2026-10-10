@@ -34,6 +34,12 @@ after, so a start with no end names the stuck job; the queue test file
 goes green.
 
 ** PARKED P-03 and P-04 (2026-10-10)
+production: job-start rejects vault-wide jobs (op-gc) because
+check-job-name requires a package name (jobs.rkt:109-113, via
+datum->job:221). A gc or vault-wide job can never be enqueued.
+production leak: job-cancel opens job-held.fifo read-write and never
+closes it (seen as a stale fd in the test process); fix with a close in
+dynamic-wind.
 Not abandoned, deliberately set aside. P-04 tracing and the jobs.rkt
 fifo handshake are done but unverified: the last run reaches the kill -9
 test and raises a contract blame error

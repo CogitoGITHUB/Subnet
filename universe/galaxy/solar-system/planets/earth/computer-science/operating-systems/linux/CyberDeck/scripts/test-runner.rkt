@@ -31,8 +31,12 @@
 
 (define (now) (current-inexact-monotonic-milliseconds))
 
-(define (run-one f)
-  (printf "TEST-START ~a\n" f)
+;; Information only: a file over this is worth looking at. Nothing waits
+;; on a clock and nothing times out (D-015); this only reports.
+(define SUSPECT-MS 2000)
+
+(define (run-one f t0 done)
+  (printf "TEST-START ~a at=~a of=~a\n" f (round (- (now) t0)) done)
   (flush-output)
   (cond
     [(not (has-test-submodule? f))
@@ -61,9 +65,11 @@
      (define after (rt:test-report))
      (define failed (+ extra (- (car after) (car before))))
      (define total (+ extra (- (cdr after) (cdr before))))
-     (printf "TEST-END ~a failed=~a total=~a ms=~a~a\n"
-             f failed total (round (- (now) t0))
+     (printf "TEST-END ~a failed=~a total=~a ms=~a at=~a~a\n"
+             f failed total (round (- (now) t0)) (round (- (now) t0))
              (if msg (format " error=~s" msg) ""))
+     (when (> (round (- (now) t0)) SUSPECT-MS)
+       (printf "SUSPECT: ~a ~a\n" f (round (- (now) t0))))
      (flush-output)
      (list failed total (round (- (now) t0)))]))
 
@@ -72,7 +78,10 @@
   (when (null? files)
     (eprintf "usage: test-runner.rkt FILE ...\n")
     (exit 2))
-  (define results (for/list ([f (in-list files)]) (run-one f)))
+  (define t-all (now))
+  (define results
+    (for/list ([f (in-list files)] [i (in-naturals 1)])
+      (run-one f t-all i)))
   (define n-failed (for/sum ([r (in-list results)]) (car r)))
   (define n-total (for/sum ([r (in-list results)]) (cadr r)))
   ;; SLOWEST, sorted here in Racket so Nu never has to parse anything.

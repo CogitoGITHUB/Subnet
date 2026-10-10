@@ -7,8 +7,8 @@ one was learned by getting it wrong first.
 
 | to do this | use this | never this |
 |------------|----------|------------|
-| look at a file | `read` (gives line numbers) | `cat`, `sed -n`, `grep` for context |
-| change a file | `edit` (exact string, fails if 0 or >1 match) | `python3 <<EOF`, `sed -i`, heredoc rewrite |
+| look at a file | `read` (gives line numbers) | `cat`, `sed -n` |
+| change a file | `edit` (exact match, fails if 0 or >1) | python/sed/heredoc |
 | create a file | `write` | shell redirection |
 | check it parses | `scripts/read-check.rkt` | a one-off paren one-liner |
 
@@ -50,6 +50,34 @@ have happened through `edit`.
   lock, while the code under test was fine.
 - Assuming `jobs.rkt` had a handshake bug when the handshake was correct
   and a stale lock holder was the actual blocker.
+
+## ## Always use the shared runner, and read its timer lines
+
+`scripts/test-runner.rkt` prints progress and elapsed time EVERY run:
+
+```
+TEST-START <file> at=<ms since run start> of=<n files>
+TEST-END   <file> failed=<n> total=<n> ms=<n> at=<ms>
+SUSPECT:   <file> <ms>          <- over 2000ms, information only
+SUMMARY files=<n> failed=<n> total=<n>
+```
+
+- **A `TEST-START` with no matching `TEST-END` is a stuck file**, and
+  `at=` says how long it has been stuck. Do not sit on silence: read the
+  log, then look at the process.
+- `SUSPECT:` marks slow files. Slow is information, never a reason to
+  skip a file or give it its own process.
+- No timers in this behaviour: nothing waits on a clock, nothing is
+  killed automatically, `SUSPECT` is a report not a limit (D-015).
+
+## No fast/slow tiers
+
+Every `.rkt` is tested, always, in ONE shared process. A file that hangs
+or fails there is an ERROR to isolate and fix (dynamic-wind, temp dirs,
+parameterize cwd/env, kill and reap children), never a reason to give it
+a separate tier. Measured proof spawners are fine in the shared process:
+`backends/git.rkt` (54 tests), `backends/local.rkt` (15) and
+`backends/run.rkt` (52) all pass there.
 
 ## Scripts in `scripts/` exist to RUN things, not to change text.
 

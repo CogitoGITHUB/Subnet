@@ -401,7 +401,11 @@
     (define child
       (process* (path->string setsid-exe)
                 (path->string racket-exe) mod-path sdir))
-    ((list-ref child 4) 'wait)))
+    ;; Spawn and return. The old form ended with ((list-ref child 4)
+    ;; 'wait), a FOREGROUND wait on the whole worker, which blocked
+    ;; job-start for the entire job and is what D-015 forbids. Callers
+    ;; wait on the job's own event instead: its FIFO.
+    (void)))
 
 ;; path-string job-op -> job, rate-limited enqueue plus worker
 (define (job-start state-dir job-op)
@@ -686,6 +690,24 @@
 
 ;; path-string -> void, one-shot worker entry for the child
 (define (worker-main state-dir)
+  ;; Any raise in here used to kill the worker in silence, leaving the
+  ;; job 'queued' forever with nothing to show why. Record a terminal
+  ;; state carrying the error text instead, then exit non-zero in the
+  ;; WORKER process only. A worker must never take the test process
+  ;; down with it.
+  (with-handlers
+      ([exn:fail?
+        (lambda (e)
+          (with-handlers ([exn:fail? (lambda (_) (void))])
+            (for ([id (in-list (queue-all-ids state-dir))])
+              (define j (job-read state-dir id))
+              (when (eq? (job-state j) 'queued)
+                (job-write state-dir id
+                           (struct-copy job j [state 'failed])))))
+          (exit 1))])
+    (worker-pass-all state-dir)))
+
+(define (worker-pass-all state-dir)
   (ensure-jobs-dir state-dir)
   (call-with-file-lock/timeout (worker-lock-path state-dir)
                                'exclusive
@@ -828,7 +850,7 @@
       ;; Markers go to stderr, which the parent captures into
       ;; k-holder.err and prints on failure, so a failure names exactly
       ;; how far the holder got instead of guessing.
-      (display "   (define (mk s) (displayln s) (flush-output (current-error-port)))\n" port)
+      (display "   (define (mk s) (eprintf \"~a\\n\" s) (flush-output (current-error-port)))\n" port)
       (display "   (mk \"H1 in lock\")\n" port)
       (display "   (define-values (die-in die-out)\n     " port)
       (display (format "(open-input-output-file ~s #:exists 'update))\n" k-die-s) port)
@@ -867,26 +889,22 @@
   ;; anywhere (D-015).
   (define-values (k-up-in k-up-out)
     (open-input-output-file k-up #:exists 'update))
-  (define k-up-evt (read-line-evt k-up-in 'linefeed))
-  ;; subprocess returns a HANDLE, not the old process* vector: its 5th
-  ;; element is a procedure that is NOT an evt. So the exit is turned
-  ;; into an event by a reaper thread that blocks in subprocess-wait and
-  ;; posts a semaphore. Still no timer anywhere (D-015).
-  (define k-holder-exited (make-semaphore))
-  (define k-reaper
-    (thread (lambda ()
-              (subprocess-wait k-holder)
-              (semaphore-post k-holder-exited))))
-  (define k-first (sync k-up-evt k-holder-exited))
-  (unless (eq? k-first k-up-evt)
+  ;; Close our own write end at once. A fifo read blocks until a writer
+  ;; appears and the holder's write-open blocks until a reader appears,
+  ;; so holding O_RDWR breaks that symmetry; closing our writer then
+  ;; leaves the holder as the ONLY writer, and its death arrives as EOF
+  ;; on the read end. That EOF is the event waited on. subprocess-wait is
+  ;; deliberately NOT used: it returns immediately in this Racket even
+  ;; while the child runs, so it cannot signal death. No timer anywhere.
+  (close-output-port k-up-out)
+  ;; read-line-evt CONSUMES the line, so the sync RESULT is the line.
+  ;; Reading the same port again with read-line blocked forever waiting
+  ;; for a second line the holder never writes: that was the hang.
+  (define k-up-line (sync (read-line-evt k-up-in 'linefeed)))
+  (when (eof-object? k-up-line)
     (define k-err (build-path test-root "k-holder.err"))
     (define k-err-s (if (file-exists? k-err) (file->string k-err) "<none>"))
-    (error 'jobs-test
-           "holder exited before readiness; status=~a stderr=~s"
-           (subprocess-status k-holder)
-           k-err-s))
-  ;; The evt fired, so a whole line is ready; read it and check content.
-  (define k-up-line (read-line k-up-in))
+    (error 'jobs-test "holder died before readiness; stderr=~s" k-err-s))
   (check-equal? k-up-line "up")
   (check-eq? (job-state (job-status state-dir k-id)) 'running)
   (define k-holder-gone (box #f))
@@ -927,8 +945,6 @@
           (subprocess-wait k-holder)))))
   ;; Both ends of the O_RDWR port close at teardown, never before.
   (close-input-port k-up-in)
-  (close-output-port k-up-out)
-  (thread-wait k-reaper)
 
   ;; Progress relay writes status fields (deterministic unit check).
   (define rel-id "job-relay")
@@ -945,9 +961,39 @@
   (define e2e-vault (build-path state-dir "vault.git"))
   (make-directory e2e-vault)
   (vault-init e2e-vault)
-  (define e1 (job-start state-dir (op-gc)))
-  (define e2 (job-start state-dir (op-gc)))
-  (define e3 (job-start state-dir (op-gc)))
+  ;; Synthetic local fixture (T-10). A one-file git repo on disk: no
+  ;; network, no real package name, identity set only for this repo so
+  ;; no global config is touched.
+  (define hello-repo (build-path test-root "pkg-hello"))
+  (make-directory hello-repo)
+  (call-with-output-file (build-path hello-repo "hello.txt")
+    (lambda (o) (display "hello" o)))
+  (define (git-fixture! . args)
+    ;; process* returns #(pid in out err control): index 3 is the err port
+    ;; and index 4 the control, which is called with 'wait. There is no
+    ;; subprocess handle here, so the status is read the same way.
+    (define r (apply process*
+                     (append (list "/usr/bin/git"
+                                   "-c" "user.name=fixture"
+                                   "-c" "user.email=fixture@example.org"
+                                   "-c" "init.defaultBranch=main"
+                                   "-C" (path->string hello-repo))
+                             args)))
+    (define ctl (list-ref r 4))
+    (ctl 'wait)
+    (unless (zero? (ctl 'exit-code))
+      (error 'jobs-test "fixture git failed" args (ctl 'exit-code))))
+  (git-fixture! "init" "--quiet")
+  (git-fixture! "add" "hello.txt")
+  (git-fixture! "commit" "--quiet" "-m" "synthetic fixture")
+  ;; op-gc has no package name and datum->job refuses an empty one, so
+  ;; these enqueues name the synthetic package and point at the local
+  ;; fixture path. Nothing here reaches the network.
+  (define hello-add
+    (op-add "pkg-hello" (path->string hello-repo) #f '()))
+  (define e1 (job-start state-dir hello-add))
+  (define e2 (job-start state-dir hello-add))
+  (define e3 (job-start state-dir hello-add))
   (check-eq? (job-state (job-wait state-dir (job-id e1))) 'done)
   (check-eq? (job-state (job-wait state-dir (job-id e2))) 'done)
   (check-eq? (job-state (job-wait state-dir (job-id e3))) 'done)
