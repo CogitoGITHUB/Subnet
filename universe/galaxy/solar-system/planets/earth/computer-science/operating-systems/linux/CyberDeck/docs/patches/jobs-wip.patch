@@ -1,0 +1,57 @@
+diff --git a/universe/galaxy/solar-system/planets/earth/computer-science/operating-systems/linux/CyberDeck/backends/jobs.rkt b/universe/galaxy/solar-system/planets/earth/computer-science/operating-systems/linux/CyberDeck/backends/jobs.rkt
+index 920bf23..1fca690 100644
+--- a/universe/galaxy/solar-system/planets/earth/computer-science/operating-systems/linux/CyberDeck/backends/jobs.rkt
++++ b/universe/galaxy/solar-system/planets/earth/computer-science/operating-systems/linux/CyberDeck/backends/jobs.rkt
+@@ -10,6 +10,7 @@
+ 
+ (require racket/contract/base
+          racket/string
++         racket/port
+          racket/file
+          racket/system
+          racket/runtime-path
+@@ -848,20 +849,23 @@
+                       (path->string k-holder-path)
+                       (path->string k-holder-err))))
+   (define k-ctl (list-ref k-holder 4))
+-  ;; The parent holds NO write end of k-up. Opening one just to unblock
+-  ;; its own read, then closing it, hands the read end a premature EOF
+-  ;; before the holder has opened its writer. Without a writer of its
+-  ;; own, this open blocks until the holder opens one inside the lock,
+-  ;; which is the event we actually want to wait for (D-015).
+-  (define k-up-in (open-input-file k-up))
+-  (define k-up-line (read-line k-up-in))
+-  (unless (equal? k-up-line "up")
++  ;; O_RDWR so the open itself can never block, whatever the holder is
++  ;; doing. The wait is on TWO events: the line the holder writes, and
++  ;; the holder's own exit. Whichever fires first decides, so a holder
++  ;; that dies before writing "up" fails the test at once with its
++  ;; stderr instead of stranding the run. No timeout anywhere (D-015).
++  (define-values (k-up-in k-up-out)
++    (open-input-output-file k-up #:exists 'update))
++  (define k-up-evt (read-line-evt k-up-in "up"))
++  (define k-holder-exit ((list-ref k-holder 4)))
++  (define k-first (sync k-up-evt k-holder-exit))
++  (unless (eq? k-first k-up-evt)
+     (define k-err (build-path test-root "k-holder.err"))
+     (define k-err-s (if (file-exists? k-err) (file->string k-err) "<none>"))
+     (error 'jobs-test
+-           "holder never reported readiness; line=~s stderr=~s"
+-           k-up-line k-err-s))
+-  (check-equal? k-up-line "up")
++           "holder exited before readiness; status=~a stderr=~s"
++           (subprocess-status k-holder-exit) k-err-s))
++  (check-equal? (sync k-up-evt) "up")
+   (check-eq? (job-state (job-status state-dir k-id)) 'running)
+   ;; The read end opens BEFORE the kill. A fifo read blocks until some
+   ;; writer appears, so opening first is what turns the holder's death
+@@ -884,7 +888,9 @@
+   (thread-wait k-watcher)
+   (check-pred eof-object? (unbox k-died-vec))
+   (check-eq? (job-state (job-status state-dir k-id)) 'interrupted)
++  ;; Both ends of the O_RDWR port close here, at teardown, never before.
+   (close-input-port k-up-in)
++  (close-output-port k-up-out)
+   (k-ctl 'wait)
+ 
+   ;; Progress relay writes status fields (deterministic unit check).
