@@ -35,36 +35,6 @@
 ;; on a clock and nothing times out (D-015); this only reports.
 (define SUSPECT-MS 2000)
 
-;; Heartbeat, in the same spirit: while ONE file runs there is otherwise
-;; no output at all, so a slow or stuck file looks exactly like a quiet
-;; machine. Every TICK-MS the runner says which file it is inside and how
-;; long the whole run has been going.
-;;
-;; This is the one clock in the project and it is observation only: the
-;; thread prints and then stops. It never cancels, never raises into the
-;; test, never shortens a wait and never changes a verdict. D-015 is about
-;; control flow; this is stdout.
-(define TICK-MS 60000)
-
-;; path number -> (-> void), starts the heartbeat, returns its stop
-(define (start-heartbeat f t-all)
-  (define stop (make-semaphore))
-  (define done? (box #f))
-  (define th
-    (thread
-      (lambda ()
-        (let loop ()
-          (cond [(unbox done?) (void)]
-                [(sync/timeout TICK-MS stop) (void)]
-                [else
-                 (printf "TICK ~a at=~a\n" f (round (- (now) t-all)))
-                 (flush-output)
-                 (loop)])))))
-  (lambda ()
-    (set-box! done? #t)
-    (semaphore-post stop)
-    (thread-wait th)))
-
 (define (run-one f t-file t-all done)
   (printf "TEST-START ~a at=~a of=~a\n" f (round (- (now) t-all)) done)
   (flush-output)
@@ -81,27 +51,17 @@
      (define before (rt:test-report))
      (define extra 0)
      (define msg #f)
-     ;; The heartbeat runs for exactly as long as this file does, and is
-     ;; stopped by the same dynamic-wind that stops it on an exception.
-     (define stop-heartbeat (start-heartbeat f t-all))
-     (dynamic-wind
-      void
-      (lambda ()
-        (parameterize ([current-directory (current-directory)]
-                       [current-environment-variables
-                        (environment-variables-copy
-                         (current-environment-variables))]
-                       [exit-handler (lambda (c) (raise (list 'exit-called c)))])
-          (with-handlers ([(lambda (e) #t)
-                           (lambda (e)
-                             (set! extra 1)
-                             (set! msg (if (exn? e) (exn-message e) e)))])
-            (dynamic-require
-             (list 'submod
-                   (list 'file (path->string (path->complete-path f)))
-                   'test)
-             #f))))
-      stop-heartbeat)
+     (parameterize ([current-directory (current-directory)]
+                    [current-environment-variables
+                     (environment-variables-copy (current-environment-variables))]
+                    [exit-handler (lambda (c) (raise (list 'exit-called c)))])
+       (with-handlers ([(lambda (e) #t)
+                        (lambda (e)
+                          (set! extra 1)
+                          (set! msg (if (exn? e) (exn-message e) e)))])
+         (dynamic-require
+          (list 'submod (list 'file (path->string (path->complete-path f))) 'test)
+          #f)))
      (define after (rt:test-report))
      (define failed (+ extra (- (car after) (car before))))
      (define total (+ extra (- (cdr after) (cdr before))))
