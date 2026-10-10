@@ -87,21 +87,51 @@ bug. Two attempts, both measured, both =failed=1 total=71:
    exceeds the 100,000,000 byte limit at vault.rkt:905: STILL fails at
    the same check, now line 1611 because the comment block shifted it,
    471,792 ms.
-Why attempt 2 was reasonable and still wrong: =vault-large-blobs=
-(vault.rkt:905) rejects by MEASURED object size, and =/dev/zero=
-compresses to a few KB, so attempt 1 could never produce a large blob.
-Making the fixture incompressible turned out to be necessary but NOT
-sufficient, which means the size the check reads is still not the size the
-fixture writes. The unexamined step is between them: =fixture-git add=
-and =commit= of the 100 MB file, and the gc / transfer.fsckObjects path
-the vault runs on add. Nobody has measured which of those shrinks or
-skips the object.
-NOT GUESSED FURTHER: a third variation without measuring that step would
-repeat this mistake exactly. The next attempt must first PRINT the
-measured blob size and the objects the vault actually holds, and only
-then decide whether the fixture or =vault-large-blobs= is wrong. That is
-production code plus a new test, so it is a Phase P item, not a gate
-change.
+WHY BOTH ATTEMPTS FAILED, and the wrong theory to abandon: attempt 2
+rested on the claim that =/dev/zero= "compresses to a few KB so the stored
+object is small". THAT CLAIM IS WRONG. =git cat-file --batch-check=
+(vault.rkt:860) reports a blob's UNCOMPRESSED content length, so a
+100000001-byte run of zeros reports =100000001= exactly like random data
+does. Attempt 2 was therefore chasing a theory that could not have been
+true, and it burned ~8 minutes to prove nothing. =/dev/urandom= is left in
+place only because it is harmless, not because it fixed anything.
+So the fault is NOT the fixture data. It is one of the two things
+=vault-large-blobs= actually reads (vault.rkt:852-876), neither of which
+has been measured yet:
+- =reachable= is built from =rev-list --objects= output filtered by
+  =^[0-9a-f]{40}( |$)= (line 870). If the blob sha never appears there,
+  =vault-big-line?= rejects it at =set-member?= and =big= comes back empty.
+- =batch= is =cat-file --batch-check --batch-all-objects=, i.e. it reports
+  EVERY object in the vault, and =vault-big-line?= then requires the line
+  to match =^([0-9a-f]+) blob ([0-9]+)$= EXACTLY. Any extra column, or a
+  size printed differently, makes the regex miss and the check pass
+  silently. This is the more likely of the two and is testable in
+  seconds with a tiny fixture, not with the 100 MB one.
+MEASURED (2026-10-10, scripts/probe-blob.rkt): the production path is
+CORRECT at both sizes, so the fault is in the TEST's own sequence, not in
+=vault-large-blobs=. At 4096 bytes: the blob sha appears in =rev-list
+--objects= and the batch line is =<sha> blob 4096=, which matches
+=vault-big-line?= exactly, so =big= is empty only because 4096 <
+100000000. At 100000001 bytes: =fixture bytes on disk: 100000001=,
+=d<sha> big= in =rev-list --objects=, =d<sha> blob 100000001= in the
+batch, so the threshold IS exceeded and the blob IS reachable. Running
+that same add through =vault-init= + =vault-add= leaves the vault with the
+blob present. Both regexes (lines 870 and 902) are fine; the earlier
+suspicion that either could miss is DISPROVED by measurement.
+Also measured: =fixture-git= (vault.rkt:1079) raises on a non-zero exit
+and supplies an identity through =fixture-env=, so its commit cannot be
+silently failing. The probe therefore builds the SAME fixture shape and
+gets a large, reachable blob where the test does not.
+WHAT IS LEFT UNEXAMINED, stated as a question and not a theory: the test
+writes the 100 MB file with =copy-port= from =(list-ref head-proc 0)= and
+closes the port immediately after (vault.rkt:1601-1606), while the probe
+does the same and measures the file at the full 100000001. So either the
+test's copy is truncated on the path the probe does not take, or the
+difference is in what runs BEFORE this block in the same test submodule
+(state left by the 70 tests above it). The next attempt must print
+=file-size= of the test's own =big-dir/big= INSIDE the test, at that line,
+and compare it to 100000001. Do not change =vault-large-blobs= until that
+number is wrong in a reproduced run.
 COST NOTE: this single assertion is why vault.rkt takes ~8 minutes and
 spawns 851 child processes (measured by scripts/where-time.nu: 183s of
 child time plus a 53s stall with no child running). It dominates the cost
