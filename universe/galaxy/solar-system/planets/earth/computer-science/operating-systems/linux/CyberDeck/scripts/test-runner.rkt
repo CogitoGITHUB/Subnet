@@ -1,4 +1,3 @@
-#!/usr/bin/env racket
 #lang racket/base
 
 ;; scripts/test-runner.rkt -- shared-process test runner (P-04 follow-up).
@@ -19,7 +18,8 @@
 ;; timers, no polling, no sleeping anywhere (D-015).
 
 (require (prefix-in rt: raco/testing)
-         racket/runtime-path)
+         racket/runtime-path
+         racket/list)
 
 ;; path -> boolean, true when the file declares a "test" submodule.
 ;; Read from the source text, so answering costs nothing and loads
@@ -41,7 +41,7 @@
      (printf "NO-TESTS ~a\n" f)
      (printf "TEST-END ~a failed=0 total=0 ms=0\n" f)
      (flush-output)
-     (cons 0 0)]
+     (list 0 0 0)]
     [else
      (define t0 (now))
      (define before (rt:test-report))
@@ -65,7 +65,7 @@
              f failed total (round (- (now) t0))
              (if msg (format " error=~s" msg) ""))
      (flush-output)
-     (cons failed total)]))
+     (list failed total (round (- (now) t0)))]))
 
 (module+ main
   (define files (vector->list (current-command-line-arguments)))
@@ -74,7 +74,16 @@
     (exit 2))
   (define results (for/list ([f (in-list files)]) (run-one f)))
   (define n-failed (for/sum ([r (in-list results)]) (car r)))
-  (define n-total (for/sum ([r (in-list results)]) (cdr r)))
+  (define n-total (for/sum ([r (in-list results)]) (cadr r)))
+  ;; SLOWEST, sorted here in Racket so Nu never has to parse anything.
+  (define timed
+    (for/list ([f (in-list files)] [r (in-list results)])
+      (list (caddr r) f)))
+  (printf "SLOWEST:\n")
+  (define ranked (sort timed (lambda (a b) (> (car a) (car b)))))
+  (define top (if (> (length ranked) 10) (take ranked 10) ranked))
+  (for ([row (in-list top)])
+    (printf "  ~a ~a\n" (car row) (cadr row)))
   (printf "SUMMARY files=~a failed=~a total=~a\n"
           (length files) n-failed n-total)
   (flush-output)
