@@ -289,19 +289,27 @@ def stage-7 [] {
 # Stage 8 (check.sh lines 86-96): the fast set and --fast selection.
 # Copied exactly from check.sh, in the same order. Timing is monotonic
 # from timeit, so no `date +%s%N` and no `cut`.
-const FAST_RKTS = [
-  "core/errors.rkt" "core/git-id.rkt" "core/git-url.rkt" "core/version.rkt"
-  "core/spec.rkt" "core/spec-read.rkt" "core/resolve.rkt" "core/plan.rkt" "core/ui.rkt"
-  "core/log.rkt" "core/lock.rkt" "core/cancel.rkt" "cli/main.rkt" "info.rkt"
-  "backends/dry-run.rkt" "backends/fake.rkt"
+# Test tiers. A SLOW file is one whose production code spawns a process
+# (process*/process/system*/run.rkt); those pay the ~7s init-file cost
+# per child under proot. Everything else runs in-process and is FAST.
+# Measured bare launches on this phone: racket -n -e '' 0.58s,
+# git --version 0.02s, nu -c 1 1.05s; raco cannot take -n, so a file that
+# spawns N children costs about N x 7s.
+const SLOW_SPAWNERS = [
+  "backends/jobs.rkt" "backends/run.rkt" "backends/vault.rkt"
+  "backends/git.rkt" "backends/local.rkt"
 ]
+
 
 # -> list, the stage-8 file list for the current mode
 def stage-8-files [fast] {
+    let allr = (glob "**/*.rkt" | where {|f| not ($f | str contains "/compiled/")} | sort)
     if $fast {
-        $FAST_RKTS
+        # Fast tier = every .rkt that is not a known process spawner.
+        # Derived, not hand-listed, so a new file lands automatically.
+        $allr | where {|f| not ($SLOW_SPAWNERS | any {|sp| $f | str ends-with $sp })}
     } else {
-        glob "**/*.rkt" | where {|f| not ($f | str contains "/compiled/")} | sort
+        $allr
     }
 }
 
@@ -366,7 +374,7 @@ def main [--fast] {
             print $"[check] stage 9 exit=(if $cbad { 1 } else { 0 })"
         }
         if "10" in $todo {
-            let testfiles = (if $fast { $FAST_RKTS } else { $full })
+            let testfiles = (stage-8-files $fast)
             print $"[check] stage 10 tests ($testfiles | length) files fast=($fast)"
             $recs = (run-all $testfiles)
         }
