@@ -848,12 +848,12 @@
                       (path->string k-holder-path)
                       (path->string k-holder-err))))
   (define k-ctl (list-ref k-holder 4))
-  (define k-up-hold (open-output-file k-up #:exists 'update))
+  ;; The parent holds NO write end of k-up. Opening one just to unblock
+  ;; its own read, then closing it, hands the read end a premature EOF
+  ;; before the holder has opened its writer. Without a writer of its
+  ;; own, this open blocks until the holder opens one inside the lock,
+  ;; which is the event we actually want to wait for (D-015).
   (define k-up-in (open-input-file k-up))
-  ;; Hold nothing back: if the holder dies before it writes, the read
-  ;; end must see EOF instead of blocking forever. The holder's stderr
-  ;; is captured so the failure says why, not just that it happened.
-  (close-output-port k-up-hold)
   (define k-up-line (read-line k-up-in))
   (unless (equal? k-up-line "up")
     (define k-err (build-path test-root "k-holder.err"))
