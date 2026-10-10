@@ -377,6 +377,8 @@ def main [--fast] {
             let testfiles = (stage-8-files $fast)
             print $"[check] stage 10 tests ($testfiles | length) files fast=($fast)"
             $recs = (if $fast { run-fast-tier $testfiles } else { run-all $testfiles })
+            let bad10 = ($recs | any {|r| $r.exit != 0})
+            print $"[check] stage 10 records=($recs | length) failed=($bad10)"
         }
         if "11" in $todo {
             let crecs = ($ccodes | each {|c| {file: "(compile)", exit: $c, ms: 0} })
@@ -490,7 +492,15 @@ def compile-all [files] {
         print "STEP-END compile after=0ms"
         return []
     }
-    let recs = ($files | sort | each {|f| compile-one $f })
+    let sorted = ($files | sort)
+    print $"[check] stage 9 compiling ($sorted | length) files"
+    mut recs = []
+    mut n = 0
+    for f in $sorted {
+        $n = ($n + 1)
+        print $"[check] stage 9 compile ($n)/($sorted | length) ($f | path basename)"
+        $recs = ($recs | append [(compile-one $f)])
+    }
     let total = ($recs | get ms | math sum)
     print $"STEP-END compile after=($total)ms"
     $recs | get exit
