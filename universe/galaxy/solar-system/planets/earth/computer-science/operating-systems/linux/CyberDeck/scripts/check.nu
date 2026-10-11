@@ -360,9 +360,12 @@ def stage-8-files [] {
 # beside it). The helpers that read it belong next to the test stages.
 # All readers are pipelines over the const, which is safe.
 
-# -> list, the parked subset of the stage-8 file set
-def stage-8-parked-files [] {
-    (stage-8-files) | where {|f| $FILE_PARKED | any {|p| $f | str ends-with ($p | get 0) }}
+# -> bool, true when the file is on the parked list, relative or absolute.
+# Both stage 10 and --changed compare against this: the runner file list
+# mixes relative and absolute forms of the same file, so exact membership
+# silently fails to exclude (measured: vault.rkt ran 470s while parked).
+def file-parked? [f] {
+    $FILE_PARKED | any {|p| $f | str ends-with ($p | get 0) }
 }
 
 # -> list, one printed line per parked file: PARKED <file> - <reason>
@@ -456,7 +459,7 @@ def main [--changed] {
         # record per compiled file are handed to verdict, so a compile
         # failure fails the gate exactly as `raco make` used to.
         let full = (stage-8-files)
-        let parked = (stage-8-parked-files)
+        let parked = ((stage-8-files) | where {|f| (file-parked? $f) })
         mut ccodes = []
         mut recs = []
         if "changed" in $todo {
@@ -473,7 +476,7 @@ def main [--changed] {
             for l in (parked-lines) {
                 print $l
             }
-            let testfiles = ($full | where {|f| not ($f in $parked)})
+            let testfiles = ($full | where {|f| not (file-parked? $f) })
             print $"[check] stage 10 tests ($testfiles | length) files one process"
             $recs = (if ($testfiles | is-empty) { [] } else { run-runner $testfiles })
             let bad10 = ($recs | any {|r| $r.exit != 0})
@@ -668,13 +671,13 @@ def stage-changed [] {
         print $"[changed] ($c)"
     }
     let deps = (direct-dependents $changed)
-    let parked = ($changed | where {|c| $c in (stage-8-parked-files)})
+    let parked = ($changed | where {|c| (file-parked? $c) })
     for x in $parked {
         let hit = ($FILE_PARKED | where {|p| $x | str ends-with ($p | get 0) })
         let why = ($hit | each {|p| $p | get 1 } | first)
         print ("PARKED: " ++ ($x | path basename) ++ " - " ++ $why)
     }
-    let runset = ($changed | where {|c| not ($c in $parked)} | append $deps)
+    let runset = ($changed | where {|c| not (file-parked? $c) } | append $deps)
     if ($runset | is-empty) {
         print "[changed] nothing to run"
         return 0
