@@ -253,12 +253,17 @@ Measured: core/flags.rkt resolve-flags over plain alists (spec < global
 requires/non-boolean all kind 'config; 8/8 in shared runner, --changed
 ALL GREEN (5 files, 37 tests, 41s).
 
-** TODO E-04 package-level plan in core/plan.rkt
+** DONE E-04 package-level plan in core/plan.rkt
 Derive name, slot, version, commit, resolved flags, dependency
 identities, steps, install forms, check and input hash. Confirm first
 that nothing in the tree already derives a plan. / Done when: golden
 =plan->text= output exists for =pkg-alpha= and =pkg-beta=, and
 =pkg-cycle-a= raises kind ='resolve=.
+Measured: no derivation existed (resolve orders only); package-plan +
+derive-package-plan + derive-plans (resolve order, E-03 flags) + sha1
+input hash + store-dir + package-plan->text goldens; pkg-cycle-a kind
+resolve via resolve.rkt; two slots two dirs; plan.rkt 18/18, --changed
+ALL GREEN (8 files, 44 tests).
 
 ** TODO E-05 inspect core/lock.rkt, then extend it
 The module already reads and writes a lockfile atomically and sorted;

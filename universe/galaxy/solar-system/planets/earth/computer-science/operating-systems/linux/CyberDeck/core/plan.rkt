@@ -6,7 +6,14 @@
 
 (require racket/contract/base
          racket/string
-         "errors.rkt")
+         racket/port
+         openssl/sha1
+         "errors.rkt"
+         "git-id.rkt"
+         "spec.rkt"
+         "version.rkt"
+         "flags.rkt"
+         "resolve.rkt")
 
 (provide
  (struct-out fetch-action)
@@ -18,13 +25,29 @@
  (struct-out symlink-action)
  (struct-out remove-path-action)
  (struct-out plan)
+ (struct-out package-plan)
  (contract-out
   ;; any -> boolean, one of the eight action kinds below
   [action? (-> any/c boolean?)]
   ;; plan -> string, one line per action in order, stable for goldens
   [plan->text (-> plan? string?)]
   ;; (listof action) -> plan
-  [list->plan (-> (listof action?) plan?)]))
+  [list->plan (-> (listof action?) plan?)]
+  ;; package-plan -> string, stable multi-line rendering for goldens
+  [package-plan->text (-> package-plan? string?)]
+  ;; spec (listof cons) (listof string) -> package-plan, one package
+  [derive-package-plan
+   (-> spec? (listof (cons/c symbol? boolean?)) (listof string?)
+       package-plan?)]
+  ;; (listof spec) (listof cons) (listof cons) -> (listof package-plan),
+  ;; deps-first order; cycles and missing providers raise kind 'resolve
+  ;; through resolve.rkt, flag problems kind 'config through flags.rkt
+  [derive-plans
+   (-> (listof spec?) (listof (cons/c symbol? boolean?))
+       (listof (cons/c symbol? boolean?)) (listof package-plan?))]
+  ;; package-plan -> string, store path below <state>/store (D-023):
+  ;; name/slot/version-hash12; two slots plan to two dirs
+  [package-plan-store-dir (-> package-plan? string?)]))
 
 ;; ---------------------------------------------------------------------------
 ;; Guard helper
@@ -141,6 +164,186 @@
   (plan actions))
 
 ;; ---------------------------------------------------------------------------
+;; Package plans (E-04: spec + resolved flags + dep identities -> data)
+
+;; A package plan is pure data: everything lowering (E-06) and the lock
+;; (E-05) need, decided here and nowhere else. Manifest pins and vault
+;; state are inputs of later stages, not of derivation: dep identities
+;; are name + exact version (D-007), so no vault read is needed to plan.
+(struct package-plan
+  (name slot version commit flags deps steps install check input-hash)
+  #:transparent
+  #:guard (lambda (name slot version commit flags deps steps
+                        install check input-hash _n)
+            (unless (package-name? name)
+              (raise-pm-error 'spec 'package-plan "bad package name"
+                              #:fields `(("value" . ,name))))
+            (unless (slot-name? slot)
+              (raise-pm-error 'spec 'package-plan "bad slot name"
+                              #:fields `(("value" . ,slot))))
+            (unless (version? version)
+              (raise-pm-error 'spec 'package-plan "not a version"
+                              #:fields `(("value" . ,version))))
+            (unless (git-id? commit)
+              (raise-pm-error 'spec 'package-plan "not a commit id"
+                              #:fields `(("value" . ,commit))))
+            (unless (and (list? flags)
+                         (andmap (lambda (p)
+                                   (and (pair? p)
+                                        (symbol? (car p))
+                                        (boolean? (cdr p))))
+                                 flags))
+              (raise-pm-error 'spec 'package-plan "flags must be name.value"
+                              #:fields `(("value" . ,flags))))
+            (unless (and (list? deps) (andmap string? deps))
+              (raise-pm-error 'spec 'package-plan "deps must be strings"
+                              #:fields `(("value" . ,deps))))
+            (unless (and (list? steps) (andmap build-step? steps))
+              (raise-pm-error 'spec 'package-plan "steps must be build steps"
+                              #:fields `(("value" . ,steps))))
+            (unless (install-spec? install)
+              (raise-pm-error 'spec 'package-plan "not an install spec"
+                              #:fields `(("value" . ,install))))
+            (unless (or (not check) (list? check))
+              (raise-pm-error 'spec 'package-plan "check must be a form or #f"
+                              #:fields `(("value" . ,check))))
+            (unless (and (string? input-hash) (> (string-length input-hash) 0))
+              (raise-pm-error 'spec 'package-plan "input hash must be nonempty"
+                              #:fields `(("value" . ,input-hash))))
+            (values name slot version commit flags deps steps
+                    install check input-hash)))
+;; name       : package-name?  D-8
+;; slot       : slot-name?     version stream (D-023)
+;; version    : version?       exact matching only (D-007)
+;; commit     : string?        full commit id from the spec source
+;; flags      : (listof (cons symbol boolean))  resolved, full coverage
+;; deps       : (listof string?)  "name version" identities, sorted
+;; steps      : (listof build-step?)  from the spec build
+;; install    : install-spec?  from the spec install
+;; check      : (or/c list? #f)  the single check form, or #f when absent
+;; input-hash : string?  sha1 hex over the canonical rendering below
+
+;; ---------------------------------------------------------------------------
+;; Derivation (spec + resolved flags + dep identities -> package-plan)
+
+;; string -> string, sha1 hex of the full content (stable across runs:
+;; sha1 over bytes, never equal-hash-code, which a runtime may salt)
+(define (string-sha1hex s)
+  (bytes->hex-string
+   (sha1-bytes (open-input-string s))))
+
+;; package-plan -> string, the canonical bytes the input hash covers.
+;; One fact per line, fields in struct order, flags in declared order,
+;; dep identities sorted: two derivations of the same inputs hash equal.
+(define (package-plan-canonical pp)
+  (string-join
+   (append
+    (list (format "name ~a" (package-plan-name pp))
+          (format "slot ~a" (package-plan-slot pp))
+          (format "version ~a"
+                  (version->string (package-plan-version pp)))
+          (format "commit ~a" (package-plan-commit pp)))
+    (for/list ([f (in-list (package-plan-flags pp))])
+      (format "flag ~a=~a" (car f) (cdr f)))
+    (for/list ([d (in-list (package-plan-deps pp))])
+      (format "dep ~a" d))
+    (for/list ([s (in-list (package-plan-steps pp))])
+      (format "step ~a ~a"
+              (build-step-name s)
+              (string-join (map (lambda (a) (format "~s" a))
+                                 (build-step-args s))
+                           " ")))
+    (list (format "install ~s" (install-spec-forms
+                                (package-plan-install pp)))
+          (format "check ~s" (package-plan-check pp))))
+   "\n"))
+
+;; spec (listof cons) (listof string) -> package-plan, one package.
+;; The flags must cover exactly the declared names (a resolution from
+;; another spec is caller error, kind 'config); dep identities arrive
+;; sorted "name version" strings from the caller.
+(define (derive-package-plan specification resolved dep-identities)
+  (define declared-names (map flag-spec-name (spec-flags specification)))
+  (define given-names (map car resolved))
+  (unless (and (= (length declared-names) (length given-names))
+               (andmap (lambda (n) (memq n declared-names)) given-names))
+    (raise-pm-error 'config 'derive-package-plan
+                    "flags do not match declared"
+                    #:fields `(("spec" . ,(format "~a"
+                                                 (spec-name specification))))))
+  (define forms (install-spec-forms (spec-install specification)))
+  (define check-form
+    (let ((found (filter (lambda (form)
+                           (and (pair? form) (eq? (car form) 'check)))
+                         forms)))
+      (if (null? found) #f (car found))))
+  (define proto
+    (package-plan (spec-name specification)
+                  (spec-slot specification)
+                  (spec-version specification)
+                  (source-commit (spec-source specification))
+                  resolved
+                  (sort dep-identities string<?)
+                  (spec-build specification)
+                  (spec-install specification)
+                  check-form
+                  "pending"))
+  (struct-copy package-plan proto
+               [input-hash (string-sha1hex
+                            (package-plan-canonical proto))]))
+
+;; (listof spec) (listof cons) (listof cons) -> (listof package-plan),
+;; deps-first order via resolve.rkt: missing providers and cycles raise
+;; kind 'resolve there; flag problems raise kind 'config in flags.rkt.
+(define (derive-plans specifications global-config per-package-config)
+  (define ordered (resolve specifications specifications))
+  (for/list ([s (in-list ordered)])
+    (derive-package-plan
+     s
+     (resolve-flags s global-config per-package-config)
+     (for/list ([d (in-list (spec-deps s))])
+       (format "~a ~a"
+               (dep-name d)
+               (version->string (dep-version d)))))))
+
+;; package-plan -> string, store path below <state>/store (D-023)
+(define (package-plan-store-dir pp)
+  (string-append (symbol->string (package-plan-name pp))
+                 "/"
+                 (symbol->string (package-plan-slot pp))
+                 "/"
+                 (version->string (package-plan-version pp))
+                 "-"
+                 (substring (package-plan-input-hash pp) 0 12)))
+
+;; package-plan -> string, stable multi-line rendering for goldens
+(define (package-plan->text pp)
+  (string-join
+   (list (format "package ~a ~a slot ~a commit ~a"
+                 (package-plan-name pp)
+                 (version->string (package-plan-version pp))
+                 (package-plan-slot pp)
+                 (package-plan-commit pp))
+         (format "flags: ~a"
+                 (string-join
+                  (for/list ([f (in-list (package-plan-flags pp))])
+                    (format "~a=~a" (car f) (cdr f)))
+                  " "))
+         (format "deps: ~a"
+                 (string-join (package-plan-deps pp) ", "))
+         (format "steps: ~a"
+                 (string-join
+                  (for/list ([s (in-list (package-plan-steps pp))])
+                    (format "~a" (build-step-name s)))
+                  " "))
+         (format "install: ~a" (install-spec-target
+                                (package-plan-install pp)))
+         (format "check: ~a"
+                 (if (package-plan-check pp) "present" "absent"))
+         (format "input-hash: ~a" (package-plan-input-hash pp)))
+   "\n"))
+
+;; ---------------------------------------------------------------------------
 ;; Rendering (stable text for dry-run output and golden files)
 
 ;; action -> string, one line
@@ -187,7 +390,9 @@
 ;; ---------------------------------------------------------------------------
 (module+ test
   (require rackunit
-           "errors.rkt")
+           "errors.rkt"
+           "spec.rkt"
+           "version.rkt")
 
   ;; Every action builds and predicates sort them.
   (define fetch-1
@@ -243,4 +448,97 @@
     "\n"))
 
   ;; Empty plan renders empty.
-  (check-equal? (plan->text (list->plan '())) ""))
+  (check-equal? (plan->text (list->plan '())) "")
+
+  ;; E-04 fixtures: pkg-alpha on pkg-beta, synthetic and local (T-10).
+  (define alpha-spec
+    (spec 'pkg-alpha (string->version "2.0") "Alpha"
+          (source "https://example.org/alpha.git"
+                  "9edb3f66fd807b096b48283debdcddccfea34bad")
+          (list (dep 'pkg-beta (string->version "1.0")))
+          '()
+          (list (build-step 'copy '("a" "b")))
+          (install-spec 'prefix '((bin "alpha" "bin/alpha")
+                                  (check "bin/alpha" "--version")))
+          'mit "https://example.org/alpha" #f '() '()
+          'default
+          (list (flag-spec 'gui #t "GUI" '() '()))))
+  (define beta-spec
+    (spec 'pkg-beta (string->version "1.0") "Beta"
+          (source "https://example.org/beta.git"
+                  "8edb3f66fd807b096b48283debdcddccfea34bad")
+          '() '()
+          (list (build-step 'copy '("c" "d")))
+          (install-spec 'prefix '((bin "beta" "bin/beta")))
+          'mit "https://example.org/beta" #f '() '()
+          'default
+          '()))
+  (define alpha-plan
+    (derive-package-plan alpha-spec '((gui . #t)) '("pkg-beta 1.0")))
+  (define beta-plan
+    (derive-package-plan beta-spec '() '()))
+
+  ;; Golden plan text for both packages.
+  (check-equal?
+   (package-plan->text alpha-plan)
+   (string-join
+    (list (string-append "package pkg-alpha 2.0 slot default commit "
+                         "9edb3f66fd807b096b48283debdcddccfea34bad")
+          "flags: gui=#t"
+          "deps: pkg-beta 1.0"
+          "steps: copy"
+          "install: prefix"
+          "check: present"
+          (string-append "input-hash: "
+                         (package-plan-input-hash alpha-plan)))
+    "\n"))
+  (check-equal?
+   (package-plan->text beta-plan)
+   (string-join
+    (list (string-append "package pkg-beta 1.0 slot default commit "
+                         "8edb3f66fd807b096b48283debdcddccfea34bad")
+          "flags: "
+          "deps: "
+          "steps: copy"
+          "install: prefix"
+          "check: absent"
+          (string-append "input-hash: "
+                         (package-plan-input-hash beta-plan)))
+    "\n"))
+
+  ;; The input hash covers flags: flipping one flips the hash.
+  (define alpha-off
+    (derive-package-plan alpha-spec '((gui . #f)) '("pkg-beta 1.0")))
+  (check-false (equal? (package-plan-input-hash alpha-plan)
+                       (package-plan-input-hash alpha-off)))
+
+  ;; derive-plans orders deps first; cycles raise kind 'resolve.
+  (check-equal? (map package-plan-name
+                     (derive-plans (list alpha-spec beta-spec) '() '()))
+                '(pkg-beta pkg-alpha))
+  (define cycle-spec
+    (struct-copy spec alpha-spec
+                 [name 'pkg-cycle-a]
+                 [deps (list (dep 'pkg-cycle-a
+                                  (string->version "2.0")))]))
+  (check-pred resolve-error?
+              (with-handlers ([exn:fail:pm? (lambda (e) e)])
+                (derive-plans (list cycle-spec) '() '())
+                'no-error))
+
+  ;; Two slots of one package plan to two store dirs.
+  (define alpha-alt
+    (struct-copy spec alpha-spec [slot 'lts]))
+  (check-false (equal? (package-plan-store-dir
+                        (derive-package-plan alpha-spec '((gui . #t))
+                                             '("pkg-beta 1.0")))
+                       (package-plan-store-dir
+                        (derive-package-plan alpha-alt '((gui . #t))
+                                             '("pkg-beta 1.0")))))
+
+  ;; Flags from another spec are caller error, kind 'config.
+  (check-pred config-error?
+              (with-handlers ([exn:fail:pm? (lambda (e) e)])
+                (derive-package-plan alpha-spec '((nope . #t))
+                                     '("pkg-beta 1.0"))
+                'no-error)))
