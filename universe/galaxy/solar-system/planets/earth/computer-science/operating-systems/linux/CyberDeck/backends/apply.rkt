@@ -72,6 +72,10 @@
            racket/file
            "fake.rkt"
            "local.rkt"
+           "git.rkt"
+           "run.rkt"
+           "vault.rkt"
+           "../core/git-url.rkt"
            "../core/errors.rkt"
            "../core/plan.rkt")
 
@@ -198,4 +202,91 @@
    (lambda ()
      (apply-plan (list->plan '()) "h" fake-perform!
                  #:state state #:package "pkg-empty" #:slot "default")))
+
+  ;; E-12: pkg-alpha end to end on real local fixtures. A synthetic
+  ;; upstream repo (one script, one one-line makefile) goes through
+  ;; vault fetch and export, a real store dir, the real marker and the
+  ;; real current link, all driven by apply-plan over local-perform!.
+  (define e12-home (build-path state-root "home"))
+  (make-directory e12-home)
+  (define (e12-git dir . args)
+    (define res
+      (run-command (git-executable-path) args
+                   #:cwd (path->string dir)
+                   #:kind 'fetch #:operation "e12-fixture"
+                   #:env `(("GIT_AUTHOR_NAME" . "t")
+                            ("GIT_AUTHOR_EMAIL" . "t@t")
+                            ("GIT_COMMITTER_NAME" . "t")
+                            ("GIT_COMMITTER_EMAIL" . "t@t")
+                            ("HOME" . ,(path->string e12-home))
+                            ("GIT_CONFIG_NOSYSTEM" . "1"))))
+    (unless (zero? (run-result-exit res))
+      (error 'e12-fixture "git failed: ~a" args))
+    res)
+  (define e12-up (build-path state-root "upstream"))
+  (make-directory e12-up)
+  (e12-git e12-up "init" "-b" "main" ".")
+  (call-with-output-file (build-path e12-up "build.sh")
+    (lambda (out) (display "#!/bin/sh\nprintf alpha > built.txt\n" out)))
+  (call-with-output-file (build-path e12-up "makefile")
+    (lambda (out) (display "all:\n\tsh build.sh\n" out)))
+  (e12-git e12-up "add" "-A")
+  (e12-git e12-up "commit" "-qm" "init")
+  (define e12-vault-git (build-path state-root "e12vault" "vault.git"))
+  (make-directory* (build-path state-root "e12vault"))
+  (define e12-mirror (build-path state-root "e12mirror.git"))
+  (define e12-staging (build-path state-root "e12staging"))
+  (make-directory e12-staging)
+  (define e12-ver (build-path state-root "store" "pkg-alpha" "default"
+                              "1.0-e12e12e12e12"))
+  (define e12-cur (build-path state-root "store" "pkg-alpha" "default"
+                              "current"))
+  (define e12-pin
+    (parameterize ([current-allow-file-urls #t])
+      (vault-init e12-vault-git)
+      (vault-add-result-pin
+       (vault-add e12-vault-git "pkg-alpha"
+                  (string-append "file://" (path->string e12-up))))))
+  (define e12-actions
+    (list (fetch-action (string-append "file://" (path->string e12-up))
+                        e12-pin
+                        (path->string e12-mirror))
+          (export-action 'pkg-alpha e12-pin (path->string e12-staging))
+          (mark-incomplete-action (path->string e12-ver))
+          (run-step-action "make" '("make" "-f" "makefile" "all")
+                           (path->string e12-staging))
+          (install-file-action
+           (path->string (build-path e12-staging "built.txt"))
+           (path->string (build-path e12-ver "built.txt"))
+           #o644)
+          (check-action '("sh" "-c" "test -f built.txt")
+                        (path->string e12-ver))
+          (clear-incomplete-action (path->string e12-ver))
+          (set-current-action (path->string e12-ver)
+                              (path->string e12-cur))))
+  (define (e12-perform! a)
+    (local-perform! (list->plan (list a))
+                    #:prefix (path->string e12-ver)
+                    #:commit e12-pin
+                    #:vault (path->string e12-vault-git)))
+  (parameterize ([current-allow-file-urls #t])
+    (apply-plan (list->plan e12-actions) "e12" e12-perform!
+                #:state state #:package "pkg-alpha" #:slot "default"))
+  (check-equal? (file->string (build-path e12-ver "built.txt")) "alpha")
+  (check-false (file-exists? (build-path e12-ver ".pm-incomplete")))
+  (check-equal? (path->string (resolve-path e12-cur))
+                (path->string e12-ver))
+  (check-equal? (length (journal-completions state "pkg-alpha" "default"))
+                8)
+  (displayln "--- e12 store tree (ls -lR) ---")
+  (define e12-ls
+    (run-command (find-executable-path "ls")
+                 (list "-lR" (path->string (build-path state-root "store")))
+                 #:cwd state
+                 #:kind 'build #:operation "e12-ls"))
+  (for ([line (in-list (run-result-stdout-lines e12-ls))])
+    (displayln line))
+  (displayln "--- e12 journal ---")
+  (displayln (file->string (journal-file state "pkg-alpha" "default")))
+
   (delete-directory/files state-root))

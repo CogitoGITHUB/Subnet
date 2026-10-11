@@ -377,9 +377,14 @@ read-check 0 bad. Locks stay in jobs (P-04), manifests are E-14;
 prefix-untouched is journal-level on fake, real dirs land in E-12.
 Cancel test shows .pm-incomplete still present on the interrupted dir.
 
-** TODO E-12 apply on a real local synthetic git fixture
+** DONE E-12 apply on a real local synthetic git fixture
 Same path, real git, synthetic packages only. / Done when: a synthetic
 repo installs through every step and the =current= link resolves.
+Measured: pkg-alpha (script + one-line makefile) through vault-add,
+fetch, export, mark, make, install, check, clear, current, all driven
+by apply-plan over local-perform!; built.txt holds "alpha", no marker,
+current resolves, journal holds all 8 ends; --changed ALL GREEN
+(files=2, total=23), STAGES=6 lint 0 violations, read-check 0 bad.
 
 ** TODO E-12c apply writer lock
 Apply, activate, update-apply and remove take one writer lock on the
