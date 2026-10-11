@@ -233,10 +233,15 @@ accepts before or after the command, missing/duplicate/bad value raises
 kind ='config=); =racket cli/main.rkt check DIR --format yaml= exits 2;
 cli/main.rkt 21/21 in the shared runner.
 
-** TODO E-02 spec fields =slot= and =flags=
+** DONE E-02 spec fields =slot= and =flags=
 Add both fields to the spec struct and validate them in spec-read. /
 Done when: a spec naming an unknown flag or a duplicate slot is rejected
 with kind ='spec= and a srcloc.
+Measured: spec gains slot (default 'default) + flags (default '());
+(flag NAME) when-conds checked against declared flags; duplicate (slot
+...) fields rejected by the generic duplicate-field check; variants may
+override slot/flags. spec.rkt 29/29, spec-read.rkt 51/51, resolve.rkt
+8/8 in the shared runner; docs/examples still validate (4 ok).
 
 ** TODO E-03 core/flags.rkt
 Resolve flags from spec defaults, the global config and per-package

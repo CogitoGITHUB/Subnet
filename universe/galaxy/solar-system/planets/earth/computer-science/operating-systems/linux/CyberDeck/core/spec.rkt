@@ -15,10 +15,13 @@
  (struct-out install-spec)
  (struct-out variant-spec)
  (struct-out when-spec)
+ (struct-out flag-spec)
  (struct-out spec)
  (contract-out
   ;; any -> boolean, symbol matching D-8 names
-  [package-name? (-> any/c boolean?)]))
+  [package-name? (-> any/c boolean?)]
+  ;; any -> boolean, slot stream names (D-023)
+  [slot-name? (-> any/c boolean?)]))
 
 ;; ---------------------------------------------------------------------------
 ;; Names (D-8)
@@ -27,6 +30,14 @@
 (define (package-name? v)
   (and (symbol? v)
        (regexp-match? #rx"^[a-z0-9][a-z0-9-]*$"
+                      (symbol->string v))))
+
+;; any -> boolean, a slot stream name (D-023): letters, digits, dot,
+;; underscore and dash, never empty. Dots let a slot track a version
+;; stream like "5.5", which D-8 names forbid.
+(define (slot-name? v)
+  (and (symbol? v)
+       (regexp-match? #rx"^[A-Za-z0-9][A-Za-z0-9._-]*$"
                       (symbol->string v))))
 
 ;; ---------------------------------------------------------------------------
@@ -111,11 +122,40 @@
 ;; cond   : list?  (platform OS) (feature NAME)
 ;; fields : list?  field forms applied when cond holds
 
+;; USE-style flag declaration (D-022). Resolution against config lives in
+;; flags.rkt (E-03); this struct only says the declaration itself is sound.
+(struct flag-spec (name default doc conflicts requires)
+  #:transparent
+  #:guard (lambda (name default doc conflicts requires _n)
+            (unless (package-name? name)
+              (raise-pm-error 'spec 'flag-spec "bad flag name"
+                              #:fields `(("value" . ,name))))
+            (unless (boolean? default)
+              (raise-pm-error 'spec 'flag-spec "default must be a boolean"
+                              #:fields `(("value" . ,default))))
+            (unless (and (string? doc) (> (string-length doc) 0))
+              (raise-pm-error 'spec 'flag-spec "doc must be a nonempty string"
+                              #:fields `(("value" . ,doc))))
+            (unless (and (list? conflicts)
+                         (andmap package-name? conflicts))
+              (raise-pm-error 'spec 'flag-spec "conflicts must be flag names"
+                              #:fields `(("value" . ,conflicts))))
+            (unless (and (list? requires)
+                         (andmap package-name? requires))
+              (raise-pm-error 'spec 'flag-spec "requires must be flag names"
+                              #:fields `(("value" . ,requires))))
+            (values name default doc conflicts requires)))
+;; name      : package-name?  flag vocabulary of this package (D-8)
+;; default   : boolean?       spec default, config may override (D-022)
+;; doc       : string?        one-line description
+;; conflicts : (listof package-name?)  never enabled together (checked E-03)
+;; requires  : (listof package-name?)  must be enabled too (checked E-03)
+
 (struct spec (name version summary source deps build-deps build install
-              license homepage extends variants whens)
+              license homepage extends variants whens slot flags)
   #:transparent
   #:guard (lambda (name version summary source deps build-deps build install
-                   license homepage extends variants whens _n)
+                   license homepage extends variants whens slot flags _n)
             (unless (package-name? name)
               (raise-pm-error 'spec 'spec "bad package name"
                               #:fields `(("value" . ,name))))
@@ -155,8 +195,14 @@
             (unless (and (list? whens) (andmap when-spec? whens))
               (raise-pm-error 'spec 'spec "whens must be when structs"
                               #:fields `(("value" . ,whens))))
+            (unless (slot-name? slot)
+              (raise-pm-error 'spec 'spec "bad slot name"
+                              #:fields `(("value" . ,slot))))
+            (unless (and (list? flags) (andmap flag-spec? flags))
+              (raise-pm-error 'spec 'spec "flags must be flag structs"
+                              #:fields `(("value" . ,flags))))
             (values name version summary source deps build-deps build install
-                    license homepage extends variants whens)))
+                    license homepage extends variants whens slot flags)))
 ;; name     : package-name?  D-8
 ;; version  : version?       exact matching only (D-007)
 ;; summary  : string?
@@ -170,6 +216,8 @@
 ;; extends  : (or/c package-name? #f)
 ;; variants : (listof variant-spec?)
 ;; whens    : (listof when-spec?)
+;; slot     : slot-name?   version stream, 'default when undeclared (D-023)
+;; flags    : (listof flag-spec?)  declared USE-style flags (D-022)
 
 ;; ---------------------------------------------------------------------------
 (module+ test
@@ -183,6 +231,18 @@
   (check-false (package-name? "pkg-alpha"))
   (check-false (package-name? ""))
 
+  ;; Slot names accept letters, digits, dot, underscore, dash.
+  (check-true (slot-name? 'lts))
+  (check-true (slot-name? 'default))
+  (check-true (slot-name? 'gtk3))
+  (check-false (slot-name? 'Bad!))
+  (check-false (slot-name? "lts"))
+  (check-false (slot-name? 42))
+
+  ;; Flag declarations accept sound values (rejections pinned next to the
+  ;; other guard tests below, after the spec-kind helper they call).
+  (check-true (flag-spec? (flag-spec 'gui #t "GUI" '() '())))
+
   ;; A full valid spec builds.
   (define good
     (spec 'pkg-alpha (string->version "20250115.1432") "Alpha test package"
@@ -192,9 +252,13 @@
           '()
           (list (build-step 'copy '("a" "b")))
           (install-spec 'prefix '((bin "b")))
-          'gpl-3.0+ "https://example.org/r" #f '() '()))
+          'gpl-3.0+ "https://example.org/r" #f '() '()
+          'lts
+          (list (flag-spec 'gui #t "Graphical interface" '(minimal) '(x11)))))
   (check-true (spec? good))
   (check-equal? (spec-name good) 'pkg-alpha)
+  (check-equal? (spec-slot good) 'lts)
+  (check-equal? (map flag-spec-name (spec-flags good)) '(gui))
 
   ;; Every guard rejects with kind 'spec.
   (define (spec-kind thunk)
@@ -210,4 +274,19 @@
                 (struct-copy spec good [name 'Bad!]))) 'spec)
   (check-eq? (spec-kind
               (lambda ()
-                (struct-copy spec good [extends 'Bad!]))) 'spec))
+                (struct-copy spec good [extends 'Bad!]))) 'spec)
+  (check-eq? (spec-kind
+              (lambda ()
+                (struct-copy spec good [slot 'Bad!]))) 'spec)
+  (check-eq? (spec-kind
+              (lambda ()
+                (struct-copy spec good [flags '(not-structs)]))) 'spec)
+  (check-eq? (spec-kind (lambda () (flag-spec 'Bad! #t "GUI" '() '())))
+             'spec)
+  (check-eq? (spec-kind (lambda () (flag-spec 'gui "yes" "GUI" '() '())))
+             'spec)
+  (check-eq? (spec-kind (lambda () (flag-spec 'gui #t "" '() '())))
+             'spec)
+  (check-eq? (spec-kind
+              (lambda () (flag-spec 'gui #t "GUI" '(Bad!) '())))
+             'spec))

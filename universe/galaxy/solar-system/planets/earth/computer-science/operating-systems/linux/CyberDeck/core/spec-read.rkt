@@ -74,7 +74,7 @@
 ;; Known single-form keys; when-clauses use the head symbol when.
 (define known-keys
   '(format-version name version summary source deps build-deps build
-                   install license homepage extends variants))
+                   install license homepage extends variants slot flags))
 
 ;; string string -> exact-integer, classic edit distance
 (define (levenshtein a b)
@@ -367,6 +367,83 @@
           (format "extends must be a name or #f, got ~s" n)))
   n)
 
+;; syntax -> symbol, the version stream (D-023); one (slot NAME) per spec,
+;; a second is the generic "duplicate field" in check-keys
+(define (read-slot form)
+  (define n (syntax->datum (car (field-args form 1 'slot))))
+  (unless (slot-name? n)
+    (fail (car (field-args form 1 'slot))
+          (format "slot must be a stream name, got ~s" n)))
+  n)
+
+;; syntax -> (listof flag-spec), USE-style declarations (D-022); one
+;; wrapped list like deps ((f ...) (...)), so (flags ()) reads as none
+(define (read-flags form)
+  (define items (syntax->list (car (field-args form 1 'flags))))
+  (unless (list? items)
+    (fail (car (field-args form 1 'flags)) "flags must be a list"))
+  (define seen '())
+  (for/list ([item (in-list items)])
+    (define fs (read-one-flag item seen))
+    (set! seen (cons (flag-spec-name fs) seen))
+    fs))
+
+;; syntax (listof symbol) -> flag-spec, one (NAME #:default BOOL #:doc STR
+;; [#:conflicts (N ...)] [#:requires (N ...)]); every complaint names the
+;; exact subform, so the srcloc points at the culprit, not the file
+(define (read-one-flag item seen-before)
+  (define parts (syntax->list item))
+  (unless (and parts (pair? parts) (symbol? (syntax->datum (car parts))))
+    (fail item "flag must be (NAME #:default BOOL #:doc STR ...)"))
+  (define name (syntax->datum (car parts)))
+  (define name-stx (car parts))
+  (unless (package-name? name)
+    (fail name-stx (format "bad flag name ~s" name)))
+  (when (memq name seen-before)
+    (fail name-stx (format "duplicate flag '~a" name)))
+  (define kvs (cdr parts))
+  (unless (even? (length kvs))
+    (fail item (format "flag '~a needs #:key value pairs" name)))
+  ;; keys are every other element starting at the first: NAME #:k v #:k v
+  (define keys
+    (for/list ([i (in-range 0 (length kvs) 2)])
+      (syntax->datum (list-ref kvs i))))
+  (define (opt key)
+    (let loop ([rest kvs])
+      (cond [(null? rest) #f]
+            [(eq? (syntax->datum (car rest)) key) (cadr rest)]
+            [else (loop (cddr rest))])))
+  (for ([k (in-list keys)])
+    (unless (memq k '(#:default #:doc #:conflicts #:requires))
+      (fail item (format "flag '~a has unknown key '~a" name k))))
+  (when (> (length (filter (lambda (k) (eq? k '#:default)) keys)) 1)
+    (fail item (format "flag '~a repeats #:default" name)))
+  (when (> (length (filter (lambda (k) (eq? k '#:doc)) keys)) 1)
+    (fail item (format "flag '~a repeats #:doc" name)))
+  (define (req key what)
+    (define v (opt key))
+    (unless v
+      (fail item (format "flag '~a needs ~a" name what)))
+    v)
+  (define default-stx (req '#:default "#:default BOOL"))
+  (define default (syntax->datum default-stx))
+  (unless (boolean? default)
+    (fail default-stx (format "flag '~a #:default must be #t or #f" name)))
+  (define doc-stx (req '#:doc "#:doc STR"))
+  (define doc (syntax->datum doc-stx))
+  (unless (and (string? doc) (> (string-length doc) 0))
+    (fail doc-stx (format "flag '~a #:doc must be a nonempty string" name)))
+  (define (name-list key)
+    (define v (opt key))
+    (if (not v)
+        '()
+        (let ((ns (syntax->datum v)))
+          (unless (and (list? ns) (andmap package-name? ns))
+            (fail v (format "flag '~a ~a must be flag names" name key)))
+          ns)))
+  (flag-spec name default doc
+             (name-list '#:conflicts) (name-list '#:requires)))
+
 ;; syntax -> (listof variant-spec), overrides exclude name/extends/variants
 (define (read-variants form)
   (define (v) (car (field-args form 1 'variants)))
@@ -404,11 +481,13 @@
   (cond [(memq head '(name extends variants))
          (format "variant must not override '~a" head)]
         [(memq head '(version summary source deps build-deps build
-                      install license homepage when))
+                      install license homepage when slot flags))
          #f]
         [else (format "unknown key '~a" head)]))
-;; syntax -> when-spec, conds come from the fixed table
-(define (read-when form)
+;; syntax (listof symbol) -> when-spec, conds come from the fixed table.
+;; A (flag NAME) cond names a USE flag the spec must declare (D-022);
+;; naming anything else is kind 'spec on the NAME, not the file.
+(define (read-when form known-flags)
   (define parts (syntax->list form))
   (unless (>= (length parts) 2)
     (fail form "when needs (when COND FIELD ...)"))
@@ -425,6 +504,13 @@
     [(feature)
      (unless (= (length cond-parts) 2)
        (fail (cadr parts) "feature cond is (feature NAME)"))]
+    [(flag)
+     (unless (= (length cond-parts) 2)
+       (fail (cadr parts) "flag cond is (flag NAME)"))
+     (define named (syntax->datum (cadr cond-parts)))
+     (unless (memq named known-flags)
+       (fail (cadr cond-parts)
+             (format "unknown flag '~a" named)))]
     [else (fail (car cond-parts)
                 (format "unknown condition '~a" head))])
   (when-spec (syntax->datum (cadr parts))
@@ -454,6 +540,17 @@
   (define source-value (read-source (req 'source)))
   (define extend-form (find-field body 'extends))
   (define variant-form (find-field body 'variants))
+  ;; Flags read before whens: a (flag NAME) cond is checked against the
+  ;; names declared here, so use before declaration cannot slip through.
+  (define flags-value
+    (if (find-field body 'flags)
+        (read-flags (req 'flags))
+        '()))
+  (define known-flags (map flag-spec-name flags-value))
+  (define slot-value
+    (if (find-field body 'slot)
+        (read-slot (req 'slot))
+        'default))
   (spec name-value version-value summary-value source-value
         (if (find-field body 'deps)
             (read-deps (req 'deps))
@@ -473,7 +570,9 @@
         (for/list ([f (in-list body)]
                    #:when (eq? (syntax->datum (car (syntax->list f)))
                                'when))
-          (read-when f))))
+          (read-when f known-flags))
+        slot-value
+        flags-value))
 
 ;; ---------------------------------------------------------------------------
 (module+ test
@@ -735,3 +834,94 @@
                       'no-error)))
                 (delete-directory/files dir)
                 result)))
+
+  ;; string (listof string) -> symbol, the pm kind (or 'no-error).
+  ;; Second test block: Racket merges repeated (module+ test) bodies into
+  ;; the one test submodule, so these see write-fixture and friends above.
+(module+ test
+  (define (kind-for lines)
+    (define dir (write-fixture "pkg.rktd" lines))
+    (define result
+      (parameterize ([current-directory dir])
+        (with-handlers ([exn:fail:pm? exn:fail:pm-kind])
+          (read-spec-file "pkg.rktd")
+          'no-error)))
+    (delete-directory/files dir)
+    result)
+
+  ;; E-02: a (flag NAME) cond naming an undeclared flag is kind 'spec
+  ;; with a srcloc pointing at the NAME, not the file.
+  (define unknown-flag-lines
+    '("(spec" "  (format-version 2)" "  (name demo)"
+      "  (version \"1.0\")" "  (summary \"s\")"
+      "  (source (git \"https://example.org/d.git\""
+      "                  \"9edb3f66fd807b096b48283debdcddccfea34bad\"))"
+      "  (build (steps (copy \"a\" \"b\")))"
+      "  (install (prefix (bin \"b\")))" "  (license mit)"
+      "  (homepage \"https://example.org\")"
+      "  (flags ((gui #:default #t #:doc \"Graphical interface\")))"
+      "  (when (flag cli) ((version \"1.0\"))))"))
+  (check-eq? (kind-for unknown-flag-lines) 'spec)
+  (hint-matches? unknown-flag-lines #rx"unknown flag 'cli")
+  (hint-matches? unknown-flag-lines #rx"at: pkg.rktd:[0-9]+:[0-9]+")
+
+  ;; E-02: a second (slot ...) field is a duplicate slot, kind 'spec
+  ;; with a srcloc (the generic duplicate-field check names the key).
+  (define duplicate-slot-lines
+    '("(spec" "  (format-version 2)" "  (name demo)"
+      "  (version \"1.0\")" "  (summary \"s\")"
+      "  (source (git \"https://example.org/d.git\""
+      "                  \"9edb3f66fd807b096b48283debdcddccfea34bad\"))"
+      "  (build (steps (copy \"a\" \"b\")))"
+      "  (install (prefix (bin \"b\")))" "  (license mit)"
+      "  (homepage \"https://example.org\")"
+      "  (slot lts)" "  (slot stable))"))
+  (check-eq? (kind-for duplicate-slot-lines) 'spec)
+  (hint-matches? duplicate-slot-lines #rx"duplicate field 'slot")
+  (hint-matches? duplicate-slot-lines #rx"at: pkg.rktd:[0-9]+:[0-9]+")
+
+  ;; E-02 positive: slot, flags and a flag cond read through; a spec
+  ;; without them defaults to slot 'default and no flags.
+  (define flagged-dir
+    (write-fixture
+     "flagged.rktd"
+     '("(spec"
+       "  (format-version 2)"
+       "  (name demo)"
+       "  (version \"1.0\")"
+       "  (summary \"s\")"
+       "  (source (git \"https://example.org/d.git\""
+       "                  \"9edb3f66fd807b096b48283debdcddccfea34bad\"))"
+       "  (build (steps (copy \"a\" \"b\")))"
+       "  (install (prefix (bin \"b\")))" "  (license mit)"
+       "  (homepage \"https://example.org\")"
+       "  (slot lts)"
+       "  (flags ((gui #:default #t #:doc \"Graphical interface\""
+       "               #:conflicts (minimal) #:requires (x11))"
+       "          (minimal #:default #f #:doc \"No extras\")))"
+       "  (when (flag gui) ((version \"2.0\"))))")))
+  (define flagged
+    (parameterize ([current-directory flagged-dir])
+      (read-spec-file "flagged.rktd")))
+  (check-eq? (spec-slot flagged) 'lts)
+  (check-equal? (map flag-spec-name (spec-flags flagged)) '(gui minimal))
+  (check-equal? (flag-spec-conflicts (car (spec-flags flagged))) '(minimal))
+  (check-equal? (flag-spec-requires (car (spec-flags flagged))) '(x11))
+  (check-equal? (when-spec-cond (car (spec-whens flagged))) '(flag gui))
+  (delete-directory/files flagged-dir)
+  (check-eq? (spec-slot minimal) 'default)
+  (check-equal? (spec-flags minimal) '())
+  ;; A duplicate flag name is kind 'spec on the second NAME.
+  (check-eq? (kind-for
+              '("(spec" "  (format-version 2)" "  (name demo)"
+                "  (version \"1.0\")" "  (summary \"s\")"
+                "  (source (git \"https://example.org/d.git\""
+                "                  \"9edb3f66fd807b096b48283debdcddccfea34bad\"))"
+                "  (build (steps (copy \"a\" \"b\")))"
+                "  (install (prefix (bin \"b\")))" "  (license mit)"
+                "  (homepage \"https://example.org\")"
+                "  (flags ((gui #:default #t #:doc \"G\")"
+                "          (gui #:default #f #:doc \"G2\"))))"))
+            'spec)
+  ;; end of E-02 tests
+  )

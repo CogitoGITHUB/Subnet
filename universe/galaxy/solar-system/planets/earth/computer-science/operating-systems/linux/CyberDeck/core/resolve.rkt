@@ -102,7 +102,8 @@
           '()
           (list (build-step 'copy '("a" "b")))
           (install-spec 'prefix '())
-          'mit "https://example.org" #f '() '()))
+          'mit "https://example.org" #f '() '()
+          'default '()))
 
   ;; Linear chain resolves dependency-first.
   (define chain-c (test-spec 'c "1.0" '()))
