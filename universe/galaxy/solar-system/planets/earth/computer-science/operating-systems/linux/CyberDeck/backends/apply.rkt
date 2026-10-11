@@ -8,26 +8,30 @@
 ;; hash. A step whose recorded end hash still matches is skipped, so
 ;; a killed run resumes exactly where it stopped; anything else
 ;; re-runs. #:cancel raises kind 'cancelled between steps, never
-;; mid-step. Locks live in jobs, not here: a same-process file lock
-;; would hang the shared test runner (P-04). Manifests are E-14's
-;; job, not this module's. The fake backend is just a performer
-;; (fake-perform! records, nothing else); the real one is E-12's.
+;; mid-step. One writer lock (E-12c): #:writer (id note) takes
+;; core/vault-lock.rkt's try-only lock on the state dir first, failing
+;; fast naming the holder; try-only never blocks, so it is safe even
+;; in-process (P-04). Readers (journal queries) never lock; jobs keep
+;; queue-time concerns. Manifests are E-14's job, not this module's.
 
 (require racket/contract/base
          racket/file
          racket/list
          "journal.rkt"
          "../core/errors.rkt"
-         "../core/plan.rkt")
+         "../core/plan.rkt"
+         "../core/vault-lock.rkt")
 
 (provide
  (contract-out
-  ;; plan string performer -> void, journaled run, resume by hash
+  ;; plan string performer -> void, journaled run, resume by hash.
+  ;; #:writer (id note) takes the try-only store writer lock first.
   [apply-plan (->* (plan? string? (-> action? void?)
                           #:state path-string?
                           #:package string?
                           #:slot string?)
-                   (#:cancel (or/c evt? #f))
+                   (#:cancel (or/c evt? #f)
+                    #:writer (or/c #f (list/c string? string?)))
                    void?)]))
 
 ;; action -> string, stable kind label for journal step names. Index
@@ -49,22 +53,28 @@
         [else (raise-pm-error 'internal 'apply-plan "not an action"
                               #:fields `(("value" . ,(format "~s" a))))]))
 
-;; plan string performer -> void, one journaled pass over the plan
+;; plan string performer -> void, one journaled pass over the plan,
+;; under the writer lock when #:writer names one
 (define (apply-plan p input-hash performer
                     #:state state
                     #:package package
                     #:slot slot
-                    #:cancel [cancel #f])
-  (define actions (plan-actions p))
-  (for ([a (in-list actions)] [i (in-range (length actions))])
-    (define step (format "step-~a-~a" i (action-kind a)))
-    (when (and cancel (sync/timeout 0 cancel))
-      (raise-pm-error 'cancelled 'apply-plan "cancelled between steps"
-                      #:fields `(("step" . ,step))))
-    (unless (journal-step-done? state package slot step input-hash)
-      (journal-record-start! state package slot step input-hash)
-      (performer a)
-      (journal-record-end! state package slot step input-hash))))
+                    #:cancel [cancel #f]
+                    #:writer [writer #f])
+  (define (run)
+    (define actions (plan-actions p))
+    (for ([a (in-list actions)] [i (in-range (length actions))])
+      (define step (format "step-~a-~a" i (action-kind a)))
+      (when (and cancel (sync/timeout 0 cancel))
+        (raise-pm-error 'cancelled 'apply-plan "cancelled between steps"
+                        #:fields `(("step" . ,step))))
+      (unless (journal-step-done? state package slot step input-hash)
+        (journal-record-start! state package slot step input-hash)
+        (performer a)
+        (journal-record-end! state package slot step input-hash))))
+  (if writer
+      (call-with-vault-lock state (first writer) (second writer) run)
+      (run)))
 
 ;; ---------------------------------------------------------------------------
 (module+ test
@@ -288,5 +298,41 @@
     (displayln line))
   (displayln "--- e12 journal ---")
   (displayln (file->string (journal-file state "pkg-alpha" "default")))
+
+  ;; E-12c: one writer. The outer apply holds (id outer-apply) while
+  ;; its performer runs the inner apply on the same state: the inner
+  ;; try fails at once naming the holder, the outer completes unharmed
+  ;; and the inner journal stays empty. Same thread, try-only, no wait.
+  (define lock-box (box '()))
+  (define inner-err-box (box #f))
+  (define (lock-outer-performer a)
+    (when (and (write-file-action? a) (not (unbox inner-err-box)))
+      (set-box! inner-err-box
+                 (with-handlers ([exn:fail:pm? (lambda (e) e)])
+                   (apply-plan (list->plan (list (write-file-action
+                                                  "/tmp/pm-apply-x/i.txt"
+                                                  "i")))
+                               "li" fake-perform!
+                               #:state state #:package "pkg-inner"
+                               #:slot "default"
+                               #:writer (list "inner-apply"
+                                              "second writer"))
+                   'no-error)))
+    (fake-perform! a))
+  (define lock-plan
+    (list->plan
+     (list (write-file-action "/tmp/pm-apply-x/o1.txt" "o")
+           (write-file-action "/tmp/pm-apply-x/o2.txt" "o"))))
+  (parameterize ([current-fake-log lock-box])
+    (apply-plan lock-plan "lw" lock-outer-performer
+                #:state state #:package "pkg-lock" #:slot "default"
+                #:writer (list "outer-apply" "first writer")))
+  (define inner-err (unbox inner-err-box))
+  (check-pred config-error? inner-err)
+  (check-regexp-match #rx"outer-apply" (exn-message inner-err))
+  (check-equal? (length (unbox lock-box)) 2)
+  (check-equal? (length (journal-completions state "pkg-lock" "default"))
+                2)
+  (check-equal? (journal-completions state "pkg-inner" "default") '())
 
   (delete-directory/files state-root))

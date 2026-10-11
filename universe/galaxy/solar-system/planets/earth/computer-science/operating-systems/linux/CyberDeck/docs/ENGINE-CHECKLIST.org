@@ -373,8 +373,10 @@ live in local-perform! (export via vault + #:vault, check kind
 proof: green run 4/4, boom fails at step 2, resume reruns only 2..3,
 hash change reruns all, cancel voids all, empty is void; --changed
 ALL GREEN (files=8, total=79), STAGES=6 lint 0 violations,
-read-check 0 bad. Locks stay in jobs (P-04), manifests are E-14;
-prefix-untouched is journal-level on fake, real dirs land in E-12.
+read-check 0 bad. E-12c supersedes the lock note: apply takes one
+try-only writer lock via core/vault-lock.rkt (P-04-safe); jobs keep
+queue-time concerns. Manifests are E-14; prefix-untouched is
+journal-level on fake, real dirs land in E-12.
 Cancel test shows .pm-incomplete still present on the interrupted dir.
 
 ** DONE E-12 apply on a real local synthetic git fixture
@@ -386,7 +388,7 @@ by apply-plan over local-perform!; built.txt holds "alpha", no marker,
 current resolves, journal holds all 8 ends; --changed ALL GREEN
 (files=2, total=23), STAGES=6 lint 0 violations, read-check 0 bad.
 
-** TODO E-12c apply writer lock
+** DONE E-12c apply writer lock
 Apply, activate, update-apply and remove take one writer lock on the
 store: try-lock and fail fast (D-015, no waiting on a clock); a second
 concurrent apply fails at once with a clear message naming the holder;
@@ -394,6 +396,12 @@ readers never lock. Use core/vault-lock.rkt or a small own module, and
 record which. / Done when: a test starts two applies on a synthetic
 fixture: the second fails immediately with the message while the first
 completes unharmed.
+Measured: choice is core/vault-lock.rkt, no new module (try-only
+semaphore plus fcntl, holder named in the message, D-015); apply-plan
+gains #:writer (id note), journal reads never lock; nested test:
+inner try fails kind ='config= naming outer-apply, outer completes
+2/2, inner journal empty; --changed ALL GREEN (files=2, total=28),
+STAGES=6 lint 0 violations, read-check 0 bad.
 
 ** TODO E-13 activate.rkt
 Generations, the atomic swap, and conflict detection. / Done when: two
