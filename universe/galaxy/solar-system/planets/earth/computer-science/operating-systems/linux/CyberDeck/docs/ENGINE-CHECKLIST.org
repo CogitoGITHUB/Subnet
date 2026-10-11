@@ -350,10 +350,16 @@ two escapes kind ='config=, fetch and run-step refused before any
 effect, empty is void; --changed ALL GREEN (files=2, total=13),
 STAGES=6 lint 0 violations, read-check 0 bad.
 
-** TODO E-10 journal.rkt
+** DONE E-10 journal.rkt
 Append-only JSON Lines step journal per package. / Done when: a killed
 run resumes, skipping only the step whose input hash matches, and a
 truncated final line counts as unfinished.
+Measured: backends/journal.rkt (record-start/end, step-done?,
+completions; start+end invalidates on reopen, hash mismatch reruns,
+torn tail drops, corrupt/misshapen lines kind ='config=);
+--changed ALL GREEN (files=2, total=17), STAGES=6 lint 0 violations,
+read-check 0 bad. Fixes while green: exact string-split (default
+trim ate the last record), hash? guard for non-object JSON.
 
 ** TODO E-11 apply.rkt end to end on the fake backend
 Fetch, export, build, install, check, clear marker, current. / Done
