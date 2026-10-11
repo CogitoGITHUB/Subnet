@@ -224,10 +224,14 @@ Done when: grepping HOME/XDG_ in non-test code finds only those two
 places; a test shows both resolve identical roots for the user scope;
 gate green (D-029).
 
-** TODO E-01 flag parser and =--format=
+** DONE E-01 flag parser and =--format=
 A real flag parser on the existing commands, plus =--format sexp|json=. /
 Done when: =--format= is parsed in one place and a bad value exits 2
 with kind ='config=.
+Measured: =parse-format= in cli/main.rkt is the one place (default sexp,
+accepts before or after the command, missing/duplicate/bad value raises
+kind ='config=); =racket cli/main.rkt check DIR --format yaml= exits 2;
+cli/main.rkt 21/21 in the shared runner.
 
 ** TODO E-02 spec fields =slot= and =flags=
 Add both fields to the spec struct and validate them in spec-read. /
