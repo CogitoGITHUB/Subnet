@@ -339,10 +339,16 @@ override; unknown step kind ='config=, nonzero exit kind ='build=);
 --changed ALL GREEN (files=2, total=12), STAGES=6 lint 0 violations,
 read-check 0 bad. Env attaches here (D-025, SPEC-NEUTRAL 5).
 
-** TODO E-09 install.rkt
+** DONE E-09 install.rkt
 Install forms into PREFIX, reusing =local-perform!= rather than forking
 it. / Done when: each install form runs once against a synthetic
 package and a path escaping PREFIX raises kind ='config=.
+Measured: backends/install.rkt (install-actions! guards the four
+placement actions, then list->plan through local-perform!, D-025, no
+fork); file/write/symlink/remove placed once each, remove idempotent,
+two escapes kind ='config=, fetch and run-step refused before any
+effect, empty is void; --changed ALL GREEN (files=2, total=13),
+STAGES=6 lint 0 violations, read-check 0 bad.
 
 ** TODO E-10 journal.rkt
 Append-only JSON Lines step journal per package. / Done when: a killed
