@@ -389,3 +389,6 @@ the old name to zero hits). / Done when: the owner's list is applied.
 ** TODO R-04 move or merge thin files only if the owner says so
 / Done when: the owner's list is applied and =grep= for each old name
 finds nothing.
+
+** TODO R-05 rebrand to AIU-PM per docs/REBRAND.org
+/ Done when: the grep rule in that file holds and the gate is green.

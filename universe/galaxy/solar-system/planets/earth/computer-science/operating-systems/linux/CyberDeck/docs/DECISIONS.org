@@ -4,6 +4,12 @@
 * Log
 Append-only. Newest first. Every entry names the rule IDs it touches.
 
+** 2026-10-11 D-031: project name is AIU-PM
+Project name is AIU-PM (Atomic Information Unit Package Manager);
+rebrand runs last in Phase R per docs/REBRAND.org, after the engine,
+after the restructure, before any package declarations. Git history,
+D-number wording and old commit messages stay as they are. D-031.
+
 ** 2026-10-10 D-029: scope seam, one function owns every root
 All roots (store, profile, state, config, cache) come from one scope
 value (user now, system later) through ONE function; no other code reads

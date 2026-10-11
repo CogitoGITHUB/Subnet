@@ -1,0 +1,30 @@
+#+TITLE: Rebrand to AIU-PM
+#+AUTHOR: Shape
+
+Rebrand to AIU-PM (Atomic Information Unit Package Manager). Runs as
+the LAST step of Phase R, after the engine, after the restructure,
+BEFORE any package declarations.
+
+* Scope
+User-visible name, command name (=aiu-pm=; keep =pm= as a short alias
+only if the owner says so), docs, README, headers and comments, log
+and record prefixes, XDG directory names, Rust TUI crate and binary
+names, Racket module and collection names where they carry the old
+brand, scripts.
+
+NOT rewritten: git history, the D-number log entries and their wording
+(history stays), old commit messages.
+
+* Owner decisions (asked BEFORE doing them, defaults in brackets)
+1. Rename the =CyberDeck/= folder itself [yes, own commit, lifts the
+   'nothing outside =CyberDeck/=' rule for that one commit only].
+2. Data directories =cyberdeck= -> =aiu-pm= [a one-time move script the
+   owner runs, never automatic, old path never deleted by the AI].
+3. Keep =pm= as an alias [no].
+
+* Method
+Grep every spelling (=CyberDeck=, =Cyberdeck=, =cyberdeck=, =pm= as a
+word, ='package manager'= headers) and list hits per file BEFORE
+changing; one rename class per commit (docs, then code names, then
+scripts, then dirs); gate green after each; after the last commit
+=grep -ri cyberdeck= finds only history files.
