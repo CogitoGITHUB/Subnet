@@ -677,7 +677,8 @@ def stage-changed [] {
         let why = ($hit | each {|p| $p | get 1 } | first)
         print ("PARKED: " ++ ($x | path basename) ++ " - " ++ $why)
     }
-    let runset = ($changed | where {|c| not (file-parked? $c) } | append $deps)
+    let unparked_deps = ($deps | where {|d| not (file-parked? $d) })
+    let runset = ($changed | where {|c| not (file-parked? $c) } | append $unparked_deps)
     if ($runset | is-empty) {
         print "[changed] nothing to run"
         return 0
