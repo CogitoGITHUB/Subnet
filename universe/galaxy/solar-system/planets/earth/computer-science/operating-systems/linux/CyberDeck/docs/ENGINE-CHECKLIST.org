@@ -361,10 +361,20 @@ torn tail drops, corrupt/misshapen lines kind ='config=);
 read-check 0 bad. Fixes while green: exact string-split (default
 trim ate the last record), hash? guard for non-object JSON.
 
-** TODO E-11 apply.rkt end to end on the fake backend
+** DONE E-11 apply.rkt end to end on the fake backend
 Fetch, export, build, install, check, clear marker, current. / Done
 when: the fake backend run goes green and a failing build leaves the
 prefix untouched and resumable.
+Measured: backends/apply.rkt (journaled interpreter, performer
+injected, skip-on-matching-hash, cancel between steps); five stubs
+live in local-perform! (export via vault + #:vault, check kind
+'build, mark/clear/current via store); store +mark-store-dir and
++swap-link! (set-store-current refactored over it); fake-backend
+proof: green run 4/4, boom fails at step 2, resume reruns only 2..3,
+hash change reruns all, cancel voids all, empty is void; --changed
+ALL GREEN (files=8, total=79), STAGES=6 lint 0 violations,
+read-check 0 bad. Locks stay in jobs (P-04), manifests are E-14;
+prefix-untouched is journal-level on fake, real dirs land in E-12.
 
 ** TODO E-12 apply on a real local synthetic git fixture
 Same path, real git, synthetic packages only. / Done when: a synthetic

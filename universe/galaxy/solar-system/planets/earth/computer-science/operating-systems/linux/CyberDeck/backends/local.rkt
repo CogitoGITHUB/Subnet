@@ -8,19 +8,24 @@
 
 (require racket/contract/base
          racket/file
+         racket/path
          racket/string
          "run.rkt"
          "git.rkt"
+         "store.rkt"
+         "vault.rkt"
          "../core/errors.rkt"
          "../core/plan.rkt")
 
 (provide
  (contract-out
   ;; plan -> void, interprets every action in order (stops at failure)
-  ;; #:prefix gates all install paths; #:commit feeds extract pins
+  ;; #:prefix gates all install paths; #:commit feeds extract pins;
+  ;; #:vault answers export-action namespaces
   [local-perform! (->* (plan?)
                        (#:prefix (or/c path-string? #f)
-                        #:commit (or/c string? #f))
+                        #:commit (or/c string? #f)
+                        #:vault (or/c path-string? #f))
                        void?)]))
 
 ;; ---------------------------------------------------------------------------
@@ -207,31 +212,104 @@
             [else (void)]))))
 
 ;; ---------------------------------------------------------------------------
+;; E-11 actions (state shaping plus check; all reused, none silent)
+
+;; export-action (or/c path-string #f) -> void, vault pin to staging.
+;; The vault root rides alongside #:commit as plan data context (A-3):
+;; the action carries what to export, the caller says from where.
+(define (perform-export! a vault)
+  (define vault-git
+    (or vault
+        (raise-pm-error 'config 'local-perform! "export needs a vault"
+                        #:fields `(("action" . "export"))
+                        #:hint "pass #:vault holding vault.git")))
+  (vault-export-commit vault-git
+                       (symbol->string (export-action-package a))
+                       (export-action-pin a)
+                       (export-action-dest a)))
+
+;; check-action -> void, exact argv in cwd, exit 0 required. A failing
+;; check fails the build (SPEC-NEUTRAL section 3, exit 7): kind 'build
+;; with the step name and exit code, never silent. Exe resolution
+;; mirrors build.rkt spawn-build!: slash names resolve under cwd.
+(define (perform-check! a)
+  (define argv (check-action-argv a))
+  (define cwd (check-action-cwd a))
+  (define exe0 (car argv))
+  (define exe
+    (if (regexp-match? #rx"/" exe0)
+        (let ([p (if (absolute-path? (string->path exe0))
+                     (string->path exe0)
+                     (build-path cwd exe0))])
+          (if (file-exists? p)
+              p
+              (raise-pm-error 'config 'local-perform!
+                              "check executable not found"
+                              #:fields `(("exe" . ,exe0)
+                                          ("step" . "check")))))
+        (or (find-executable-path exe0)
+            (raise-pm-error 'config 'local-perform!
+                            "check executable not found"
+                            #:fields `(("exe" . ,exe0)
+                                        ("step" . "check"))))))
+  (unless (directory-exists? cwd)
+    (raise-pm-error 'config 'local-perform! "check directory missing"
+                    #:fields `(("step" . "check")
+                                ("directory" . ,cwd))))
+  (define res
+    (run-command exe (cdr argv)
+                 #:cwd cwd
+                 #:kind 'build
+                 #:operation "check"))
+  (unless (zero? (run-result-exit res))
+    (raise-pm-error 'build 'local-perform! "check failed"
+                    #:fields `(("step" . "check")
+                                ("command" . ,(string-join argv " "))
+                                ("directory" . ,cwd)
+                                ("exit-code"
+                                 . ,(number->string (run-result-exit res)))
+                                ("stderr" . ,(string-join
+                                              (run-result-stderr-lines res)
+                                              "\n"))))))
+
+;; mark-incomplete-action -> void, the marker appears (store owns it)
+(define (perform-mark! a)
+  (with-install-errors "cannot mark incomplete"
+                       `(("dir" . ,(mark-incomplete-action-dir a)))
+    (lambda ()
+      (mark-store-dir (mark-incomplete-action-dir a))
+      (void))))
+
+;; clear-incomplete-action -> void, the marker goes (store owns it)
+(define (perform-clear! a)
+  (with-install-errors "cannot clear incomplete"
+                       `(("dir" . ,(clear-incomplete-action-dir a)))
+    (lambda ()
+      (clear-store-marker (clear-incomplete-action-dir a))
+      (void))))
+
+;; set-current-action -> void, atomic flip (store owns it)
+(define (perform-set-current! a)
+  (with-install-errors "cannot flip current"
+                       `(("target" . ,(set-current-action-target a))
+                         ("link" . ,(set-current-action-link a)))
+    (lambda ()
+      (swap-link! (set-current-action-target a)
+                  (set-current-action-link a))
+      (void))))
+
+;; ---------------------------------------------------------------------------
 ;; Entry point (A-3: the executor is a dumb interpreter)
 
-;; action (or/c path-string #f) (or/c string #f) -> void
-(define (perform-action! a prefix commit)
+;; action (or/c path-string #f) (or/c string #f) (or/c path-string #f)
+;; -> void; vault answers export-action, commit answers extract-action
+(define (perform-action! a prefix commit vault)
   (cond [(fetch-action? a) (perform-fetch! a)]
-        [(export-action? a)
-         (raise-pm-error 'config 'local-perform!
-                         "action export-action not implemented in local-perform! until E-11"
-                         #:fields `(("value" . ,(format "~s" a))))]
-        [(check-action? a)
-         (raise-pm-error 'config 'local-perform!
-                         "action check-action not implemented in local-perform! until E-11"
-                         #:fields `(("value" . ,(format "~s" a))))]
-        [(mark-incomplete-action? a)
-         (raise-pm-error 'config 'local-perform!
-                         "action mark-incomplete-action not implemented in local-perform! until E-11"
-                         #:fields `(("value" . ,(format "~s" a))))]
-        [(clear-incomplete-action? a)
-         (raise-pm-error 'config 'local-perform!
-                         "action clear-incomplete-action not implemented in local-perform! until E-11"
-                         #:fields `(("value" . ,(format "~s" a))))]
-        [(set-current-action? a)
-         (raise-pm-error 'config 'local-perform!
-                         "action set-current-action not implemented in local-perform! until E-11"
-                         #:fields `(("value" . ,(format "~s" a))))]
+        [(export-action? a) (perform-export! a vault)]
+        [(check-action? a) (perform-check! a)]
+        [(mark-incomplete-action? a) (perform-mark! a)]
+        [(clear-incomplete-action? a) (perform-clear! a)]
+        [(set-current-action? a) (perform-set-current! a)]
         [(extract-action? a) (perform-extract! a commit)]
         [(run-step-action? a) (perform-run-step! a)]
         [(install-file-action? a)
@@ -246,9 +324,10 @@
                               #:fields `(("value" . ,a)))]))
 
 ;; plan -> void, interprets every action in order (stops at failure)
-(define (local-perform! p #:prefix [prefix #f] #:commit [commit #f])
+(define (local-perform! p #:prefix [prefix #f] #:commit [commit #f]
+                          #:vault [vault #f])
   (for ([a (in-list (plan-actions p))])
-    (perform-action! a prefix commit)))
+    (perform-action! a prefix commit vault)))
 
 ;; ---------------------------------------------------------------------------
 (module+ test
@@ -256,6 +335,8 @@
            racket/file
            "git.rkt"
            "run.rkt"
+           "store.rkt"
+           "vault.rkt"
            "../core/git-url.rkt"
            "../core/errors.rkt"
            "../core/plan.rkt")
@@ -336,7 +417,7 @@
                   (list (extract-action "/v/m.git" "/tmp/staging"))))))
              'config)
 
-  ;; New actions refuse loudly until E-11 wires them (never silent).
+  ;; Check without its executable refuses loudly (never silent).
   (define stub-error
     (with-handlers ([exn:fail:pm? (lambda (e) e)])
       (local-perform!
@@ -344,7 +425,7 @@
         (list (check-action '("bin/demo" "--version") "/pkg/1.0"))))
       'no-error))
   (check-pred config-error? stub-error)
-  (check-regexp-match #rx"not implemented in local-perform! until E-11"
+  (check-regexp-match #rx"check executable not found"
                       (exn-message stub-error))
 
   ;; Run steps report E-8 fields on failure, pass quietly on success.
@@ -411,5 +492,76 @@
                             (path->string staging-path))))
      #:commit upstream-head)
     (check-true (file-exists? (build-path staging-path "f.txt"))))
+
+  ;; The E-11 actions: export, check, mark, clear, current. No stubs.
+  (define e11-vault-git (build-path test-root "e11vault" "vault.git"))
+  (make-directory* (build-path test-root "e11vault"))
+  (define e11-stage (build-path test-root "e11stage"))
+  (make-directory e11-stage)
+  (define e11-pin
+    (parameterize ([current-allow-file-urls #t])
+      (vault-init e11-vault-git)
+      (vault-add-result-pin
+       (vault-add e11-vault-git "demo"
+                  (string-append "file://" (path->string fixture-up))))))
+  (parameterize ([current-allow-file-urls #t])
+    (local-perform!
+     (list->plan
+      (list (export-action 'demo e11-pin (path->string e11-stage))))
+     #:vault (path->string e11-vault-git))
+    (check-true (file-exists? (build-path e11-stage "f.txt")))
+    (check-false (directory-exists? (build-path e11-stage ".git"))))
+
+  ;; Check runs exact argv in cwd: exit 0 passes, exit 3 is kind
+  ;; 'build with the step name and exit code.
+  (local-perform!
+   (list->plan
+    (list (check-action '("sh" "-c" "exit 0") (path->string test-prefix)))))
+  (define check-err
+    (with-handlers ([exn:fail:pm? (lambda (e) e)])
+      (local-perform!
+       (list->plan
+        (list (check-action '("sh" "-c" "exit 3")
+                            (path->string test-prefix)))))
+      'no-error))
+  (check-pred build-error? check-err)
+  (check-regexp-match #rx"exit-code: 3" (exn-message check-err))
+
+  ;; Mark holds the marker and stays idempotent; clear removes it;
+  ;; current flips atomically and re-flips to the second target.
+  (define e11-ver (build-path test-root "ver"))
+  (define e11-cur (build-path test-root "cur"))
+  (define e11-ver2 (build-path test-root "ver2"))
+  (make-directory e11-ver2)
+  (local-perform!
+   (list->plan (list (mark-incomplete-action (path->string e11-ver)))))
+  (check-true (file-exists? (build-path e11-ver ".pm-incomplete")))
+  (local-perform!
+   (list->plan (list (mark-incomplete-action (path->string e11-ver)))))
+  (local-perform!
+   (list->plan
+    (list (clear-incomplete-action (path->string e11-ver))
+          (set-current-action (path->string e11-ver)
+                              (path->string e11-cur)))))
+  (check-false (file-exists? (build-path e11-ver ".pm-incomplete")))
+  (check-equal? (path->string (resolve-path e11-cur))
+                (path->string e11-ver))
+  (local-perform!
+   (list->plan
+    (list (set-current-action (path->string e11-ver2)
+                              (path->string e11-cur)))))
+  (check-equal? (path->string (resolve-path e11-cur))
+                (path->string e11-ver2))
+
+  ;; Export without its vault refuses before touching anything.
+  (define e11-nowhere (build-path test-root "e11nowhere"))
+  (check-eq? (config-kind
+              (lambda ()
+                (local-perform!
+                 (list->plan
+                  (list (export-action 'demo e11-pin
+                                       (path->string e11-nowhere)))))))
+             'config)
+  (check-false (directory-exists? e11-nowhere))
 
   (delete-directory/files test-root))

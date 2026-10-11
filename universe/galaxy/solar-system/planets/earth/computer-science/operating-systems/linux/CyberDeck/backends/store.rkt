@@ -32,6 +32,10 @@
   [clear-store-marker (-> path-string? void?)]
   ;; path -> void, kind 'install when the marker is still present
   [check-marker-cleared (-> path-string? void?)]
+  ;; path-string -> path, ensure the dir holds .pm-incomplete
+  [mark-store-dir (-> path-string? path?)]
+  ;; path-string path-string -> path, atomic link flip, any target
+  [swap-link! (-> path-string? path-string? path?)]
   ;; string string string path -> path, atomic current-link flip
   [set-store-current
    (-> string? string? string? path-string? path?)]))
@@ -82,21 +86,37 @@
     (raise-pm-error 'install 'check-marker-cleared "marker still present"
                     #:fields `(("dir" . ,(path->string dir))))))
 
-;; string string string path -> path, atomic current-link flip:
-;; a temporary link is created beside the target name, then renamed over
-;; it. rename over an existing link is one atomic step: readers never see
-;; a missing current, unlike delete-then-link.
+;; path-string -> path, ensure the dir holds .pm-incomplete. Idempotent:
+;; creating the marker twice is the same as once, so a retried mark
+;; after a kill is safe.
+(define (mark-store-dir dir)
+  (define d (if (path? dir) dir (string->path dir)))
+  (make-directory* d)
+  (call-with-output-file (marker-path d)
+    (lambda (out) (void))
+    #:exists 'truncate/replace)
+  d)
+
+;; path-string path-string -> path, atomic link flip for any target:
+;; a temporary link is created beside the link name, then renamed over
+;; it. Rename over an existing link is one atomic step: readers never
+;; see a missing link, unlike delete-then-link.
+(define (swap-link! target link)
+  (define link-s (if (path? link) (path->string link) link))
+  (define target-s (if (path? target) (path->string target) target))
+  (define tmp (string-append link-s ".tmp-"
+                             (symbol->string (gensym 'store))))
+  (when (or (file-exists? tmp) (link-exists? tmp))
+    (delete-file tmp))
+  (make-file-or-directory-link target-s tmp)
+  (rename-file-or-directory tmp link-s #t)
+  (string->path link-s))
+
+;; string string string path -> path, atomic current-link flip
 (define (set-store-current state-root name slot versioned)
   (define link (build-path state-root "store" name slot "current"))
   (make-directory* (build-path state-root "store" name slot))
-  (define tmp (build-path state-root "store" name slot
-                          (string-append ".tmp-current-"
-                                         (symbol->string (gensym 'store)))))
-  (when (or (file-exists? tmp) (link-exists? tmp))
-    (delete-file tmp))
-  (make-file-or-directory-link (path->string versioned) tmp)
-  (rename-file-or-directory tmp link #t)
-  link)
+  (swap-link! versioned link))
 
 ;; ---------------------------------------------------------------------------
 (module+ test
