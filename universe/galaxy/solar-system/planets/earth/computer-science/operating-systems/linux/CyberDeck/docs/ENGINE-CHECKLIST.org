@@ -328,10 +328,16 @@ read-check 0 bad. Paths build only from the caller-passed state root
 (no HOME/XDG/getenv in module); records stay with journal/apply
 (E-10/E-11), store never silent (paths returned or pm errors raised).
 
-** TODO E-08 build.rkt
+** DONE E-08 build.rkt
 Execute the closed vocabulary, environment attached here. / Done when:
 one synthetic package per SPEC-NEUTRAL section 2 word builds, and an
 out-of-vocabulary step raises kind ='config=.
+Measured: backends/build.rkt (build-env, execute-build-step(s); all
+nine words: make, make-info, copy, run (+$PREFIX), configure, cargo,
+cmake-configure/build/install; stubs for missing cmake/cargo via PATH
+override; unknown step kind ='config=, nonzero exit kind ='build=);
+--changed ALL GREEN (files=2, total=12), STAGES=6 lint 0 violations,
+read-check 0 bad. Env attaches here (D-025, SPEC-NEUTRAL 5).
 
 ** TODO E-09 install.rkt
 Install forms into PREFIX, reusing =local-perform!= rather than forking
