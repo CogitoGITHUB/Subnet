@@ -366,3 +366,21 @@ from the snapshot with no timer anywhere.
 ** TODO E-24 gate the Rust TUI
 =cargo test= is not in the gate today. / Done when: =cargo test= runs as
 part of the gate and passes, with its output in the gate log.
+
+* PHASE R: restructure (runs AFTER Phase D, BEFORE any package
+declarations or NodeShape work)
+** TODO R-01 inventory
+For every folder and every file, one plain-words sentence on what it
+does and whether its name says that; list the unclear names. / Done
+when: the inventory exists and every unclear name is listed.
+** TODO R-02 naming proposals
+For each unclear name, 2-3 plain-word alternatives, written to
+docs/RENAMES.org for the owner to choose (the owner decides, not the
+AI). / Done when: docs/RENAMES.org holds the alternatives.
+** TODO R-03 apply the chosen renames
+ONE rename per commit, gate green after each, every path in code,
+scripts, docs, README and the checklist updated in the same commit (grep
+the old name to zero hits). / Done when: the owner's list is applied.
+** TODO R-04 move or merge thin files only if the owner says so
+/ Done when: the owner's list is applied and =grep= for each old name
+finds nothing.
