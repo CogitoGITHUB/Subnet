@@ -52,6 +52,25 @@ Lowering emits the existing action structs =fetch-action=,
 =clear-incomplete-action= and =set-current-action=. =verify-action= is
 removed (D-025).
 
+E-06 field shapes (minimal picks; the docs above name the structs but
+not their fields): =export-action= is (package pin dest) with package
+a D-8 symbol naming the vault namespace; =check-action= is (argv cwd)
+with argv a nonempty string list run in the versioned prefix dir, after
+placement and before the marker is cleared; =mark-incomplete-action=
+and =clear-incomplete-action= each carry the versioned dir;
+=set-current-action= is (target link) like =symlink-action=, the link
+being =<name>/current=. Lowering order per package is fetch, export,
+mark-incomplete, build steps, install actions, check (only when the
+plan has a check form), clear-incomplete, set-current. Dirs travel
+beside the plan as strings (layout stays the caller's knowledge, D-023
+store dirs and D-029 scope roots). Run-step argv is the step name plus
+the flattened string args (v1 rule; E-08 owns execution semantics).
+Install mapping v1: file kinds to =install-file-action= (mode #o644
+unless a later form is not reached: each =(mode DST INT)= form sets the
+mode for the forms after it), =copy-tree= with #o755, =(symlink L T)=
+to =symlink-action= (target T, link L), =(check ...)= skipped here.
+Shared plan identities lower once (E-06).
+
 * Identity and layout
 Store dir = =<state>/store/<name>/<slot>/<version>-<hash12>/=. PREFIX is
 that dir. The dir holds =.pm-incomplete= until check passes, and the

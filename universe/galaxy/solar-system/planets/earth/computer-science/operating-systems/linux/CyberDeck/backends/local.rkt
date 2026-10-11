@@ -87,38 +87,6 @@
       (lambda () (make-directory* staging))))
   (git-export-commit (extract-action-src a) commit staging))
 
-;; verify-action -> void, sha256 of the file against the pin (S-7 style:
-;; download first is elsewhere; here the hash decides accept or refuse)
-(define (perform-verify! a)
-  (define sha256
-    (or (find-executable-path "sha256sum")
-        (raise-pm-error 'config 'local-perform! "sha256sum not found"
-                        #:hint "install coreutils for hashing")))
-  (define res
-    (run-command sha256
-                 (list (verify-action-path a))
-                 #:cwd (path->string (find-system-path 'temp-dir))
-                 #:kind 'verify
-                 #:operation "sha256sum verify"))
-  (if (not (zero? (run-result-exit res)))
-      (raise-pm-error 'verify 'local-perform! "hash command failed"
-                      #:fields `(("path" . ,(verify-action-path a))
-                                 ("stderr" . ,(string-join
-                                               (run-result-stderr-lines res)
-                                               "\n"))))
-      (verify-hash-text a res)))
-
-;; verify-action run-result -> void, first output token decides
-(define (verify-hash-text a res)
-  (define out (string-join (run-result-stdout-lines res) "\n"))
-  (define actual (if (string=? out "") "" (car (string-split out))))
-  (unless (string=? (string-downcase actual)
-                    (string-downcase (verify-action-expected-hash a)))
-    (raise-pm-error 'verify 'local-perform! "hash mismatch"
-                    #:fields `(("path" . ,(verify-action-path a))
-                               ("expected" . ,(verify-action-expected-hash a))
-                               ("actual" . ,actual)))))
-
 ;; run-step-action -> void, exact argv through the runner (F-2, E-8)
 (define (perform-run-step! a)
   (define argv (run-step-action-argv a))
@@ -244,7 +212,26 @@
 ;; action (or/c path-string #f) (or/c string #f) -> void
 (define (perform-action! a prefix commit)
   (cond [(fetch-action? a) (perform-fetch! a)]
-        [(verify-action? a) (perform-verify! a)]
+        [(export-action? a)
+         (raise-pm-error 'config 'local-perform!
+                         "action export-action not implemented in local-perform! until E-11"
+                         #:fields `(("value" . ,(format "~s" a))))]
+        [(check-action? a)
+         (raise-pm-error 'config 'local-perform!
+                         "action check-action not implemented in local-perform! until E-11"
+                         #:fields `(("value" . ,(format "~s" a))))]
+        [(mark-incomplete-action? a)
+         (raise-pm-error 'config 'local-perform!
+                         "action mark-incomplete-action not implemented in local-perform! until E-11"
+                         #:fields `(("value" . ,(format "~s" a))))]
+        [(clear-incomplete-action? a)
+         (raise-pm-error 'config 'local-perform!
+                         "action clear-incomplete-action not implemented in local-perform! until E-11"
+                         #:fields `(("value" . ,(format "~s" a))))]
+        [(set-current-action? a)
+         (raise-pm-error 'config 'local-perform!
+                         "action set-current-action not implemented in local-perform! until E-11"
+                         #:fields `(("value" . ,(format "~s" a))))]
         [(extract-action? a) (perform-extract! a commit)]
         [(run-step-action? a) (perform-run-step! a)]
         [(install-file-action? a)
@@ -349,23 +336,16 @@
                   (list (extract-action "/v/m.git" "/tmp/staging"))))))
              'config)
 
-  ;; Verify accepts the known vector and refuses the altered hash.
-  (define hash-file (build-path test-root "hash.txt"))
-  (call-with-output-file hash-file
-    (lambda (port) (display "abc" port)))
-  (local-perform!
-   (list->plan
-    (list (verify-action (path->string hash-file)
-                         "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
-                         "sha256"))))
-  (check-pred verify-error?
-              (with-handlers ([exn:fail:pm? (lambda (e) e)])
-                (local-perform!
-                 (list->plan
-                  (list (verify-action (path->string hash-file)
-                                       (make-string 64 #\0)
-                                       "sha256"))))
-                'no-error))
+  ;; New actions refuse loudly until E-11 wires them (never silent).
+  (define stub-error
+    (with-handlers ([exn:fail:pm? (lambda (e) e)])
+      (local-perform!
+       (list->plan
+        (list (check-action '("bin/demo" "--version") "/pkg/1.0"))))
+      'no-error))
+  (check-pred config-error? stub-error)
+  (check-regexp-match #rx"not implemented in local-perform! until E-11"
+                      (exn-message stub-error))
 
   ;; Run steps report E-8 fields on failure, pass quietly on success.
   (define sh-exe (path->string (find-executable-path "sh")))

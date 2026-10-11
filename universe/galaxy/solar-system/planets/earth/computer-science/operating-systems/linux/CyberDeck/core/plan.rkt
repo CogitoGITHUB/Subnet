@@ -433,8 +433,8 @@
     [(mode)
      (list #f (cadr args))]
     [else
-     (raise-pm-error 'internal 'lower-package-plan "unknown install datum"
-                     #:fields `(("form" . ,(format "~s" form)))))]))
+     (raise-pm-error 'internal 'lower-package-plan "unknown install form"
+                     #:fields `(("form" . ,(format "~s" form))))]))
 
 ;; (listof install-form) string string -> (listof action), check form
 ;; skipped (it becomes the one check-action); mode forms thread state
@@ -819,14 +819,16 @@
                                          #o000)))
                       alpha-actions))
 
-  ;; Deps first: beta before alpha before gamma, stable across runs.
+  ;; Deps first: lower-plans keeps input order, so callers hand over
+  ;; deps-first lists (derive-plans returns that order); beta before
+  ;; alpha before gamma, stable across runs.
   (define trio-once
-    (lower-plans (list gamma-plan alpha-plan beta-plan)
-                 (list (car gamma-dirs) (car alpha-dirs) (car beta-dirs))
-                 (list (cadr gamma-dirs) (cadr alpha-dirs) (cadr beta-dirs))
-                 (list (caddr gamma-dirs) (caddr alpha-dirs) (caddr beta-dirs))
-                 (list (cadddr gamma-dirs) (cadddr alpha-dirs)
-                       (cadddr beta-dirs))))
+    (lower-plans (list beta-plan alpha-plan gamma-plan)
+                 (list (car beta-dirs) (car alpha-dirs) (car gamma-dirs))
+                 (list (cadr beta-dirs) (cadr alpha-dirs) (cadr gamma-dirs))
+                 (list (caddr beta-dirs) (caddr alpha-dirs) (caddr gamma-dirs))
+                 (list (cadddr beta-dirs) (cadddr alpha-dirs)
+                       (cadddr gamma-dirs))))
   (define (first-index pred xs)
     (let loop ([i 0] [rest xs])
       (cond [(null? rest) #f]
@@ -853,15 +855,15 @@
 
   ;; A shared dependency lowered twice appears once.
   (define trio-twice
-    (lower-plans (list gamma-plan alpha-plan beta-plan beta-plan)
-                 (list (car gamma-dirs) (car alpha-dirs)
-                       (car beta-dirs) (car beta-dirs))
-                 (list (cadr gamma-dirs) (cadr alpha-dirs)
-                       (cadr beta-dirs) (cadr beta-dirs))
-                 (list (caddr gamma-dirs) (caddr alpha-dirs)
-                       (caddr beta-dirs) (caddr beta-dirs))
-                 (list (cadddr gamma-dirs) (cadddr alpha-dirs)
-                       (cadddr beta-dirs) (cadddr beta-dirs))))
+    (lower-plans (list beta-plan alpha-plan gamma-plan beta-plan)
+                 (list (car beta-dirs) (car alpha-dirs)
+                       (car gamma-dirs) (car beta-dirs))
+                 (list (cadr beta-dirs) (cadr alpha-dirs)
+                       (cadr gamma-dirs) (cadr beta-dirs))
+                 (list (caddr beta-dirs) (caddr alpha-dirs)
+                       (caddr gamma-dirs) (caddr beta-dirs))
+                 (list (cadddr beta-dirs) (cadddr alpha-dirs)
+                       (cadddr gamma-dirs) (cadddr beta-dirs))))
   (check-equal? (length (filter fetch-action? trio-twice)) 3)
   (check-equal? (plan->text (list->plan trio-twice)) trio-text)
 
