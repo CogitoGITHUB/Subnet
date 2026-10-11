@@ -304,6 +304,16 @@ authorized single-char sed after nine transcription failures; the
 transcription lesson is to keep close-paren runs short and verify with
 read-check plus awk counts, never eyes.)
 
+** TODO E-12b first real build
+First real build: a git-only package that needs only make and cc
+(candidates: Lua, cJSON); spec plus end-to-end through apply. GNU
+Hello stays fetch-only (bootstrap needs autopoint, gperf and help2man,
+all missing here).
+
+* PHASE A CLOSED: full gate EXIT=0, 493s, SUMMARY files=28 failed=0
+total=420, ALL GREEN (parked: 3 -- vault.rkt P-01, vault-lock.rkt P-01,
+jobs.rkt P-03).
+
 * PHASE B: effects
 ** TODO E-07 store.rkt
 Versioned dirs, the =.pm-incomplete= marker and the =current= link. /
