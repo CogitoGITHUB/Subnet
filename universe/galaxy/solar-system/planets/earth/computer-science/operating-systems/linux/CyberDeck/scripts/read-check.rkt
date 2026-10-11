@@ -31,16 +31,26 @@
     [(regexp-match? #px"^[ \t]*#lang" (car ls)) 1]
     [else 0]))
 
-;; Read every form of one file. Line numbers come from each form's own
-;; srcloc plus the number of header lines dropped, so they match the file.
+;; Read every form of one file. The line is computed from the port offset
+;; where the failing form STARTS (the reader skips blank space first, so
+;; this lands within a line or two of a stray paren), plus the header
+;; lines dropped above, so it matches the file. The old code passed
+;; `skip` here, which always printed :1 and never named anything.
 (define (read-one f)
   (define body (file->string f #:mode 'binary))
   (define ls (string-split body "\n"))
   (define skip (header-lines ls))
-  (define in (open-input-string (string-join (drop ls skip) "\n")))
+  (define dropped (string-join (drop ls skip) "\n"))
+  (define in (open-input-string dropped))
+  ;; byte offset -> 1-based file line number
+  (define (line-at pos)
+    (define prefix
+      (substring dropped 0 (min pos (string-length dropped))))
+    (+ skip 1 (length (or (regexp-match* #rx"\n" prefix) '()))))
   (let loop ()
+    (define pos (file-position in))
     (define v
-      (with-handlers ([exn:fail? (lambda (e) (bad-at f skip (exn-message e)))])
+      (with-handlers ([exn:fail? (lambda (e) (bad-at f (line-at pos) (exn-message e)))])
         (read-syntax (make-base-namespace) in)))
     (cond
       [(eof-object? v) #t]
