@@ -451,11 +451,18 @@ contract arity (3 args, not 4), owner-names needs store targets
 (synthetic store15 fixtures), paren faults fixed by wholesale
 function/block replacement per the new rule, never by eye.
 
-** TODO E-16 update.rkt
+** DONE E-16 update.rkt
 =check= fetches and compares remote-head to the pin, =review= lists new
 commits, =apply= delegates, =hold= is per slot, dev packages are listed
 as skipped. / Done when: =--all= with a dev package prints the skip
 line and exits unchanged (DEV-MODE).
+Measured: backends/update.rkt (check-package via vault-add pin compare,
+cancelled never swallowed; update-all with dev/held skips sans fetch;
+update-report info lines; update-apply delegates with mandatory
+manifest); dev skip line printed, exit unchanged; --changed ALL GREEN
+(files=2, total=8), STAGES=6 lint 0 violations, read-check 0 bad.
+Hang fixed on the way: missing vault parent stranded the fifo opener
+(run.rkt should fail fast on missing cwd; noted for Phase C/D).
 
 ** TODO E-16b pm fetch
 Reads the whole declaration (manifest and specs), fetches and pins every
