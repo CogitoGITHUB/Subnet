@@ -243,11 +243,15 @@ Measured: spec gains slot (default 'default) + flags (default '());
 override slot/flags. spec.rkt 29/29, spec-read.rkt 51/51, resolve.rkt
 8/8 in the shared runner; docs/examples still validate (4 ok).
 
-** TODO E-03 core/flags.rkt
+** DONE E-03 core/flags.rkt
 Resolve flags from spec defaults, the global config and per-package
 config. / Done when: precedence spec default < global < per-package is
 pinned by one test each, and unknown flag, conflict and unsatisfied
 requires each raise kind ='config= (D-022).
+Measured: core/flags.rkt resolve-flags over plain alists (spec < global
+< per-package, pair?-presence so set-#f counts); unknown/conflict/
+requires/non-boolean all kind 'config; 8/8 in shared runner, --changed
+ALL GREEN (5 files, 37 tests, 41s).
 
 ** TODO E-04 package-level plan in core/plan.rkt
 Derive name, slot, version, commit, resolved flags, dependency
