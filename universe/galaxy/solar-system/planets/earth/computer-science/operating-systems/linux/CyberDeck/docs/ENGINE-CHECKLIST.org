@@ -213,7 +213,7 @@ Done when: a test run emits IN/OUT records and a redaction check proves
 no secret reaches the record path.
 
 * PHASE A: pure core
-** TODO E-00 scope seam, Racket AND Nu
+** DONE E-00 scope seam, Racket AND Nu
 One Racket function (scope -> roots) used by every =.rkt=, and
 =scripts/env.nu= as the single Nu counterpart used by every =.nu=; the
 only two places in non-test code that read HOME or XDG_*. Replace the
@@ -223,6 +223,15 @@ direct uses found by the inventory (=git.rkt= line 65,
 Done when: grepping HOME/XDG_ in non-test code finds only those two
 places; a test shows both resolve identical roots for the user scope;
 gate green (D-029).
+Measured: core/scope.rkt scope-roots (config/cache/data, user only,
+system deferred kind config) + env.nu scope-roots (member-list `use`
+is the working import; bare `use` never resolves); vault/git gitconfig,
+hello-fetch/probe-blob cache, check.nu gate log all go through the
+seam. Inventory corrections: startup.nu/need-nu.nu use $nu.home-dir,
+not env; run.rkt HOME allowlist is passthrough, PM_TRACE a flag,
+exec-file lookups locate binaries, test HOMEs are fixtures (all
+intentional, not roots). scope.rkt 6/6 incl. Racket==nu roots under
+one controlled env; --changed green except known jobs STOP.
 
 ** DONE E-01 flag parser and =--format=
 A real flag parser on the existing commands, plus =--format sexp|json=. /

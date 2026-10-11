@@ -15,6 +15,7 @@
          "../core/errors.rkt"
          "../core/git-id.rkt"
          "../core/git-url.rkt"
+         "../core/scope.rkt"
          "../core/spec.rkt"
          "../core/vault-lock.rkt"
          "run.rkt"
@@ -154,8 +155,8 @@
 (define (vault-env vault-root)
   `(("GIT_CONFIG_NOSYSTEM" . "1")
     ("GIT_CONFIG_GLOBAL"
-     . ,(path->string (build-path (find-system-path 'home-dir)
-                                  ".config" "cyberdeck" "gitconfig")))
+     . ,(path->string (build-path (roots-config (scope-roots 'user))
+                                  "cyberdeck" "gitconfig")))
     ("GIT_TERMINAL_PROMPT" . "0")
     ("GIT_CEILING_DIRECTORIES" . ,(dir-string (vault-cwd vault-root)))))
 

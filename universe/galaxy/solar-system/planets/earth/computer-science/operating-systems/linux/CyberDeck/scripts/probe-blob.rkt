@@ -19,15 +19,16 @@
          racket/system
          "../backends/vault.rkt"
          "../core/errors.rkt"
-         "../core/git-url.rkt")
+         "../core/git-url.rkt"
+         "../core/scope.rkt")
 
 (define bytes (if (> (vector-length (current-command-line-arguments)) 0)
                   (string->number
                    (vector-ref (current-command-line-arguments) 0))
                   4096))
 
-(define root (build-path (or (getenv "XDG_CACHE_HOME")
-                            (build-path (getenv "HOME") ".cache"))
+;; Cache dir comes from the scope seam (E-00), never from direct env reads.
+(define root (build-path (roots-cache (scope-roots 'user))
                          "cyberdeck"
                          "probe-blob"))
 (when (directory-exists? root) (delete-directory/files root))

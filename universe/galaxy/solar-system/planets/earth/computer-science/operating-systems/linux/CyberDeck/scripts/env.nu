@@ -21,6 +21,33 @@ def xdg-cache [] {
     }
 }
 
+# string? string -> string, a non-blank env value or ~/FALLBACK.
+# Blank counts as unset, exactly like xdg-cache above; $nu.home-dir is
+# the HOME the process actually runs under.
+def or-home [raw, fallback: string] {
+    if ($raw != null) and ((($raw | str trim) | is-not-empty)) {
+        $raw | str trim
+    } else {
+        $nu.home-dir | path join $fallback
+    }
+}
+
+# -> record, scope roots for the user scope (D-029): config, cache, data.
+# The single Nu counterpart to core/scope.rkt: same variables, same
+# blank-means-unset rule, same ~/. fallbacks. config = XDG_CONFIG_HOME
+# or ~/.config; cache = XDG_CACHE_HOME or ~/.cache; data =
+# XDG_DATA_HOME or ~/.local/share. xdg-cache above stays as it is: the
+# gate's export-env path depends on its exact shape, so it is not
+# refactored onto or-home. Exported (unlike xdg-cache) because check.nu
+# and external callers reach it through `use scripts/env.nu`.
+export def scope-roots [] {
+    {
+        config: (or-home ($env | get -o XDG_CONFIG_HOME?) ".config"),
+        cache: (or-home ($env | get -o XDG_CACHE_HOME?) ".cache"),
+        data: (or-home ($env | get -o XDG_DATA_HOME?) ".local/share"),
+    }
+}
+
 # Cargo output goes to the XDG cache for NEW builds only. No existing
 # in-tree target/ directory is removed by this (D-027).
 export-env {

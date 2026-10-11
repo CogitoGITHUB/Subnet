@@ -11,6 +11,15 @@
 # give it its own process. Between checklist items run
 # `nu scripts/check.nu --changed`; the full gate runs once per phase.
 #
+# Scope roots come from the seam (E-00, D-029): scripts/env.nu is the
+# single Nu counterpart, imported with the member-list form (bare `use`
+# does not bring names into scope in this Nu, measured). The path is
+# file-relative (./env.nu lives beside this file): a bare scripts/env.nu
+# fails with module-not-found because `use` resolves from this file's
+# directory, not the cwd. This runs env.nu's export-env once (one cache
+# mkdir, one informational print).
+use ./env.nu [scope-roots]
+#
 # Stage 6 rules, unchanged from check.sh lines 65-79:
 #   - no tabs
 #   - no trailing spaces
@@ -508,9 +517,10 @@ def raco-exe [] {
 }
 
 # -> string, the gate log directory, created on demand. Child output goes
-# here, never into the tree; same XDG rule as scripts/env.nu.
+# here, never into the tree; the base comes from the scope seam (E-00),
+# never from a direct env read.
 def gate-log-dir [] {
-    let base = ($env | get -o XDG_CACHE_HOME? | default ($nu.home-dir | path join ".cache"))
+    let base = (scope-roots | get cache)
     let d = ($base | path join "cyberdeck" "gate")
     mkdir $d
     $d

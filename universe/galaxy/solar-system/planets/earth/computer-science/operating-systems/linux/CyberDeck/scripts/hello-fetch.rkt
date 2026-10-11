@@ -23,16 +23,14 @@
          racket/file
          "../backends/vault.rkt"
          "../core/errors.rkt"
+         "../core/scope.rkt"
          "../core/spec.rkt"
          "../core/spec-read.rkt"
          "../core/ui.rkt")
 
-;; The one and only place the environment is read.
+;; Cache dir comes from the scope seam (E-00), never from direct env reads.
 (define (cache-dir)
-  (define xdg (getenv "XDG_CACHE_HOME"))
-  (if (and xdg (not (string=? xdg "")))
-      xdg
-      (build-path (getenv "HOME") ".cache")))
+  (roots-cache (scope-roots 'user)))
 
 (define (default-vault) (build-path (cache-dir) "cyberdeck" "hello-vault"))
 (define (default-out) (build-path (cache-dir) "cyberdeck" "hello-build"))

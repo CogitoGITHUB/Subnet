@@ -9,6 +9,7 @@
          "../core/errors.rkt"
          "../core/git-id.rkt"
          "../core/git-url.rkt"
+         "../core/scope.rkt"
          "run.rkt")
 
 (provide
@@ -60,9 +61,11 @@
                     #:fields `(("name" . ,name))))
   (build-path vault-root (string-append name ".git")))
 
-;; -> path, the pm-owned optional global config (item 7)
+;; -> path, the pm-owned optional global config (item 7) under the
+;; scope seam (E-00), never a direct home-dir read
 (define (git-global-config-path)
-  (build-path (find-system-path 'home-dir) ".config" "cyberdeck" "gitconfig"))
+  (build-path (roots-config (scope-roots 'user))
+              "cyberdeck" "gitconfig"))
 
 ;; -> (listof (cons string string)), isolated non-interactive env (item 7, 3)
 (define (git-env)
