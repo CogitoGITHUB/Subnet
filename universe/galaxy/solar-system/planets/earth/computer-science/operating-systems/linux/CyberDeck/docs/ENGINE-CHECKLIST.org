@@ -265,12 +265,17 @@ input hash + store-dir + package-plan->text goldens; pkg-cycle-a kind
 resolve via resolve.rkt; two slots two dirs; plan.rkt 18/18, --changed
 ALL GREEN (8 files, 44 tests).
 
-** TODO E-05 inspect core/lock.rkt, then extend it
+** DONE E-05 inspect core/lock.rkt, then extend it
 The module already reads and writes a lockfile atomically and sorted;
 extend it to the D-028 shape instead of rewriting it. / Done when: the
 lock records base pin, resolved flags, spec build/install hash, input
 hash and dependency identities, and still round trips through
 =list->lock= / =lock->list=.
+Measured: lock-entry extended to 9 fields (slot, flags, spec/input
+hash, deps), format-version 2, sort by name+slot, plan->lock-entry
+bridge, dup-pin kind config; hostile-entry fixtures use format+quote
+(never hand-counted escapes); lock.rkt 28/28, --changed ALL GREEN
+(5 files, 28 tests).
 
 ** TODO E-06 lowering and the new action structs
 Delete =verify-action=; add =export-action=, =check-action=,
