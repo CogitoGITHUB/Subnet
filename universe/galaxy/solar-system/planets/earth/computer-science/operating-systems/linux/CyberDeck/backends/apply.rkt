@@ -71,6 +71,7 @@
   (require rackunit
            racket/file
            "fake.rkt"
+           "local.rkt"
            "../core/errors.rkt"
            "../core/plan.rkt")
 
@@ -157,6 +158,40 @@
       'no-error))
   (check-pred cancelled-error? cancel-err)
   (check-equal? (journal-completions state "pkg-cancel" "default") '())
+
+  ;; Cancel keeps the marker: the performer posts right after the
+  ;; real mark step, so the peek-evt fires from the next step on. The
+  ;; interrupted dir stays marked and the step after it never ran.
+  ;; Deterministic: everything happens on one thread, no timers, no
+  ;; sleeps, post never blocks and peek never waits.
+  (define cancel-sem (make-semaphore 0))
+  (define cancel-box (box '()))
+  (define cancel-performer
+    (lambda (a)
+      (cond [(mark-incomplete-action? a)
+             (local-perform! (list->plan (list a)))
+             (fake-perform! a)
+             (semaphore-post cancel-sem)]
+            [else (fake-perform! a)])))
+  (define cancel-ver (build-path state-root "cancel-ver"))
+  (define cancel-plan
+    (list->plan
+     (list (mark-incomplete-action (path->string cancel-ver))
+           (write-file-action (path->string (build-path cancel-ver "w.txt")) "w")
+           (clear-incomplete-action (path->string cancel-ver)))))
+  (define cancel2-err
+    (with-handlers ([exn:fail:pm? (lambda (e) e)])
+      (parameterize ([current-fake-log cancel-box])
+        (apply-plan cancel-plan "hc" cancel-performer
+                    #:state state #:package "pkg-cancel2" #:slot "default"
+                    #:cancel (semaphore-peek-evt cancel-sem)))
+      'no-error))
+  (check-pred cancelled-error? cancel2-err)
+  (check-true (file-exists? (build-path cancel-ver ".pm-incomplete")))
+  (check-true (journal-step-done? state "pkg-cancel2" "default"
+                                  "step-0-mark-incomplete" "hc"))
+  (check-false (journal-step-done? state "pkg-cancel2" "default"
+                                   "step-1-write-file" "hc"))
 
   ;; An empty plan is void, never an error.
   (check-not-exn

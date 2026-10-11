@@ -375,10 +375,20 @@ hash change reruns all, cancel voids all, empty is void; --changed
 ALL GREEN (files=8, total=79), STAGES=6 lint 0 violations,
 read-check 0 bad. Locks stay in jobs (P-04), manifests are E-14;
 prefix-untouched is journal-level on fake, real dirs land in E-12.
+Cancel test shows .pm-incomplete still present on the interrupted dir.
 
 ** TODO E-12 apply on a real local synthetic git fixture
 Same path, real git, synthetic packages only. / Done when: a synthetic
 repo installs through every step and the =current= link resolves.
+
+** TODO E-12c apply writer lock
+Apply, activate, update-apply and remove take one writer lock on the
+store: try-lock and fail fast (D-015, no waiting on a clock); a second
+concurrent apply fails at once with a clear message naming the holder;
+readers never lock. Use core/vault-lock.rkt or a small own module, and
+record which. / Done when: a test starts two applies on a synthetic
+fixture: the second fails immediately with the message while the first
+completes unharmed.
 
 ** TODO E-13 activate.rkt
 Generations, the atomic swap, and conflict detection. / Done when: two
