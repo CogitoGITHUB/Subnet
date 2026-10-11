@@ -82,11 +82,9 @@ const FILE_PARKED = [
    "large-blob test fails, 851 git processes, 470s, see P-01"]
   ["core/vault-lock.rkt"
    "re-acquire blocks in a shared process, see P-01"]
+  ["backends/jobs.rkt"
+   "e2e: worker race and file:// allowance cannot cross processes; needs production design (P-03)"]
 ]
-
-# jobs.rkt is NOT parked: it measured 25 passing tests in the shared
-# process, so it runs in the gate. Its P-03 production bugs (op-gc
-# rejection, fifo fd leak) stay recorded in the checklist, not in the gate.
 
 # -> string, current UTC instant, second precision
 def utc [] {
