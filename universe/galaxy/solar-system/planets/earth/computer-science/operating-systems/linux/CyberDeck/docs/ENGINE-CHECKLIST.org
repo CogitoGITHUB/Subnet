@@ -413,9 +413,16 @@ inner try fails kind ='config= naming outer-apply, outer completes
 2/2, inner journal empty; --changed ALL GREEN (files=2, total=28),
 STAGES=6 lint 0 violations, read-check 0 bad.
 
-** TODO E-13 activate.rkt
+** DONE E-13 activate.rkt
 Generations, the atomic swap, and conflict detection. / Done when: two
 packages claiming one path fail closed with exit 9 and nothing changes.
+Measured: backends/activate.rkt (profile-activate over explicit file
+lists, profile-NNN generations, swap-link! flip, SPEC-shaped conflict
+message, no last-wins); two-package conflict kind ='activate= exit 9,
+nothing created, profile link unmoved; errors.rkt gains the activate
+kind (exit 9, predicate, golden); --changed ALL GREEN (31 files, 498
+tests), STAGES=6 lint 0 violations, read-check 0 bad. Rollback,
+remove and hold stay E-15; the writer lock is caller (CLI) wiring.
 
 ** TODO E-14 manifest write by apply
 =apply= writes the manifest itself; no caller writes it. / Done when: a
