@@ -424,10 +424,17 @@ kind (exit 9, predicate, golden); --changed ALL GREEN (31 files, 498
 tests), STAGES=6 lint 0 violations, read-check 0 bad. Rollback,
 remove and hold stay E-15; the writer lock is caller (CLI) wiring.
 
-** TODO E-14 manifest write by apply
+** DONE E-14 manifest write by apply
 =apply= writes the manifest itself; no caller writes it. / Done when: a
 synthetic apply leaves the manifest updated on disk and no other module
 writes it.
+Measured: apply-plan gains #:manifest + #:manifest-entry, upserted via
+manifest-write on success only (inside the writer lock); seed entry
+survives, failed runs change nothing, no-args runs stay journaled;
+--changed ALL GREEN (files=3, total=31), STAGES=6 lint 0 violations,
+read-check 0 bad. Other writers classified: vault's use is test
+fixtures only; jobs.rkt:595 is parked production, retiring through
+apply-plan in Phase C update.rkt.
 
 * PHASE C: flow
 ** TODO E-15 rollback, remove, hold

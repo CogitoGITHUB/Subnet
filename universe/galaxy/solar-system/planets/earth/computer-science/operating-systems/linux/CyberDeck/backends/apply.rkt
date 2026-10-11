@@ -12,12 +12,15 @@
 ;; core/vault-lock.rkt's try-only lock on the state dir first, failing
 ;; fast naming the holder; try-only never blocks, so it is safe even
 ;; in-process (P-04). Readers (journal queries) never lock; jobs keep
-;; queue-time concerns. Manifests are E-14's job, not this module's.
+;; queue-time concerns. #:manifest + #:manifest-entry upsert the
+;; declaration on success only: apply is the only manifest writer
+;; (E-14; jobs.rkt:595 retires in Phase C, vault's use is fixtures).
 
 (require racket/contract/base
          racket/file
          racket/list
          "journal.rkt"
+         "manifest.rkt"
          "../core/errors.rkt"
          "../core/plan.rkt"
          "../core/vault-lock.rkt")
@@ -31,7 +34,9 @@
                           #:package string?
                           #:slot string?)
                    (#:cancel (or/c evt? #f)
-                    #:writer (or/c #f (list/c string? string?)))
+                    #:writer (or/c #f (list/c string? string?))
+                    #:manifest (or/c path-string? #f)
+                    #:manifest-entry (or/c manifest-entry? #f))
                    void?)]))
 
 ;; action -> string, stable kind label for journal step names. Index
@@ -60,7 +65,9 @@
                     #:package package
                     #:slot slot
                     #:cancel [cancel #f]
-                    #:writer [writer #f])
+                    #:writer [writer #f]
+                    #:manifest [manifest #f]
+                    #:manifest-entry [entry #f])
   (define (run)
     (define actions (plan-actions p))
     (for ([a (in-list actions)] [i (in-range (length actions))])
@@ -71,7 +78,10 @@
       (unless (journal-step-done? state package slot step input-hash)
         (journal-record-start! state package slot step input-hash)
         (performer a)
-        (journal-record-end! state package slot step input-hash))))
+        (journal-record-end! state package slot step input-hash)))
+    (when (and manifest entry)
+      (manifest-write manifest
+                      (manifest-upsert (manifest-read manifest) entry))))
   (if writer
       (call-with-vault-lock state (first writer) (second writer) run)
       (run)))
@@ -82,6 +92,7 @@
            racket/file
            "fake.rkt"
            "local.rkt"
+           "manifest.rkt"
            "git.rkt"
            "run.rkt"
            "vault.rkt"
@@ -334,5 +345,40 @@
   (check-equal? (length (journal-completions state "pkg-lock" "default"))
                 2)
   (check-equal? (journal-completions state "pkg-inner" "default") '())
+
+  ;; E-14: apply writes the manifest itself, on success only. The seed
+  ;; entry survives (upsert, never overwrite); a failed run changes
+  ;; nothing; without manifest args the run still succeeds journaled.
+  (define mfile (build-path state-root "manifest.rktd"))
+  (define seed-entry
+    (manifest-entry "pkg-other" "https://example.org/o.git"
+                    "refs/vault/pkg-other" 1 #f '() #f))
+  (manifest-write mfile (list seed-entry))
+  (define synth-entry
+    (manifest-entry "pkg-synth" "https://example.org/s.git"
+                    "refs/vault/pkg-synth" 2 #f '() #f))
+  (define mplan
+    (list->plan (list (write-file-action "/tmp/pm-apply-x/m.txt" "m"))))
+  (define mbox (box '()))
+  (parameterize ([current-fake-log mbox])
+    (apply-plan mplan "hm" fake-perform!
+                #:state state #:package "pkg-synth" #:slot "default"
+                #:manifest mfile #:manifest-entry synth-entry))
+  (check-equal? (manifest-read mfile) (list seed-entry synth-entry))
+  ;; A failing run leaves the manifest exactly as it was.
+  (define mfile2 (build-path state-root "manifest2.rktd"))
+  (manifest-write mfile2 (list seed-entry))
+  (with-handlers ([exn:fail:pm? (lambda (e) e)])
+    (apply-plan mplan "hmx"
+                (lambda (a) (raise-pm-error 'build 'm14 "boom"))
+                #:state state #:package "pkg-mfail" #:slot "default"
+                #:manifest mfile2 #:manifest-entry synth-entry))
+  (check-equal? (manifest-read mfile2) (list seed-entry))
+  ;; Without manifest args the run succeeds journaled, nothing to write.
+  (parameterize ([current-fake-log (box '())])
+    (apply-plan mplan "hm2" fake-perform!
+                #:state state #:package "pkg-noman" #:slot "default"))
+  (check-equal? (length (journal-completions state "pkg-noman" "default"))
+                1)
 
   (delete-directory/files state-root))
