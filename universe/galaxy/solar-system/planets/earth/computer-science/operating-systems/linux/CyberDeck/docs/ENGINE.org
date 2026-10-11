@@ -335,7 +335,8 @@ current tree against its pin.
 
 * cli/
 : Purpose
-One command per stage. No stage logic in the CLI.
+One command per stage. No stage logic in the CLI. fetch is its own
+command and stage, separate from apply.
 : Commands
 =plan=, =lock=, =apply=, =update=, =activate=, =rollback=, =remove=,
 =hold=, =why=, =owner=, =verify=, plus the existing =check= and =help=.

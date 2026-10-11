@@ -312,6 +312,22 @@ commits, =apply= delegates, =hold= is per slot, dev packages are listed
 as skipped. / Done when: =--all= with a dev package prints the skip
 line and exits unchanged (DEV-MODE).
 
+** TODO E-16b pm fetch
+Reads the whole declaration (manifest and specs), fetches and pins every
+declared package into the vault WITHOUT building or installing; skips
+ones already pinned; reports per package (new / already present /
+failed). / Done when: a synthetic declaration of 3 local git fixtures
+fills the vault and a second run reports all present.
+
+** TODO E-16c parallel fetch
+Fetches run concurrently with a configurable limit N (default 4), each
+waiting only on its own process exit (D-015); the vault write path is
+serialized or per-package (read backends/vault.rkt and vault-lock first
+and record which in the item); one failing fetch does not stop the
+others; the summary lists failures. / Done when: 6 synthetic fixtures
+with N=3 finish with correct pins and one deliberately broken URL is
+reported as failed.
+
 ** TODO E-17 query.rkt
 =why=, =owner=, =verify=, read-only. / Done when: each answers on a
 synthetic profile and raises kind ='config= for an unknown name.
