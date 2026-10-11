@@ -304,11 +304,21 @@ authorized single-char sed after nine transcription failures; the
 transcription lesson is to keep close-paren runs short and verify with
 read-check plus awk counts, never eyes.)
 
-** TODO E-12b first real build
+** DONE E-12b first real build
 First real build: a git-only package that needs only make and cc
 (candidates: Lua, cJSON); spec plus end-to-end through apply. GNU
 Hello stays fetch-only (bootstrap needs autopoint, gperf and help2man,
 all missing here).
+Measured: choice Lua (export is make-only + -lm; cmake missing kills
+cJSON-as-specced); scripts/build-lua.rkt + scripts/build-lua.nu
+(manual, not in the gate) drove 12 lowered actions through apply-plan
+with the writer lock: installed bin/lua (755) liblua.a includes,
+bin/lua -v prints Lua 5.5.1, journal holds all 12 ends, current
+resolves, no marker; no spec change needed. Findings: lowering gave
+bin mode 644 (fixed to SPEC §3 kind defaults, golden updated);
+fetch dropped offline (proven separately), fetch/export same-dest
+collision recorded for Phase C; --changed ALL GREEN (12 files, 147
+tests), STAGES=6 lint 0 violations, read-check 0 bad.
 
 * PHASE A CLOSED: full gate EXIT=0, 493s, SUMMARY files=28 failed=0
 total=420, ALL GREEN (parked: 3 -- vault.rkt P-01, vault-lock.rkt P-01,

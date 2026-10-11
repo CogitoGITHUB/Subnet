@@ -405,11 +405,16 @@
                    (cons (symbol->string (build-step-name s)) strings)
                    staging))
 
-;; install form string string exact-integer -> (list action ... exact-int),
-;; one form lowered plus the mode state for the forms after it
+;; install form string string (or/c exact-integer? #f)
+;; -> (list action ... exact-int-or-#f), one form lowered plus the
+;; mode state for the forms after it. SPEC-NEUTRAL section 3: bin and
+;; libexec default to 755, the rest to 644, until a (mode ...) form
+;; says otherwise (E-12b: the first real build caught bin at 644).
 (define (lower-one-install form staging versioned mode)
   (define kind (car form))
   (define args (cdr form))
+  (define (kind-default k)
+    (if (or (eq? k 'bin) (eq? k 'libexec)) #o755 #o644))
   (case kind
     [(bin lib include share man libexec)
      (define rels (filter string? args))
@@ -419,7 +424,7 @@
      (list (install-file-action (string-append staging "/"
                                                (car rels))
                                 (string-append versioned "/" dst)
-                                mode)
+                                (or mode (kind-default kind)))
            mode)]
     [(copy-tree)
      (list (install-file-action (string-append staging "/" (car args))
@@ -440,7 +445,7 @@
 ;; skipped (it becomes the one check-action); mode forms thread state
 (define (lower-install-forms forms staging versioned)
   (define-values (actions _mode)
-    (for/fold ([out '()] [mode #o644]) ([form (in-list forms)])
+    (for/fold ([out '()] [mode #f]) ([form (in-list forms)])
       (if (and (pair? form) (eq? (car form) 'check))
           (values out mode)
           (let ((lowered (lower-one-install form staging versioned mode)))
@@ -799,7 +804,7 @@
           "mark-incomplete /pkg/beta/1.0"
           "run-step copy [copy c d] in /tmp/stage-beta"
           (string-append "install-file /tmp/stage-beta/beta"
-                         " -> /pkg/beta/1.0/bin/beta mode 644")
+                         " -> /pkg/beta/1.0/bin/beta mode 755")
           "clear-incomplete /pkg/beta/1.0"
           "set-current /pkg/beta/current -> /pkg/beta/1.0")
     "\n"))
