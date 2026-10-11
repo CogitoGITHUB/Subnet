@@ -480,9 +480,15 @@ others; the summary lists failures. / Done when: 6 synthetic fixtures
 with N=3 finish with correct pins and one deliberately broken URL is
 reported as failed.
 
-** TODO E-17 query.rkt
+** DONE E-17 query.rkt
 =why=, =owner=, =verify=, read-only. / Done when: each answers on a
 synthetic profile and raises kind ='config= for an unknown name.
+Measured: backends/query.rkt (query-why + text, query-owner + text,
+query-verify by export-and-compare + text; store-layout owner parse,
+dev trees name nothing until E-19); unknown names refuse; --changed
+ALL GREEN (files=2, total=16), STAGES=6 lint 0 violations, read-check
+0 bad. Order note: done before E-16b (was half-written during E-16;
+finishing first kept every gate green).
 
 ** TODO E-18 CLI commands for every stage
 One command per stage, each with =--format sexp|json=. / Done when:
