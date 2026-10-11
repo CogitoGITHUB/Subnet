@@ -4,6 +4,27 @@
 * Log
 Append-only. Newest first. Every entry names the rule IDs it touches.
 
+** 2026-10-11 D-033: AI access is API plus MCP plus skill, never auto-apply
+AI access has three layers: (1) API = the =--format json= output of every
+command plus a written schema (docs/API.org); (2) an MCP server (stdio,
+JSON-RPC, a thin Racket adapter over the CLI/JSON; no new logic) exposing
+the commands as tools; (3) a SKILL.md for AI agents. Read-only tools
+(plan, lock, fetch, why, owner, verify, query) run freely. State-changing
+tools (apply, update-apply, rollback, remove, activate, hold) require an
+explicit human confirmation token produced by the user; an AI can never
+apply on its own (never auto-apply). All output goes through the
+redaction path. No timers; the server waits on stdin events. D-033.
+
+** 2026-10-11 D-032: ecosystems hold one file per package kind
+A top-level =ecosystems/= directory holds one small =.rktd= per package
+kind (make-c, cmake, cargo, python, go, node). Each declares: the
+build-step template, the required host tools, the default install layout.
+A spec names its ecosystem and overrides only differences. An ecosystem
+EXPANDS into the existing closed build-step vocabulary and adds no new
+step types. Required host tools are checked before any build starts; a
+missing tool fails early with a clear message (v1 does not build
+toolchains from source). The =run= escape hatch stays flagged. D-032.
+
 ** 2026-10-11 D-031: project name is AIU-PM
 Project name is AIU-PM (Atomic Information Unit Package Manager);
 rebrand runs last in Phase R per docs/REBRAND.org, after the engine,

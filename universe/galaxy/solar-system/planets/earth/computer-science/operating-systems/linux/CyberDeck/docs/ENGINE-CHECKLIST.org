@@ -424,6 +424,29 @@ from the snapshot with no timer anywhere.
 =cargo test= is not in the gate today. / Done when: =cargo test= runs as
 part of the gate and passes, with its output in the gate log.
 
+** TODO E-25 ecosystems/
+Ecosystem file format, core/ecosystem.rkt (pure: ecosystem plus spec
+overrides expands to steps), host-tool check, first files make-c (Lua)
+and cargo. / Done when: a synthetic spec naming make-c expands to the
+same plan as the hand-written steps, and a missing tool fails before
+any build.
+
+** TODO E-26 docs/API.org
+JSON schema (field list and one synthetic example) for every command's
+=--format json= output. / Done when: each command's real output matches
+its documented example in a test.
+
+** TODO E-27 MCP server (mcp/server.rkt)
+JSON-RPC over stdio; tools are the read-only commands; state-changing
+tools require the confirmation token. / Done when: a scripted client
+lists the tools, runs plan on a synthetic fixture, and an apply call
+WITHOUT a token is refused with a clear message.
+
+** TODO E-28 skill (skills/aiu-pm/SKILL.md)
+When to use each command, the confirmation rule, the redaction rule,
+three worked examples with synthetic names. / Done when: the examples
+in the skill run as a test against the real CLI.
+
 * PHASE R: restructure (runs AFTER Phase D, BEFORE any package
 declarations or NodeShape work)
 ** TODO R-01 inventory
