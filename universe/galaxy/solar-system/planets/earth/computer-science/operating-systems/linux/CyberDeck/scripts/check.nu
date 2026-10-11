@@ -682,6 +682,6 @@ def stage-changed [] {
     let ccodes = (compile-all $runset)
     let recs = (run-runner $runset)
     let bad = ($ccodes | any {|c| $c != 0}) or ($recs | any {|r| $r.exit != 0})
-    (verdict [$recs] ($parked | length))
+    (verdict $recs ($parked | length))
     (if $bad { 1 } else { 0 })
 }
