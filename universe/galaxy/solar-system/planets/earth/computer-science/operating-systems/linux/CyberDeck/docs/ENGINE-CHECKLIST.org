@@ -437,10 +437,19 @@ fixtures only; jobs.rkt:595 is parked production, retiring through
 apply-plan in Phase C update.rkt.
 
 * PHASE C: flow
-** TODO E-15 rollback, remove, hold
+** DONE E-15 rollback, remove, hold
 Rollback repoints =profile= at the previous generation; remove unlinks
 from the profile only; hold pins a slot. / Done when: each works on a
 synthetic profile, and remove frees no disk (D-024).
+Measured: activate.rkt gains profile-rollback (numbered, unknown N is
+config), profile-remove (store-layout owner guard, empty unlinks the
+profile link, store never touched), profile-hold/unhold/held? over
+profile/holds.rktd; conflict-free remove, rollback, empty and hold
+round-trips pinned; --changed ALL GREEN (files=2, total=33),
+STAGES=6 lint 0 violations, read-check 0 bad. Repairs on the way:
+contract arity (3 args, not 4), owner-names needs store targets
+(synthetic store15 fixtures), paren faults fixed by wholesale
+function/block replacement per the new rule, never by eye.
 
 ** TODO E-16 update.rkt
 =check= fetches and compares remote-head to the pin, =review= lists new

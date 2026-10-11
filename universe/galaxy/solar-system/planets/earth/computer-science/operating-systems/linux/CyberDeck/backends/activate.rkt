@@ -8,8 +8,10 @@
 ;; reports). Activate validates everything first, builds the next
 ;; generation, then flips the profile link with store.rkt's atomic
 ;; swap: a conflict fails closed with kind 'activate (exit 9) before
-;; anything changes. No precedence rules, no last-wins. Rollback,
-;; remove and hold are E-15 and live here later; the writer lock is a
+;; anything changes. No precedence rules, no last-wins. E-15 lives
+;; here too: rollback repoints at a numbered generation, remove builds
+;; a generation minus one package (never touching store dirs, D-024),
+;; hold pins slots in profile/holds.rktd. The writer lock is a
 ;; caller (CLI) concern per E-12c, not this module's. Ownership comes
 ;; in explicitly as (name dir rels) triples; the manifest will supply
 ;; them from E-14 on.
@@ -30,7 +32,20 @@
                         path-string?
                         path?)]
   ;; path-string -> (listof path), existing generations oldest first
-  [profile-generations (-> path-string? (listof path?))]))
+  [profile-generations (-> path-string? (listof path?))]
+  ;; path-string exact-integer -> path, repoint profile at generation N
+  [profile-rollback (-> path-string? exact-integer? path?)]
+  ;; path-string string (listof entry) -> path, generation minus one
+  [profile-remove (-> path-string? string?
+                      (listof (list/c string? path-string?
+                                      (listof string?)))
+                      path?)]
+  ;; path-string string string -> void, pin a slot against updates
+  [profile-hold (-> path-string? string? string? void?)]
+  ;; path-string string string -> void, release a slot pin
+  [profile-unhold (-> path-string? string? string? void?)]
+  ;; path-string string string -> boolean, is the slot pinned
+  [profile-held? (-> path-string? string? string? boolean?)]))
 
 ;; exact-integer -> string, profile-001 style, sortable as text
 (define (gen-dir-name n)
@@ -140,6 +155,145 @@
               (path->string (build-path profile-root "profile")))
   gen)
 
+;; path-string -> path, where the profile link points today
+(define (current-generation profile-root)
+  (define link (build-path profile-root "profile"))
+  (unless (link-exists? link)
+    (raise-pm-error 'config 'profile-remove "no active generation"))
+  (resolve-path link))
+
+;; path -> (listof string), package names owning links in a generation.
+;; Store-layout targets only; anything else names nothing (dev
+;; checkouts are E-19's to name, and the remove guard stays loud).
+(define (generation-owner-names gen)
+  (define names (make-hash))
+  (define (walk dir)
+    (for ([p (in-list (directory-list dir))])
+      (define full (build-path dir p))
+      (cond [(link-exists? full)
+             (let* ([target
+                     (with-handlers ([exn:fail? (lambda (e) #f)])
+                       (path->string (resolve-path full)))]
+                    [m (and target
+                            (regexp-match #rx"/store/([^/]+)/" target))])
+               (when m (hash-set! names (second m) #t)))]
+            [(directory-exists? full) (walk full)]
+            [else (void)])))
+  (walk gen)
+  (hash-map names (lambda (k v) k)))
+
+;; path-string exact-integer -> path, repoint at generation N
+(define (profile-rollback profile-root n)
+  (define gen (build-path profile-root (gen-dir-name n)))
+  (unless (directory-exists? gen)
+    (raise-pm-error 'config 'profile-rollback "unknown generation"
+                    #:fields `(("generation" . ,(gen-dir-name n)))))
+  (swap-link! (path->string gen)
+              (path->string (build-path profile-root "profile")))
+  gen)
+
+;; path-string string (listof entry) -> path, new generation minus one.
+;; The package must be active now and gone from the survivors; store
+;; dirs are never touched (D-024). Emptying the profile deletes the
+;; link and returns the profile root.
+(define (profile-remove profile-root name entries)
+  (when (member name (map first entries))
+    (raise-pm-error
+      'config
+      'profile-remove
+      "package still present"
+      #:fields `(("package" . ,name))
+    )
+  )
+  (unless (member name (generation-owner-names (current-generation profile-root)))
+    (raise-pm-error
+      'config
+      'profile-remove
+      "package not active"
+      #:fields `(("package" . ,name))
+    )
+  )
+  (if (null? entries)
+    (begin
+      (delete-file (build-path profile-root "profile"))
+      (if (path? profile-root)
+        profile-root
+        (string->path profile-root)
+      )
+    )
+    (profile-activate entries profile-root)
+  )
+)
+
+;; path-string -> path, the holds file (absent reads as none held)
+(define (holds-file profile-root)
+  (build-path profile-root "holds.rktd"))
+
+;; string string -> void, pins name real non-empty identities
+(define (check-hold-identity name slot)
+  (when (or (string=? name "") (string=? slot ""))
+    (raise-pm-error 'config 'profile-hold "bad hold identity"
+                    #:fields `(("name" . ,name) ("slot" . ,slot)))))
+
+;; path-string -> (listof list), (name slot) pairs; torn reads refuse
+(define (read-holds profile-root)
+  (define f (holds-file profile-root))
+  (if (not (file-exists? f))
+      '()
+      (let ([datum (read-holds-file f)])
+        (if (holds-datum? datum)
+            datum
+            (raise-holds-bad f)))))
+
+;; path -> jsexpr, one file read; failures become kind 'config
+(define (read-holds-file f)
+  (with-handlers ([exn:fail? (lambda (e) (raise-holds-bad f))])
+    (call-with-input-file f read)))
+
+;; path -> never returns, kind 'config naming the file
+(define (raise-holds-bad f)
+  (raise-pm-error 'config 'profile-hold "bad holds file"
+                  #:fields `(("file" . ,(path->string f)))))
+
+;; any -> boolean, list of two-string lists
+(define (holds-datum? datum)
+  (and (list? datum)
+       (andmap holds-pair? datum)))
+
+;; any -> boolean, one two-string list
+(define (holds-pair? h)
+  (and (list? h)
+       (= 2 (length h))
+       (string? (first h))
+       (string? (second h))))
+
+;; path-string (listof list) -> void
+(define (write-holds! profile-root holds)
+  (make-directory* profile-root)
+  (call-with-output-file (holds-file profile-root)
+    (lambda (out) (write holds out))
+    #:exists 'truncate/replace))
+
+;; path-string string string -> void, pin a slot (idempotent)
+(define (profile-hold profile-root name slot)
+  (check-hold-identity name slot)
+  (define holds (read-holds profile-root))
+  (unless (member (list name slot) holds)
+    (write-holds! profile-root (append holds (list (list name slot))))))
+
+;; path-string string string -> void, release a pin (idempotent)
+(define (profile-unhold profile-root name slot)
+  (check-hold-identity name slot)
+  (define holds (read-holds profile-root))
+  (define kept (filter (lambda (h) (not (equal? h (list name slot))))
+                       holds))
+  (unless (= (length kept) (length holds))
+    (write-holds! profile-root kept)))
+
+;; path-string string string -> boolean, is the slot pinned
+(define (profile-held? profile-root name slot)
+  (if (member (list name slot) (read-holds profile-root)) #t #f))
+
 ;; ---------------------------------------------------------------------------
 (module+ test
   (require rackunit
@@ -222,5 +376,70 @@
                 (profile-activate (list (list "a" (build-path test-root "a")
                                               '("bin" "gone")))
                                   prof)
+                'no-error))
+
+  ;; E-15: remove builds a generation minus the package and frees no
+  ;; disk. Owner naming reads store-layout targets, so these fixtures
+  ;; live under a synthetic store (E-19 extends naming to dev trees).
+  (define sroot (build-path test-root "store15"))
+  (define (spkgfile pkg rel)
+    (define p (build-path sroot "store" pkg "default" "1.0-x" rel))
+    (make-directory* (or (path-only p) sroot))
+    (call-with-output-file p (lambda (out) (display "x" out))))
+  (spkgfile "sa" "bin/prog")
+  (spkgfile "sb" "bin/other")
+  (define (sentry pkg rel)
+    (list pkg (build-path sroot "store" pkg "default" "1.0-x") (list rel)))
+  (define prof15 (build-path test-root "profile15"))
+  (define g15
+    (profile-activate (list (sentry "sa" "bin/prog")
+                            (sentry "sb" "bin/other"))
+                      prof15))
+  (define g15b (profile-remove prof15 "sb" (list (sentry "sa" "bin/prog"))))
+  (check-false (link-exists? (build-path g15b "bin" "other")))
+  (check-true (link-exists? (build-path g15b "bin" "prog")))
+  (check-true (file-exists? (build-path sroot "store" "sb" "default"
+                                         "1.0-x" "bin" "other")))
+  (check-equal? (path->string (resolve-path (build-path prof15 "profile")))
+                (path->string g15b))
+  (check-pred config-error?
+              (with-handlers ([exn:fail:pm? (lambda (e) e)])
+                (profile-remove prof15 "zzz" (list (sentry "sa" "bin/prog")))
+                'no-error))
+  (check-pred config-error?
+              (with-handlers ([exn:fail:pm? (lambda (e) e)])
+                (profile-remove prof15 "sa" (list (sentry "sa" "bin/prog")
+                                                  (sentry "sb" "bin/other")))
+                'no-error))
+  ;; Removing the last package deletes the link; the store is intact.
+  (check-equal? (profile-remove prof15 "sa" '()) prof15)
+  (check-false (link-exists? (build-path prof15 "profile")))
+  (check-true (file-exists? (build-path sroot "store" "sa" "default"
+                                         "1.0-x" "bin" "prog")))
+
+  ;; Rollback repoints at a numbered generation; unknown N refuses.
+  ;; Generations stay on disk: the list itself is the rollback state.
+  (profile-rollback prof 1)
+  (check-equal? (path->string (resolve-path (build-path prof "profile")))
+                (path->string gen1))
+  (check-equal? (length (profile-generations prof)) 2)
+  (check-pred config-error?
+              (with-handlers ([exn:fail:pm? (lambda (e) e)])
+                (profile-rollback prof 9)
+                'no-error))
+
+  ;; Hold pins a slot idempotently; unhold releases it the same way.
+  (check-false (profile-held? prof "a" "default"))
+  (profile-hold prof "a" "default")
+  (check-true (profile-held? prof "a" "default"))
+  (profile-hold prof "a" "default")
+  (check-true (profile-held? prof "a" "default"))
+  (profile-unhold prof "a" "default")
+  (check-false (profile-held? prof "a" "default"))
+  (profile-unhold prof "a" "default")
+  (check-false (profile-held? prof "a" "default"))
+  (check-pred config-error?
+              (with-handlers ([exn:fail:pm? (lambda (e) e)])
+                (profile-hold prof "" "default")
                 'no-error))
   (delete-directory/files test-root))
