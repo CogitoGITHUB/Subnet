@@ -17,13 +17,17 @@
 
 (provide
  (struct-out fetch-action)
- (struct-out verify-action)
  (struct-out extract-action)
  (struct-out run-step-action)
  (struct-out install-file-action)
  (struct-out write-file-action)
  (struct-out symlink-action)
  (struct-out remove-path-action)
+ (struct-out export-action)
+ (struct-out check-action)
+ (struct-out mark-incomplete-action)
+ (struct-out clear-incomplete-action)
+ (struct-out set-current-action)
  (struct-out plan)
  (struct-out package-plan)
  (contract-out
@@ -47,7 +51,16 @@
        (listof (cons/c symbol? boolean?)) (listof package-plan?))]
   ;; package-plan -> string, store path below <state>/store (D-023):
   ;; name/slot/version-hash12; two slots plan to two dirs
-  [package-plan-store-dir (-> package-plan? string?)]))
+  [package-plan-store-dir (-> package-plan? string?)]
+  ;; package-plan string string string string -> (listof action?), one
+  ;; package lowered in stage order (E-06)
+  [lower-package-plan
+   (-> package-plan? string? string? string? string? (listof action?))]
+  ;; (listof package-plan) x4 string lists -> (listof action?), deps-first
+  ;; order kept, shared identities emitted once (E-06)
+  [lower-plans
+   (-> (listof package-plan?) (listof string?) (listof string?)
+       (listof string?) (listof string?) (listof action?))]))
 
 ;; ---------------------------------------------------------------------------
 ;; Guard helper
@@ -72,16 +85,6 @@
                                    ("dest" . ,dest)))
             (values url commit dest)))
 ;; url commit dest : string?  what to fetch, exact pin, where to stage it
-
-(struct verify-action (path expected-hash algorithm)
-  #:transparent
-  #:guard (lambda (path expected-hash algorithm _n)
-            (check-string-fields 'verify-action
-                                 `(("path" . ,path)
-                                   ("expected-hash" . ,expected-hash)
-                                   ("algorithm" . ,algorithm)))
-            (values path expected-hash algorithm)))
-;; path expected-hash algorithm : string?  integrity check before use
 
 (struct extract-action (src dest)
   #:transparent
@@ -142,12 +145,73 @@
             (values path)))
 ;; path : string?  cleanup of staging on failure, explicit and logged
 
-;; any -> boolean, one of the eight action kinds
+;; E-06 field shapes (minimal picks not specified in the docs; recorded
+;; in ENGINE.org with this commit): export carries the vault namespace
+;; name, pin and staging dir (mirrors fetch-action); check carries the
+;; check program+args and the versioned prefix dir it runs in (after
+;; placement, before the marker is cleared, D-028); the marker actions
+;; carry the versioned dir; set-current mirrors symlink-action because
+;; the flip IS a symlink (target versioned dir, link <name>/current).
+(struct export-action (package pin dest)
+  #:transparent
+  #:guard (lambda (package pin dest _n)
+            (unless (symbol? package)
+              (raise-pm-error 'internal 'export-action
+                              "package must be a symbol"
+                              #:fields `(("value" . ,package))))
+            (check-string-fields 'export-action
+                                 `(("pin" . ,pin)
+                                   ("dest" . ,dest)))
+            (values package pin dest)))
+;; package : symbol?  D-8 name, the vault namespace to export from
+;; pin dest : string?  exact commit id, staging dir receiving the tree
+
+(struct check-action (argv cwd)
+  #:transparent
+  #:guard (lambda (argv cwd _n)
+            (unless (and (list? argv) (andmap string? argv)
+                         (pair? argv))
+              (raise-pm-error 'internal 'check-action
+                              "argv must be a nonempty string list"
+                              #:fields `(("value" . ,argv))))
+            (check-string-fields 'check-action `(("cwd" . ,cwd)))
+            (values argv cwd)))
+;; argv : (nonempty-listof string?)  check program and args, exact
+;; cwd : string?  versioned prefix dir the check runs in
+
+(struct mark-incomplete-action (dir)
+  #:transparent
+  #:guard (lambda (dir _n)
+            (check-string-fields 'mark-incomplete-action
+                                 `(("dir" . ,dir)))
+            (values dir)))
+;; dir : string?  versioned dir gaining .pm-incomplete
+
+(struct clear-incomplete-action (dir)
+  #:transparent
+  #:guard (lambda (dir _n)
+            (check-string-fields 'clear-incomplete-action
+                                 `(("dir" . ,dir)))
+            (values dir)))
+;; dir : string?  versioned dir losing .pm-incomplete after check passes
+
+(struct set-current-action (target link)
+  #:transparent
+  #:guard (lambda (target link _n)
+            (check-string-fields 'set-current-action
+                                 `(("target" . ,target)
+                                   ("link" . ,link)))
+            (values target link)))
+;; target link : string?  versioned dir, <name>/current link flipping to it
+
+;; any -> boolean, one of the twelve action kinds below
 (define (action? v)
-  (or (fetch-action? v) (verify-action? v) (extract-action? v)
+  (or (fetch-action? v) (extract-action? v)
       (run-step-action? v) (install-file-action? v)
       (write-file-action? v) (symlink-action? v)
-      (remove-path-action? v)))
+      (remove-path-action? v) (export-action? v)
+      (check-action? v) (mark-incomplete-action? v)
+      (clear-incomplete-action? v) (set-current-action? v)))
 
 (struct plan (actions)
   #:transparent
@@ -316,6 +380,137 @@
                  "-"
                  (substring (package-plan-input-hash pp) 0 12)))
 
+;; ---------------------------------------------------------------------------
+;; Lowering (E-06: package plan -> actions in stage order)
+;;
+;; Per package: fetch, export, mark-incomplete, build steps, install
+;; actions, check (only when the plan has a check form), clear-incomplete,
+;; set-current. Check runs after placement and before the marker is
+;; cleared (D-028). Dirs arrive as strings (layout is the caller's
+;; knowledge: D-023 store dirs, D-029 scope roots); lowering itself is pure.
+;; run-step argv is the step name plus the flattened string args (v1 rule;
+;; E-08 owns execution semantics and tightens this if it must).
+
+;; build-step string -> run-step-action, one closed-vocabulary step
+(define (lower-one-step s staging)
+  (define strings
+    (let loop ([args (build-step-args s)] [out '()])
+      (cond [(null? args) (reverse out)]
+            [(string? (car args)) (loop (cdr args) (cons (car args) out))]
+            [(list? (car args))
+             (loop (cdr args)
+                   (append (reverse (filter string? (car args))) out))]
+            [else (loop (cdr args) out)])))
+  (run-step-action (symbol->string (build-step-name s))
+                   (cons (symbol->string (build-step-name s)) strings)
+                   staging))
+
+;; install form string string exact-integer -> (list action ... exact-int),
+;; one form lowered plus the mode state for the forms after it
+(define (lower-one-install form staging versioned mode)
+  (define kind (car form))
+  (define args (cdr form))
+  (case kind
+    [(bin lib include share man libexec)
+     (define rels (filter string? args))
+     (define dst (if (and (pair? rels) (pair? (cdr rels)))
+                     (cadr rels)
+                     (car rels)))
+     (list (install-file-action (string-append staging "/"
+                                               (car rels))
+                                (string-append versioned "/" dst)
+                                mode)
+           mode)]
+    [(copy-tree)
+     (list (install-file-action (string-append staging "/" (car args))
+                                (string-append versioned "/" (cadr args))
+                                #o755)
+           mode)]
+    [(symlink)
+     (list (symlink-action (string-append versioned "/" (cadr args))
+                           (string-append versioned "/" (car args)))
+           mode)]
+    [(mode)
+     (list #f (cadr args))]
+    [else
+     (raise-pm-error 'internal 'lower-package-plan "unknown install datum"
+                     #:fields `(("form" . ,(format "~s" form)))))]))
+
+;; (listof install-form) string string -> (listof action), check form
+;; skipped (it becomes the one check-action); mode forms thread state
+(define (lower-install-forms forms staging versioned)
+  (define-values (actions _mode)
+    (for/fold ([out '()] [mode #o644]) ([form (in-list forms)])
+      (if (and (pair? form) (eq? (car form) 'check))
+          (values out mode)
+          (let ((lowered (lower-one-install form staging versioned mode)))
+            (values (if (car lowered)
+                        (append out (list (car lowered)))
+                        out)
+                    (cadr lowered))))))
+  actions)
+
+;; package-plan string string string string -> (listof action), one
+;; package in stage order; the url travels beside the plan because plans
+;; carry pins (D-007), not locations
+(define (lower-package-plan pp url staging versioned current)
+  (define steps
+    (for/list ([s (in-list (package-plan-steps pp))])
+      (lower-one-step s staging)))
+  (define installs
+    (lower-install-forms (install-spec-forms (package-plan-install pp))
+                         staging versioned))
+  (define check
+    (if (package-plan-check pp)
+        (list (check-action (cdr (package-plan-check pp)) versioned))
+        '()))
+  (append (list (fetch-action url
+                              (package-plan-commit pp)
+                              staging)
+                (export-action (package-plan-name pp)
+                               (package-plan-commit pp)
+                               staging)
+                (mark-incomplete-action versioned))
+          steps
+          installs
+          check
+          (list (clear-incomplete-action versioned)
+                (set-current-action versioned current))))
+
+;; package-plan -> string, dedup identity: same plan twice lowers once
+(define (package-plan-identity pp)
+  (string-append (symbol->string (package-plan-name pp))
+                 "/"
+                 (symbol->string (package-plan-slot pp))
+                 "/"
+                 (version->string (package-plan-version pp))
+                 "/"
+                 (package-plan-input-hash pp)))
+
+;; (listof package-plan) x4 string lists -> (listof action), input order
+;; kept (deps first from derive-plans), shared identities emitted once
+(define (lower-plans pps urls stagings versioneds currents)
+  (define n (length pps))
+  (unless (and (= (length urls) n)
+               (= (length stagings) n)
+               (= (length versioneds) n)
+               (= (length currents) n))
+    (raise-pm-error 'internal 'lower-plans "parallel lists differ"
+                    #:fields `(("plans" . ,(format "~a" n))
+                               ("urls" . ,(format "~a" (length urls))))))
+  (define seen (make-hash))
+  (for/fold ([out '()]) ([pp (in-list pps)]
+                         [url (in-list urls)]
+                         [staging (in-list stagings)]
+                         [versioned (in-list versioneds)]
+                         [current (in-list currents)])
+    (define id (package-plan-identity pp))
+    (if (hash-has-key? seen id)
+        out
+        (begin (hash-set! seen id #t)
+               (append out (lower-package-plan pp url staging
+                                               versioned current))))))
+
 ;; package-plan -> string, stable multi-line rendering for goldens
 (define (package-plan->text pp)
   (string-join
@@ -353,11 +548,6 @@
                  (fetch-action-url a)
                  (fetch-action-commit a)
                  (fetch-action-dest a))]
-        [(verify-action? a)
-         (format "verify ~a ~a:~a"
-                 (verify-action-path a)
-                 (verify-action-algorithm a)
-                 (verify-action-expected-hash a))]
         [(extract-action? a)
          (format "extract ~a -> ~a"
                  (extract-action-src a) (extract-action-dest a))]
@@ -380,6 +570,23 @@
                  (symlink-action-link a) (symlink-action-target a))]
         [(remove-path-action? a)
          (format "remove-path ~a" (remove-path-action-path a))]
+        [(export-action? a)
+         (format "export ~a @ ~a -> ~a"
+                 (export-action-package a)
+                 (export-action-pin a)
+                 (export-action-dest a))]
+        [(check-action? a)
+         (format "check [~a] in ~a"
+                 (string-join (check-action-argv a) " ")
+                 (check-action-cwd a))]
+        [(mark-incomplete-action? a)
+         (format "mark-incomplete ~a" (mark-incomplete-action-dir a))]
+        [(clear-incomplete-action? a)
+         (format "clear-incomplete ~a" (clear-incomplete-action-dir a))]
+        [(set-current-action? a)
+         (format "set-current ~a -> ~a"
+                 (set-current-action-link a)
+                 (set-current-action-target a))]
         [else (raise-pm-error 'internal 'action->line "not an action"
                               #:fields `(("value" . ,a)))]))
 
@@ -426,25 +633,34 @@
   (define golden-plan
     (list->plan
      (list fetch-1
-           (verify-action "/tmp/s" (make-string 64 #\b) "sha256")
+           (export-action 'demo (make-string 40 #\a) "/tmp/s")
            (extract-action "/tmp/s" "/tmp/stage")
            (run-step-action "compile" '("make" "-j4") "/tmp/stage")
            (install-file-action "/tmp/stage/a.el" "/pkg/a.el" #o644)
            (write-file-action "/pkg/pin" "9edb3f66")
            (symlink-action "/pkg/1.0" "/pkg/current")
-           (remove-path-action "/tmp/stage"))))
+           (remove-path-action "/tmp/stage")
+           (mark-incomplete-action "/pkg/1.0")
+           (check-action '("bin/demo" "--version") "/pkg/1.0")
+           (clear-incomplete-action "/pkg/1.0")
+           (set-current-action "/pkg/1.0" "/pkg/current"))))
   (check-equal?
    (plan->text golden-plan)
    (string-join
     (list (string-append "fetch https://example.org/r.git @ "
                          (make-string 40 #\a) " -> /tmp/s")
-          (string-append "verify /tmp/s sha256:" (make-string 64 #\b))
+          (string-append "export demo @ " (make-string 40 #\a)
+                         " -> /tmp/s")
           "extract /tmp/s -> /tmp/stage"
           "run-step compile [make -j4] in /tmp/stage"
           "install-file /tmp/stage/a.el -> /pkg/a.el mode 644"
           "write-file /pkg/pin (8 bytes)"
           "symlink /pkg/current -> /pkg/1.0"
-          "remove-path /tmp/stage")
+          "remove-path /tmp/stage"
+          "mark-incomplete /pkg/1.0"
+          "check [bin/demo --version] in /pkg/1.0"
+          "clear-incomplete /pkg/1.0"
+          "set-current /pkg/current -> /pkg/1.0")
     "\n"))
 
   ;; Empty plan renders empty.
@@ -541,4 +757,116 @@
               (with-handlers ([exn:fail:pm? (lambda (e) e)])
                 (derive-package-plan alpha-spec '((nope . #t))
                                      '("pkg-beta 1.0"))
+                'no-error))
+
+  ;; E-06 lowering fixtures: gamma depends on alpha (T-10).
+  (define gamma-spec
+    (spec 'pkg-gamma (string->version "3.0") "Gamma"
+          (source "https://example.org/gamma.git"
+                  "7edb3f66fd807b096b48283debdcddccfea34bad")
+          (list (dep 'pkg-alpha (string->version "2.0")))
+          '()
+          (list (build-step 'copy '("e" "f")))
+          (install-spec 'prefix '((bin "gamma" "bin/gamma")))
+          'mit "https://example.org/gamma" #f '() '()
+          'default
+          '()))
+  (define gamma-plan
+    (derive-package-plan gamma-spec '() '("pkg-alpha 2.0")))
+  ;; per-package dirs, synthetic and distinct (T-10)
+  (define beta-dirs
+    (list "https://example.org/beta.git" "/tmp/stage-beta"
+          "/pkg/beta/1.0" "/pkg/beta/current"))
+  (define alpha-dirs
+    (list "https://example.org/alpha.git" "/tmp/stage-alpha"
+          "/pkg/alpha/2.0" "/pkg/alpha/current"))
+  (define gamma-dirs
+    (list "https://example.org/gamma.git" "/tmp/stage-gamma"
+          "/pkg/gamma/3.0" "/pkg/gamma/current"))
+
+  ;; Exact action sequence for one package without a check form.
+  (check-equal?
+   (plan->text
+    (list->plan
+     (apply lower-package-plan beta-plan beta-dirs)))
+   (string-join
+    (list (string-append "fetch https://example.org/beta.git @ "
+                         "8edb3f66fd807b096b48283debdcddccfea34bad"
+                         " -> /tmp/stage-beta")
+          (string-append "export pkg-beta @ "
+                         "8edb3f66fd807b096b48283debdcddccfea34bad"
+                         " -> /tmp/stage-beta")
+          "mark-incomplete /pkg/beta/1.0"
+          "run-step copy [copy c d] in /tmp/stage-beta"
+          (string-append "install-file /tmp/stage-beta/beta"
+                         " -> /pkg/beta/1.0/bin/beta mode 644")
+          "clear-incomplete /pkg/beta/1.0"
+          "set-current /pkg/beta/current -> /pkg/beta/1.0")
+    "\n"))
+
+  ;; The check runs after placement and before the marker is cleared.
+  (define alpha-actions
+    (apply lower-package-plan alpha-plan alpha-dirs))
+  (define alpha-text (plan->text (list->plan alpha-actions)))
+  (check-regexp-match
+   #rx"install-file.*\ncheck \\[bin/alpha --version\\] in /pkg/alpha/2.0\nclear-incomplete"
+   alpha-text)
+
+  ;; No verify action anywhere in lowered output.
+  (check-false (regexp-match? #rx"(^|\n)verify " alpha-text))
+  (check-false (ormap (lambda (a) (and (install-file-action? a)
+                                      (= (install-file-action-mode a)
+                                         #o000)))
+                      alpha-actions))
+
+  ;; Deps first: beta before alpha before gamma, stable across runs.
+  (define trio-once
+    (lower-plans (list gamma-plan alpha-plan beta-plan)
+                 (list (car gamma-dirs) (car alpha-dirs) (car beta-dirs))
+                 (list (cadr gamma-dirs) (cadr alpha-dirs) (cadr beta-dirs))
+                 (list (caddr gamma-dirs) (caddr alpha-dirs) (caddr beta-dirs))
+                 (list (cadddr gamma-dirs) (cadddr alpha-dirs)
+                       (cadddr beta-dirs))))
+  (define (first-index pred xs)
+    (let loop ([i 0] [rest xs])
+      (cond [(null? rest) #f]
+            [(pred (car rest)) i]
+            [else (loop (+ i 1) (cdr rest))])))
+  (define trio-text (plan->text (list->plan trio-once)))
+  (check-true (< (first-index (lambda (a) (and (fetch-action? a)
+                                              (string=? (fetch-action-commit a)
+                                                        "8edb3f66fd807b096b48283debdcddccfea34bad")))
+                             trio-once)
+                 (first-index (lambda (a) (and (fetch-action? a)
+                                              (string=? (fetch-action-commit a)
+                                                        "9edb3f66fd807b096b48283debdcddccfea34bad")))
+                             trio-once)))
+  (check-true (< (first-index (lambda (a) (and (fetch-action? a)
+                                              (string=? (fetch-action-commit a)
+                                                        "9edb3f66fd807b096b48283debdcddccfea34bad")))
+                             trio-once)
+                 (first-index (lambda (a) (and (fetch-action? a)
+                                              (string=? (fetch-action-commit a)
+                                                        "7edb3f66fd807b096b48283debdcddccfea34bad")))
+                             trio-once)))
+  (check-equal? (plan->text (list->plan trio-once)) trio-text)
+
+  ;; A shared dependency lowered twice appears once.
+  (define trio-twice
+    (lower-plans (list gamma-plan alpha-plan beta-plan beta-plan)
+                 (list (car gamma-dirs) (car alpha-dirs)
+                       (car beta-dirs) (car beta-dirs))
+                 (list (cadr gamma-dirs) (cadr alpha-dirs)
+                       (cadr beta-dirs) (cadr beta-dirs))
+                 (list (caddr gamma-dirs) (caddr alpha-dirs)
+                       (caddr beta-dirs) (caddr beta-dirs))
+                 (list (cadddr gamma-dirs) (cadddr alpha-dirs)
+                       (cadddr beta-dirs) (cadddr beta-dirs))))
+  (check-equal? (length (filter fetch-action? trio-twice)) 3)
+  (check-equal? (plan->text (list->plan trio-twice)) trio-text)
+
+  ;; Parallel lists of different lengths are caller error.
+  (check-pred internal-error?
+              (with-handlers ([exn:fail:pm? (lambda (e) e)])
+                (lower-plans (list beta-plan) '() '() '() '())
                 'no-error)))

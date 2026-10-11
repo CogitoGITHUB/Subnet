@@ -284,6 +284,17 @@ Delete =verify-action=; add =export-action=, =check-action=,
 when: lowering a synthetic plan yields the action list in a stable
 order and no action is produced twice.
 
+** STOP E-06 (2026-10-11) one paren in core/plan.rkt:437
+Lowering, structs, contracts, golden rewrite and tests are written and
+committed as WIP; the file does not parse. Mechanical proof (not
+eyeballing): line 437 carries seven closing parens where six belong, so
+the pre-bracket run has one excess. Nine transcription attempts failed
+on runs of four-vs-five closes: do not guess counts, verify with
+=scripts/read-check.rkt= and a per-line paren/bracket awk count after
+every attempt. The fix is deleting exactly one pre-bracket close on
+line 437, then: local.rkt minimal edit per the E-06 task, ENGINE.org
+field note, =--changed=, DONE, commit; then E-00, full gate, report.
+
 * PHASE B: effects
 ** TODO E-07 store.rkt
 Versioned dirs, the =.pm-incomplete= marker and the =current= link. /
