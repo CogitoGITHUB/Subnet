@@ -315,10 +315,18 @@ total=420, ALL GREEN (parked: 3 -- vault.rkt P-01, vault-lock.rkt P-01,
 jobs.rkt P-03).
 
 * PHASE B: effects
-** TODO E-07 store.rkt
+** DONE E-07 store.rkt
 Versioned dirs, the =.pm-incomplete= marker and the =current= link. /
 Done when: a failing step keeps the marker, a succeeding run removes
 it, and two slots of one package get two dirs and two links (D-023).
+Measured: backends/store.rkt (ensure-store-dir, marker present/clear/
+cleared-check, atomic set-store-current via tmp link plus rename);
+failing producer keeps marker, succeeding clears, dead dir with marker
+refuses kind ='config=, two slots give two dirs and two links;
+--changed ALL GREEN (files=2, total=13), STAGES=6 lint 0 violations,
+read-check 0 bad. Paths build only from the caller-passed state root
+(no HOME/XDG/getenv in module); records stay with journal/apply
+(E-10/E-11), store never silent (paths returned or pm errors raised).
 
 ** TODO E-08 build.rkt
 Execute the closed vocabulary, environment attached here. / Done when:
