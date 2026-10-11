@@ -21,6 +21,11 @@
          racket/runtime-path
          racket/list)
 
+;; Parked files never reach this runner: scripts/check.nu hands over the
+;; file list MINUS its FILE_PARKED entries, so there is no skip mechanism
+;; here and nothing to fail to deliver (the old env-var handoff logged zero
+;; PARKED-SKIP lines while vault.rkt ran its full 470s).
+
 ;; path -> boolean, true when the file declares a "test" submodule.
 ;; Read from the source text, so answering costs nothing and loads
 ;; nothing. module-declared? was tried first and returned false for

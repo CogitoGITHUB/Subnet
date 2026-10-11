@@ -136,6 +136,10 @@ COST NOTE: this single assertion is why vault.rkt takes ~8 minutes and
 spawns 851 child processes (measured by scripts/where-time.nu: 183s of
 child time plus a 53s stall with no child running). It dominates the cost
 of the whole suite.
+REBUILD NOTE (2026-10-11): vault.rkt tests spawn 851 git processes (183s
+child time, 53s fixture stall); rebuild them to share one fixture repo per
+group of tests instead of one repo per test; the large-blob test must print
+file-size of big-dir/big first, before any threshold is touched.
 
 ** TODO P-02 prove the manifest store
 Round trip a synthetic manifest through =backends/manifest.rkt=. /
@@ -147,6 +151,29 @@ Run a synthetic job to completion, then one that fails, then one that
 is cancelled. / Done when: each prints TEST-START before and TEST-END
 after, so a start with no end names the stuck job; the queue test file
 goes green.
+
+** STOP (2026-10-11) jobs.rkt e2e, two stacked production defects
+Gate 2026-10-11: =backends/jobs.rkt failed=3 total=29=, all three at
+jobs.rkt:1007-1009 =check-eq?=, actual ='queued=, expected ='done=.
+The e2e enqueues three =op-add= jobs on a =file://= fixture and waits;
+no job ever leaves =queued=. Two independent defects, both on the
+production side of the test/production line, so one small test commit
+cannot fix this and production code may not be touched to fix tests:
+1. Race in =job-wait= (jobs.rkt:458): a queued job whose lock is free
+   returns its current status IMMEDIATELY. The worker is a detached OS
+   process (setsid + full racket boot + heavy requires), so it always
+   loses to the microsecond-local check. Deterministic 3/3.
+2. Allowance does not cross processes: =current-allow-file-urls= is a
+   parameter defaulting to =#f= (git-url.rkt:20); the test's
+   =parameterize= cannot reach the worker process, so the worker's
+   =vault-add= rejects the fixture URL. Proved cheaply:
+   =/tmp/opencode/probe-file-url.rkt= prints =REJECTED: check-git-url:
+   rejected git URL; reason: file URLs are test-only=.
+   Even with the race fixed, these jobs would land ='failed=, never ='done=.
+Next (production item, not a test tweak): decide =job-wait= semantics for
+queued jobs (wait on what event, D-015-legal) and how the file:// test
+allowance reaches the worker (env handoff like GIT_ALLOW_PROTOCOL, or an
+in-process worker for tests).
 
 ** PARKED P-03 and P-04 (2026-10-10)
 production: job-start rejects vault-wide jobs (op-gc) because

@@ -46,8 +46,11 @@ const LENGTH_EXEMPT = "0.FOUNDATION.org"
 # Longest allowed line, characters.
 const MAX_LINE = 102
 
-# Tests that stand down, with the reason, in ONE place. Each entry is
-# [file, test name, reason].
+# Files that stand down, with the reason, in ONE place. Each entry is
+# [file, reason]. The runner is handed the file list MINUS these two, so
+# there is no env handoff and no test-name matching anywhere (the old
+# CYBERDECK_PARKED_TEST_NAMES mechanism never delivered: the runner logged
+# zero PARKED-SKIP lines and vault.rkt ran its full 470s anyway).
 #
 # A PARKED TEST IS NOT A PASSING TEST. The gate prints one line per entry on
 # every run, counts them in the verdict as "ALL GREEN (parked: N)", and
@@ -59,43 +62,22 @@ const MAX_LINE = 102
 # code parses fine in a small file). Beside the other constants it parses,
 # so they stay here and the defs that read them live with the test stages.
 #
-# Nested LISTS, not {file: ...} records, and row-wise reads ($p | get 0)
-# rather than $PARKED | get 0: on a list of lists `get` with a bare integer
-# selects a ROW in this build, not a column (measured: "index too large").
-#
-# The names are forwarded to scripts/test-runner.rkt through
-# CYBERDECK_PARKED_TEST_NAMES, which sets core/test-park.rkt's
-# current-parked-tests. Parking is cooperative on purpose: a shared-process
-# runner cannot skip one top-level expression inside (module+ test ...),
-# because requiring the submodule runs every expression in it.
-const PARKED = [
-  ["backends/vault.rkt" "vault-large-blob"
-   "production verified CORRECT at 4096 and 100000001; the TEST fails (P-01)"]
-  ["core/vault-lock.rkt" "vault-lock-reentry"
-   "fcntl locks are per process, so a same-process re-acquire blocks forever (P-04)"]
+# Row-wise reads ($p | get 0), never $P | get N: on a list of lists `get`
+# with a bare integer selects a ROW in this build, not a column
+# (measured: "index too large"). All readers below are pipelines over the
+# const, which is safe; what is NOT safe is a `def` whose body IS a bare
+# list literal called from inside a `where` closure, because the closure's
+# pipeline input flows into the call (measured). There is no such def.
+const FILE_PARKED = [
+  ["backends/vault.rkt"
+   "large-blob test fails, 851 git processes, 470s, see P-01"]
+  ["core/vault-lock.rkt"
+   "re-acquire blocks in a shared process, see P-01"]
 ]
 
-# Whole FILES held back, for a file whose problem is the file rather than
-# one named test. jobs.rkt predates the named-test mechanism: its e2e block
-# exercises a production bug (job-start rejects a vault-wide op-gc), so it
-# cannot be parked by naming a single assertion. Listed and printed every
-# run, rather than dropped silently.
-#
-# This one is a `def` on a SINGLE LINE, deliberately. The same literal split
-# across two lines, as a `const` and then as a `def`, both failed with "Eval
-# block failed with pipeline input" reported on this element, while the
-# identical literal on one line parses fine (measured), and while lines 1..92
-# of this file parse fine. Nu named the literal wherever it sat, so the one
-# shape proved to work is the one used here.
-const FILE_PARKED_FILE = "backends/jobs.rkt"
-const FILE_PARKED_WHY = "e2e block needs job-start to accept a vault-wide op-gc; bug in P-03"
-# No `def file-parked` returning a nested literal: a def body that IS a bare
-# list literal fails with "Eval block failed with pipeline input" when the
-# def is called from inside a `where` closure (measured at stage-8-parked-files
-# and stage-changed), because the closure's pipeline input flows into the
-# call. The four use sites below read these two string consts directly, so no
-# nested literal is ever evaluated at runtime. `const PARKED` is fine because
-# consts evaluate once with empty input.
+# jobs.rkt is NOT parked: it measured 25 passing tests in the shared
+# process, so it runs in the gate. Its P-03 production bugs (op-gc
+# rejection, fifo fd leak) stay recorded in the checklist, not in the gate.
 
 # -> string, current UTC instant, second precision
 def utc [] {
@@ -373,55 +355,24 @@ def stage-8-files [] {
     }
 }
 
-# Tests that stand down, with the reason, in ONE place.
-#
-# A PARKED TEST IS NOT A PASSING TEST. Each entry is (file, test name,
-# reason): the gate prints one line per entry on every run, counts them in
-# the verdict as "ALL GREEN (parked: N)", and passes only when everything
-# else passed. Nothing is dropped silently.
-#
-# The names are forwarded to scripts/test-runner.rkt through
-# CYBERDECK_PARKED_TEST_NAMES, which sets core/test-park.rkt's
-# current-parked-tests for the file. Parking is cooperative on purpose: a
-# shared-process runner cannot skip one top-level expression inside
-# (module+ test ...) by itself, because requiring the submodule runs every
-# expression in it.
-# Tests that stand down: PARKED and FILE_PARKED are declared at the top of
-# this file, with the other constants, because a const at this position
-# fails to parse (see the note beside them). The helpers that read them
-# belong next to the test stages.
+# FILE_PARKED is declared at the top of this file, with the other
+# constants, because a const at this position fails to parse (see the note
+# beside it). The helpers that read it belong next to the test stages.
+# All readers are pipelines over the const, which is safe.
 
-# -> list, the parked test names, space separated for the runner
-#
-# Row-wise access, not `$PARKED | get 1`: on a LIST of lists `get` with a
-# bare integer selects a ROW in this build, not a column (measured:
-# "index too large (max: 0)"). `$p | get 1` on the row itself is correct.
-def parked-test-names [] {
-    $PARKED | each {|p| $p | get 1 } | str join " "
-}
-
-# -> list, one printed line per parked test: PARKED <file> <test>: <reason>
-def parked-lines [] {
-    $PARKED | each {|p| $"PARKED: ($p | get 0) ($p | get 1): ($p | get 2)" }
-}
-
-# Whole FILES held back: FILE_PARKED is declared at the top of this file
-# with the other constants, for the parse reason recorded there.
-
-# -> list, the file-level parked subset of the stage-8 file set
+# -> list, the parked subset of the stage-8 file set
 def stage-8-parked-files [] {
-    (stage-8-files) | where {|f| $f | str ends-with $FILE_PARKED_FILE }
+    (stage-8-files) | where {|f| $FILE_PARKED | any {|p| $f | str ends-with ($p | get 0) }}
 }
 
-# -> list, one printed line for the file-parked file (flat single-string
-# list; the string consts above carry the data, no nested literal anywhere)
-def file-parked-lines [] {
-    ["PARKED: " ++ $FILE_PARKED_FILE ++ " - whole file: " ++ $FILE_PARKED_WHY]
+# -> list, one printed line per parked file: PARKED <file> - <reason>
+def parked-lines [] {
+    $FILE_PARKED | each {|p| "PARKED: " ++ ($p | get 0) ++ " - " ++ ($p | get 1) }
 }
 
-# -> int, everything standing down: named tests plus the one whole file
+# -> int, everything standing down
 def parked-total [] {
-    ($PARKED | length) + 1
+    $FILE_PARKED | length
 }
 
 # Stage 12: the paren check. scripts/read-check.rkt reads every named .rkt
@@ -519,7 +470,7 @@ def main [--changed] {
             print $"[check] stage 9 exit=(if $cbad { 1 } else { 0 })"
         }
         if "10" in $todo {
-            for l in (file-parked-lines) {
+            for l in (parked-lines) {
                 print $l
             }
             let testfiles = ($full | where {|f| not ($f in $parked)})
@@ -586,10 +537,9 @@ def log-path [f tag] {
 # D-015: no timer, no timeout, no sleep; the wait ends on process exit.
 def run-runner [files] {
     let racketx = ($nu.home-dir | path join "opt" "racket" "bin" "racket")
-    # The PARKED test names go down as one environment variable, which the
-    # runner turns into core/test-park.rkt's current-parked-tests for every
-    # file. One variable, set in one place, is the whole contract.
-    $env.CYBERDECK_PARKED_TEST_NAMES = (parked-test-names)
+    # Parked files never reach this call: the caller hands over the file
+    # list MINUS the FILE_PARKED entries, so there is no skip mechanism in
+    # the runner and nothing to fail to deliver.
     # The runner is spawned with the ^ short form, NOT `run-external ...
     # | complete`. Measured in 0.116.1: run-external buffers the child's
     # stdout until the child EXITS, so TEST-START / TEST-END / SUSPECT
@@ -653,9 +603,6 @@ def verdict [records parked_n] {
         if $parked_n > 0 {
             print ("ALL GREEN (parked: " ++ ($parked_n | into string) ++ ")")
             for l in (parked-lines) {
-                print $l
-            }
-            for l in (file-parked-lines) {
                 print $l
             }
         } else {
@@ -723,7 +670,9 @@ def stage-changed [] {
     let deps = (direct-dependents $changed)
     let parked = ($changed | where {|c| $c in (stage-8-parked-files)})
     for x in $parked {
-        print ("PARKED: " ++ ($x | path basename) ++ " - whole file: " ++ $FILE_PARKED_WHY)
+        let hit = ($FILE_PARKED | where {|p| $x | str ends-with ($p | get 0) })
+        let why = ($hit | each {|p| $p | get 1 } | first)
+        print ("PARKED: " ++ ($x | path basename) ++ " - " ++ $why)
     }
     let runset = ($changed | where {|c| not ($c in $parked)} | append $deps)
     if ($runset | is-empty) {

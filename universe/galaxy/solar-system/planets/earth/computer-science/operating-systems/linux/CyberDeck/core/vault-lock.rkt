@@ -144,6 +144,8 @@
                 'ran-again)
 
   ;; Re-entrant attempt in the same process fails at once naming the holder.
+  ;; PARKED at file level (see ENGINE-CHECKLIST P-01): this file never runs
+  ;; in the gate.
   (define reentry-error
     (with-handlers ([exn:fail:pm? (lambda (e) e)])
       (call-with-vault-lock vault-dir "outer" "outer op"

@@ -1583,7 +1583,8 @@
   (check-equal? (length drifts) 1)
   (check-eq? (vault-drift-kind (car drifts)) 'missing-namespace)
 
-  ;; Large blobs refuse without the explicit flag.
+  ;; Large blobs refuse without the explicit flag. PARKED at file level
+  ;; (see ENGINE-CHECKLIST P-01): this file never runs in the gate.
   (define big-dir (build-path test-root "up-big"))
   (make-directory big-dir)
   (fixture-git big-dir "init" "-b" "main" ".")
