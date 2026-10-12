@@ -19,6 +19,7 @@
          racket/list
          racket/path
          racket/string
+         racket/system
          "run.rkt"
          "../core/errors.rkt"
          "../core/spec.rkt")
@@ -38,14 +39,19 @@
          #:prefix path-string?)
         (#:env (listof (cons/c string? string?)))
         void?)]
-  ;; (listof build-step) plus dirs -> void, in order, stops at failure
+  ;; (listof build-step) plus dirs -> void, in order, stops at failure.
+  ;; #:tools is the ecosystem host-tool list (E-25): checked BEFORE the
+  ;; first step, so a missing compiler fails before anything is built.
   [execute-build-steps
    (->* ((listof build-step?)
          #:source path-string?
          #:work path-string?
          #:prefix path-string?)
-        (#:env (listof (cons/c string? string?)))
-        void?)]))
+        (#:env (listof (cons/c string? string?))
+         #:tools (listof string?))
+        void?)]
+  ;; (listof string) -> void, or kind 'config naming the missing tool
+  [require-host-tools (-> (listof string?) void?)]))
 
 ;; The closed list, mirroring spec-read's valid-steps (E-08).
 (define valid-build-steps
@@ -400,12 +406,28 @@
               (string-join (map symbol->string valid-build-steps) " "))
       #:fields `(("step" . ,(format "~a" name))))]))
 
-;; (listof build-step) #:source #:work #:prefix [#:env] -> void
+;; (listof string) -> void. Host-tool preflight (E-25). Every tool
+;; named by an ecosystem must resolve on PATH BEFORE the first step
+;; runs, so a missing compiler costs nothing instead of half a build.
+;; Raises kind 'config naming the tool; nothing is spawned here.
+(define (require-host-tools tools)
+  (for ([t (in-list tools)])
+    (define exe (and (find-executable-path t) #t))
+    (unless (and exe (file-exists? (find-executable-path t)))
+      (raise-pm-error
+       'config 'require-host-tools
+       (format "required tool not on PATH: ~a" t)
+       #:fields `(("tool" . ,t)
+                  ("hint" . ,(format "install ~a or fix PATH before building" t)))))))
+
+;; (listof build-step) #:source #:work #:prefix [#:env] [#:tools] -> void
 (define (execute-build-steps steps
                              #:source source
                              #:work work
                              #:prefix prefix
-                             #:env [overrides '()])
+                             #:env [overrides '()]
+                             #:tools [tools '()])
+  (require-host-tools tools)
   (for ([s (in-list steps)])
     (execute-build-step s
                         #:source source
@@ -587,4 +609,26 @@
                                     #:work work-seq
                                     #:prefix prefix-dir)
                 'no-error))
+
+  ;; Host-tool preflight (E-25): a missing tool refuses with kind
+  ;; 'config BEFORE any step runs, and sh (always present) passes.
+  (check-pred config-error?
+              (with-handlers ([exn:fail:pm? (lambda (e) e)])
+                (require-host-tools '("sh" "pm-no-such-tool-xyz"))
+                'no-error))
+  (check-true
+   (with-handlers ([exn:fail:pm? (lambda (e) #f)])
+     (require-host-tools '("sh"))
+     #t))
+  ;; The preflight runs before step one: a copy that would succeed
+  ;; still refuses when the tool list is unsatisfiable.
+  (check-pred config-error?
+              (with-handlers ([exn:fail:pm? (lambda (e) e)])
+                (execute-build-steps (list (build-step 'copy '("a.txt" "z.txt")))
+                                     #:source work-copy
+                                     #:work work-copy
+                                     #:prefix prefix-dir
+                                     #:tools '("pm-no-such-tool-xyz"))
+                'no-error))
+  (check-false (file-exists? (build-path work-copy "z.txt")))
   (delete-directory/files test-root))

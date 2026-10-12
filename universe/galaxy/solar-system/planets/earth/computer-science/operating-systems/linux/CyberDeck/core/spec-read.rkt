@@ -15,7 +15,12 @@
 (provide
  (contract-out
   ;; path-string -> spec, bad input raises kind 'spec with srcloc
-  [read-spec-file (-> path-string? spec?)]))
+  [read-spec-file (-> path-string? spec?)]
+  ;; symbol -> boolean, closed build vocabulary membership (E-25 shares
+  ;; it with ecosystem files so no second vocabulary can drift)
+  [valid-build-step? (-> symbol? boolean?)]
+  ;; symbol -> required keywords, shared step-argument contract
+  [step-required-keys (-> symbol? (listof keyword?))]))
 
 ;; ---------------------------------------------------------------------------
 ;; Reading (D-3)
@@ -241,6 +246,10 @@
 (define valid-steps
   '(cmake-build cmake-configure cmake-install configure copy make
                 make-info cargo run))
+
+;; symbol -> boolean, closed build vocabulary membership
+(define (valid-build-step? step)
+  (if (memq step valid-steps) #t #f))
 
 ;; symbol -> (listof keyword) or #f, required keys for typed steps.
 ;; Plain-data steps (configure cargo make-info copy) take any data args.

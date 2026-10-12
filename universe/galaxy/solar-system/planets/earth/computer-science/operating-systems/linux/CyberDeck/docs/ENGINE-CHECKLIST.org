@@ -561,12 +561,14 @@ comments. Report only, no code touched.
 
 ** REMOVED E-24 gate the Rust TUI (TUI deleted, D-035)
 
-** TODO E-25 ecosystems/
-Ecosystem file format, core/ecosystem.rkt (pure: ecosystem plus spec
-overrides expands to steps), host-tool check, first files make-c (Lua)
-and cargo. / Done when: a synthetic spec naming make-c expands to the
-same plan as the hand-written steps, and a missing tool fails before
-any build.
+** DONE E-25 ecosystems/
+core/ecosystem.rkt: pure reader plus expand-steps/expand-spec; tools
+are data there and backends/build.rkt preflights them
+(require-host-tools, #:tools on execute-build-steps) before step one,
+so a missing compiler costs nothing. ecosystems/make-c.rktd (the Lua
+shape) and cargo.rktd. Verified: a spec naming make-c expands to the
+same plan as its hand-written steps, and an unsatisfiable tool list
+refuses with kind 'config before any step runs.
 
 ** TODO E-26 docs/API.org
 JSON schema (field list and one synthetic example) for every command's
