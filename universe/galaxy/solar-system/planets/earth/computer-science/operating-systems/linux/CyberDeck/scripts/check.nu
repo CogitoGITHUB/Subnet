@@ -33,7 +33,7 @@ use ./env.nu [scope-roots]
 #   2  git is present
 #   3  run.rkt's helper tools are present
 #   4  D-011 monorepo rules
-#   5  tui rebrand gates
+#   5  removed with the TUI (D-035)
 #   6  text lint over .org, .rkt, .sh, .nu
 #   7  pinned-Nu report (informational)
 #   8  the file set: every .rkt, minus the parked list
@@ -339,56 +339,6 @@ def stage-4 [] {
     $bad
 }
 
-# Stage 5 (check.sh lines 38-64): the TUI rebrand gates. Five regexes,
-# copied verbatim from check.sh. Nu's `=~` is compared against `grep -E`
-# line by line in the fixtures and agrees on all of them, including the
-# escaped dot in graph\.js (the line "graphXjs" must not match).
-# Single-quoted regex strings only: "graph\.js" is an invalid escape
-# inside a Nu double-quoted string.
-def stage-5 [] {
-    if not ("tui" | path exists) {
-        return 0
-    }
-    let targets = ["tui/src" "tui/web" "tui/tests" "tui/README.md"
-                   "tui/README.pt-BR.md" "tui/Cargo.toml"]
-    let pats = ['GraphView|crate::graph|ui/graph|web/graph|GraphParams'
-               'graph_depth|graph_dirty|graph_follow|ensure_graph'
-               'select_delta|force-directed|module_neighbors|by_module'
-               'DEFAULT_DEPTH|NODE_BUDGET|clamp_depth|GRAPH_JS|graph\.js']
-    let msgs = ["GATE: tui/ still references the removed graph"
-                "GATE: tui/ still references removed graph state"
-                "GATE: tui/ still references removed graph model"
-                "GATE: tui/ still references removed graph budget"]
-    # grep -r recurses; open --raw does not, so directories are expanded
-    # to their files first. Same bytes, same order-insensitive test.
-    let allfiles = ($targets | each {|t|
-        if not ($t | path exists) {
-            []
-        } else if ($t | path type) == "dir" {
-            glob $"($t)/**/*" | where {|f| ($f | path type) == "file"}
-        } else {
-            [$t]
-        } } | flatten)
-    mut bad = 0
-    mut i = 0
-    for p in $pats {
-        let hit = ($allfiles | any {|f| (open --raw $f | lines) | any {|l| $l =~ $p } })
-        if $hit {
-            print $"($msgs | get $i)"
-            $bad = 1
-        }
-        $i = ($i + 1)
-    }
-    let guix_hit = ($allfiles | any {|f|
-        (open --raw $f | lines) | any {|l|
-            ($l =~ 'guix') and not ($l =~ 'alias = "guix_commit"') } })
-    if $guix_hit {
-        print "GATE: tui/ must not reference guix (see alias exception)"
-        $bad = 1
-    }
-    $bad
-}
-
 # Stage 7 (check.sh lines 80-84): export GIT_ALLOW_PROTOCOL=file for every
 # spawn below, then report which Nushell the scripts would use. The report
 # is informational only: `|| true` in the old gate, so a non-zero exit here
@@ -479,8 +429,8 @@ def main [--changed] {
     print $"[check] run start utc=(utc)"
     let changed_mode = ($changed or (($env | get -o CYBERDECK_CHANGED?) == "1"))
     let want = (if $changed_mode {
-        $env | get -o CYBERDECK_STAGES? | default "1,2,3,4,5,7,13,changed" } else {
-        $env | get -o CYBERDECK_STAGES? | default "1,2,3,4,5,6,7,8,9,10,11,12,13" })
+        $env | get -o CYBERDECK_STAGES? | default "1,2,3,4,7,13,changed" } else {
+        $env | get -o CYBERDECK_STAGES? | default "1,2,3,4,6,7,8,9,10,11,12,13" })
     let todo = ($want | split row ",")
     # `date now` is read twice and subtracted: measurement only, printed for
     # the record. Nothing waits on it (D-015).
@@ -506,11 +456,6 @@ def main [--changed] {
             print $"[check] stage 4 D-011 monorepo rules"
             let rc = (stage-4)
             print $"[check] stage 4 exit=($rc)"
-        }
-        if "5" in $todo {
-            print $"[check] stage 5 tui rebrand gates"
-            let rc = (stage-5)
-            print $"[check] stage 5 exit=($rc)"
         }
         if "7" in $todo {
             let rc = (stage-7)

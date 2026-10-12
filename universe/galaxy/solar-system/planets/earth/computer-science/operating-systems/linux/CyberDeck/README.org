@@ -14,7 +14,6 @@ minimal in =~/opt/racket=. Run =scripts/check.nu= before every commit.
 - =docs/= -- decisions, errors, glossary, lessons, perf baselines
 - =scripts/check.nu= -- green gate (P-1, T-7), Nushell
 - =core/=, =backends/=, =cli/= -- specs, plans, git, execution
-- =tui/= -- terminal package explorer (Rust, snapshot-file seam)
 
 * Verify
 Run =opt/nushell/0.116.1/nu scripts/check.nu= from this directory. Nu

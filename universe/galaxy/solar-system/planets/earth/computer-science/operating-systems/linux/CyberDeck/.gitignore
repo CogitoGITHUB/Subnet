@@ -2,5 +2,4 @@ compiled/
 *.zo
 *.dep
 tmp/
-tui/target/
 sources/vault.git/

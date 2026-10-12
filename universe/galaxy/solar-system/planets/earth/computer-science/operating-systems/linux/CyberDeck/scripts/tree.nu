@@ -31,7 +31,7 @@ def ignore-patterns [root] {
 
 # string string -> bool, true when path matches a gitignore pattern.
 # Supports the two forms this repo uses: a bare name (compiled/) and a
-# path prefix (tui/target/). Written as one pipeline, because "or" is a
+# path prefix (sources/vault.git/). Written as one pipeline, because "or" is a
 # keyword and cannot start a continuation line.
 def ignored? [path pats] {
     $pats | any {|p|

@@ -557,13 +557,9 @@ Measured: D-034 (2026-10-12) — run.rkt never referenced check.sh
 (zero matches), nothing to rewire; check.nu keeps its provenance
 comments. Report only, no code touched.
 
-** TODO E-23 TUI event loop
-The D-015 event loop for the Rust TUI. / Done when: the TUI renders
-from the snapshot with no timer anywhere.
+** REMOVED E-23 TUI event loop (TUI deleted, D-035)
 
-** TODO E-24 gate the Rust TUI
-=cargo test= is not in the gate today. / Done when: =cargo test= runs as
-part of the gate and passes, with its output in the gate log.
+** REMOVED E-24 gate the Rust TUI (TUI deleted, D-035)
 
 ** TODO E-25 ecosystems/
 Ecosystem file format, core/ecosystem.rkt (pure: ecosystem plus spec

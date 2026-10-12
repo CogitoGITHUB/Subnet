@@ -4,6 +4,12 @@
 * Log
 Append-only. Newest first. Every entry names the rule IDs it touches.
 
+** 2026-10-12 D-035: TUI removed
+TUI removed. The Rust/ratatui TUI in tui/ is deleted. pm is driven by
+the CLI with --format json/sexp, the MCP server (E-27) and the skill
+(E-28). Any future UI is a separate project (NodeShape interfaces)
+and consumes the same JSON. D-035.
+
 ** 2026-10-12 D-034: run.rkt ignores the retired check.sh
 backends/run.rkt never referenced check.sh (zero matches; it shells
 to git, flock, setsid, pkill and tar, pinned by gate stage 3), so

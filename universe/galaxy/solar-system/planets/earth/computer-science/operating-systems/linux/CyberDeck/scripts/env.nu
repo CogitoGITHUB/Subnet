@@ -48,16 +48,11 @@ export def scope-roots [] {
     }
 }
 
-# Cargo output goes to the XDG cache for NEW builds only. No existing
-# in-tree target/ directory is removed by this (D-027).
 export-env {
-    let dir = ((xdg-cache) | path join "cyberdeck" "target")
-    mkdir ($dir | into string)
-    $env.CARGO_TARGET_DIR = $dir
-    print $"[env] CARGO_TARGET_DIR=($dir)"
     # cargo is installed under ~/.cargo/bin, which is NOT on PATH in this
     # environment (command -v cargo fails on a bare shell). Appended here
-    # for project scripts only; nothing is installed or fetched (D-020).
+    # for the E-25 cargo ecosystem (host cargo builds packages); nothing
+    # is installed or fetched (D-020).
     let cargo_bin = ($nu.home-dir | path join ".cargo" "bin")
     if ($cargo_bin | path exists) {
         let have = ($env.PATH | split row ":")
