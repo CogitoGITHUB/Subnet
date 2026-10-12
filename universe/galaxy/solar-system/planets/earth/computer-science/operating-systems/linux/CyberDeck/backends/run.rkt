@@ -20,7 +20,8 @@
          racket/string
          racket/file
          "../core/errors.rkt"
-         "../core/log.rkt")
+         "../core/log.rkt"
+         "../core/verbose.rkt")
 
 (provide (struct-out run-result)
  (contract-out
@@ -393,22 +394,38 @@
 ;; redaction path, so a trace record and a pm-run-start line cannot
 ;; drift apart. Required, not redefined.
 
+;; D-036: these two records go through core/verbose.rkt when a run is
+;; open, so a spawned process appears in the feed next to everything
+;; else. With no run open they keep their plain stderr form for the dev
+;; scripts. Never both: run-open? picks one path, not two.
+;;
 ;; path-string (listof string) path-string exact-integer
-;; -> exact-integer, START line plus the start time
+;; -> exact-integer, START event plus the start time
 (define (print-run-start exe argv cwd pgid)
-  (eprintf "pm-run-start ~a cwd=~a pid=~a ~a ~a\n"
-           (utc-stamp) (trace-arg-string cwd) pgid
-           (trace-arg-string exe)
-           (string-join (map trace-redact argv) " "))
+  (if (run-open?)
+      (step 'run (string-append "spawn " (trace-arg-string exe))
+            "a build step runs an external program"
+            #:how (string-append "cwd=" (trace-arg-string cwd)
+                                 " pid=" (number->string pgid))
+            #:inputs (map trace-redact argv))
+      (eprintf "pm-run-start ~a cwd=~a pid=~a ~a ~a\n"
+               (utc-stamp) (trace-arg-string cwd) pgid
+               (trace-arg-string exe)
+               (string-join (map trace-redact argv) " ")))
   (flush-output (current-error-port))
   (current-inexact-monotonic-milliseconds))
 
-;; path-string string exact-integer -> void, END line
+;; path-string string exact-integer -> void, END event
 (define (print-run-end exe outcome start-ms)
   (define ms (inexact->exact
               (round (- (current-inexact-monotonic-milliseconds)
                         start-ms))))
-  (eprintf "pm-run-end ~a after=~ams ~a\n" outcome ms (trace-arg-string exe))
+  (if (run-open?)
+      (note 'run
+            (string-append (trace-arg-string exe) " -> " outcome
+                           " in " (number->string ms) "ms"))
+      (eprintf "pm-run-end ~a after=~ams ~a\n"
+               outcome ms (trace-arg-string exe)))
   (flush-output (current-error-port)))
 
 ;; path-string (listof string) -> run-result, batch tools via files

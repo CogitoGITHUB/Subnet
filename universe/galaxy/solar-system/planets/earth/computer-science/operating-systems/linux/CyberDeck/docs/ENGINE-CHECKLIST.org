@@ -602,8 +602,37 @@ listed as file:line, with the existing pm-run-start/pm-run-end
 records, the D-021 trace path with its PM_TRACE=0 switch, and how
 cli/main.rkt builds command->json. Decision D-036 recorded.
 
-** TODO V-1 core/verbose.rkt
-One event, three destinations, why mandatory.
+** DONE V-1 core/verbose.rkt
+One narration path (D-036). Events carry run-id, seq, parent-id, kind,
+depth, who, what, why, how, inputs, outputs, result, utc, mono-ms and
+duration-ms, and go to the screen line, <state>/events/<run>.jsonl and
+that same file as the AI feed; <state>/events/current is written then
+renamed. WHY is mandatory for step, decide, skip and a failing
+with-op and a blank one raises. Redaction is core/log.rkt's single
+trace-redact, applied before every destination. PM_TRACE=0 no longer
+silences anything; verbose-screen? exists for tests only and is never
+read from the environment. backends/run.rkt's pm-run-start/pm-run-end
+now narrate through this module when a run is open, and keep their
+plain stderr form when none is, never both. 142 tests.
+
+** DONE V-5 OpenCode plugin (opencode-plugin/)
+The API was READ from the installed @opencode-ai/plugin 1.18.31, not
+remembered: Plugin/Hooks.tool/tool()/ToolContext/BunShell and the
+{system: string[]} of chat.system.transform, all from dist/*.d.ts on
+this machine; the paths are listed in opencode-plugin/README.org.
+Two read-only tools, aiu_run_status and aiu_events_tail, plus a
+passive system-context digest. No state-changing tool at all: an
+agent cannot change the machine from here, and when pm's dispatch is
+wired those tools will call context.ask() first, with pm keeping its
+own policy. The events dir is watched with fs.watch, so there is no
+polling and no timer; a partial line is left until complete and a
+truncated file restarts the cursor. Deliberately not done: pushing via
+chat.message needs a Part type the installed SDK does not ship, so the
+digest uses the verifiable string[] instead. test.mjs drives the
+parsing and formatting from synthetic JSON Lines with no OpenCode and
+no pm. scripts/install-opencode-plugin.nu only PRINTS the commands.
+
+** TODO V-2 wire the engine through core/verbose.rkt
 
 ** TODO E-28 skill (skills/aiu-pm/SKILL.md)
 When to use each command, the confirmation rule, the redaction rule,
