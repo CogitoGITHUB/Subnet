@@ -529,9 +529,17 @@ generation links resolving into the checkout; --changed ALL GREEN
 Fingerprints, branch policy, strict modes and update flows stay
 future; dev trees name nothing in owner queries until then.
 
-** TODO E-20 observability pass
+** DONE E-20 observability pass
 Header and footer per run, redaction check, and the OBS-OK lint. / Done
 when: a full run prints a header and a footer and the lint passes.
+Measured: gate prints run-start/run-end framing every invocation;
+stage 13 OBS-OK lint (statement-try, bare | ignore, do -i, /dev/null,
+timer words; quote-aware, self-clean) proven pass (7 files, exit 0)
+and fail (6 shapes, exit 1); run.rkt direct redact-credentials units;
+need-nu bare-ignore fixed with identical behavior; --changed ALL
+GREEN (files=10, total=214), STAGES=6 lint 0 violations, read-check
+0 bad. $in.exit_code stays conventional (all uses check or degrade
+loudly, reviewed not automated).
 
 ** TODO E-21 outputs outside the tree
 Review every generated path against D-016. / Done when: a fresh run on a

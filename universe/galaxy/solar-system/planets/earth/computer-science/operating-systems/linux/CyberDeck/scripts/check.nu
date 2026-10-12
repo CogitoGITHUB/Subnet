@@ -165,6 +165,68 @@ def lint-root [root] {
     print $"lint: ($files | length) files, ($all | length) violations"
 }
 
+# path -> list, one string per OBS-OK violation, "path:line:reason".
+# O-9 hidden-discard gate for Nu: a streaming pipe that drops its exit
+# code silently looks green while failing. Allowed: `| complete`
+# beside the discard (startup.nu precedent); the shapes below refuse.
+# string -> string, code outside double quotes. No backslash-quotes
+# exist in scripts (verified), so parity toggling is exact, and it
+# resets per line by construction (callers pass one line).
+def strip-quotes [s] {
+    $s | split row '"' | enumerate | where {|r| ($r.index mod 2) == 0 } | get item | str join ""
+}
+
+def obs-lint-file [f] {
+    let ls = (open --raw $f | lines)
+    mut out = []
+    for l in ($ls | enumerate) {
+        let n = ($l.index + 1)
+        let t = ($l.item | str trim)
+        if ($t | str starts-with "#") { continue }
+        let code = (strip-quotes $t)
+        if (($code | str contains "| ignore") and not ($code | str contains "complete")) {
+            $out = ($out | append $"($f):($n):| ignore without complete")
+        }
+        if (($code | str starts-with "try")
+            and ($code | str contains "{")
+            and not ($code | str contains "catch")) {
+            $out = ($out | append $"($f):($n):bare try without catch")
+        }
+        if (($code | str contains "do -i") or ($code | str contains "do --ignore-errors")) {
+            $out = ($out | append $"($f):($n):do -i hides errors")
+        }
+        if ($code | str contains "/dev/null") {
+            $out = ($out | append $"($f):($n):/dev/null discard")
+        }
+        if (($code | str contains "sleep") or ($code | str contains "timeout")) {
+            $out = ($out | append $"($f):($n):timer wait D-015")
+        }
+    }
+    $out
+}
+
+# path -> list, every OBS-OK violation under root, nothing printed
+def obs-lint-collect [root] {
+    let files = (lint-files $root | where {|f| ($f | str ends-with ".nu") })
+    $files | each {|f| obs-lint-file $f} | flatten
+}
+
+def run-stage-13-body [] {
+    print "[check] stage 13 OBS-OK lint"
+    let spec = ($env | get -o CYBERDECK_LINT_ROOTS? | default ".")
+    let roots = ($spec | split row " ")
+    for r in $roots {
+        let files = (lint-files $r | where {|f| ($f | str ends-with ".nu") })
+        let all = ($files | each {|f| obs-lint-file $f} | flatten)
+        for v in $all {
+            print $v
+        }
+        print $"obs-lint: ($files | length) files, ($all | length) violations"
+    }
+    let violations = ($roots | each {|r| obs-lint-collect $r } | flatten | length)
+    if $violations > 0 { exit $EXIT_VIOLATIONS }
+}
+
 def run-stage-6-body [] {
     print $"[check] stage 6 text lint"
     # Roots come from $env, not from arguments: this Nu build exposes no
@@ -414,10 +476,11 @@ def stage-12 [] {
 # persist (measured), so the old shape printed CHECK FAILED and still exited
 # 0. There is no closure here at all, which is why the mut is allowed.
 def main [--changed] {
+    print $"[check] run start utc=(utc)"
     let changed_mode = ($changed or (($env | get -o CYBERDECK_CHANGED?) == "1"))
     let want = (if $changed_mode {
-        $env | get -o CYBERDECK_STAGES? | default "1,2,3,4,5,7,changed" } else {
-        $env | get -o CYBERDECK_STAGES? | default "1,2,3,4,5,6,7,8,9,10,11,12" })
+        $env | get -o CYBERDECK_STAGES? | default "1,2,3,4,5,7,13,changed" } else {
+        $env | get -o CYBERDECK_STAGES? | default "1,2,3,4,5,6,7,8,9,10,11,12,13" })
     let todo = ($want | split row ",")
     # `date now` is read twice and subtracted: measurement only, printed for
     # the record. Nothing waits on it (D-015).
@@ -500,6 +563,9 @@ def main [--changed] {
             if $rc12 != 0 {
                 $verdict_code = 1
             }
+        }
+        if "13" in $todo {
+            run-stage-13-body
         }
     let elapsed = (((date now | into int) - $started) / 1000000)
     print $"[check] end utc=(utc) after=($elapsed)ms"

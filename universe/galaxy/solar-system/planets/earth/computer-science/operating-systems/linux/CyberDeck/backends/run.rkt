@@ -802,6 +802,16 @@
   (check-true (regexp-match? #rx"<redacted>" logged))
   (delete-file redact-log)
 
+  ;; Direct unit pins for redact-credentials (the redaction check).
+  (check-equal? (redact-credentials "https://user:s3cret@example.com/x")
+                "https://<redacted>@example.com/x")
+  (check-equal? (redact-credentials "token=abc123")
+                "token=<redacted>")
+  (check-equal? (redact-credentials "https://example.com/x")
+                "https://example.com/x")
+  (check-equal? (redact-credentials "https://<redacted>@example.com/x")
+                "https://<redacted>@example.com/x")
+
   ;; Stress: >1MB on each stream, no hang, bounded tails, full log.
   (define big-log (make-temporary-file "pm-big~a.log"))
   (define big-log-port (open-output-file big-log #:exists 'truncate/replace))

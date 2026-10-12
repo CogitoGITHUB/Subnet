@@ -69,7 +69,7 @@ def report-nu [] {
     # timeit cannot capture mutable variables (verified in 0.116.1), so
     # the timed block prints its own result line instead of returning one.
     let dur = (timeit {
-        require-pinned-version | ignore
+        let _ver = (require-pinned-version)
         let chosen = (pick-nu)
         let ver = (if $chosen == "nu" {
             running-version
