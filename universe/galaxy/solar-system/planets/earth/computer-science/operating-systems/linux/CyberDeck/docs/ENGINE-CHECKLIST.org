@@ -516,10 +516,18 @@ refuse loudly until execution wiring lands (no item owns it yet).
 E-26 schemas will test renderer outputs over real backend data.
 
 * PHASE D
-** TODO E-19 dev mode
+** DONE E-19 dev mode
 Wire docs/DEV-MODE.org unchanged. / Done when: a dev checkout appears
 through the same =current= link, status flags it =dev=, and activation
 treats it as normal.
+Measured: backends/dev.rkt (dev-link!/unlink!/links?/status over
+state/dev-links.rktd; dev-install! symlinks prefix paths at checkout
+files, modes pass over, built-tree forms refuse); e2e: mark, in-place
+make, symlink install, check, clear, current, then activation with
+generation links resolving into the checkout; --changed ALL GREEN
+(files=2, total=16), STAGES=6 lint 0 violations, read-check 0 bad.
+Fingerprints, branch policy, strict modes and update flows stay
+future; dev trees name nothing in owner queries until then.
 
 ** TODO E-20 observability pass
 Header and footer per run, redaction check, and the OBS-OK lint. / Done
