@@ -1,8 +1,9 @@
 #lang racket/base
-;; main.rkt -- the pm command line: check specs plus help text.
-;; Thin over the core verbs; every failure becomes an exit code here
-;; (E-5 narrow handlers, E-15 codes). Plan and apply subcommands wait
-;; for spec-to-plan derivation (a later phase); W-8 noted in help.
+;; main.rkt -- the pm command line: one command per stage, each with
+;; --format sexp|json. Thin over the core verbs; every failure becomes
+;; an exit code here (E-5 narrow handlers, E-15 codes). Parsing plus
+;; command rendering land here (E-18a); execution wiring arrives per
+;; command after that, and unwired commands refuse loudly at dispatch.
 
 (require racket/contract/base
          racket/file
@@ -17,11 +18,27 @@
 (provide
  (struct-out command-check)
  (struct-out command-help)
+ (struct-out command-plan)
+ (struct-out command-lock)
+ (struct-out command-fetch)
+ (struct-out command-apply)
+ (struct-out command-update)
+ (struct-out command-activate)
+ (struct-out command-rollback)
+ (struct-out command-remove)
+ (struct-out command-hold)
+ (struct-out command-why)
+ (struct-out command-owner)
+ (struct-out command-verify)
  (contract-out
   ;; any -> boolean, a parsed command value
   [command? (-> any/c boolean?)]
   ;; (vectorof string) -> command, bad usage raises kind 'config
   [parse-args (-> (vectorof string?) command?)]
+  ;; command -> string, stable sexp shape for goldens
+  [command->sexp (-> command? string?)]
+  ;; command -> string, fixed key order until E-26 hardens the schema
+  [command->json (-> command? string?)]
   ;; path-string -> exit code, validates every .rktd, 0 or 3
   [run-check (-> path-string? exact-nonnegative-integer?)]
   ;; -> void, prints usage to stdout
@@ -38,9 +55,38 @@
 (struct command-help () #:transparent)
 ;; no fields: print help text
 
+(struct command-plan (specs format) #:transparent)
+;; specs  : string?  specs directory; format as in command-check
+(struct command-lock (lockfile format) #:transparent)
+;; lockfile : string?  lockfile path
+(struct command-fetch (manifest format) #:transparent)
+;; manifest : string?  declaration manifest path
+(struct command-apply (state format) #:transparent)
+;; state  : string?  state directory the plan applies inside
+(struct command-update (state format) #:transparent)
+;; state  : string?  state directory update checks inside
+(struct command-activate (profile format) #:transparent)
+;; profile : string?  profile directory to flip
+(struct command-rollback (profile n format) #:transparent)
+;; profile : string?  profile directory; n : string?  generation number
+(struct command-remove (profile name format) #:transparent)
+;; profile : string?  profile directory; name : string?  package name
+(struct command-hold (profile name slot format) #:transparent)
+;; profile name : string?; slot : string?  pinned version stream
+(struct command-why (name format) #:transparent)
+;; name   : string?  package name to explain
+(struct command-owner (profile rel format) #:transparent)
+;; profile : string?  profile directory; rel : string?  relative path
+(struct command-verify (name format) #:transparent)
+;; name   : string?  package name to re-check against its pin
+
 ;; any -> boolean, a parsed command value
 (define (command? v)
-  (or (command-check? v) (command-help? v)))
+  (or (command-check? v) (command-help? v)
+      (command-plan? v) (command-lock? v) (command-fetch? v)
+      (command-apply? v) (command-update? v) (command-activate? v)
+      (command-rollback? v) (command-remove? v) (command-hold? v)
+      (command-why? v) (command-owner? v) (command-verify? v)))
 
 ;; ---------------------------------------------------------------------------
 ;; Parsing (one flag pass, then one command pass)
@@ -71,6 +117,29 @@
   ;; on huge argv, but argv is a handful of words, so clarity wins.
   (loop args 'sexp #f))
 
+;; command table: name, operand count, maker over operand strings.
+;; Makers use only car/cadr/caddr so no extra requires are needed.
+(define command-table
+  (list (list "plan" 1 (lambda (ops fmt) (command-plan (car ops) fmt)))
+        (list "lock" 1 (lambda (ops fmt) (command-lock (car ops) fmt)))
+        (list "fetch" 1 (lambda (ops fmt) (command-fetch (car ops) fmt)))
+        (list "apply" 1 (lambda (ops fmt) (command-apply (car ops) fmt)))
+        (list "update" 1 (lambda (ops fmt) (command-update (car ops) fmt)))
+        (list "activate" 1
+              (lambda (ops fmt) (command-activate (car ops) fmt)))
+        (list "rollback" 2
+              (lambda (ops fmt)
+                (command-rollback (car ops) (cadr ops) fmt)))
+        (list "remove" 2
+              (lambda (ops fmt) (command-remove (car ops) (cadr ops) fmt)))
+        (list "hold" 3
+              (lambda (ops fmt)
+                (command-hold (car ops) (cadr ops) (caddr ops) fmt)))
+        (list "why" 1 (lambda (ops fmt) (command-why (car ops) fmt)))
+        (list "owner" 2
+              (lambda (ops fmt) (command-owner (car ops) (cadr ops) fmt)))
+        (list "verify" 1 (lambda (ops fmt) (command-verify (car ops) fmt)))))
+
 ;; (vectorof string) -> command
 (define (parse-args argv)
   (define-values (format args) (parse-format (vector->list argv)))
@@ -83,6 +152,17 @@
         [(and (pair? args) (string=? (car args) "check"))
          (raise-pm-error 'config 'pm "check takes exactly one directory"
                          #:fields `(("args" . ,(string-join args " "))))]
+        [(and (pair? args) (assoc (car args) command-table))
+         (define entry (assoc (car args) command-table))
+         (define want (cadr entry))
+         (unless (= (length (cdr args)) want)
+           (raise-pm-error
+            'config 'pm
+            (string-append (car args) " takes exactly "
+                           (number->string want)
+                           (if (= want 1) " operand" " operands"))
+            #:fields `(("args" . ,(string-join args " ")))))
+         ((caddr entry) (cdr args) format)]
         [(and (pair? args)
               (string-prefix? (car args) "--")
               (not (member (car args) '("--help" "-h"))))
@@ -94,16 +174,92 @@
                          #:fields `(("args" . ,(string-join args " ")))
                          #:hint "try `pm --help`")]))
 
+;; command -> list, name plus format plus operand strings, one arm
+;; per command in struct order; unknown values fail closed, never silent
+(define (command->datum cmd)
+  (cond [(command-check? cmd)
+         (list "check" (command-check-format cmd)
+               (list (command-check-dir cmd)))]
+        [(command-plan? cmd)
+         (list "plan" (command-plan-format cmd)
+               (list (command-plan-specs cmd)))]
+        [(command-lock? cmd)
+         (list "lock" (command-lock-format cmd)
+               (list (command-lock-lockfile cmd)))]
+        [(command-fetch? cmd)
+         (list "fetch" (command-fetch-format cmd)
+               (list (command-fetch-manifest cmd)))]
+        [(command-apply? cmd)
+         (list "apply" (command-apply-format cmd)
+               (list (command-apply-state cmd)))]
+        [(command-update? cmd)
+         (list "update" (command-update-format cmd)
+               (list (command-update-state cmd)))]
+        [(command-activate? cmd)
+         (list "activate" (command-activate-format cmd)
+               (list (command-activate-profile cmd)))]
+        [(command-rollback? cmd)
+         (list "rollback" (command-rollback-format cmd)
+               (list (command-rollback-profile cmd)
+                     (command-rollback-n cmd)))]
+        [(command-remove? cmd)
+         (list "remove" (command-remove-format cmd)
+               (list (command-remove-profile cmd)
+                     (command-remove-name cmd)))]
+        [(command-hold? cmd)
+         (list "hold" (command-hold-format cmd)
+               (list (command-hold-profile cmd)
+                     (command-hold-name cmd)
+                     (command-hold-slot cmd)))]
+        [(command-why? cmd)
+         (list "why" (command-why-format cmd)
+               (list (command-why-name cmd)))]
+        [(command-owner? cmd)
+         (list "owner" (command-owner-format cmd)
+               (list (command-owner-profile cmd)
+                     (command-owner-rel cmd)))]
+        [(command-verify? cmd)
+         (list "verify" (command-verify-format cmd)
+               (list (command-verify-name cmd)))]
+        [(command-help? cmd) (list "help" 'sexp '())]
+        [else (raise-pm-error 'internal 'pm "not a command"
+                              #:fields `(("value" . ,(format "~s" cmd))))]))
+
+;; command -> string, stable sexp shape for goldens
+(define (command->sexp cmd)
+  (format "~s" (command->datum cmd)))
+
+;; command -> string, fixed key order until E-26 hardens the schema.
+;; Operands render through ~s, which matches JSON for the ASCII paths
+;; and names commands take today.
+(define (command->json cmd)
+  (define d (command->datum cmd))
+  (string-append "{\"name\":" (format "~s" (car d))
+                 ",\"format\":" (format "~s" (symbol->string (cadr d)))
+                 ",\"operands\":["
+                 (string-join (map (lambda (o) (format "~s" o)) (caddr d))
+                              ", ")
+                 "]}"))
+
 ;; -> void, prints usage to stdout
 (define (display-help)
-  (displayln "usage: pm [--format sexp|json] check DIR | pm --help")
+  (displayln "usage: pm [--format sexp|json] COMMAND [ARGS] | pm --help")
   (displayln "")
-  (displayln "  check DIR   validate every .rktd file, print ok lines")
-  (displayln "  --format    output shape, sexp (default) or json")
-  (displayln "  --help      print this text")
-  (displayln "")
-  (displayln "Plan and apply subcommands arrive with spec-to-plan")
-  (displayln "derivation in a later phase."))
+  (displayln "  check DIR          validate every .rktd file, print ok lines")
+  (displayln "  plan SPECDIR       show the install plan (not executable yet)")
+  (displayln "  lock LOCKFILE      show the lockfile plan (not executable yet)")
+  (displayln "  fetch MANIFEST     fetch all declared packages (not yet)")
+  (displayln "  apply STATEDIR     apply a plan (not executable yet)")
+  (displayln "  update STATEDIR    check all packages (not executable yet)")
+  (displayln "  activate PROFILE   flip the profile (not executable yet)")
+  (displayln "  rollback PROFILE N repoint at generation N (not yet)")
+  (displayln "  remove PROFILE PKG unlink a package (not executable yet)")
+  (displayln "  hold PROFILE PKG SLOT pin a slot (not executable yet)")
+  (displayln "  why NAME           explain a package (not executable yet)")
+  (displayln "  owner PROFILE REL  who owns a path (not executable yet)")
+  (displayln "  verify NAME        re-check a tree (not executable yet)")
+  (displayln "  --format           output shape, sexp (default) or json")
+  (displayln "  --help             print this text"))
 
 ;; ---------------------------------------------------------------------------
 ;; Checking (one clean line per good spec, every error shown)
@@ -155,7 +311,10 @@
       (define cmd (parse-args (current-command-line-arguments)))
       (cond [(command-help? cmd) (display-help) 0]
             [(command-check? cmd)
-             (run-check (command-check-dir cmd))])))
+             (run-check (command-check-dir cmd))]
+            [else
+             (raise-pm-error 'config 'pm "command not executable yet"
+                             #:fields `(("command" . ,(car (command->datum cmd)))))])))
   (exit code))
 
 ;; ---------------------------------------------------------------------------
@@ -247,4 +406,69 @@
   (define empty-dir (build-path check-dir "empty"))
   (make-directory empty-dir)
   (check-equal? (run-check empty-dir) 0)
+
+  ;; E-18a: every stage parses; one golden per command per format.
+  (define (check-command pred argv sexp json)
+    (define cmd (parse-args argv))
+    (check-pred pred cmd)
+    (check-equal? (command->sexp cmd) sexp)
+    (check-equal? (command->json cmd) json))
+  (check-command command-plan? #("plan" "specs/")
+                 "(\"plan\" sexp (\"specs/\"))"
+                 "{\"name\":\"plan\",\"format\":\"sexp\",\"operands\":[\"specs/\"]}")
+  (check-command command-lock? #("lock" "pm.lock")
+                 "(\"lock\" sexp (\"pm.lock\"))"
+                 "{\"name\":\"lock\",\"format\":\"sexp\",\"operands\":[\"pm.lock\"]}")
+  (check-command command-fetch? #("fetch" "manifest.rktd")
+                 "(\"fetch\" sexp (\"manifest.rktd\"))"
+                 "{\"name\":\"fetch\",\"format\":\"sexp\",\"operands\":[\"manifest.rktd\"]}")
+  (check-command command-apply? #("apply" "state")
+                 "(\"apply\" sexp (\"state\"))"
+                 "{\"name\":\"apply\",\"format\":\"sexp\",\"operands\":[\"state\"]}")
+  (check-command command-update? #("update" "state")
+                 "(\"update\" sexp (\"state\"))"
+                 "{\"name\":\"update\",\"format\":\"sexp\",\"operands\":[\"state\"]}")
+  (check-command command-activate? #("activate" "profile")
+                 "(\"activate\" sexp (\"profile\"))"
+                 "{\"name\":\"activate\",\"format\":\"sexp\",\"operands\":[\"profile\"]}")
+  (check-command command-rollback? #("rollback" "profile" "3")
+                 "(\"rollback\" sexp (\"profile\" \"3\"))"
+                 "{\"name\":\"rollback\",\"format\":\"sexp\",\"operands\":[\"profile\", \"3\"]}")
+  (check-command command-remove? #("remove" "profile" "pkg-a")
+                 "(\"remove\" sexp (\"profile\" \"pkg-a\"))"
+                 "{\"name\":\"remove\",\"format\":\"sexp\",\"operands\":[\"profile\", \"pkg-a\"]}")
+  (check-command command-hold? #("hold" "profile" "pkg-a" "default")
+                 "(\"hold\" sexp (\"profile\" \"pkg-a\" \"default\"))"
+                 (string-append "{\"name\":\"hold\",\"format\":\"sexp\","
+                                "\"operands\":[\"profile\", \"pkg-a\", \"default\"]}"))
+  (check-command command-why? #("why" "pkg-a")
+                 "(\"why\" sexp (\"pkg-a\"))"
+                 "{\"name\":\"why\",\"format\":\"sexp\",\"operands\":[\"pkg-a\"]}")
+  (check-command command-owner? #("owner" "profile" "bin/prog")
+                 "(\"owner\" sexp (\"profile\" \"bin/prog\"))"
+                 "{\"name\":\"owner\",\"format\":\"sexp\",\"operands\":[\"profile\", \"bin/prog\"]}")
+  (check-command command-verify? #("verify" "pkg-a")
+                 "(\"verify\" sexp (\"pkg-a\"))"
+                 "{\"name\":\"verify\",\"format\":\"sexp\",\"operands\":[\"pkg-a\"]}")
+  (check-command command-help? #()
+                 "(\"help\" sexp ())"
+                 "{\"name\":\"help\",\"format\":\"sexp\",\"operands\":[]}")
+  ;; --format rides along on the new commands too.
+  (check-command command-why? #("why" "pkg-a" "--format" "json")
+                 "(\"why\" json (\"pkg-a\"))"
+                 "{\"name\":\"why\",\"format\":\"json\",\"operands\":[\"pkg-a\"]}")
+  ;; Wrong arity refuses; unknown commands exit 2 (D-008).
+  (check-pred config-error?
+              (with-handlers ([exn:fail:pm? (lambda (e) e)])
+                (parse-args #("plan"))
+                'no-error))
+  (check-pred config-error?
+              (with-handlers ([exn:fail:pm? (lambda (e) e)])
+                (parse-args #("hold" "profile" "pkg-a"))
+                'no-error))
+  (check-equal? (pm-error-exit-code
+                 (with-handlers ([exn:fail:pm? (lambda (e) e)])
+                   (parse-args #("frobnicate"))
+                   'no-error))
+                2)
   (delete-directory/files check-dir))
