@@ -4,6 +4,24 @@
 * Log
 Append-only. Newest first. Every entry names the rule IDs it touches.
 
+** 2026-10-12 D-037: security is its own phase, before any declaration
+Security is a first-class phase (S-01..S-04) that runs BEFORE any
+package declaration, because a declaration is only as trustworthy as
+pm's ability to refuse a bad one. The policy is pure and lives in one
+module, core/security.rkt, so it can be tested exhaustively and no
+other module may answer a security question. Seven named rules: source
+trust (a git source is pinned to an exact 40-hex commit, never a
+branch, tag or "latest"), origin (no file:// or path sources outside
+test roots), path escape (every install destination resolves under the
+prefix or the store), symlinks (inside the prefix or refused, and an
+unresolvable target refuses), install mode (only 755 for bin/libexec
+and 644 for the rest, never widened), credentials (one redaction path
+before any destination, and no raw URL in a fetch message), and
+confirmation (a state-changing action needs the human token at every
+interface; approval at one layer is never authorisation in pm). Each
+rule is enforced at a choke point with a test that shows the message,
+and the gate turns red if an enforcement call is deleted. D-037.
+
 ** 2026-10-12 D-036: every operation narrates itself completely and live
 Every operation narrates itself completely and live: from the moment
 it starts, every step, decision, skip, progress, result and failure is

@@ -23,7 +23,8 @@
          "manifest.rkt"
          "../core/errors.rkt"
          "../core/plan.rkt"
-         "../core/vault-lock.rkt")
+         "../core/vault-lock.rkt"
+         "../core/verbose.rkt")
 
 (provide
  (contract-out
@@ -70,18 +71,40 @@
                     #:manifest-entry [entry #f])
   (define (run)
     (define actions (plan-actions p))
-    (for ([a (in-list actions)] [i (in-range (length actions))])
-      (define step (format "step-~a-~a" i (action-kind a)))
-      (when (and cancel (sync/timeout 0 cancel))
-        (raise-pm-error 'cancelled 'apply-plan "cancelled between steps"
-                        #:fields `(("step" . ,step))))
-      (unless (journal-step-done? state package slot step input-hash)
-        (journal-record-start! state package slot step input-hash)
-        (performer a)
-        (journal-record-end! state package slot step input-hash)))
-    (when (and manifest entry)
-      (manifest-write manifest
-                      (manifest-upsert (manifest-read manifest) entry))))
+    ;; D-036: the whole apply is one narrated operation, and EVERY
+    ;; action is narrated -- including the ones the journal says are
+    ;; already done, which is the skip reason a resumed run must show.
+    (with-op 'apply
+             (string-append (number->string (length actions)) " action(s)")
+             "the plan's actions must all reach their recorded end state"
+             #:how (format "input hash ~a" input-hash)
+             #:inputs (map action-kind actions)
+             (lambda ()
+               (for ([a (in-list actions)] [i (in-range (length actions))])
+                 (define step-id (format "step-~a-~a" i (action-kind a)))
+                 (when (and cancel (sync/timeout 0 cancel))
+                   (raise-pm-error 'cancelled 'apply-plan "cancelled between steps"
+                                   #:fields `(("step" . ,step-id))))
+                 (if (journal-step-done? state package slot step-id input-hash)
+                     (skip 'apply
+                           (format "step-~a-~a" i (action-kind a))
+                           (string-append
+                            "the journal already records this step as done"
+                            " under input hash " input-hash))
+                     (begin
+                       (step 'apply
+                             (format "step-~a-~a" i (action-kind a))
+                             "the journal has no end record for this input hash"
+                             #:how (format "input hash ~a" input-hash))
+                       (journal-record-start! state package slot step-id input-hash)
+                       (performer a)
+                       (journal-record-end! state package slot step-id input-hash))))
+               (when (and manifest entry)
+                 (step 'apply
+                       "manifest"
+                       "the plan declared a manifest entry to write")
+                 (manifest-write manifest
+                                 (manifest-upsert (manifest-read manifest) entry))))))
   (if writer
       (call-with-vault-lock state (first writer) (second writer) run)
       (run)))

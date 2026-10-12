@@ -638,18 +638,75 @@ exists for all 14 commands at once) and closes it on every path, and
 run-check, check-ok-lines and plan-document narrate their per-spec
 steps with a required why; a rejected spec emits a SKIP carrying the
 reason, not just a screen line. backends/run.rkt narrates every spawned
-process (V-1). Measured: =pm check docs/examples= produced 10 events
+process (V-1). backends/build.rkt narrates the recipe as one op with
+one STEP per entry. backends/apply.rkt narrates EVERY action, and a
+resumed run emits a SKIP naming the input hash that made it skippable
+-- measured: "the journal already records this step as done under
+input hash h9". Measured: =pm check docs/examples= produced 10 events
 -- run START, the cli request, a nested check op with one STEP per
-spec at depth 1, and both ENDs. NOT DONE: fetch, lock, apply, activate,
-update, rollback, remove, query, vault, build, install, journal and
-store still narrate nothing of their own, so the apply-run and
-resumed-run tests asked for here do not exist yet. Recorded as debt,
-not claimed.
+spec at depth 1, and both ENDs. NOT DONE: fetch, lock, activate,
+update, rollback, remove, query, vault, install, journal and store
+still narrate nothing of their own. Recorded as debt, not claimed.
 
 ** TODO E-28 skill (skills/aiu-pm/SKILL.md)
 When to use each command, the confirmation rule, the redaction rule,
 three worked examples with synthetic names. / Done when: the examples
 in the skill run as a test against the real CLI.
+
+* PHASE S: security (runs BEFORE any package declaration, which is the
+final part of pm -- a declaration is a declaration only if pm refuses
+the ones that would compromise the machine)
+** TODO S-01 core/security.rkt: the policy, pure
+One place that answers "may pm do this?", with no I/O so it can be
+reasoned about and tested exhaustively. / Done when: the rules below
+exist as named predicates with a test each, and no other module may
+answer a security question.
+- *Source trust.* A git source is pinned to an exact commit or it is
+  refused: no branches, no tags, no "latest". Pin means a 40-hex
+  commit id, never a ref that can move. A tag is resolved once, then
+  recorded as the commit it resolved to.
+- *Origin.* A source may not come from a path, a file URL or a
+  =file://= transport. pm fetches over the network or not at all;
+  =GIT_ALLOW_PROTOCOL=file= exists only so the TEST fixtures work and
+  is refused outside a test root.
+- *Path escape.* Every destination an install form names is resolved
+  and must land under the prefix or the store. A =..= segment, an
+  absolute path, or a symlink that points outside refuses with kind
+  =install=, never silently clamped.
+- *Symlinks.* An installed symlink may point inside the prefix. One
+  that points outside refuses; a symlink whose target does not exist
+  yet refuses too, because it cannot be checked.
+- *Install mode.* The only modes pm ever writes are 755 for
+  bin/libexec and 644 for everything else. A mode requested from a
+  spec that is not one of those two refuses rather than being
+  widened.
+- *Credentials.* One redaction path (core/log.rkt trace-redact) runs
+  before ANY destination, so a URL with a password cannot reach the
+  screen, the log, the event feed, or an error message. Kind
+  =fetch= messages must not carry a raw URL.
+- *Confirmation.* A state-changing action requires the human
+  confirmation token, at every interface: CLI, MCP and the OpenCode
+  plugin alike. Approval at one layer is never authorisation in pm.
+
+** TODO S-02 enforce S-01 at the choke points
+The policy above is worthless unless it is where the work happens. /
+Done when: vault-add refuses an unpinned or file:// source; install
+refuses a path escape and an outside symlink; build refuses a host
+tool that is not on PATH; and each refusal has a test that shows the
+message, not just the exit code.
+
+** TODO S-03 declare: refuse a bad declaration, loudly
+The last step of pm is writing and accepting a declaration, so this is
+where the policy becomes visible to whoever wrote it. / Done when:
+=pm check= on a spec that violates an S-01 rule fails with the rule's
+own name in the message, and a SPECIFIC example of each refusal lives
+in docs/examples/ as a negative fixture.
+
+** TODO S-04 gate the rules
+Stage 15 in =scripts/check.nu= fails when a security predicate exists
+but is never called, and when a new =open-output-file= or spawn lands
+outside the audited modules. / Done when: deleting one enforcement
+call turns the gate red.
 
 * PHASE R: restructure (runs AFTER Phase D, BEFORE any package
 declarations or NodeShape work)

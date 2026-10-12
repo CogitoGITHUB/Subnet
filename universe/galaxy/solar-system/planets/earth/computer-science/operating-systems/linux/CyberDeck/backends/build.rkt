@@ -22,7 +22,8 @@
          racket/system
          "run.rkt"
          "../core/errors.rkt"
-         "../core/spec.rkt")
+         "../core/spec.rkt"
+         "../core/verbose.rkt")
 
 (provide
  (contract-out
@@ -428,12 +429,31 @@
                              #:env [overrides '()]
                              #:tools [tools '()])
   (require-host-tools tools)
-  (for ([s (in-list steps)])
-    (execute-build-step s
-                        #:source source
-                        #:work work
-                        #:prefix prefix
-                        #:env overrides)))
+  ;; D-036: one op around the whole recipe, one narrated step per entry
+  ;; in it. This is the choke point every build and install goes
+  ;; through, so narrating here covers both without touching each one.
+  (with-op 'build
+           (string-append (number->string (length steps)) " build step(s)")
+           "the spec named these build steps and they must run in order"
+           #:how (string-join (map (lambda (s) (symbol->string (build-step-name s))) steps) " ")
+           #:inputs (map (lambda (s) (symbol->string (build-step-name s))) steps)
+           (lambda ()
+             (for ([s (in-list steps)])
+               (step 'build
+                     (symbol->string (build-step-name s))
+                     "the next step of this spec's build recipe"
+                     #:how (string-join
+                              (map (lambda (a)
+                                     (if (keyword? a)
+                                         (keyword->string a)
+                                         (format "~a" a)))
+                                   (build-step-args s))
+                              " "))
+               (execute-build-step s
+                                   #:source source
+                                   #:work work
+                                   #:prefix prefix
+                                   #:env overrides)))))
 
 ;; ---------------------------------------------------------------------------
 (module+ test
