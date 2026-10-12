@@ -632,7 +632,19 @@ digest uses the verifiable string[] instead. test.mjs drives the
 parsing and formatting from synthetic JSON Lines with no OpenCode and
 no pm. scripts/install-opencode-plugin.nu only PRINTS the commands.
 
-** TODO V-2 wire the engine through core/verbose.rkt
+** PARTIAL V-2 wire the engine through core/verbose.rkt
+DONE: cli/main.rkt opens a run for EVERY pm invocation (so the feed
+exists for all 14 commands at once) and closes it on every path, and
+run-check, check-ok-lines and plan-document narrate their per-spec
+steps with a required why; a rejected spec emits a SKIP carrying the
+reason, not just a screen line. backends/run.rkt narrates every spawned
+process (V-1). Measured: =pm check docs/examples= produced 10 events
+-- run START, the cli request, a nested check op with one STEP per
+spec at depth 1, and both ENDs. NOT DONE: fetch, lock, apply, activate,
+update, rollback, remove, query, vault, build, install, journal and
+store still narrate nothing of their own, so the apply-run and
+resumed-run tests asked for here do not exist yet. Recorded as debt,
+not claimed.
 
 ** TODO E-28 skill (skills/aiu-pm/SKILL.md)
 When to use each command, the confirmation rule, the redaction rule,

@@ -15,6 +15,7 @@
          "../core/spec.rkt"
          "../core/spec-read.rkt"
          "../core/ui.rkt"
+         "../core/verbose.rkt"
          "../core/version.rkt")
 
 (provide
@@ -294,20 +295,35 @@
 
 ;; path-string -> exit code, validates every .rktd, 0 or 3
 (define (run-check dir)
-  (unless (directory-exists? dir)
-    (raise-pm-error 'config 'pm "directory not found"
-                    #:fields `(("dir" . ,dir))))
-  (define failures
-    (for/fold ([bad 0]) ([f (in-list (sorted-rktd-files dir))])
-      (with-handlers ([exn:fail:pm?
+  (require-dir dir)
+  (with-op 'check (dir-text dir) "every .rktd in the directory was validated"
+           #:how "read each spec; a bad one is reported and counted"
+           (lambda ()
+             (define failures
+               (for/fold ([bad 0]) ([f (in-list (sorted-rktd-files dir))])
+                 (with-handlers
+                     ([exn:fail:pm?
                        (lambda (e)
+                         ;; The reason a spec was NOT accepted, in
+                         ;; the feed as well as on the screen.
+                         (skip 'check
+                               (path->string f)
+                               (string-append "rejected: "
+                                              (exn-message e)))
                          (display-pm-error e)
                          (+ bad 1))])
-        (define s (read-spec-file f))
-        (printf "ok: ~a ~a\n"
-                (spec-name s) (version->string (spec-version s)))
-        bad)))
-  (if (zero? failures) 0 3))
+                   (define s (read-spec-file f))
+                   (step 'check
+                         (string-append (symbol->string (spec-name s))
+                                        " "
+                                        (version->string (spec-version s)))
+                         "the spec parsed and passed every field check"
+                         #:how (path->string f))
+                   (printf "ok: ~a ~a\n"
+                           (spec-name s)
+                           (version->string (spec-version s)))
+                   bad)))
+             (if (zero? failures) 0 3))))
 
 ;; ---------------------------------------------------------------------------
 ;; Result documents (E-26). The envelope is name/format/operands; a
@@ -321,6 +337,12 @@
     (raise-pm-error 'config 'pm "directory not found"
                     #:fields `(("dir" . ,dir)))))
 
+;; any -> string, a directory as text for an event. The CLI hands these
+;; functions strings (they come from argv) and the tests hand them
+;; paths, so both shapes must narrate.
+(define (dir-text d)
+  (if (path? d) (path->string d) (format "~a" d)))
+
 ;; path-string -> jsexpr (listof jsexpr), one object per .rktd in DIR,
 ;; in file order. Reads every spec, so a bad spec raises here exactly
 ;; as it does in run-check. No resolution, no ordering: the plan as
@@ -328,20 +350,41 @@
 ;; write-json does to an immutable hash; the envelope order is ours.
 (define (plan-document dir)
   (require-dir dir)
-  (for/list ([f (in-list (sorted-rktd-files dir))])
-    (define s (read-spec-file f))
-    (hasheq 'name (symbol->string (spec-name s))
-            'version (version->string (spec-version s))
-            'deps (for/list ([d (in-list (spec-deps s))])
-                    (hasheq 'name (symbol->string (dep-name d))
-                            'version (version->string (dep-version d)))))))
+  (with-op 'plan (dir-text dir) "an install plan was requested"
+           #:how "read every .rktd in the directory"
+           (lambda ()
+             (for/list ([f (in-list (sorted-rktd-files dir))])
+               (define s (read-spec-file f))
+               (step 'plan
+                     (string-append (symbol->string (spec-name s))
+                                    " "
+                                    (version->string (spec-version s)))
+                     "every spec in the directory enters the plan"
+                     #:how (path->string f))
+               (hasheq 'name (symbol->string (spec-name s))
+                       'version (version->string (spec-version s))
+                       'deps (for/list ([d (in-list (spec-deps s))])
+                               (hasheq 'name (symbol->string (dep-name d))
+                                       'version (version->string
+                                                 (dep-version d)))))))))
 
 ;; path-string -> (listof string), the ok lines of a check run
 (define (check-ok-lines dir)
   (require-dir dir)
-  (for/list ([f (in-list (sorted-rktd-files dir))])
-    (define s (read-spec-file f))
-    (format "ok: ~a ~a" (spec-name s) (version->string (spec-version s)))))
+  (with-op 'check (dir-text dir) "every .rktd in the directory was validated"
+           #:how "read each spec; a bad one raises kind 'spec"
+           (lambda ()
+             (for/list ([f (in-list (sorted-rktd-files dir))])
+               (define s (read-spec-file f))
+               (step 'check
+                     (string-append (symbol->string (spec-name s))
+                                    " "
+                                    (version->string (spec-version s)))
+                     "the spec parsed and passed every field check"
+                     #:how (path->string f))
+               (format "ok: ~a ~a"
+                       (spec-name s)
+                       (version->string (spec-version s)))))))
 
 ;; jsexpr -> string, write-json prints to the current port and returns
 ;; void; here the value is spliced into a bigger document.
@@ -373,6 +416,11 @@
 ;; ---------------------------------------------------------------------------
 (module+ main
   (define-values (cancel-evt trigger-cancel!) (make-cancel-source))
+  ;; D-036: every pm invocation is a run. Opening it here is what makes
+  ;; the feed real for every command at once: without this, nothing
+  ;; downstream has a file to write to and nothing can be silent.
+  (define raw-args (current-command-line-arguments))
+  (void (begin-run! #:who 'pm))
   (define code
     (with-handlers ([exn:break? (lambda (_) (trigger-cancel!) 130)]
                     [exn:fail:pm?
@@ -383,7 +431,11 @@
                      (lambda (e)
                        (display-internal-error e)
                        70)])
-      (define cmd (parse-args (current-command-line-arguments)))
+      (define cmd (parse-args raw-args))
+      (with-op 'cli "pm" "a command was requested"
+               #:how (string-join (vector->list raw-args) " ")
+               #:inputs (vector->list raw-args)
+               (lambda () 0))
       (cond [(command-help? cmd) (display-help) 0]
             [(command-check? cmd)
              (run-check (command-check-dir cmd))]
@@ -398,6 +450,10 @@
             [else
              (raise-pm-error 'config 'pm "command not executable yet"
                              #:fields `(("command" . ,(car (command->datum cmd)))))])))
+  ;; The run closes on every path, including the failing ones: the FAIL
+  ;; event is already in the feed, and end-run! only adds the closure.
+  (with-handlers ([(lambda (e) #t) (lambda (e) (void))])
+    (end-run! (format "exit=~a" code)))
   (exit code))
 
 ;; ---------------------------------------------------------------------------
