@@ -464,14 +464,22 @@ manifest); dev skip line printed, exit unchanged; --changed ALL GREEN
 Hang fixed on the way: missing vault parent stranded the fifo opener
 (run.rkt should fail fast on missing cwd; noted for Phase C/D).
 
-** TODO E-16b pm fetch
+** BLOCKED E-16b pm fetch
 Reads the whole declaration (manifest and specs), fetches and pins every
 declared package into the vault WITHOUT building or installing; skips
 ones already pinned; reports per package (new / already present /
 failed). / Done when: a synthetic declaration of 3 local git fixtures
 fills the vault and a second run reports all present.
+BLOCKED (2026-10-12): pm-fetch itself is implemented and its
+single-add paths are green (new/present/failed); but 3+ sequential
+vault-adds in one shared-runner process wedge with zero CPU and no
+live children (u16b3: frozen 162s after ff-b refmap; 6 fresh adds and
+1-broken-alone pass in isolation). Suspects: child.lock/flock plus
+waiter-miss family in run.rkt/vault child management (E-22
+territory). Repro: full backends/update.rkt suite. Unblocks when the
+wedge is isolated; E-16c and multi-fixture CLI fetch wait on it.
 
-** TODO E-16c parallel fetch
+** BLOCKED E-16c parallel fetch
 Fetches run concurrently with a configurable limit N (default 4), each
 waiting only on its own process exit (D-015); the vault write path is
 serialized or per-package (read backends/vault.rkt and vault-lock first
@@ -479,6 +487,9 @@ and record which in the item); one failing fetch does not stop the
 others; the summary lists failures. / Done when: 6 synthetic fixtures
 with N=3 finish with correct pins and one deliberately broken URL is
 reported as failed.
+BLOCKED (2026-10-12): depends on E-16b — parallel multi-fetch cannot
+go green while sequential multi-add wedges in the shared runner (see
+E-16b note). Unattempted on purpose; attempt after the wedge clears.
 
 ** DONE E-17 query.rkt
 =why=, =owner=, =verify=, read-only. / Done when: each answers on a

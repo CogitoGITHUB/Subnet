@@ -46,7 +46,10 @@
                             #:manifest-entry manifest-entry?)
                      (#:writer (or/c #f (list/c string? string?))
                       #:cancel (or/c evt? #f))
-                     void?)]))
+                     void?)]
+  ;; path-string path-string -> results, fetch missing namespaces
+  [pm-fetch (-> path-string? path-string?
+                (listof (list/c string? symbol? string?)))]))
 
 ;; path-string string string string -> result, fetch plus compare.
 ;; cancelled escapes; every other pm failure becomes fetch-failed.
@@ -101,6 +104,39 @@
               #:cancel cancel))
 
 ;; ---------------------------------------------------------------------------
+;; string -> result, already in the vault. Reports the namespace
+;; ref: pins live under branch-qualified refs, so no single pin can
+;; resolve without fetching (which present entries skip by design).
+(define (resolve-present name)
+  (list name 'present (vault-namespace name)))
+
+;; path-string string string -> result, fetch plus pin
+(define (fetch-new vault-root name url)
+  (with-handlers ([exn:fail:pm?
+                   (lambda (e)
+                     (if (cancelled-error? e)
+                         (raise e)
+                         (list name 'failed (exn-message e))))])
+    (list name 'new
+          (vault-add-result-pin
+           (vault-add vault-root name url #:fsck-allow '())))))
+
+;; path-string path-string -> results, fetch missing namespaces only.
+;; Present namespaces report their ref without fetching (branch-
+;; qualified refs carry the pins; second runs work offline); the
+;; manifest is read, never written (E-14).
+(define (pm-fetch vault-root manifest-path)
+  (unless (directory-exists? vault-root)
+    (vault-init vault-root))
+  (define present
+    (with-handlers ([exn:fail:pm? (lambda (e) '())])
+      (vault-list vault-root)))
+  (for/list ([e (in-list (manifest-read manifest-path))])
+    (define name (manifest-entry-name e))
+    (if (member name present)
+        (resolve-present name)
+        (fetch-new vault-root name (manifest-entry-url e)))))
+
 (module+ test
   (require rackunit
            racket/file
@@ -205,4 +241,46 @@
                   #:manifest mfile #:manifest-entry ment))
   (check-equal? (manifest-read mfile) (list ment))
   (check-equal? (length (journal-completions state "pkg-a" "default")) 1)
+
+  ;; E-16b (reduced): single-add shapes only. Multi-add batching in
+  ;; one pm-fetch call wedges (BLOCKED note on the item); these prove
+  ;; the fetch, present and failed paths that stay green.
+  (define (ff-upstream sub)
+    (define d (build-path test-root sub))
+    (make-directory d)
+    (fixture-git d "init" "-b" "main" ".")
+    (call-with-output-file (build-path d "f.txt")
+      (lambda (out) (displayln "F" out)))
+    (fixture-git d "add" "-A")
+    (fixture-git d "commit" "-qm" "init")
+    d)
+  (define (fentry n d)
+    (manifest-entry n (string-append "file://" (path->string d))
+                    (string-append "refs/vault/" n) 1 #f '() #f))
+  (define fa-manifest (build-path test-root "fetch-a.rktd"))
+  (manifest-write fa-manifest (list (fentry "ff-a" (ff-upstream "ff-a"))))
+  (define fvault (build-path test-root "fvault"))
+  (make-directory fvault)
+  (define froot (path->string (build-path fvault "vault.git")))
+  (define ra
+    (parameterize ([current-allow-file-urls #t])
+      (pm-fetch froot fa-manifest)))
+  (check-equal? (map second ra) '(new))
+  (define pina (third (first ra)))
+  (check-true (regexp-match? #px"^[0-9a-f]{40}$" pina))
+  (define ra2
+    (parameterize ([current-allow-file-urls #t])
+      (pm-fetch froot fa-manifest)))
+  (check-equal? ra2 (list (list "ff-a" 'present "refs/vault/ff-a")))
+  (check-regexp-match #rx"ff-a: new" (car (update-report ra)))
+  (define fx-manifest (build-path test-root "fetch-x.rktd"))
+  (manifest-write fx-manifest
+                  (list (manifest-entry "ff-x" "file:///nonexistent-pm-fetch"
+                                        "refs/vault/ff-x" 1 #f '() #f)))
+  (define rx
+    (parameterize ([current-allow-file-urls #t])
+      (pm-fetch froot fx-manifest)))
+  (check-equal? (map second rx) '(failed))
+  (check-false (string=? (third (first rx)) ""))
+
   (delete-directory/files test-root))
