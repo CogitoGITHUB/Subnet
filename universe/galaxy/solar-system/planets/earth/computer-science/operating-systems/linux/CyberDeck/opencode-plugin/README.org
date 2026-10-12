@@ -1,0 +1,69 @@
+* opencode-plugin/ -- the pm side of OpenCode (V-5)
+
+pm stays the only implementation of package-manager policy. This
+directory is a shim: it runs pm, reads its =--format json= output, and
+hands the document to the model. It parses no spec, resolves no
+version, and decides nothing.
+
+** What it is
+=aiu-pm.js= registers two READ-ONLY tools and one passive digest:
+
+| tool | does |
+| - | - |
+| =aiu_run_status= | the active run id and a START/END summary: how many
+events, did the run close, what failed |
+| =aiu_events_tail= | events after a sequence number, newest last, one line each |
+| =chat.system.transform= | appends one line to the system context naming
+the active run; never interrupts, never calls a model |
+
+There is deliberately no =apply=, =activate= or =remove=. An agent
+cannot change the machine from here. When pm's dispatch is wired (the
+E-18 debt), those tools will call =context.ask()= -- OpenCode's own
+approval boundary -- before spawning anything. Approval at the plugin
+is never authorisation inside pm: pm keeps its own rules.
+
+** What it reads
+=<state>/events/<run-id>.jsonl=, written by =core/verbose.rkt=. The
+state root comes from =core/scope.rkt=, i.e. =$XDG_DATA_HOME= or
+=~/.local/share=. A partial (not yet newline-terminated) line is left
+alone until it is complete; a truncated file restarts the cursor rather
+than reading garbage; a malformed line is skipped, never thrown.
+
+** No polling
+The events directory is watched with =fs.watch=. New JSON Lines are
+read when the file actually changes. If pm is not running, the watcher
+never fires and the plugin does nothing.
+
+** API provenance
+Everything used here was read from the installed package, not
+remembered. Paths on this machine:
+
+- =$HOME/.config/opencode/node_modules/@opencode-ai/plugin/dist/index.d.ts=
+  -- =Plugin=, =PluginInput= (=client=, =project=, =directory=,
+  =worktree=, =$= BunShell), =Hooks.tool=, =Hooks.event=,
+  =Hooks["chat.system.transform"]= whose =output= is ={system: string[]}=.
+- =.../plugin/dist/tool.d.ts= -- =tool()=, =ToolContext= (including
+  =ask(input: AskInput)=), =ToolResult=.
+- =.../plugin/dist/shell.d.ts= -- =BunShell= (=.text()=, =.json()=,
+  =.nothrow()=, =.quiet()=, =.cwd()=).
+- =.../plugin/dist/example.js= -- the shipped shape of a tool plugin.
+
+Version read from the installed =package.json=: 1.18.31.
+
+** One thing deliberately NOT done
+=chat.message= plus a synthesised Part would be the tidier way to push
+feed lines into a session, but the installed =@opencode-ai/sdk= does
+not ship the =Part= type, so its shape would be guesswork. The digest
+uses =chat.system.transform=, whose =system= is a plain =string[]=
+that is verifiable in the installed =index.d.ts=. If a later SDK
+exposes =Part=, move the digest there and keep the tools unchanged.
+
+** Files
+- =aiu-pm.js= -- the plugin.
+- =test.mjs= -- offline test: synthetic JSON Lines, no OpenCode, no pm.
+  =node test.mjs= prints "all assertions passed".
+- =package.json= -- declares the =@opencode-ai/plugin= peer dependency.
+
+** Installing
+=scripts/install-opencode-plugin.nu= PRINTS the commands; it writes
+nothing. Run it, read it, run it yourself.

@@ -3,3 +3,4 @@ compiled/
 *.dep
 tmp/
 sources/vault.git/
+opencode-plugin/node_modules/

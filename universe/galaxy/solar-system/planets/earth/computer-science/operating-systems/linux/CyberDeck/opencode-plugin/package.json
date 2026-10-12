@@ -1,0 +1,12 @@
+{
+  "name": "aiu-pm-plugin",
+  "private": true,
+  "type": "module",
+  "description": "CyberDeck pm feed tools for OpenCode (V-5)",
+  "scripts": {
+    "test": "node test.mjs"
+  },
+  "peerDependencies": {
+    "@opencode-ai/plugin": ">=1.18.0"
+  }
+}
