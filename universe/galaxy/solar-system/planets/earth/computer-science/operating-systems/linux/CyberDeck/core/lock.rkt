@@ -16,7 +16,8 @@
          "git-id.rkt"
          "git-url.rkt"
          "spec.rkt"
-         "plan.rkt")
+         "plan.rkt"
+         "verbose.rkt")
 
 (provide
  (struct-out lock-entry)
@@ -333,6 +334,14 @@
 ;; path-string lockfile -> void, temp file in place plus rename (F-3)
 (define (write-lockfile path lf)
   (define sorted (sort (lockfile-entries lf) lock-entry<?))
+  ;; D-036: writing the lock is the moment the whole closure becomes
+  ;; reproducible, so it narrates how many pins went down and that they
+  ;; went down sorted, which is what makes two locks byte-identical.
+  (step 'lock
+        (string-append "the resolved set is pinned for "
+                       (number->string (length sorted)) " package(s)")
+        "entries are sorted by name so two resolutions produce one file"
+        #:how (if (path? path) (path->string path) (format "~a" path)))
   (call-with-atomic-output-file path
     (lambda (out tmp)
       (write `(lockfile (format-version 2)

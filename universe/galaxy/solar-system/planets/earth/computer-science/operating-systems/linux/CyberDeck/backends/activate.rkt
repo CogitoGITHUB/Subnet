@@ -225,16 +225,26 @@
       #:fields `(("package" . ,name))
     )
   )
+  ;; D-036: removing the last package DELETES the profile link rather
+  ;; than swapping it, which is a different enough outcome to narrate.
   (if (null? entries)
     (begin
-      (delete-file (build-path profile-root "profile"))
-      (if (path? profile-root)
-        profile-root
-        (string->path profile-root)
-      )
-    )
-    (profile-activate entries profile-root)
-  )
+      (with-op 'remove (path->string profile-root)
+               "the last package is gone, so the profile link is deleted"
+               (lambda ()
+                 (step 'remove "unlink"
+                       "no generation remains, so there is nothing to point at")
+                 (delete-file (build-path profile-root "profile"))
+                 (if (path? profile-root)
+                   profile-root
+                   (string->path profile-root)))))
+    (with-op 'remove (format "~a removed from ~a" name (path->string profile-root))
+             "the profile is rebuilt without this package"
+             #:inputs (list name)
+             (lambda ()
+               (step 'remove "rebuild"
+                     "a new generation is built beside the old one; store dirs are untouched")
+               (profile-activate entries profile-root))))
 )
 
 ;; path-string -> path, the holds file (absent reads as none held)

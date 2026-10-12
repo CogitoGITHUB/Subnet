@@ -15,7 +15,8 @@
          "store.rkt"
          "vault.rkt"
          "../core/errors.rkt"
-         "../core/plan.rkt")
+         "../core/plan.rkt"
+         "../core/verbose.rkt")
 
 (provide
  (contract-out
@@ -324,10 +325,23 @@
                               #:fields `(("value" . ,a)))]))
 
 ;; plan -> void, interprets every action in order (stops at failure)
+;; path-or-string -> string, for an event field.
+(define (as-text x)
+  (if (path? x) (path->string x) (format "~a" x)))
+
 (define (local-perform! p #:prefix [prefix #f] #:commit [commit #f]
                           #:vault [vault #f])
-  (for ([a (in-list (plan-actions p))])
-    (perform-action! a prefix commit vault)))
+  ;; D-036: this is where a plan's actions become real files on this
+  ;; machine, so it is one narrated operation with one step per action.
+  (with-op 'install (if prefix (as-text prefix) "(no prefix)")
+           "the plan's actions are performed against this machine"
+           #:how (if commit (format "commit ~a" commit) "no commit given")
+           #:inputs (list (number->string (length (plan-actions p))))
+           (lambda ()
+             (for ([a (in-list (plan-actions p))])
+               (step 'install (format "action ~a" a)
+                     "the next action of the plan, performed for real")
+               (perform-action! a prefix commit vault)))))
 
 ;; ---------------------------------------------------------------------------
 (module+ test

@@ -23,7 +23,8 @@
          "vault.rkt"
          "../core/errors.rkt"
          "../core/lock.rkt"
-         "../core/plan.rkt")
+         "../core/plan.rkt"
+         "../core/verbose.rkt")
 
 (provide
  (contract-out
@@ -68,17 +69,39 @@
 
 ;; path-string lockentries strings path-string -> results. Dev and
 ;; held packages skip without fetching; the rest check for real.
+;; path-or-string -> string, for an event. These entry points are
+;; called with both shapes (argv strings, test paths) and an event
+;; field is a string.
+(define (as-text x)
+  (if (path? x) (path->string x) (format "~a" x)))
+
 (define (update-all vault-root entries dev-names profile-root)
-  (for/list ([e (in-list entries)])
-    (define name (symbol->string (lock-entry-name e)))
-    (define slot (symbol->string (lock-entry-slot e)))
-    (cond [(member name dev-names)
-           (list name 'dev-skipped "no pin to compare")]
-          [(profile-held? profile-root name slot)
-           (list name 'held-skipped "slot pinned")]
-          [else
-           (check-package vault-root name
-                          (lock-entry-url e) (lock-entry-commit e))])))
+  ;; D-036: an update is a check, not a change, so every package that is
+  ;; NOT checked says why. A dev link and a held slot are the two
+  ;; reasons this project has, and both are narrated rather than
+  ;; silently returning a status string.
+  (with-op 'update (as-text vault-root)
+           "every locked package is checked against the vault"
+           #:how (format "~a entr(ies), ~a dev name(s)"
+                   (length entries) (length dev-names))
+           (lambda ()
+             (for/list ([e (in-list entries)])
+               (define name (symbol->string (lock-entry-name e)))
+               (define slot (symbol->string (lock-entry-slot e)))
+               (cond
+                 [(member name dev-names)
+                  (skip 'update name
+                        "it is a dev link, so there is no pin to compare")
+                  (list name 'dev-skipped "no pin to compare")]
+                 [(profile-held? profile-root name slot)
+                  (skip 'update (format "~a/~a" name slot)
+                        "the slot is pinned by a hold, so it is not checked")
+                  (list name 'held-skipped "slot pinned")]
+                 [else
+                  (step 'update name
+                        "the vault is asked whether this pin still matches")
+                  (check-package vault-root name
+                                 (lock-entry-url e) (lock-entry-commit e))])))))
 
 ;; results -> strings, one info line per package, input order kept
 (define (update-report results)
@@ -126,16 +149,30 @@
 ;; qualified refs carry the pins; second runs work offline); the
 ;; manifest is read, never written (E-14).
 (define (pm-fetch vault-root manifest-path)
-  (unless (directory-exists? vault-root)
-    (vault-init vault-root))
-  (define present
-    (with-handlers ([exn:fail:pm? (lambda (e) '())])
-      (vault-list vault-root)))
-  (for/list ([e (in-list (manifest-read manifest-path))])
-    (define name (manifest-entry-name e))
-    (if (member name present)
-        (resolve-present name)
-        (fetch-new vault-root name (manifest-entry-url e)))))
+  ;; D-036: a fetch of N packages says so, and each one says whether it
+  ;; was fetched or already present -- the difference is exactly what an
+  ;; operator (or an AI reading the feed) needs to know.
+  (with-op 'fetch (as-text manifest-path)
+           "every package the manifest declares is fetched or found"
+           (lambda ()
+             (unless (directory-exists? vault-root)
+               (step 'fetch "vault-init"
+                     "the vault does not exist yet, so it is created empty")
+               (vault-init vault-root))
+             (define present
+               (with-handlers ([exn:fail:pm? (lambda (e) '())])
+                 (vault-list vault-root)))
+             (step 'fetch "vault-list"
+                   "packages already in the vault are not fetched again")
+             (for/list ([e (in-list (manifest-read manifest-path))])
+               (define name (manifest-entry-name e))
+               (if (member name present)
+                   (begin
+                     (skip 'fetch name "it is already in the vault")
+                     (resolve-present name))
+                   (begin
+                     (step 'fetch name "it is not in the vault, so it is fetched")
+                     (fetch-new vault-root name (manifest-entry-url e))))))))
 
 (module+ test
   (require rackunit

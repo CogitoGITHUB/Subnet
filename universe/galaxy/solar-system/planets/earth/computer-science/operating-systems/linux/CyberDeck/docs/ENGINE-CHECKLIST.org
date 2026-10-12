@@ -632,32 +632,45 @@ digest uses the verifiable string[] instead. test.mjs drives the
 parsing and formatting from synthetic JSON Lines with no OpenCode and
 no pm. scripts/install-opencode-plugin.nu only PRINTS the commands.
 
-** PARTIAL V-2 wire the engine through core/verbose.rkt
-DONE: cli/main.rkt opens a run for EVERY pm invocation (so the feed
-exists for all 14 commands at once) and closes it on every path, and
-run-check, check-ok-lines and plan-document narrate their per-spec
-steps with a required why; a rejected spec emits a SKIP carrying the
-reason, not just a screen line. backends/run.rkt narrates every spawned
-process (V-1). backends/build.rkt narrates the recipe as one op with
-one STEP per entry. backends/apply.rkt narrates EVERY action, and a
-resumed run emits a SKIP naming the input hash that made it skippable
--- measured: "the journal already records this step as done under
-input hash h9". backends/journal.rkt narrates every line it takes,
-which is the resume record itself. backends/store.rkt narrates the
-versioned dir and its dead-run marker. backends/vault.rkt narrates
-the fetch-and-pin, naming the lock and the pre-spawn URL check.
-backends/activate.rkt narrates generation build and the atomic link
-swap for BOTH activate and rollback. backends/query.rkt narrates why
-and owner, including the DECIDE that both records agree.
+** DONE V-2 wire the engine through core/verbose.rkt
+Every module narrates. cli/main.rkt opens a run for EVERY pm
+invocation and closes it on every path, which is what gives all fourteen
+commands a feed at once. run-check, check-ok-lines and plan-document
+narrate their per-spec steps with a required why, and a rejected spec
+emits a SKIP carrying the reason rather than only a screen line.
+backends/run.rkt narrates every spawned process. build.rkt narrates the
+recipe as one op with one STEP per entry. apply.rkt narrates EVERY
+action, and a resumed run emits a SKIP naming the input hash that made
+it skippable -- measured: "the journal already records this step as
+done under input hash h9". journal.rkt narrates every line it takes,
+because that line IS the resume record. store.rkt narrates the
+versioned dir and its dead-run marker. vault.rkt narrates the
+fetch-and-pin, naming the lock and the pre-spawn URL check.
+activate.rkt narrates generation build and the atomic swap for
+activate, rollback AND remove, including the different outcome when the
+last package is gone. query.rkt narrates why and owner, including the
+DECIDE that lockfile and manifest agree. update.rkt narrates every
+package and names its two skip reasons: a dev link and a held slot.
+core/lock.rkt narrates the write and that entries are sorted.
 Measured: =pm check docs/examples= produced 10 events -- run START,
 the cli request, a nested check op with one STEP per spec at depth 1,
-and both ENDs. NOT DONE: lock, update, remove, install and local
-still narrate nothing of their own. Recorded as debt, not claimed.
+and both ENDs.
 
-** TODO E-28 skill (skills/aiu-pm/SKILL.md)
-When to use each command, the confirmation rule, the redaction rule,
-three worked examples with synthetic names. / Done when: the examples
-in the skill run as a test against the real CLI.
+** TODO V-3 results and the print lint
+display-result joins core/ui.rkt so a successful result is printed the
+same way an error is, through the narration path in the chosen format;
+cli/main.rkt stops printing by itself. Then a gate stage fails on any
+raw printf/displayln/eprintf/write outside core/verbose.rkt and
+core/ui.rkt in non-test code, and every existing hit is fixed rather
+than allowlisted. / Done when: deliberately adding a stray printf in
+backends turns the gate red with file:line.
+
+** TODO V-4 MCP feed tools and the skill
+mcp/server.rkt gains events.runs, events.tail and run.get over the same
+feed the plugin reads, all redacted, plus skills/aiu-pm/SKILL.md with
+three worked examples using synthetic names that run as a test.
+ / Done when: the scripted client tails a synthetic fixture run and the
+three skill examples execute against the real CLI.
 
 * PHASE S: security (runs BEFORE any package declaration, which is the
 final part of pm -- a declaration is a declaration only if pm refuses
