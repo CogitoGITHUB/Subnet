@@ -714,6 +714,84 @@ but is never called, and when a new =open-output-file= or spawn lands
 outside the audited modules. / Done when: deleting one enforcement
 call turns the gate red.
 
+* PHASE G: the structural spine (runs AFTER Phase D and BEFORE Phase
+S; these are the parts that must be designed before =apply= starts
+doing real work on a real machine)
+Everything here is a design-before-code item. Each names the failure it
+prevents, so a later change cannot quietly remove it.
+
+** TODO G-01 dependency resolution and path conflicts
+A spec declares =deps=; nothing yet resolves them into a full ordered
+plan. Two packages claiming one path must fail AT PLAN TIME with kind
+=activate=, not half-install and complain later. / Done when: a
+synthetic closure of 3 packages resolves to a deterministic order, and
+a 2-package path collision is refused by =plan= with both names in the
+message.
+
+** TODO G-02 lock the whole closure
+One pinned package is not a machine you can rebuild. / Done when: a
+lock document records name, version, slot, flags, commit and source URL
+for every resolved package, and two locks from the same spec set are
+byte-identical.
+
+** TODO G-03 verify as its own stage
+Integrity of the SOURCE (hash or signature) and of the BUILT ARTIFACTS
+must be explicit stages between fetch and apply, not implied inside
+them. / Done when: =verify= refuses a package whose source hash does not
+match its pin, and refuses a build whose output hash does not match the
+lock, each with kind =verify= and exit 6.
+
+** TODO G-04 path ownership ledger
+A per-generation record of which package owns which path, so =remove=
+and =rollback= can neither strand a path nor overwrite one. / Done when:
+=query-owner= answers from the LEDGER rather than by walking the tree,
+and a generation records the ledger it was built from.
+
+** TODO G-05 generation GC policy
+Generations without pruning are a disk bomb. / Done when: =gc= keeps the
+last N (default 5), never deletes a generation named by a hold, and says
+in its own narration exactly what it kept and why.
+
+** TODO G-06 spec discovery contract
+Channels were removed, so something must still answer "where do =.rktd=
+sets live?". / Done when: the contract names the roots, in order:
+explicit config directories, then the local vault, and never an implicit
+network fetch.
+
+** TODO G-07 idempotent apply
+Applying the same plan twice must be a no-op with SKIPs naming the hash
+that matched, never a reinstall. / Done when: a second =apply= of an
+unchanged plan writes nothing and every action reports a SKIP.
+
+** TODO G-08 partial failure law
+Fetch ok, build ok, apply dies halfway. The law must be stated, not
+implied. / Done when: docs state whether the law is resume, rollback to
+last good, or manual repair, and the feed shows which one applies to a
+given interrupted run.
+
+** TODO G-09 build isolation policy, stated either way
+Same-user builds, no chroot, no daemon -- but is the network available
+during build, and is the environment scrubbed? "Undefined" becomes a
+security hole by accident. / Done when: the policy is written down and
+build.rkt enforces exactly what it says, including the network answer.
+
+** TODO G-10 provenance on every generation
+Each generation records the run id, the interface that triggered it
+(CLI, MCP session, plugin), the spec paths and the lock that produced
+it. / Done when: =profile-generations= returns provenance and the event
+feed of that run id is enough to reconstruct the decision.
+
+** TODO G-11 search and status
+=check= validates specs; nothing answers "what is installed, what is
+held, what is outdated against the vault". Can be thin, must not be
+absent. / Done when: =pm status= and =pm held= print those three answers
+and each narrates which source it consulted.
+
+** TODO G-12 format migration rule
+=format-version 2= implies a v3 someday. / Done when: ONE rule says how
+an older or newer spec is refused or upgraded, and a v1 and a v9 spec
+each produce that rule's own message rather than a field error.
+
 * PHASE R: restructure (runs AFTER Phase D, BEFORE any package
 declarations or NodeShape work)
 ** TODO R-01 inventory

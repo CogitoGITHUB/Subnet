@@ -4,6 +4,28 @@
 * Log
 Append-only. Newest first. Every entry names the rule IDs it touches.
 
+** 2026-10-12 D-038: the structural spine is designed before apply works
+Twelve gaps are declared as PHASE G (G-01..G-12), placed after Phase D
+and before the security phase, because each one is a hole that only
+shows up once apply touches a real machine and each one is cheapest to
+design while the commands still refuse. They are: dependency
+resolution with plan-time path-conflict failure (G-01), a lock over
+the whole closure rather than one package (G-02), verify as its own
+stage between fetch and apply for both source and artifact integrity
+(G-03), a path ownership ledger so remove and rollback cannot strand
+or overwrite (G-04), a generation GC policy that keeps the last N and
+never a held generation (G-05), a written spec-discovery contract
+since channels are gone (G-06), idempotent apply that SKIPs rather
+than reinstalls (G-07), a stated law for partial failure (G-08), an
+explicit build isolation policy including the network answer, because
+undefined isolation becomes a security hole by accident (G-09),
+provenance on every generation tying the event feed to the ledger
+(G-10), search and status so "what is installed, held or outdated" is
+answerable (G-11), and one format-migration rule for a future
+=format-version 3= (G-12). None of this puts Guix back; it only
+requires that plan, apply and rollback stay honest as the command set
+comes off "not executable yet". D-038.
+
 ** 2026-10-12 D-037: security is its own phase, before any declaration
 Security is a first-class phase (S-01..S-04) that runs BEFORE any
 package declaration, because a declaration is only as trustworthy as
