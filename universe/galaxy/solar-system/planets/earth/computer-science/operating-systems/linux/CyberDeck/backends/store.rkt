@@ -18,7 +18,8 @@
 
 (require racket/contract/base
          racket/file
-         "../core/errors.rkt")
+         "../core/errors.rkt"
+         "../core/verbose.rkt")
 
 (provide
  (contract-out
@@ -57,17 +58,30 @@
 (define (ensure-store-dir state-root name slot version hash12 producer)
   (define dir (build-path state-root "store"
                           (versioned-rel name slot version hash12)))
-  (when (and (directory-exists? dir)
-             (store-marker-present? dir))
-    (raise-pm-error 'config 'ensure-store-dir "dead run blocks the dir"
-                    #:fields `(("dir" . ,(path->string dir)))
-                    #:hint "clear the stale versioned dir by hand"))
-  (make-directory* dir)
-  (call-with-output-file (marker-path dir)
-    (lambda (out) (void))
-    #:exists 'truncate/replace)
-  (producer)
-  dir)
+  ;; D-036: the store dir is where bytes land, so the whole thing is one
+  ;; narrated operation: a fresh dir, a marker that names this run, and
+  ;; the producer that fills it.
+  (with-op 'store
+           (string-append name "/" version)
+           "a package version is being materialised in the store"
+           #:how (path->string dir)
+           #:inputs (list name version hash12)
+           (lambda ()
+             (when (and (directory-exists? dir)
+                        (store-marker-present? dir))
+               (skip 'store (path->string dir)
+                     "a stale marker from a dead run is in this dir")
+               (raise-pm-error 'config 'ensure-store-dir "dead run blocks the dir"
+                               #:fields `(("dir" . ,(path->string dir)))
+                               #:hint "clear the stale versioned dir by hand"))
+             (make-directory* dir)
+             (call-with-output-file (marker-path dir)
+               (lambda (out) (void))
+               #:exists 'truncate/replace)
+             (step 'store "marker"
+                   "the marker names this run so a dead one is detectable")
+             (producer)
+             dir)))
 
 ;; path -> boolean, marker still present
 (define (store-marker-present? dir)

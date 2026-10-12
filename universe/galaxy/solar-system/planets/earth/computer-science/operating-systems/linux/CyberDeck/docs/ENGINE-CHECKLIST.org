@@ -642,10 +642,16 @@ process (V-1). backends/build.rkt narrates the recipe as one op with
 one STEP per entry. backends/apply.rkt narrates EVERY action, and a
 resumed run emits a SKIP naming the input hash that made it skippable
 -- measured: "the journal already records this step as done under
-input hash h9". Measured: =pm check docs/examples= produced 10 events
--- run START, the cli request, a nested check op with one STEP per
-spec at depth 1, and both ENDs. NOT DONE: fetch, lock, activate,
-update, rollback, remove, query, vault, install, journal and store
+input hash h9". backends/journal.rkt narrates every line it takes,
+which is the resume record itself. backends/store.rkt narrates the
+versioned dir and its dead-run marker. backends/vault.rkt narrates
+the fetch-and-pin, naming the lock and the pre-spawn URL check.
+backends/activate.rkt narrates generation build and the atomic link
+swap for BOTH activate and rollback. backends/query.rkt narrates why
+and owner, including the DECIDE that both records agree.
+Measured: =pm check docs/examples= produced 10 events -- run START,
+the cli request, a nested check op with one STEP per spec at depth 1,
+and both ENDs. NOT DONE: lock, update, remove, install and local
 still narrate nothing of their own. Recorded as debt, not claimed.
 
 ** TODO E-28 skill (skills/aiu-pm/SKILL.md)

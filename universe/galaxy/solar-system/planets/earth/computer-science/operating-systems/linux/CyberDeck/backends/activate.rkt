@@ -22,7 +22,8 @@
          racket/path
          racket/string
          "store.rkt"
-         "../core/errors.rkt")
+         "../core/errors.rkt"
+         "../core/verbose.rkt")
 
 (provide
  (contract-out
@@ -185,12 +186,23 @@
 ;; path-string exact-integer -> path, repoint at generation N
 (define (profile-rollback profile-root n)
   (define gen (build-path profile-root (gen-dir-name n)))
-  (unless (directory-exists? gen)
-    (raise-pm-error 'config 'profile-rollback "unknown generation"
-                    #:fields `(("generation" . ,(gen-dir-name n)))))
-  (swap-link! (path->string gen)
-              (path->string (build-path profile-root "profile")))
-  gen)
+  ;; D-036: a rollback is the same consequential move as an activate,
+  ;; so it is narrated the same way, and the generation it repoints at is
+  ;; named in the event rather than only in the message.
+  (with-op 'rollback (gen-dir-name n)
+           "the profile is repointed at an earlier generation"
+           #:how (path->string (build-path profile-root "profile"))
+           (lambda ()
+             (unless (directory-exists? gen)
+               (skip 'rollback (path->string gen)
+                     "the named generation is not on disk")
+               (raise-pm-error 'config 'profile-rollback "unknown generation"
+                               #:fields `(("generation" . ,(gen-dir-name n)))))
+             (step 'rollback "swap"
+                   "the profile link flips back to the earlier generation")
+             (swap-link! (path->string gen)
+                         (path->string (build-path profile-root "profile")))
+             gen)))
 
 ;; path-string string (listof entry) -> path, new generation minus one.
 ;; The package must be active now and gone from the survivors; store

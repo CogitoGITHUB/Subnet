@@ -19,7 +19,8 @@
          racket/path
          racket/string
          json
-         "../core/errors.rkt")
+         "../core/errors.rkt"
+         "../core/verbose.rkt")
 
 (provide
  (contract-out
@@ -53,22 +54,29 @@
   (build-path state "journal" name (string-append slot ".jsonl")))
 
 ;; string string string string string string -> void, one line
-(define (journal-append! state name slot step input event)
+(define (journal-append! state name slot step-id input event)
   (define path (journal-file state name slot))
   (make-directory* (or (path-only path) state))
   (define line
-    (jsexpr->string (hasheq 'step step 'input input 'event event)))
+    (jsexpr->string (hasheq 'step step-id 'input input 'event event)))
+  ;; D-036: the journal IS the resume record, so every line it takes is
+  ;; also an event. One choke point covers start and end.
+  (step 'journal
+        (string-append step-id " -> " event)
+        "the plan's step reached this point under this input hash"
+        #:how (path->string path)
+        #:inputs (list input))
   (call-with-output-file path
     (lambda (out) (displayln line out))
     #:exists 'append))
 
 ;; string string string string string -> void
-(define (journal-record-start! state name slot step input)
-  (journal-append! state name slot step input "start"))
+(define (journal-record-start! state name slot step-id input)
+  (journal-append! state name slot step-id input "start"))
 
 ;; string string string string string -> void
-(define (journal-record-end! state name slot step input)
-  (journal-append! state name slot step input "end"))
+(define (journal-record-end! state name slot step-id input)
+  (journal-append! state name slot step-id input "end"))
 
 ;; string -> jsexpr, complete lines only; anything else is config
 (define (parse-line path line)

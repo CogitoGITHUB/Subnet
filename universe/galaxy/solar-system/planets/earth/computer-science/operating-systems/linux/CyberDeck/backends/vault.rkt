@@ -18,6 +18,7 @@
          "../core/scope.rkt"
          "../core/spec.rkt"
          "../core/vault-lock.rkt"
+         "../core/verbose.rkt"
          "run.rkt"
          "manifest.rkt")
 
@@ -632,12 +633,25 @@
   ;; forever and the test thread would never reach the release.
   ;; Failing fast here breaks that triangle (design: writers refuse).
   (vault-assert-child-free vault-root)
-  (ensure-vault vault-root)
-  (call-with-vault-lock vault-root (or holder "interactive")
-                        (format "add ~a" name)
-    (lambda ()
-      (vault-add-locked vault-root name url ns pin cancel on-progress
-                        fsck-allow))))
+  ;; D-036: the whole fetch-and-pin is one narrated operation. The URL
+  ;; is redacted by the narration path before it reaches any destination.
+  (with-op 'fetch name "a source is being fetched and pinned into the vault"
+           #:how (if pin (format "pin ~a" pin) "no pin")
+           #:inputs (list url)
+           (lambda ()
+             (step 'vault
+                   (format "vault-add ~a" name)
+                   "the source must be a real git URL, checked before any spawn")
+             (ensure-vault vault-root)
+             (step 'vault "ensure-vault"
+                   "the bare repo must exist and be usable")
+             (call-with-vault-lock vault-root (or holder "interactive")
+                                   (format "add ~a" name)
+               (lambda ()
+                 (step 'vault "lock"
+                       "no other writer may hold the vault while this runs")
+                 (vault-add-locked vault-root name url ns pin cancel
+                                   on-progress fsck-allow))))))
 
 ;; path-string string string -> vault-fetch-result, refetch plus hygiene
 (define (vault-fetch-namespace vault-root name url

@@ -16,7 +16,8 @@
          "../core/errors.rkt"
          "../core/lock.rkt"
          "../core/plan.rkt"
-         "../core/version.rkt")
+         "../core/version.rkt"
+         "../core/verbose.rkt")
 
 (provide
  (contract-out
@@ -45,24 +46,39 @@
 
 ;; lockentries manifest-entries string -> why-datum
 (define (query-why locks manifests name)
-  (define lock-hit
-    (for/or ([e (in-list locks)])
-      (and (equal? (symbol->string (lock-entry-name e)) name) e)))
-  (unless lock-hit
-    (raise-pm-error 'config 'query-why "package not in lockfile"
-                    #:fields `(("package" . ,name))))
-  (define manifest-hit
-    (for/or ([e (in-list manifests)])
-      (and (equal? (manifest-entry-name e) name) e)))
-  (unless manifest-hit
-    (raise-pm-error 'config 'query-why "package not in manifest"
-                    #:fields `(("package" . ,name))))
-  (list name
-        (version->string (lock-entry-version lock-hit))
-        (symbol->string (lock-entry-slot lock-hit))
-        (lock-entry-flags lock-hit)
-        (lock-entry-commit lock-hit)
-        (manifest-entry-url manifest-hit)))
+  ;; D-036: a read-only query still narrates WHY it looked where it
+  ;; looked, so "why is this installed" has an answer on the record and
+  ;; not just on the screen.
+  (with-op 'query name "the user asked why this package is present"
+           #:how "lockfile first, then the manifest"
+           (lambda ()
+             (step 'query "lockfile"
+                   "the lockfile is authoritative for what is pinned")
+             (define lock-hit
+               (for/or ([e (in-list locks)])
+                 (and (equal? (symbol->string (lock-entry-name e)) name) e)))
+             (unless lock-hit
+               (skip 'query name "no lockfile entry names this package")
+               (raise-pm-error 'config 'query-why "package not in lockfile"
+                               #:fields `(("package" . ,name))))
+             (step 'query "manifest"
+                   "the manifest says where the source came from")
+             (define manifest-hit
+               (for/or ([e (in-list manifests)])
+                 (and (equal? (manifest-entry-name e) name) e)))
+             (unless manifest-hit
+               (skip 'query name "no manifest entry names this package")
+               (raise-pm-error 'config 'query-why "package not in manifest"
+                               #:fields `(("package" . ,name))))
+             (decide 'query name "both records agree, so the answer is certain"
+                     #:chosen (manifest-entry-url manifest-hit)
+                     #:alternatives (list "lockfile only" "manifest only"))
+             (list name
+                   (version->string (lock-entry-version lock-hit))
+                   (symbol->string (lock-entry-slot lock-hit))
+                   (lock-entry-flags lock-hit)
+                   (lock-entry-commit lock-hit)
+                   (manifest-entry-url manifest-hit)))))
 
 ;; why-datum -> string
 (define (why->text w)
