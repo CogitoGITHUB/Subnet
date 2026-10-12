@@ -570,10 +570,13 @@ shape) and cargo.rktd. Verified: a spec naming make-c expands to the
 same plan as its hand-written steps, and an unsatisfiable tool list
 refuses with kind 'config before any step runs.
 
-** TODO E-26 docs/API.org
-JSON schema (field list and one synthetic example) for every command's
-=--format json= output. / Done when: each command's real output matches
-its documented example in a test.
+** DONE E-26 docs/API.org
+docs/API.org documents the three fields (name, format, operands), the
+error behaviour (no JSON envelope, non-zero exit instead), and one
+real example per command. The doc IS the golden: cli/main.rkt
+re-parses every "** =pm ...=" header and re-renders it, so a stale
+example fails the gate. Confirmed by corrupting one operand on
+purpose: the test named the drifted line.
 
 ** TODO E-27 MCP server (mcp/server.rkt)
 JSON-RPC over stdio; tools are the read-only commands; state-changing

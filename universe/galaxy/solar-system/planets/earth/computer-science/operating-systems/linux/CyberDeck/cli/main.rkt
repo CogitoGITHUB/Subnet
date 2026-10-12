@@ -321,6 +321,9 @@
 (module+ test
   (require rackunit
            racket/file
+           racket/list
+           racket/runtime-path
+           racket/string
            "../core/errors.rkt")
 
   ;; Parsing: empty and flags mean help; check takes one directory.
@@ -471,4 +474,58 @@
                    (parse-args #("frobnicate"))
                    'no-error))
                 2)
+
+  ;; ---------------------------------------------------------------
+  ;; docs/API.org is the golden (E-26). Every "** =pm ...=" header is
+  ;; re-parsed and re-rendered here, so a documented example that
+  ;; drifts from the real --format json output fails the gate.
+  (define-runtime-path cli-dir ".")
+  (define api-path
+    (simplify-path (build-path cli-dir 'up "docs" "API.org")))
+  (check-true (file-exists? api-path) "docs/API.org must exist")
+  (define api-lines (file->string api-path))
+  (define (api-examples text)
+    ;; -> (listof (list command-line json-string)), in document order.
+    (let loop ([ls (string-split text "\n")] [acc '()])
+      (cond
+        [(null? ls) (reverse acc)]
+        [(regexp-match #rx"^\\*\\* =pm (.+)=\\s*$" (car ls))
+         => (lambda (m)
+              (define line (cadr m))
+              (define rest (cdr ls))
+              (define next (and (pair? rest) (car rest)))
+              (cond
+                ;; string-prefix? here is racket/base's PATTERN form:
+                ;; (string-prefix? STRING PATTERN), not the string one.
+                [(and next (string-prefix? next ": "))
+                 (loop (cdr rest)
+                       (cons (list line (substring next 2)) acc))]
+                [else (loop rest acc)]))]
+        [else (loop (cdr ls) acc)])))
+  (define examples (api-examples api-lines))
+  ;; Thirteen commands plus --help.
+  (check-equal? (length examples) 14)
+  (check-equal? (sort (remove-duplicates
+                       (map (lambda (e)
+                              (let ([words (string-split (car e) " ")])
+                                (define w (if (string=? (car words) "pm")
+                                              (cadr words)
+                                              (car words)))
+                                ;; "pm --help" documents the help command.
+                                (if (string=? w "--help") "help" w)))
+                            examples))
+                     string<?)
+               (sort (append (map car command-table)
+                             (list "check" "help"))
+                     string<?))
+  (for ([ex (in-list examples)])
+    (define words (string-split (car ex) " "))
+    (define argv
+      (list->vector
+       (if (and (pair? words) (string=? (car words) "pm"))
+           (cdr words)
+           words)))
+    (check-equal? (command->json (parse-args argv))
+                  (cadr ex)
+                  (string-append "docs/API.org is stale for: " (car ex))))
   (delete-directory/files check-dir))

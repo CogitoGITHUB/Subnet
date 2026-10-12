@@ -1,0 +1,105 @@
+* API.org -- the =--format json= surface (E-26)
+
+Every command takes an optional global flag, =--format sexp|json=,
+before the command word. The JSON form is the machine surface: the
+MCP server (E-27) and the skill (E-28) read nothing else. One object
+per invocation, printed on one line, ={"name":...}= shape. Nothing
+here executes yet (E-18 shipped the surface; dispatch is recorded
+debt). The =--format sexp= default prints the same fields as an
+s-expression instead.
+
+** Fields
+- =name= -- the command word, always one of the words in the table
+  below. String, never empty.
+- =format= -- the format actually rendered: ="json"= whenever
+  =--format json= was given. ="sexp"= otherwise, including for
+  =--help=, which has no JSON form of its own.
+- =operands= -- array of the command's operands, in order, as the
+  strings the user typed. Every operand is a string even when it is
+  a number (=pm rollback default 1= prints ="1"=). Empty array for
+  =--help=.
+
+Key order is fixed as =name=, =format=, =operands=; there is no
+whitespace between tokens. =--format= may also appear after the
+operands; both positions parse identically and the doc always shows
+it last.
+
+** Errors
+A refused command prints no JSON object. It raises kind =config= (or
+=internal=) and the process exits non-zero with a human-readable
+message; see =docs/ERRORS.org= for the kinds. There is no JSON error
+envelope yet, and that gap is deliberate: a machine caller sees a
+non-zero exit, not a half-formed object.
+
+** Commands
+Thirteen commands take operands; =--help= takes none. Every example
+below is the real output, and =cli/main.rkt= re-runs each one against
+this file, so an example that drifts fails the gate.
+
+** =pm plan specs/ --format json=
+: {"name":"plan","format":"json","operands":["specs/"]}
+Shows the install plan. One operand: the spec directory.
+
+** =pm check specs/ --format json=
+: {"name":"check","format":"json","operands":["specs/"]}
+Validates every =.rktd= under DIR. One operand: the directory.
+
+** =pm lock pm.lock --format json=
+: {"name":"lock","format":"json","operands":["pm.lock"]}
+Shows the lockfile plan. One operand: the lockfile path.
+
+** =pm fetch pm.manifest --format json=
+: {"name":"fetch","format":"json","operands":["pm.manifest"]}
+Fetches every declared package. One operand: the manifest path.
+
+** =pm apply state --format json=
+: {"name":"apply","format":"json","operands":["state"]}
+Applies a plan. One operand: the state directory.
+
+** =pm update state --format json=
+: {"name":"update","format":"json","operands":["state"]}
+Checks all installed packages. One operand: the state directory.
+
+** =pm activate default --format json=
+: {"name":"activate","format":"json","operands":["default"]}
+Flips the profile. One operand: the profile name.
+
+** =pm rollback default 1 --format json=
+: {"name":"rollback","format":"json","operands":["default", "1"]}
+Repoints a profile at generation 1. Two operands: profile, then the
+generation as a string.
+
+** =pm remove default lua --format json=
+: {"name":"remove","format":"json","operands":["default", "lua"]}
+Removes a package from a profile. Two operands: profile, then name.
+
+** =pm hold default lua 3 --format json=
+: {"name":"hold","format":"json","operands":["default", "lua", "3"]}
+Pins a package to a slot. Three operands: profile, name, slot as a
+string.
+
+** =pm why lua --format json=
+: {"name":"why","format":"json","operands":["lua"]}
+Explains why a package is present. One operand: the package name.
+
+** =pm owner default docs --format json=
+: {"name":"owner","format":"json","operands":["default", "docs"]}
+Reports which manifest owns a path. Two operands: profile, then the
+relative path.
+
+** =pm verify lua --format json=
+: {"name":"verify","format":"json","operands":["lua"]}
+Verifies an installed package against its manifest. One operand: the
+package name.
+
+** =pm --help=
+: {"name":"help","format":"sexp","operands":[]}
+No operands and no JSON form: =--help= always renders =sexp=, so the
+=format= field says so even when =--format json= precedes it. The
+human usage text goes to stdout as plain lines, not JSON.
+
+** Not JSON
+=pm= with no arguments is =pm --help=. An unknown flag or an unknown
+command refuses with kind =config= before any object is built. A
+missing operand refuses with the count the command wants; no partial
+object is ever printed.
