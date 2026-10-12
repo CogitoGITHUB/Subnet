@@ -578,11 +578,17 @@ re-parses every "** =pm ...=" header and re-renders it, so a stale
 example fails the gate. Confirmed by corrupting one operand on
 purpose: the test named the drifted line.
 
-** TODO E-27 MCP server (mcp/server.rkt)
-JSON-RPC over stdio; tools are the read-only commands; state-changing
-tools require the confirmation token. / Done when: a scripted client
-lists the tools, runs plan on a synthetic fixture, and an apply call
-WITHOUT a token is refused with a clear message.
+** DONE E-27 MCP server (mcp/server.rkt)
+JSON-RPC 2.0 over stdio, one object per line, three methods:
+initialize (hands out the confirmation token), tools/list and
+tools/call. All 13 pm commands are tools; the six read-only ones run
+free, the seven state-changing ones refuse with -32001 unless the
+call carries the token. The scripted client lists the tools, runs
+plan on a two-spec synthetic fixture and gets back the CLI document
+byte for byte, and an apply call without a token is refused with a
+message that names the confirmationToken. Bad protocol version, bad
+params, unknown tool, wrong arity and a garbage line are all JSON-RPC
+errors, never exceptions. 29 tests.
 
 ** TODO E-28 skill (skills/aiu-pm/SKILL.md)
 When to use each command, the confirmation rule, the redaction rule,

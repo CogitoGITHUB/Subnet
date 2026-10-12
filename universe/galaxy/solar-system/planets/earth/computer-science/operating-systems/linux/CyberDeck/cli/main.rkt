@@ -7,7 +7,9 @@
 
 (require racket/contract/base
          racket/file
+         racket/port
          racket/string
+         json
          "../core/cancel.rkt"
          "../core/errors.rkt"
          "../core/spec.rkt"
@@ -41,6 +43,13 @@
   [command->json (-> command? string?)]
   ;; path-string -> exit code, validates every .rktd, 0 or 3
   [run-check (-> path-string? exact-nonnegative-integer?)]
+  ;; command -> string, the exact --format json document: the envelope
+  ;; from command->json plus that command's result keys. Raises kind
+  ;; 'config for a command that is not executable yet (E-18 debt).
+  [run-command-json (-> command? string?)]
+  ;; jsexpr -> string, the value as JSON text (write-json alone
+  ;; prints and returns void)
+  [json-text (-> jsexpr? string?)]
   ;; -> void, prints usage to stdout
   [display-help (-> void?)]))
 
@@ -229,17 +238,22 @@
 (define (command->sexp cmd)
   (format "~s" (command->datum cmd)))
 
-;; command -> string, fixed key order until E-26 hardens the schema.
-;; Operands render through ~s, which matches JSON for the ASCII paths
-;; and names commands take today.
-(define (command->json cmd)
+;; command -> string, the envelope WITHOUT its closing brace: a
+;; command with result keys appends ",\"key\":..." then closes it.
+(define (command-envelope cmd)
   (define d (command->datum cmd))
   (string-append "{\"name\":" (format "~s" (car d))
                  ",\"format\":" (format "~s" (symbol->string (cadr d)))
                  ",\"operands\":["
                  (string-join (map (lambda (o) (format "~s" o)) (caddr d))
                               ", ")
-                 "]}"))
+                 "]"))
+
+;; command -> string, fixed key order until E-26 hardens the schema.
+;; Operands render through~s, which matches JSON for the ASCII paths
+;; and names commands take today.
+(define (command->json cmd)
+  (string-append (command-envelope cmd) "}"))
 
 ;; -> void, prints usage to stdout
 (define (display-help)
@@ -296,6 +310,67 @@
   (if (zero? failures) 0 3))
 
 ;; ---------------------------------------------------------------------------
+;; Result documents (E-26). The envelope is name/format/operands; a
+;; command that produces something adds result keys. Key order in
+;; write-json follows hash insertion order, so the tests and the
+;; examples in docs/API.org agree on it.
+
+;; path-string -> void, kind 'config when the directory is missing
+(define (require-dir dir)
+  (unless (directory-exists? dir)
+    (raise-pm-error 'config 'pm "directory not found"
+                    #:fields `(("dir" . ,dir)))))
+
+;; path-string -> jsexpr (listof jsexpr), one object per .rktd in DIR,
+;; in file order. Reads every spec, so a bad spec raises here exactly
+;; as it does in run-check. No resolution, no ordering: the plan as
+;; written. Keys inside a package are alphabetical, which is what
+;; write-json does to an immutable hash; the envelope order is ours.
+(define (plan-document dir)
+  (require-dir dir)
+  (for/list ([f (in-list (sorted-rktd-files dir))])
+    (define s (read-spec-file f))
+    (hasheq 'name (symbol->string (spec-name s))
+            'version (version->string (spec-version s))
+            'deps (for/list ([d (in-list (spec-deps s))])
+                    (hasheq 'name (symbol->string (dep-name d))
+                            'version (version->string (dep-version d)))))))
+
+;; path-string -> (listof string), the ok lines of a check run
+(define (check-ok-lines dir)
+  (require-dir dir)
+  (for/list ([f (in-list (sorted-rktd-files dir))])
+    (define s (read-spec-file f))
+    (format "ok: ~a ~a" (spec-name s) (version->string (spec-version s)))))
+
+;; jsexpr -> string, write-json prints to the current port and returns
+;; void; here the value is spliced into a bigger document.
+(define (json-text j)
+  (with-output-to-string (lambda () (write-json j))))
+
+;; command -> string, the exact --format json document: the envelope
+;; from command->json, then the command's result keys. A STRING, not a
+;; jsexpr: the envelope order is documented and must not be left to
+;; the hash printer.
+(define (run-command-json cmd)
+  (define envelope (command-envelope cmd))
+  (cond
+    [(command-plan? cmd)
+     (string-append envelope
+                    ",\"packages\":"
+                    (json-text (plan-document (command-plan-specs cmd)))
+                    "}")]
+    [(command-check? cmd)
+     (string-append envelope
+                    ",\"ok\":"
+                    (json-text (check-ok-lines (command-check-dir cmd)))
+                    "}")]
+    [(command-help? cmd) (string-append envelope "}")]
+    [else
+     (raise-pm-error 'config 'pm "command not executable yet"
+                     #:fields `(("command" . ,(car (command->datum cmd)))))]))
+
+;; ---------------------------------------------------------------------------
 (module+ main
   (define-values (cancel-evt trigger-cancel!) (make-cancel-source))
   (define code
@@ -312,6 +387,14 @@
       (cond [(command-help? cmd) (display-help) 0]
             [(command-check? cmd)
              (run-check (command-check-dir cmd))]
+            [(command-plan? cmd)
+             (if (eq? 'json (command-plan-format cmd))
+                 (begin (displayln (run-command-json cmd)) 0)
+                 (begin
+                   (for ([p (in-list (plan-document
+                                      (command-plan-specs cmd)))])
+                     (displayln p))
+                   0))]
             [else
              (raise-pm-error 'config 'pm "command not executable yet"
                              #:fields `(("command" . ,(car (command->datum cmd)))))])))
@@ -324,6 +407,7 @@
            racket/list
            racket/runtime-path
            racket/string
+           json
            "../core/errors.rkt")
 
   ;; Parsing: empty and flags mean help; check takes one directory.
