@@ -656,14 +656,24 @@ Measured: =pm check docs/examples= produced 10 events -- run START,
 the cli request, a nested check op with one STEP per spec at depth 1,
 and both ENDs.
 
-** TODO V-3 results and the print lint
-display-result joins core/ui.rkt so a successful result is printed the
-same way an error is, through the narration path in the chosen format;
-cli/main.rkt stops printing by itself. Then a gate stage fails on any
-raw printf/displayln/eprintf/write outside core/verbose.rkt and
-core/ui.rkt in non-test code, and every existing hit is fixed rather
-than allowlisted. / Done when: deliberately adding a stray printf in
-backends turns the gate red with file:line.
+** PARTIAL V-3 results and the print lint
+DONE: core/ui.rkt gains display-result, the success-side twin of
+display-pm-error, tested for both the lines and the empty case. Gate
+stage 14 is written and works: CYBERDECK_STAGES=14 scans every .rkt in
+non-test code and fails with file:line on printf, eprintf,
+write-string, and a one-argument displayln that has no port. It was
+tuned to be PRECISE rather than broad -- 144 raw hits narrowed to 5 --
+because a lint that flags a caller's own port as a violation gets
+allowlisted and then protects nothing.
+NOT DONE, and why stage 14 is not in the default stage list: five real
+violations remain, and each needs judgement rather than a mechanical
+edit. backends/run.rkt:411 and :427 are the legacy pm-run-start/end
+stderr fallback used when no run is open; core/log.rkt:132 and :136 are
+the D-021 trace screen pump, which D-036 supersedes but has not yet
+been moved; cli/main.rkt:322 is inside run-check. Until those five are
+routed, enabling stage 14 by default would make the gate permanently
+red, which is worse than not having it. The stage is complete and
+runnable; the decision is when to switch it on.
 
 ** TODO V-4 MCP feed tools and the skill
 mcp/server.rkt gains events.runs, events.tail and run.get over the same

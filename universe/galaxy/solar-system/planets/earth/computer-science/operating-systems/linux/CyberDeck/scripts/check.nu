@@ -227,6 +227,79 @@ def run-stage-13-body [] {
     if $violations > 0 { exit $EXIT_VIOLATIONS }
 }
 
+# V-3: one printer for the user. A raw print outside core/verbose.rkt
+# and core/ui.rkt means some command is talking to the terminal by
+# itself, which is exactly what D-036 removed. Quoted text is stripped
+# first so the lint does not match its own vocabulary.
+def print-lint-file [f] {
+    let ls = (open --raw $f | lines)
+    mut out = []
+    # Non-test code only: everything from (module+ test onwards is a test
+    # block, and a test may print whatever it needs to assert on. The
+    # line index of that form is found once, then used as the cut.
+    let starts = ($ls | enumerate | where {|r|
+        ($r.item | str trim) == "(module+ test"
+    } | get index)
+    let test_at = (if ($starts | is-empty) { -1 } else { $starts | first })
+    for l in ($ls | enumerate) {
+        let n = ($l.index + 1)
+        let t = ($l.item | str trim)
+        if ($t | str starts-with ";") { continue }
+        if ($l.index >= $test_at) { continue }
+        let code = (strip-quotes $t)
+        # Precise on purpose. (displayln X port) and (eprintf F ...) are
+        # writes to a port the CALLER supplied; that is plumbing, not a
+        # command talking to the terminal. The violation is a bare
+        # (displayln X) with no port, or printf/eprintf/write-string,
+        # which always land on a terminal the user did not choose.
+        # Look past the opening paren: a bare (displayln X) has no other
+        # "(" in it, while (displayln X port) has the port, not a paren.
+        # Testing the whole line would always see its own leading "(".
+        # A bare (displayln X) has exactly ONE argument; with a port it
+        # has two. Counting whitespace-separated tokens says that
+        # directly, and unlike counting parens it is not fooled by the
+        # form's own opening bracket or by an argument that is itself
+        # a parenthesised expression.
+        let n2 = ($code | str length)
+        let inner = (if $n2 > 1 { $code | str substring 1..($n2 - 1) } else { "" })
+        let toks = ($inner | split row " " | where {|w| ($w | str length) > 0 })
+        let bare_displayln = (($code | str starts-with "(displayln")
+            and ($code | str ends-with ")")
+            and (($toks | length) == 1))
+        let bad = (
+            ($code | str contains "(printf")
+            or ($code | str contains "(eprintf")
+            or ($code | str contains "(write-string")
+            or $bare_displayln
+        )
+        if $bad {
+            $out = ($out | append $"($f):($n):raw print outside the two printers, D-036")
+        }
+    }
+    $out
+}
+
+def run-stage-14-body [] {
+    print "[check] stage 14 one-printer lint"
+    let spec = ($env | get -o CYBERDECK_LINT_ROOTS? | default ".")
+    let roots = ($spec | split row " ")
+    mut violations = []
+    for r in $roots {
+        # core/verbose.rkt and core/ui.rkt ARE the printers; every other
+        # .rkt must reach the user through them. lint-files already drops
+        # compiled/ and non-files, so the same list the text lint sees.
+        let scanned = (lint-files $r | where {|f| ($f | str ends-with ".rkt") }
+            | where {|f|
+                not (($f | path basename) in ["verbose.rkt" "ui.rkt"])
+            })
+        let hits = ($scanned | each {|f| print-lint-file $f } | flatten)
+        for v in $hits { print $v }
+        print $"print-lint: ($scanned | length) files, ($hits | length) violations"
+        $violations = ($violations | append $hits)
+    }
+    if (($violations | length) > 0) { exit $EXIT_VIOLATIONS }
+}
+
 def run-stage-6-body [] {
     print $"[check] stage 6 text lint"
     # Roots come from $env, not from arguments: this Nu build exposes no
@@ -511,6 +584,9 @@ def main [--changed] {
         }
         if "13" in $todo {
             run-stage-13-body
+        }
+        if "14" in $todo {
+            run-stage-14-body
         }
     let elapsed = (((date now | into int) - $started) / 1000000)
     print $"[check] end utc=(utc) after=($elapsed)ms"

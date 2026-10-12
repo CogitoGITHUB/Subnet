@@ -14,6 +14,10 @@
           [warn! (-> string? void?)]
           ;; -> void, print collected warnings oldest-first, then count (E-11)
           [display-warning-summary (->* () (#:port output-port?) void?)]
+          ;; (listof string) -> void, the SUCCESS path. Results go out
+          ;; of this module exactly like errors do (D-036, V-3): one
+          ;; printer for the user, never one per command.
+          [display-result (->* ((listof string?)) (#:port output-port?) void?)]
           ;; Parameter holding a box of collected warning strings, newest first.
           ;; Scope it with parameterize; warn! adds, display-warning-summary reads.
           [current-collected-warnings (parameter/c (box/c (listof string?)))]))
@@ -52,6 +56,19 @@
   (displayln (exn-message e) port)
   (fprintf port "  context: ~s\n"
            (continuation-mark-set->context (exn-continuation-marks e))))
+
+;; ---------------------------------------------------------------------------
+;; Result display (V-3). Errors have had one printer since E-7; results
+;; now get the same treatment so no command prints by itself. The
+;; narration of WHY something happened goes to core/verbose.rkt; what
+;; the user asked for goes out of here.
+
+;; (listof string) -> void, one line per item, oldest first, nothing
+;; else. An empty list prints nothing at all rather than a blank line.
+(define (display-result lines #:port [port (current-output-port)])
+  (for ([l (in-list lines)])
+    (displayln l port))
+  (flush-output port))
 
 ;; ---------------------------------------------------------------------------
 (module+ test
@@ -109,6 +126,14 @@
     (display-warning-summary #:port warn-out))
   (check-equal? (get-output-string warn-out)
                 "warning: disk almost full\nwarning: slow network\n2 warnings\n")
+
+  ;; display-result: one line per item, and NOTHING for an empty list.
+  (define res-out (open-output-string))
+  (display-result '("first" "second") #:port res-out)
+  (check-equal? (get-output-string res-out) "first\nsecond\n")
+  (define empty-res (open-output-string))
+  (display-result '() #:port empty-res)
+  (check-equal? (get-output-string empty-res) "")
 
   ;; Empty collection prints just the zero count.
   (define empty-out (open-output-string))
