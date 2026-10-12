@@ -541,9 +541,14 @@ GREEN (files=10, total=214), STAGES=6 lint 0 violations, read-check
 0 bad. $in.exit_code stays conventional (all uses check or degrade
 loudly, reviewed not automated).
 
-** TODO E-21 outputs outside the tree
+** DONE E-21 outputs outside the tree
 Review every generated path against D-016. / Done when: a fresh run on a
 clean tree leaves the tree byte-identical except =compiled/= (D-027).
+Measured: code audit finds no production in-tree writers (fixtures use
+temp dirs; sources/vault.git is D-011-tracked by design, written only
+by explicit vault commands); fresh full gate SUMMARY files=38 failed=0
+total=644 ALL GREEN (parked: 3); git status after: zero tracked diffs,
+zero untracked debris (compiled/ ignored per D-027). No code changed.
 
 ** TODO E-22 Nu migration leftovers
 Decide what =backends/run.rkt= does about the retired =check.sh=. / Done
