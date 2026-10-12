@@ -20,6 +20,7 @@
          racket/string
          racket/file
          "../core/errors.rkt"
+         "../core/ui.rkt"
          "../core/log.rkt"
          "../core/verbose.rkt")
 
@@ -408,11 +409,13 @@
             #:how (string-append "cwd=" (trace-arg-string cwd)
                                  " pid=" (number->string pgid))
             #:inputs (map trace-redact argv))
-      (eprintf "pm-run-start ~a cwd=~a pid=~a ~a ~a\n"
-               (utc-stamp) (trace-arg-string cwd) pgid
-               (trace-arg-string exe)
-               (string-join (map trace-redact argv) " ")))
-  (flush-output (current-error-port))
+      (display-result-to
+       (current-error-port)
+       (list (string-append "pm-run-start " (utc-stamp)
+                           " cwd=" (trace-arg-string cwd)
+                           " pid=" (number->string pgid)
+                           " " (trace-arg-string exe)
+                           " " (string-join (map trace-redact argv) " ")))))
   (current-inexact-monotonic-milliseconds))
 
 ;; path-string string exact-integer -> void, END event
@@ -424,9 +427,10 @@
       (note 'run
             (string-append (trace-arg-string exe) " -> " outcome
                            " in " (number->string ms) "ms"))
-      (eprintf "pm-run-end ~a after=~ams ~a\n"
-               outcome ms (trace-arg-string exe)))
-  (flush-output (current-error-port)))
+      (display-result-to (current-error-port)
+                         (list (string-append "pm-run-end " outcome
+                                             " after=" (number->string ms)
+                                             "ms " (trace-arg-string exe))))))
 
 ;; path-string (listof string) -> run-result, batch tools via files
 (define (run-command/redirect exe argv

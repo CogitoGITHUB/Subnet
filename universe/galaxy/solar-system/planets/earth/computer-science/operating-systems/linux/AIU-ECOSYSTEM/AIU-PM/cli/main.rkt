@@ -258,23 +258,27 @@
 
 ;; -> void, prints usage to stdout
 (define (display-help)
-  (displayln "usage: pm [--format sexp|json] COMMAND [ARGS] | pm --help")
-  (displayln "")
-  (displayln "  check DIR          validate every .rktd file, print ok lines")
-  (displayln "  plan SPECDIR       show the install plan (not executable yet)")
-  (displayln "  lock LOCKFILE      show the lockfile plan (not executable yet)")
-  (displayln "  fetch MANIFEST     fetch all declared packages (not yet)")
-  (displayln "  apply STATEDIR     apply a plan (not executable yet)")
-  (displayln "  update STATEDIR    check all packages (not executable yet)")
-  (displayln "  activate PROFILE   flip the profile (not executable yet)")
-  (displayln "  rollback PROFILE N repoint at generation N (not yet)")
-  (displayln "  remove PROFILE PKG unlink a package (not executable yet)")
-  (displayln "  hold PROFILE PKG SLOT pin a slot (not executable yet)")
-  (displayln "  why NAME           explain a package (not executable yet)")
-  (displayln "  owner PROFILE REL  who owns a path (not executable yet)")
-  (displayln "  verify NAME        re-check a tree (not executable yet)")
-  (displayln "  --format           output shape, sexp (default) or json")
-  (displayln "  --help             print this text"))
+  ;; V-3: the usage text is printed ONCE, through display-result, so
+  ;; no command in the tree prints by itself.
+  (display-result
+   (list
+    "usage: pm [--format sexp|json] COMMAND [ARGS] | pm --help"
+    ""
+    "  check DIR          validate every .rktd file, print ok lines"
+    "  plan SPECDIR       show the install plan (not executable yet)"
+    "  lock LOCKFILE      show the lockfile plan (not executable yet)"
+    "  fetch MANIFEST     fetch all declared packages (not yet)"
+    "  apply STATEDIR     apply a plan (not executable yet)"
+    "  update STATEDIR    check all packages (not executable yet)"
+    "  activate PROFILE   flip the profile (not executable yet)"
+    "  rollback PROFILE N repoint at generation N (not yet)"
+    "  remove PROFILE PKG unlink a package (not executable yet)"
+    "  hold PROFILE PKG SLOT pin a slot (not executable yet)"
+    "  why NAME           explain a package (not executable yet)"
+    "  owner PROFILE REL  who owns a path (not executable yet)"
+    "  verify NAME        re-check a tree (not executable yet)"
+    "  --format           output shape, sexp (default) or json"
+   )))
 
 ;; ---------------------------------------------------------------------------
 ;; Checking (one clean line per good spec, every error shown)
@@ -319,9 +323,10 @@
                                         (version->string (spec-version s)))
                          "the spec parsed and passed every field check"
                          #:how (path->string f))
-                   (printf "ok: ~a ~a\n"
-                           (spec-name s)
-                           (version->string (spec-version s)))
+                   (display-result
+                    (list (format "ok: ~a ~a"
+                                  (spec-name s)
+                                  (version->string (spec-version s)))))
                    bad)))
              (if (zero? failures) 0 3))))
 
@@ -441,11 +446,11 @@
              (run-check (command-check-dir cmd))]
             [(command-plan? cmd)
              (if (eq? 'json (command-plan-format cmd))
-                 (begin (displayln (run-command-json cmd)) 0)
+                 (begin (display-result (list (run-command-json cmd))) 0)
                  (begin
                    (for ([p (in-list (plan-document
                                       (command-plan-specs cmd)))])
-                     (displayln p))
+                     (display-result (list (format "~a" p))))
                    0))]
             [else
              (raise-pm-error 'config 'pm "command not executable yet"

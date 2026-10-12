@@ -18,6 +18,10 @@
           ;; of this module exactly like errors do (D-036, V-3): one
           ;; printer for the user, never one per command.
           [display-result (->* ((listof string?)) (#:port output-port?) void?)]
+          ;; (output-port (listof string)) -> void, the same printer with
+          ;; an explicit port. run.rkt's legacy fallback writes to
+          ;; stderr and has no other way to say so.
+          [display-result-to (-> output-port? (listof string?) void?)]
           ;; Parameter holding a box of collected warning strings, newest first.
           ;; Scope it with parameterize; warn! adds, display-warning-summary reads.
           [current-collected-warnings (parameter/c (box/c (listof string?)))]))
@@ -69,6 +73,9 @@
   (for ([l (in-list lines)])
     (displayln l port))
   (flush-output port))
+
+(define (display-result-to port lines)
+  (display-result lines #:port port))
 
 ;; ---------------------------------------------------------------------------
 (module+ test

@@ -288,9 +288,16 @@ def run-stage-14-body [] {
         # core/verbose.rkt and core/ui.rkt ARE the printers; every other
         # .rkt must reach the user through them. lint-files already drops
         # compiled/ and non-files, so the same list the text lint sees.
+        # The printers are core/verbose.rkt and core/ui.rkt. core/log.rkt
+        # is exempt for a structural reason, not a convenience: ui.rkt
+        # requires log.rkt for warn!, so log.rkt requiring ui.rkt would
+        # be a cycle. The exemption is NAMED here so a second one has to
+        # be written down too, instead of the list quietly growing.
+        let printers = ["verbose.rkt" "ui.rkt"]
+        let exempt = ["log.rkt"]
         let scanned = (lint-files $r | where {|f| ($f | str ends-with ".rkt") }
             | where {|f|
-                not (($f | path basename) in ["verbose.rkt" "ui.rkt"])
+                not (($f | path basename) in ($printers | append $exempt))
             })
         let hits = ($scanned | each {|f| print-lint-file $f } | flatten)
         for v in $hits { print $v }
@@ -502,8 +509,8 @@ def main [--changed] {
     print $"[check] run start utc=(utc)"
     let changed_mode = ($changed or (($env | get -o CYBERDECK_CHANGED?) == "1"))
     let want = (if $changed_mode {
-        $env | get -o CYBERDECK_STAGES? | default "1,2,3,4,7,13,changed" } else {
-        $env | get -o CYBERDECK_STAGES? | default "1,2,3,4,6,7,8,9,10,11,12,13" })
+        $env | get -o CYBERDECK_STAGES? | default "1,2,3,4,7,13,14,changed" } else {
+        $env | get -o CYBERDECK_STAGES? | default "1,2,3,4,6,7,8,9,10,11,12,13,14" })
     let todo = ($want | split row ",")
     # `date now` is read twice and subtracted: measurement only, printed for
     # the record. Nothing waits on it (D-015).
