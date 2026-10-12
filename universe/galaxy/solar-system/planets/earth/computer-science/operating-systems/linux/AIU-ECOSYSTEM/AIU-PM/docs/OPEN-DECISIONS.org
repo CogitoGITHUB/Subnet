@@ -1,0 +1,283 @@
+#+TITLE: Open decisions -- everything left before pm v1
+#+AUTHOR: Shape
+
+* What this is
+Every item that is not DONE, read out of =docs/ENGINE-CHECKLIST.org=,
+with the one thing that would unblock it. Items needing an owner
+decision carry the question, the options, a recommendation and the
+DEFAULT that will be used if nobody says otherwise.
+
+Defaults are marked =(DEFAULT: ...)= in the checklist when they get
+built, so a defaulted item is visible afterwards, not just before.
+
+Read =docs/ENGINE-CHECKLIST.org= for the item text. This file is the
+index and the decision surface.
+
+** The v1 bar
+"pm fetches, pins, builds, installs, updates, rolls back, and supports
+dev mode for any git package with a =.rktd= spec." Every item below
+is mapped to that sentence in the last column of the first table.
+
+* The blocked and parked work
+
+** E-16b pm fetch -- BLOCKED
+- *Purpose:* fetch and pin every declared package into the vault,
+  without building, skipping ones already present, reporting
+  new / already present / failed per package.
+- *State:* the command is implemented and every single-add path is
+  green. What fails is the SEQUENCE.
+- *Root cause:* 3 or more sequential =vault-add= calls inside one
+  shared test-runner process freeze with zero CPU and no live child
+  processes (frozen 162s after the ff-b refmap). Six fresh adds
+  standalone pass; one broken URL alone passes. All 155 children had
+  already exited, so this is a pure-Racket block, not a slow git.
+  The suspects are =child.lock=/=flock= plus a waiter-miss family in
+  the run.rkt / vault child management. Repro: the full
+  =backends/update.rkt= suite.
+- *Decision:* =(DEFAULT: isolate the wedge in =core/vault-lock.rkt= and
+  the run.rkt waiter, fix it, and keep E-16b BLOCKED until a 3-package
+  fixture passes in one process.)=
+  - (a) Hunt the wedge now and fix it. Recommended: E-16b/E-16c and
+    the CLI fetch all wait on it, and it is the only thing between pm
+    and a working =fetch=.
+  - (b) Park it and ship single-add. Rejected: =pm fetch= on a real
+    declaration with 2+ packages would still hang, which is the actual
+    user path.
+  - (c) Give each add its own process. Rejected as a workaround: it
+    hides the bug and multiplies startup on a phone.
+
+** E-16c parallel fetch -- BLOCKED
+- *Purpose:* fetch with a concurrency limit (default 4), each waiting
+  only on its own exit, one failure not stopping the others.
+- *Blocked by:* E-16b. Parallel cannot go green while sequential
+  multi-add wedges. Unattempted on purpose.
+- *Decision:* =(DEFAULT: do not attempt until E-16b is green. Then
+  serialize the vault write path per package and keep N=4.)=
+
+** P-03 / P-04 jobs queue -- PARKED
+- *Purpose:* a job queue for long or multi-package operations, with
+  TEST-START before and TEST-END after every job so a stuck one is
+  named.
+- *Why parked:* two production defects. =job-start= rejects vault-wide
+  jobs such as =op-gc= because =check-job-name= demands a package name
+  (jobs.rkt:109-113 via =datum->job=:221), so a gc job can never be
+  enqueued. And =job-cancel= opens =job-held.fifo= read-write and never
+  closes it, which leaks a descriptor per cancel.
+- *Decision:* =(DEFAULT: keep it parked and state plainly that pm
+  v1 does NOT use the job queue.)=
+  - (a) Keep parked, no jobs in v1. Recommended. The narration of D-036
+    makes a hung operation visible in the feed without a queue; a
+    queue would add a second way to be stuck.
+  - (b) Fix both defects and wire apply through jobs. Deferred: it is
+    real work for a problem v1 does not have.
+
+** vault.rkt large-blob test -- PARKED
+- *Purpose:* fetch a blob above the 100 MB threshold to prove
+  fetch-namespace does not blow up.
+- *Blocked by:* it needs ~100 MB of synthetic fixture and the gate runs
+  on a phone.
+- *Decision:* =(DEFAULT: keep parked; leave =scripts/probe-blob.rkt= as
+  the manual proof.)=
+
+** vault-lock.rkt re-acquire in a shared process -- PARKED
+- *Purpose:* prove the writer lock can be taken again after release
+  inside one process.
+- *Blocked by:* the same shared-process phenomenon as E-16b, and
+  possibly the same root cause.
+- *Decision:* =(DEFAULT: keep parked, and re-test it as part of the
+  E-16b wedge investigation.)= If the wedge fix clears this too, it
+  unparks for free.
+
+** P-01 prove the vault end to end -- TODO
+- *Purpose:* fetch-namespace, verify, gc, export and backup against a
+  synthetic local repo, with the output pasted into the commit.
+- *Partly done:* measured against a REAL remote (GNU Hello) on
+  2026-10-10; =--discover= exits 0 and prints the pinned commit. The
+  five synthetic operations have not all been run.
+- *Decision:* =(DEFAULT: finish the synthetic five, no decision
+  needed.)=
+
+** P-02 manifest store round trip -- TODO
+- *Purpose:* write/read round trip preserving entries and order, and a
+  malformed manifest raising kind ='spec=.
+- *Decision:* =(DEFAULT: finish it; the code exists, only the test is
+  missing. No decision needed.)=
+
+** P-04 tracing at boundaries -- PARKED
+- *Purpose:* turn on =with-trace= at test boundaries and public entry
+  points.
+- *Superseded in practice:* D-036 narration now covers every entry
+  point, and D-021's =PM_TRACE=0= screen switch is gone. The IN/OUT
+  trace records are still the logger's internal path.
+- *Decision:* =(DEFAULT: fold P-04 into V-3a/G-04 -- decide whether the
+  D-021 trace path survives at all once the event feed is complete.)=
+
+* Phase D items, and what they still owe
+
+** E-19 dev mode -- DONE, one thing owed
+- *Purpose:* =dev-link=/=dev-unlink=/=dev-status=, fingerprints,
+  branch policy, strict mode and update flows.
+- *Owed:* fingerprints, branch policy, strict mode and the update
+  flow were deferred in the original item.
+- *Decision:* =(DEFAULT: keep as-is for v1; a dev link is a symlink
+  plus a status line, and the deferred parts need the lock story from
+  G-01 first.)=
+
+** E-20 observability pass -- DONE, one thing owed
+- *Owed:* nothing structural. D-036 replaced most of what this item
+  was for, and superseded it.
+
+** E-21 outputs outside the tree -- DONE
+- *Purpose:* nothing is written outside the state root.
+- *Decision:* =(DEFAULT: none; it is done and gated.)=
+
+** E-22 Nu migration / run.rkt sh wrapper -- DONE
+- *Owed:* the wedge investigation in E-16b is in its territory.
+
+** E-25 ecosystems -- DONE
+- *Purpose:* =core/ecosystem.rkt=, =make-c.rktd= (Lua) and
+  =cargo.rktd=, with a host-tool preflight before any build step.
+- *Owed:* ecosystem files exist and are read, but nothing selects an
+  ecosystem from a spec yet, so the templates are inert.
+- *Decision:* =(DEFAULT: leave inert for v1. Hand-written steps in a
+  spec work; ecosystem selection needs G-01's closure model first.)=
+
+** E-26 docs/API.org -- DONE
+- *Purpose:* field list and a real example per command, with the doc
+  used AS the test.
+- *Owed:* the doc covers the envelope. The result keys for =check= and
+  =plan= are implemented but not yet documented as examples.
+- *Decision:* =(DEFAULT: add the two result-key examples when the
+  command set stops moving.)=
+
+** E-27 MCP server -- DONE
+- *Purpose:* JSON-RPC 2.0 over stdio, =initialize=, =tools/list=,
+  =tools/call=; read-only tools run free, state-changing ones need the
+  confirmation token.
+- *Owed:* only the commands that are actually executable return a
+  result; the rest refuse honestly.
+
+** E-28 skill -- TODO
+- *Purpose:* =skills/aiu-pm/SKILL.md= with when to use each command,
+  the confirmation rule, the redaction rule, and three worked examples
+  with synthetic names that run as a test.
+- *Blocked by:* V-4, and by the fact that most commands still refuse.
+- *Dependency:* V-4.
+- *Decision:* =(DEFAULT: write it against the commands that work
+  today, and mark the rest as not-yet-executable rather than pretending.
+  The examples run as a test either way.)=
+
+** V-4 MCP feed tools + skill -- TODO
+- *Purpose:* =events.runs=, =events.tail= and =run.get= over the same
+  feed the OpenCode plugin reads, all redacted, plus the skill.
+- *Blocked by:* nothing. The feed exists (V-1) and the plugin already
+  proves the parsing.
+- *Dependency:* none; do it next.
+- *Decision:* =(DEFAULT: implement now. The plugin has the parsing and
+  the test; the MCP server reuses it.)=
+
+** V-5 OpenCode plugin -- DONE
+- *Purpose:* read-only =aiu_run_status= and =aiu_events_tail= over the
+  feed, =fs.watch= not polling, no state-changing tool.
+- *Owed:* installing it needs you to run the printed commands; the
+  digest goes through =chat.system.transform= because the installed SDK
+  ships no =Part= type to build one against.
+- *Decision:* =(DEFAULT: leave as is. If a later SDK exposes =Part=,
+  move the digest there and leave the tools alone.)=
+
+** V-3 / V-3a -- DONE
+- =display-result= is the only printer; gate stage 14 enforces it and
+  is proven to bite. =core/log.rkt= is exempt for a require cycle, and
+  the exemption is a named list in the gate.
+
+* Phase G: the structural spine
+All twelve are declared in the checklist with a "done when". The ones
+that genuinely need an owner decision:
+
+** G-01 dependency resolution and path conflicts
+- *Question:* when two packages claim one path, does pm fail, or is
+  there a declared merge policy?
+- *Options:* (a) fail at plan time, always; (b) a merge policy
+  expressed in the spec; (c) last-wins with a warning.
+- *Recommendation:* (a) fail at plan time. Merging needs spec syntax
+  and a user model; last-wins silently overwrites, which is the thing
+  a package manager exists to prevent.
+- *Default:* =(DEFAULT: fail at plan time with kind activate, naming
+  both packages. G-02 through G-12 depend on this.)=
+
+** G-05 generation GC policy
+- *Question:* how many generations are kept, and can a generation a
+  profile link points at be pruned?
+- *Recommendation:* keep the last 5, never delete one a hold names,
+  and never delete the one the profile link currently points at.
+- *Default:* =(DEFAULT: last 5; holds and the live link are absolute.)=
+
+** G-09 build isolation policy
+- *Question:* is the network available during a build, and is the
+  environment scrubbed?
+- *Options:* (a) no network, scrubbed env; (b) network available,
+  scrubbed env; (c) undefined.
+- *Recommendation:* (a). Same-user, no chroot and no daemon is already
+  decided; "undefined" is the hole, because a build step that fetches
+  is unverified by construction.
+- *Default:* =(DEFAULT: no network during build, scrubbed environment,
+  stated in build.rkt and enforced.)=
+
+** The other nine (G-02, G-03, G-04, G-06, G-07, G-08, G-10, G-11,
+G-12) need no owner decision. Each is implementation of a declared
+intent, and each has a testable "done when" in the checklist.
+
+* Phase S: security
+** S-01 =core/security.rkt=, the pure policy
+- *Purpose:* one module that answers "may pm do this?", seven named
+  rules, no I/O.
+- *Needs a decision:* the rules are written; the mechanism is not. The
+  one real fork is whether =GIT_ALLOW_PROTOCOL=file= is refused by
+  policy or merely confined to test roots.
+- *Recommendation:* refuse by policy outside a test root. Environment
+  confinement alone is one forgotten variable away from a hole.
+- *Default:* =(DEFAULT: refuse by policy, with an explicit
+  test-root escape hatch that names itself in the error.)=
+
+** S-02..S-04
+- *Purpose:* enforce S-01 at the choke points, make =pm check= name the
+  violated rule, and make the gate turn red when an enforcement call is
+  deleted.
+- *Decision:* =(DEFAULT: none needed; each has a stated done-when.)=
+
+* Phase R: restructure and rebrand -- NOT IN THIS RUN
+Listed only, as instructed. R-01 inventory, R-02 naming proposals,
+R-03 apply the chosen renames, R-04 move or merge thin files, R-05
+rebrand to AIU-PM per =docs/REBRAND.org=.
+Note: the directory has already been moved to =AIU-ECOSYSTEM/AIU-PM=
+and most of R-05 is therefore already done by that move. The remaining
+R-05 work is the in-tree naming and the docs titles.
+- *Decision:* =(DEFAULT: leave all of Phase R until the owner says
+  otherwise.)=
+
+* Anything else missing for the v1 bar
+
+| v1 capability | state |
+| - | - |
+| fetch a declared package | blocked on E-16b for 2+ packages |
+| pin it | done, kind =git-id?= enforced in =vault-add= |
+| resolve a closure | MISSING, G-01 |
+| build it | wired and narrated, but most commands refuse at dispatch |
+| install it | =local-perform!= works; the CLI refuses |
+| lock the closure | per-package lock exists, whole-closure is G-02 |
+| verify | stage exists, not yet its own step, G-03 |
+| update | works and narrates its two skip reasons |
+| roll back | works, narrates, refuses an unknown generation |
+| dev mode | works; fingerprints and branch policy deferred |
+| refuse an unpinned or file:// source | S-01, S-02 |
+| survive a half-done apply | journal works, the law is unwritten, G-08 |
+| say who did it and why | full narration, but provenance per generation is G-10 |
+
+* The order I will build in
+1. V-4 and E-28: blocked on nothing, proves the AI path end to end.
+2. E-16b wedge: the only thing stopping =fetch= working at all.
+3. G-01, then G-02 and G-07: a closure is a precondition for
+   idempotent apply, and idempotency is a precondition for safe resume.
+4. S-01 and S-02: the policy, then the choke points.
+5. The rest of G, in dependency order, each as its own commit.
+6. P-01 and P-02: finish the proofs that are nearly done.
