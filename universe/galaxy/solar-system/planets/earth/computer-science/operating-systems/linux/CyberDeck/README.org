@@ -1,30 +1,172 @@
 #+TITLE: CyberDeck package manager
 #+AUTHOR: Shape
 
-* Purpose
-Target-neutral declarative package manager in Racket. The contract is
-=0.FOUNDATION.org= in this directory; rule IDs (P-1, E-5, ...) are
-cited in commit messages.
+* What this is
 
-* Status
-Core, backends, CLI check, Emacs-free. Environment: Racket 9.3 CS
-minimal in =~/opt/racket=. Run =scripts/check.nu= before every commit.
+pm is a declarative, target-neutral package manager written in Racket.
+You declare what a machine should have; pm decides how to get it there,
+records what it did, and can undo it.
+
+The contract is =0.FOUNDATION.org= in this directory. Rule IDs
+=(P-1)=, =(E-5)= and so on are cited in the source and in commit
+messages, so any claim here can be traced to the rule that requires it.
+
+Two properties drive every design decision:
+
+- *Nothing runs silently.* Every operation narrates itself as it goes:
+  what it is doing, why, how, when in UTC, and how long. That goes to
+  the screen, to a JSON Lines log, and to a live feed an AI can read.
+  This is D-036 and it supersedes the earlier =PM_TRACE=0= switch,
+  which could silence the screen.
+- *Nothing is unreversible.* Installs are journalled and generations
+  are kept, so =rollback=, =remove= and =hold= are first-class rather
+  than hopeful.
+
+**Status: the engine is not finished.** The gate is green and the
+pieces are real, but most commands still refuse with =command not
+executable yet= rather than pretending to work. See
+=docs/ENGINE-CHECKLIST.org= for exactly what is done, what is partial
+and what is still owed. Nothing here claims more than it does.
+
+* Quick start
+
+**Requirements:** Racket (9.3 CS, minimal) and Nushell 0.116.1. On
+this machine they live in =~/opt/racket= and =~/opt/nushell/0.116.1/=.
+
+#+begin_src sh
+opt/nushell/0.116.1/nu scripts/check.nu          # the gate; the only test command
+opt/nushell/0.116.1/nu scripts/check.nu --changed # only what changed
+#+end_src
+
+#+begin_src sh
+racket cli/main.rkt check docs/examples          # validate every .rktd
+racket cli/main.rkt plan docs/examples --format json
+racket cli/main.rkt --help                       # every command
+#+end_src
+
+The gate verdict is one of =ALL GREEN=, =ALL GREEN (parked: N)= or
+=CHECK FAILED=, and =CHECK FAILED= exits non-zero. Run it before every
+commit; that is the whole test policy. It prints =TEST-START= and
+=TEST-END= per file with elapsed time, flags anything slow as
+=SUSPECT:=, and ends with a =SLOWEST= table. All of that is
+information only: nothing in this project waits on a clock.
+
+**A package declaration** is one =.rktd= file. =docs/examples/lua.rktd
+is the reference:
+
+#+begin_src scheme
+(spec
+  (format-version 2)
+  (name lua)
+  (version "5.5.1")
+  (summary "Lightweight embeddable scripting language")
+  (source (git "https://github.com/lua/lua.git" "7579fc9d..."))
+  (build (steps (make #:dir "." #:file "makefile" #:targets ("all"))))
+  (install (prefix (bin "lua" "bin/lua") ...))
+  (license mit)
+  (homepage "https://www.lua.org"))
+#+end_src
 
 * Layout
-- =docs/= -- decisions, errors, glossary, lessons, perf baselines
-- =scripts/check.nu= -- green gate (P-1, T-7), Nushell
-- =core/=, =backends/=, =cli/= -- specs, plans, git, execution
 
-* Verify
-Run =opt/nushell/0.116.1/nu scripts/check.nu= from this directory. Nu
-is pinned to 0.116.1 (D-020) and the gate refuses any other version.
-One shared-process runner tests EVERY =.rkt= in the tree: a slow file
-is an error to investigate, never a reason to give it its own process
-or its own tier. Between checklist items run =nu scripts/check.nu
---changed= (changed files plus the test blocks of the modules that
-require them); the full gate runs once per phase. The verdict is
-ALL GREEN, ALL GREEN (jobs parked) or CHECK FAILED, and CHECK FAILED
-exits non-zero. The runner prints =TEST-START=/=TEST-END= per file with
-=at= (elapsed since the run started), a =SUSPECT:= line for anything
-over 2000 ms, and a =SLOWEST= block. All of that is information: nothing
-waits on a clock.
+| directory | what lives there |
+| - | - |
+| =core/= | pure: spec reading, the build vocabulary, plans, errors, scope, narration |
+| =backends/= | effects: git, vault, store, build, apply, activate, run |
+| =cli/= | =pm= itself: argument parsing, =--format json/sexp=, dispatch |
+| =docs/= | the contract, the decisions, the API, the checklist |
+| =scripts/= | the gate and dev scripts, all Nushell |
+| =ecosystems/= | package-kind templates (=make-c=, =cargo=) |
+| =mcp/= | the MCP server: JSON-RPC over stdio |
+| =opencode-plugin/= | read-only feed tools for OpenCode |
+| =targets/= | per-target overlays |
+
+* The interfaces
+
+pm speaks JSON on purpose, so three consumers read the same documents
+rather than three implementations of package-manager logic.
+
+**CLI.** =pm [--format sexp|json] COMMAND [ARGS]=. Every command's
+field list and a real example per command are in =docs/API.org=, and
+that document *is* the test: =cli/main.rkt= re-renders every example
+in it, so a stale example fails the gate.
+
+**MCP** (=mcp/server.rkt=). JSON-RPC 2.0 over stdio, one object per
+line. Three methods: =initialize=, =tools/list=, =tools/call=. All
+fourteen pm commands are tools. The seven read-only ones run free; the
+seven state-changing ones refuse with code =-32001= unless the call
+carries the confirmation token that =initialize= handed out.
+
+**OpenCode** (=opencode-plugin/=). Two read-only tools,
+=aiu_run_status= and =aiu_events_tail=, over the event feed. There is
+deliberately no =apply= and no =activate=: an agent cannot change the
+machine from there. When the dispatch is wired, those tools will call
+OpenCode's own =context.ask()= approval boundary first, and pm keeps
+its own policy regardless. =scripts/install-opencode-plugin.nu= only
+prints the install commands; it writes nothing.
+
+**Skill** (=skills/aiu-pm/SKILL.md=) tells an AI when to use each
+command and how to read the feed.
+
+* The event feed
+
+Every pm invocation opens a run under
+=$XDG_DATA_HOME/cyberdeck/events/= (or =~/.local/share/...=):
+
+- =<run-id>.jsonl= -- one JSON object per event, flushed per event.
+- =current= -- the active run id, written then renamed, never partial.
+
+An event carries =run-id=, =seq=, =parent-id=, =kind=, =depth=, =who=,
+=what=, =why=, =how=, =inputs=, =outputs=, =result=, =utc=, =mono-ms=
+and =duration-ms=. =kind= is one of START STEP INFO DECIDE SKIP
+PROGRESS END FAIL WARN.
+
+The screen line is =[HH:MM:SSZ +0.250s] START fetch | what: ... | why:
+... | how: ...=, indented two spaces per nesting level.
+
+Two rules make this trustworthy rather than decorative. **A reason is
+mandatory** for every step, decision, skip and failure; a blank one
+raises rather than inventing a default. And **redaction happens once**,
+before any destination, so a password cannot reach the screen, the log
+and the feed by three different routes.
+
+Reading a live run:
+
+#+begin_src sh
+cat ~/.local/share/cyberdeck/events/current
+tail -f ~/.local/share/cyberdeck/events/pm-*.jsonl
+#+end_src
+
+* Errors and exit codes
+
+Failures are typed, not stringly. =docs/ERRORS.org= has the full
+table; the exit code is the machine-readable part:
+
+| kind | exit | kind | exit |
+| - | - | - | - |
+| =config= | 2 | =build= | 7 |
+| =spec= | 3 | =install= | 8 |
+| =resolve= | 4 | =activate= | 9 |
+| =fetch= | 5 | =cancelled= | 130 |
+| =verify= | 6 | =internal= | 70 |
+
+=cancelled= prints plainly with no bug banner: it is a user action, not
+a defect. =internal= means pm has a bug and prints the continuation
+context so it can be reported.
+
+* Scope
+
+Home and =XDG_*= are read in exactly one place, =core/scope.rkt=, so
+roots cannot drift between modules. The state root is
+=$XDG_DATA_HOME/cyberdeck/=; there is one scope today (user), and a
+second one raises rather than half-working.
+
+* Further reading
+
+- =0.FOUNDATION.org= -- the contract
+- =docs/DECISIONS.org= -- the decision log, newest first (D-036 and up)
+- =docs/ENGINE-CHECKLIST.org= -- what is done, partial or owed
+- =docs/API.org= -- the JSON surface, with live examples
+- =docs/ERRORS.org=, =docs/GLOSSARY.org=, =docs/LESSONS.org=
+- =docs/SPEC-NEUTRAL.org=, =docs/PKGDEF-DESIGN.org=, =docs/VAULT-SPEC.org=
+- =docs/VERBOSE.org= -- the narration rules and the output inventory
