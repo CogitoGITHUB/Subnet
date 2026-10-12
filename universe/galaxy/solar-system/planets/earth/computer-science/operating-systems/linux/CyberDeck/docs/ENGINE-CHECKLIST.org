@@ -550,9 +550,12 @@ by explicit vault commands); fresh full gate SUMMARY files=38 failed=0
 total=644 ALL GREEN (parked: 3); git status after: zero tracked diffs,
 zero untracked debris (compiled/ ignored per D-027). No code changed.
 
-** TODO E-22 Nu migration leftovers
+** DONE E-22 Nu migration leftovers
 Decide what =backends/run.rkt= does about the retired =check.sh=. / Done
 when: the decision is written into DECISIONS.org with its reason.
+Measured: D-034 (2026-10-12) — run.rkt never referenced check.sh
+(zero matches), nothing to rewire; check.nu keeps its provenance
+comments. Report only, no code touched.
 
 ** TODO E-23 TUI event loop
 The D-015 event loop for the Rust TUI. / Done when: the TUI renders

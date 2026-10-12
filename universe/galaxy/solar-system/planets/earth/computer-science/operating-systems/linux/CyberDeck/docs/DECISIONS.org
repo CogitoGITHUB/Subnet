@@ -4,6 +4,13 @@
 * Log
 Append-only. Newest first. Every entry names the rule IDs it touches.
 
+** 2026-10-12 D-034: run.rkt ignores the retired check.sh
+backends/run.rkt never referenced check.sh (zero matches; it shells
+to git, flock, setsid, pkill and tar, pinned by gate stage 3), so
+there is nothing to rewire. scripts/check.nu keeps its "check.sh
+lines N-M" provenance comments (comments only, check.sh itself is
+deleted): they trace the conversion and cost nothing. D-034.
+
 ** 2026-10-11 D-033: AI access is API plus MCP plus skill, never auto-apply
 AI access has three layers: (1) API = the =--format json= output of every
 command plus a written schema (docs/API.org); (2) an MCP server (stdio,
