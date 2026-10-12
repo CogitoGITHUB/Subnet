@@ -328,6 +328,11 @@
 ;; reader either sees the old `current` or the new one, never a half
 ;; written file. Falls back to a copy when rename is refused.
 (define (replace-file from to)
+  ;; The target usually EXISTS: a second run in the same state dir
+  ;; rewrites `current`. rename refuses an existing destination, so the
+  ;; old one goes first; if that fails the copy still lands.
+  (when (file-exists? to)
+    (delete-file to))
   (with-handlers ([exn:fail:filesystem? (lambda (_) (copy-file from to))])
     (rename-file-or-directory from to)))
 
@@ -390,7 +395,21 @@
   (define root
     (build-path (find-system-path 'temp-dir) "pm-verbose-test"))
   (when (directory-exists? root)
-    (delete-directory/files root))
+    ;; Regression: `current` already exists on the SECOND run in the same
+  ;; state dir, and a rename refuses an existing destination. Both runs
+  ;; must succeed and `current` must name the newer one.
+  (define shared (build-path root "shared"))
+  (make-directory* shared)
+  (parameterize ([verbose-screen? #f])
+    (define id1 (begin-run! #:who 'test #:events-dir shared))
+    (end-run! "first")
+    (define id2 (begin-run! #:who 'test #:events-dir shared))
+    (end-run! "second")
+    (check-not-false (string? id2))
+    (check-equal? (string-trim (file->string (build-path shared "current")))
+                  id2))
+
+  (delete-directory/files root))
   (make-directory* root)
 
   (define counter 0)
@@ -604,5 +623,19 @@
   (check-true (string-contains? step-line "why: reading specs"))
   ;; a nested event is indented two spaces more than its parent
   (check-equal? (indent-of step-line) (+ 2 (indent-of start-line)))
+
+  ;; Regression: `current` already exists on the SECOND run in the same
+  ;; state dir, and a rename refuses an existing destination. Both runs
+  ;; must succeed and `current` must name the newer one.
+  (define shared (build-path root "shared"))
+  (make-directory* shared)
+  (parameterize ([verbose-screen? #f])
+    (define id1 (begin-run! #:who 'test #:events-dir shared))
+    (end-run! "first")
+    (define id2 (begin-run! #:who 'test #:events-dir shared))
+    (end-run! "second")
+    (check-not-false (string? id2))
+    (check-equal? (string-trim (file->string (build-path shared "current")))
+                  id2))
 
   (delete-directory/files root))
