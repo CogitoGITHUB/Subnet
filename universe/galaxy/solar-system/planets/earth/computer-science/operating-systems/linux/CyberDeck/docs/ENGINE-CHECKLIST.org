@@ -501,10 +501,19 @@ ALL GREEN (files=2, total=16), STAGES=6 lint 0 violations, read-check
 0 bad. Order note: done before E-16b (was half-written during E-16;
 finishing first kept every gate green).
 
-** TODO E-18 CLI commands for every stage
+** DONE E-18 CLI commands for every stage
 One command per stage, each with =--format sexp|json=. / Done when:
 one golden per command per format, and an unknown command exits 2
 (D-008).
+Measured: cli/main.rkt has all 14 commands (check, plan, lock, fetch,
+apply, update, activate, rollback, remove, hold, why, owner, verify,
+help) with table-driven parse, arity errors, fixed-order json plus
+sexp command goldens (28), unknown-command exit 2, extended help;
+direct gate 66/66, --changed clean, STAGES=6 lint 0 violations,
+read-check 0 bad.
+Debt recorded: dispatch executes check/help only; other commands
+refuse loudly until execution wiring lands (no item owns it yet).
+E-26 schemas will test renderer outputs over real backend data.
 
 * PHASE D
 ** TODO E-19 dev mode
