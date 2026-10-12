@@ -561,6 +561,12 @@ comments. Report only, no code touched.
 
 ** REMOVED E-24 gate the Rust TUI (TUI deleted, D-035)
 
+** DONE V-0 output inventory (docs/VERBOSE.org)
+Every non-test print site in core/ backends/ cli/ scripts/*.rkt mcp/
+listed as file:line, with the existing pm-run-start/pm-run-end
+records, the D-021 trace path with its PM_TRACE=0 switch, and how
+cli/main.rkt builds command->json. Decision D-036 recorded.
+
 ** DONE E-25 ecosystems/
 core/ecosystem.rkt: pure reader plus expand-steps/expand-spec; tools
 are data there and backends/build.rkt preflights them
@@ -589,6 +595,15 @@ byte for byte, and an apply call without a token is refused with a
 message that names the confirmationToken. Bad protocol version, bad
 params, unknown tool, wrong arity and a garbage line are all JSON-RPC
 errors, never exceptions. 29 tests.
+
+** DONE V-0 output inventory (docs/VERBOSE.org)
+Every non-test print site in core/ backends/ cli/ scripts/*.rkt mcp/
+listed as file:line, with the existing pm-run-start/pm-run-end
+records, the D-021 trace path with its PM_TRACE=0 switch, and how
+cli/main.rkt builds command->json. Decision D-036 recorded.
+
+** TODO V-1 core/verbose.rkt
+One event, three destinations, why mandatory.
 
 ** TODO E-28 skill (skills/aiu-pm/SKILL.md)
 When to use each command, the confirmation rule, the redaction rule,

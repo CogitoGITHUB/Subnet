@@ -4,6 +4,17 @@
 * Log
 Append-only. Newest first. Every entry names the rule IDs it touches.
 
+** 2026-10-12 D-036: every operation narrates itself completely and live
+Every operation narrates itself completely and live: from the moment
+it starts, every step, decision, skip, progress, result and failure is
+emitted with what, why, how, UTC time and monotonic duration. Nothing
+runs silently and nothing can switch the output off (this supersedes
+the PM_TRACE=0 silencing in D-021). One event goes to three
+destinations: screen, JSON Lines log, and the AI feed; one redaction
+path. The package manager never waits for an AI; with no listener
+nothing changes. State-changing actions stay behind the human
+confirmation token. D-036.
+
 ** 2026-10-12 D-035: TUI removed
 TUI removed. The Rust/ratatui TUI in tui/ is deleted. pm is driven by
 the CLI with --format json/sexp, the MCP server (E-27) and the skill
