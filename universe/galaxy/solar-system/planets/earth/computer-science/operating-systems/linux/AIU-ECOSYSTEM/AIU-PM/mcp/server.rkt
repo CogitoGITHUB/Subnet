@@ -17,11 +17,15 @@
 ;; Read-only tools never look at it.
 
 (require racket/contract/base
+         racket/file
+         racket/list
+         racket/path
          racket/string
          racket/port
          json
          "../cli/main.rkt"
-         "../core/errors.rkt")
+         "../core/errors.rkt"
+         "../core/verbose.rkt")
 
 (provide
  (struct-out mcp-session)
@@ -33,7 +37,10 @@
   ;; session -> string, the token initialize hands out
   [session-token (-> mcp-session? string?)]
   ;; any -> string, the pm tool table as JSON
-  [tool-table-json (-> any/c string?)]))
+  [tool-table-json (-> any/c string?)]
+  ;; Parameter, not an argument: the events dir is a seam and a test
+  ;; must be able to point it at a temp root. Production never sets it.
+  [current-feed-dir parameter?]))
 
 ;; ---------------------------------------------------------------------------
 ;; The tool table. Kept as data, not as a command, so the list a
@@ -42,7 +49,15 @@
 ;; change state and therefore need the token.
 
 (define pm-tools
-  (list (hash 'name "plan" 'arity 1 'confirms? #f 'summary "show the install plan")
+  (list ;; --- the event feed (V-4). Read-only, and they read the SAME
+        ;; JSON Lines the OpenCode plugin reads, not a second format.
+        (hash 'name "events.runs" 'arity 0 'confirms? #f
+              'summary "list run ids pm has a feed for")
+        (hash 'name "events.tail" 'arity 1 'confirms? #f
+              'summary "events after a seq: RUN-ID FROM-SEQ")
+        (hash 'name "run.get" 'arity 1 'confirms? #f
+              'summary "START/END summary of one run")
+        (hash 'name "plan" 'arity 1 'confirms? #f 'summary "show the install plan")
         (hash 'name "check" 'arity 1 'confirms? #f 'summary "validate spec files")
         (hash 'name "lock" 'arity 1 'confirms? #f 'summary "show the lockfile plan")
         (hash 'name "why" 'arity 1 'confirms? #f 'summary "explain a package")
@@ -167,6 +182,10 @@
      (cond
        [(not tool)
         (rpc-error id -32602 (format "no such tool: ~a" name))]
+       [(member name '("events.runs" "events.tail" "run.get"))
+        ;; Feed tools are answered here, never by run-tool: they read
+        ;; the event file and spawn nothing.
+        (run-feed-tool name argv id)]
        [(not (and (list? argv) (andmap string? argv)))
         (rpc-error id -32602 "tool arguments must be strings")]
        [(not (= (length argv) (hash-ref tool 'arity)))
@@ -183,6 +202,129 @@
                     " changes state: pass the confirmationToken"
                     " from initialize as \"confirmation\""))]
        [else (run-tool name argv id)])]))
+
+;; --- The event feed (V-4) ---------------------------------------------
+;; Everything here reads <state>/events/<run-id>.jsonl, the file
+;; core/verbose.rkt writes. Redaction already happened on the way IN,
+;; so nothing read back here needs redoing; a value that reached the
+;; feed is already safe to hand out.
+;; The events dir, overridable so a test never reads the real state
+;; root. Production never sets it.
+(define current-feed-dir (make-parameter #f))
+
+(define (feed-dir)
+  (or (current-feed-dir) (default-events-dir)))
+
+;; path-string -> boolean
+(define (feed-exists? run-id)
+  (file-exists? (build-path (feed-dir) (string-append run-id ".jsonl"))))
+
+;; path-string -> (listof jsexpr), every line parsed, a half-written
+;; last line ignored rather than fatal (the file is appended per event)
+(define (feed-events run-id)
+  (define path (build-path (feed-dir) (string-append run-id ".jsonl")))
+  (if (not (file-exists? path))
+      '()
+      (for/list ([l (in-list (file->string path))]
+                 #:unless (string=? (string-trim l) ""))
+        (with-handlers ([exn:fail? (lambda (_) #f)])
+          (parameterize ([read-json (open-input-string l)])
+            (read-json))))))
+
+;; -> string or #f, the run pm says is active
+(define (feed-current)
+  (define p (build-path (feed-dir) "current"))
+  (if (file-exists? p)
+      (let ([s (string-trim (file->string p))])
+        (if (string=? s "") #f s))
+      #f))
+
+;; -> (listof string), run ids, newest first by name
+;; A run id is the file name minus ".jsonl". path-only returns #f for a
+;; bare relative name, so this is plain string work on the file name.
+(define (run-id-of f)
+  (define nm (path->string (file-name-from-path f)))
+  (substring nm 0 (- (string-length nm) (string-length ".jsonl"))))
+
+(define (feed-runs)
+  (define dir (feed-dir))
+  (if (not (directory-exists? dir))
+      '()
+      (sort (map run-id-of
+                 (filter (lambda (f)
+                           (regexp-match? #rx"\\.jsonl$" (path->string f)))
+                         (directory-list dir)))
+            string<?)))
+
+;; jsexpr -> string, one line per event for a human or a model
+(define (event->line e)
+  (string-append "#" (hash-ref e 'seq "0")
+                 " " (hash-ref e 'kind "?")
+                 " " (hash-ref e 'who "?")
+                 ": " (hash-ref e 'what "")
+                 (if (and (hash-ref e 'why '~f) (not (equal? (hash-ref e 'why) "record")))
+                     (string-append " (" (hash-ref e 'why) ")")
+                     "")
+                 (if (hash-ref e 'how #f)
+                     (string-append " [" (hash-ref e 'how) "]")
+                     "")))
+
+;; name (listof string) any -> jsexpr
+(define (run-feed-tool name argv id)
+  (cond
+    [(string=? name "events.runs")
+     (define runs (feed-runs))
+     (rpc-ok id (hasheq 'runs runs
+                        'current (or (feed-current) #f)
+                        'count (length runs)))]
+    [(string=? name "events.tail")
+     (define run-id (car argv))
+     (define from (string->number (cadr argv)))
+     (if (not (feed-exists? run-id))
+         (rpc-error id -32602 (string-append "no such run: " run-id))
+         (let* ([all (filter (lambda (e) (and (hash? e) e)) (feed-events run-id))]
+                [after (filter (lambda (e) (>= (hash-ref e 'seq 0) from)) all)]
+                [shown (if (> (length after) 200)
+                           (take-right after 200)
+                           after)])
+           (rpc-ok id
+                   (hasheq 'run-id run-id
+                           'from-seq from
+                           'count (length after)
+                           'lines (map event->line shown)
+                           'next-seq (if (pair? shown)
+                                        (hash-ref (last shown) 'seq)
+                                        from)))))
+     ]
+    [(string=? name "run.get")
+     (define run-id (car argv))
+     (if (not (feed-exists? run-id))
+         (rpc-error id -32602 (string-append "no such run: " run-id))
+         (let* ([evs (filter (lambda (e) (and (hash? e) e)) (feed-events run-id))]
+                [starts (filter (lambda (e) (equal? (hash-ref e 'kind) "START")) evs)]
+                [ends (filter (lambda (e) (and (equal? (hash-ref e 'kind) "END")
+                                                (= (hash-ref e 'depth 0) 0)))
+                              evs)]
+                [fails (filter (lambda (e) (equal? (hash-ref e 'kind) "FAIL")) evs)])
+           (rpc-ok id
+                   (hasheq 'run-id run-id
+                           'events (length evs)
+                           'started (if (pair? starts)
+                                        (hash-ref (car starts) 'what #f)
+                                        #f)
+                           'ended (pair? ends)
+                           'end-result (if (pair? ends)
+                                            (hash-ref (last ends) 'result #f)
+                                            #f)
+                           'failures (map (lambda (e)
+                                            (string-append (hash-ref e 'who '?:)
+                                                           ": "
+                                                           (hash-ref e 'what '?)
+                                                           " -- "
+                                                           (hash-ref e 'result '?)))
+                                          fails)))))
+     ]
+    [else (rpc-error id -32602 (format "not a feed tool: ~a" name))]))
 
 ;; string (listof string) any -> jsexpr. Runs through the same parse
 ;; and run-command-json the CLI uses, so a refusal here is the refusal
@@ -276,9 +418,9 @@
   (define listed-tools (hash-ref (hash-ref listed 'result) 'tools))
   (check-equal?
    (sort (map (lambda (t) (hash-ref t 'name)) listed-tools) string<?)
-   '("activate" "apply" "check" "fetch" "hold" "lock"
-     "owner" "plan" "remove" "rollback" "update" "verify" "why"))
-
+   '("activate" "apply" "check" "events.runs" "events.tail"
+     "fetch" "hold" "lock" "owner" "plan" "remove"
+     "rollback" "run.get" "update" "verify" "why"))
   (define (tool-called name)
     (for/first ([t (in-list listed-tools)]
                 #:when (equal? (hash-ref t 'name) name))
@@ -290,7 +432,7 @@
 
   ;; The flat table marks the state-changing tools.
   (define table (tool-table-json #f))
-  (check-equal? (length (regexp-match* #rx"\"name\":\"[a-z]+\"" table)) 13)
+  (check-equal? (length (regexp-match* #rx"\"name\":\"[a-z.]+\"" table)) 16)
   (check-true
    (regexp-match?
     #rx"\\{\"name\":\"apply\",\"arity\":1,\"confirmsConfirmation\":true"
