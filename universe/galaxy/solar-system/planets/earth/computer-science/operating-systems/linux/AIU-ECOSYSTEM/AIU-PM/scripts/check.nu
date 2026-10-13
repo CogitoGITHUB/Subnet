@@ -328,7 +328,9 @@ def run-stage-15-body [] {
         for pred in (sec-predicates) {
             let n = (sec-call-count $pred $nonsec)
             if $n == 0 {
-                $violations = ($violations | append $"security-gate: predicate ($pred) is never called outside core/security.rkt")
+                $violations = ($violations | append (
+                  $"security-gate: predicate ($pred) uncalled (S-04)"
+                ))
             }
         }
         print $"security-gate: predicates checked, ($violations | length) violations so far"
@@ -349,10 +351,15 @@ def run-stage-15-body [] {
         for f in $files {
             let base = ($f | path basename)
             if ($base in $writers) { continue }
-            let code = ((open --raw $f | lines | each {|l| strip-quotes ($l | str trim) }) | str join "
+            let rawlines = (open --raw $f | lines)
+            let code = (($rawlines | each {|l|
+                strip-quotes ($l | str trim)
+            }) | str join "
 ")
             if (($code | str contains "open-output-file") or ($code | str contains "subprocess")) {
-                $violations = ($violations | append ("security-gate: " + $f + " writes or spawns outside the audited list (S-04)"))
+                $violations = ($violations | append (
+                  "security-gate: " + $f + " writes outside audit (S-04)"
+                ))
             }
         }
         for v in $violations { print $v }

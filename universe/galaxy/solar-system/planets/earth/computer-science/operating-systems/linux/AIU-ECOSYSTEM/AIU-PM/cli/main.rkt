@@ -19,6 +19,7 @@
          "../core/verbose.rkt"
          "../core/version.rkt"
          "../core/lock.rkt"
+         "../core/plan.rkt"
          "../backends/query.rkt"
          "../backends/update.rkt")
 
@@ -395,8 +396,16 @@
   (with-op 'plan (dir-text dir) "an install plan was requested"
            #:how "read every .rktd in the directory"
            (lambda ()
-             (for/list ([f (in-list (sorted-rktd-files dir))])
-               (define s (read-spec-file f))
+             ;; G-01: collisions fail here, at plan time, with both
+             ;; names in the message -- never half-installed later.
+             (define specs
+               (for/list ([f (in-list (sorted-rktd-files dir))])
+                 (read-spec-file f)))
+             (step 'plan "conflicts"
+                   "no two packages may claim one destination")
+             (check-spec-conflicts specs)
+             (for/list ([f (in-list (sorted-rktd-files dir))]
+                        [s (in-list specs)])
                (step 'plan
                      (string-append (symbol->string (spec-name s))
                                     " "

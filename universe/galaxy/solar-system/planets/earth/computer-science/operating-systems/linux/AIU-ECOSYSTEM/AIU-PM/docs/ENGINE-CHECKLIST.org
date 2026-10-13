@@ -724,13 +724,15 @@ doing real work on a real machine)
 Everything here is a design-before-code item. Each names the failure it
 prevents, so a later change cannot quietly remove it.
 
-** TODO G-01 dependency resolution and path conflicts
-A spec declares =deps=; nothing yet resolves them into a full ordered
-plan. Two packages claiming one path must fail AT PLAN TIME with kind
-=activate=, not half-install and complain later. / Done when: a
-synthetic closure of 3 packages resolves to a deterministic order, and
-a 2-package path collision is refused by =plan= with both names in the
-message.
+** DONE G-01 dependency resolution and path conflicts (DEFAULT: fail)
+Resolution itself (deps-first order, cycles and missing providers
+refusing) already lived in core/resolve.rkt with tests. New:
+spec-install-dests mirrors lowering so the two cannot drift, and
+check-spec-conflicts fails AT PLAN TIME with kind 'activate naming
+both packages and the path. pm plan on two specs claiming bin/tool
+refuses naming pkg-aa and pkg-bb before anything installs. Merging and
+last-wins stay rejected: silent overwrites are what a package manager
+exists to prevent.
 
 ** DONE G-02 lock the whole closure
 Each lock row records name, version, slot, flags, commit and source
