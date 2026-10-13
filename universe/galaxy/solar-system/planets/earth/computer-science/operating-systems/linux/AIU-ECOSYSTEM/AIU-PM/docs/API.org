@@ -32,7 +32,7 @@ envelope yet, and that gap is deliberate: a machine caller sees a
 non-zero exit, not a half-formed object.
 
 ** Commands
-Thirteen commands take operands; =--help= takes none. Every example
+Sixteen commands take operands; =--help= takes none. Every example
 below is the real output, and =cli/main.rkt= re-runs each one against
 this file, so an example that drifts fails the gate.
 
@@ -91,6 +91,22 @@ relative path.
 : {"name":"verify","format":"json","operands":["lua"]}
 Verifies an installed package against its manifest. One operand: the
 package name.
+
+** =pm status default pm.lock --format json=
+: {"name":"status","format":"json","operands":["default", "pm.lock"]}
+What is installed: one object per package with version, slot, held
+mark and owned paths, read off the current generation's ledger with
+slots from the lock. Two operands: profile, then the lockfile.
+
+** =pm held default --format json=
+: {"name":"held","format":"json","operands":["default"]}
+What is held: the profile's hold pins. One operand: the profile.
+
+** =pm outdated vault pm.lock default --format json=
+: {"name":"outdated","format":"json","operands":["vault", "pm.lock", "default"]}
+What is behind: each locked package checked against the vault, which
+is the only source that can answer. Three operands: vault, lockfile,
+profile for holds.
 
 ** =pm --help=
 : {"name":"help","format":"sexp","operands":[]}

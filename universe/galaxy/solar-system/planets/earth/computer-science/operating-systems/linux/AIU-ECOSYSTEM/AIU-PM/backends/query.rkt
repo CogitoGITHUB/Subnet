@@ -11,6 +11,7 @@
          racket/list
          racket/path
          racket/string
+         "activate.rkt"
          "manifest.rkt"
          "vault.rkt"
          "../core/errors.rkt"
@@ -41,7 +42,13 @@
   ;; vault current name pin -> void, G-03 refuses a tampered tree
   [verify-tree! (-> path-string? path-string? string? string? void?)]
   ;; vault name url pin -> void, G-03 refuses a moved source
-  [verify-source! (-> path-string? string? string? string? void?)]))
+  [verify-source! (-> path-string? string? string? string? void?)]
+  ;; profile locks -> status rows, G-11 answers what is installed
+  [query-status (-> path-string? (listof lock-entry?)
+                    (listof (list/c string? string? string? boolean?
+                                    (listof string?))))]
+  ;; profile -> holds, G-11 answers what is held
+  [query-held (-> path-string? (listof (list/c string? string?)))]))
 
 ;; string -> string, store-layout owner segment or #f (dev trees: E-19)
 (define (target-owner target)
@@ -249,6 +256,79 @@
                                               ("got" . ,remote))))))))
 
 ;; ---------------------------------------------------------------------------
+;; Status (G-11). Installed comes from the generation ledger, held from
+;; the holds file, outdated from the vault via update-all. Each answers
+;; which source it consulted, so "what is installed" is never a guess.
+
+;; path -> (listof list) or #f, ledger triples of one generation
+(define (ledger-triples gen)
+  (with-handlers ([(lambda (e) #t) (lambda (e) #f)])
+    (define datum (call-with-input-file (build-path gen "ledger.rktd") read))
+    (and (pair? datum)
+         (eq? (car datum) 'ledger)
+         (for/list ([t (in-list (cdr datum))]
+                    #:when (and (list? t) (= 3 (length t))))
+           t))))
+
+;; path-string (listof lock-entry) -> status rows, one per installed
+;; package: (name version slot held? rels). The ledger is authoritative
+;; for what is installed; the lock supplies version and slot.
+(define (query-status profile-root locks)
+  (with-op 'query
+           (if (path? profile-root) (path->string profile-root)
+               (format "~a" profile-root))
+           "the user asked what is installed"
+           #:how "the current generation's ledger, slots from the lock"
+           #:inputs (list (if (path? profile-root) (path->string profile-root)
+                              (format "~a" profile-root)))
+           (lambda ()
+             (step 'query "ledger"
+                   "the ledger is the record the generation was built from")
+             (define gen (current-generation profile-root))
+             (define triples
+               (or (ledger-triples gen)
+                   (raise-pm-error 'config 'query-status
+                                   "generation predates ledgers"
+                                   #:fields `(("generation" . ,(path->string gen)))
+                                   #:hint "re-activate to write a ledger")))
+             (define by-name
+               (for/fold ([h (hash)])
+                         ([t (in-list triples)])
+                 (hash-set h (first t)
+                           (cons (third t) (hash-ref h (first t) '())))))
+             (step 'query "holds"
+                   "a held slot stays installed on purpose, not by accident")
+             (for/list ([name (in-list (sort (hash-keys by-name) string<?))])
+               (define lock-hit
+                 (for/or ([e (in-list locks)])
+                   (and (equal? (symbol->string (lock-entry-name e)) name)
+                        e)))
+               (define slot
+                 (if lock-hit (symbol->string (lock-entry-slot lock-hit))
+                     "unknown"))
+               (list name
+                     (if lock-hit (version->string (lock-entry-version lock-hit))
+                         "unknown")
+                     slot
+                     (and (not (equal? slot "unknown"))
+                          (profile-held? profile-root name slot)
+                          #t)
+                     (reverse (hash-ref by-name name)))))))
+
+;; path-string -> holds, (name slot) pairs as written by profile-hold
+(define (query-held profile-root)
+  (with-op 'query
+           (if (path? profile-root) (path->string profile-root)
+               (format "~a" profile-root))
+           "the user asked what is held"
+           #:how "the profile holds file, absent reads as none held"
+           (lambda ()
+             (define holds (read-holds profile-root))
+             (step 'query "holds"
+                   (format "~a hold(s) on record" (length holds)))
+             holds)))
+
+;; ---------------------------------------------------------------------------
 (module+ test
   (require rackunit
            racket/file
@@ -340,6 +420,34 @@
   (check-equal? (first ledged) "pkg-a")
   (check-equal? (second ledged)
                 (path->string (build-path store-a "bin" "prog")))
+
+  ;; G-11: status answers installed from a real activation, held from a
+  ;; real hold. Activate pkg-a through profile-activate so a ledger
+  ;; exists, hold its slot, then read both back.
+  (define prof3 (build-path test-root "profile3"))
+  (profile-activate (list (list "pkg-a" (path->string store-a)
+                                '("bin/prog")))
+                    (path->string prof3))
+  (define status-locks
+    (list (lock-entry 'pkg-a (string->version "1.0")
+                      (make-string 40 #\a) "https://example.org/a.git"
+                      'default '() "s" "i" '())))
+  (define rows (query-status (path->string prof3) status-locks))
+  (check-equal? (length rows) 1)
+  (check-equal? (take (first rows) 3) '("pkg-a" "1.0" "default"))
+  (check-false (fourth (first rows)))
+  (check-equal? (fifth (first rows)) '("bin/prog"))
+  (profile-hold (path->string prof3) "pkg-a" "default")
+  (check-equal? (query-held (path->string prof3))
+                '(("pkg-a" "default")))
+  (define held-rows (query-status (path->string prof3) status-locks))
+  (check-true (fourth (first held-rows)))
+  ;; No lock entry: version and slot read unknown, held is false rather
+  ;; than an error, because status must answer even mid-migration.
+  (define unknown-rows (query-status (path->string prof3) '()))
+  (check-equal? (take (first unknown-rows) 3)
+                '("pkg-a" "unknown" "unknown"))
+  (check-false (fourth (first unknown-rows)))
 
   ;; verify compares the current tree against its pin, byte by byte.
   (define up (build-path test-root "upstream"))

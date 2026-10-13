@@ -60,7 +60,11 @@
   ;; path-string string string -> void, release a slot pin
   [profile-unhold (-> path-string? string? string? void?)]
   ;; path-string string string -> boolean, is the slot pinned
-  [profile-held? (-> path-string? string? string? boolean?)]))
+  [profile-held? (-> path-string? string? string? boolean?)]
+  ;; path-string -> path, where the profile link points today
+  [current-generation (-> path-string? path?)]
+  ;; path-string -> (listof (name slot)), absent reads as none held
+  [read-holds (-> path-string? (listof (list/c string? string?)))]))
 
 ;; exact-integer -> string, profile-001 style, sortable as text
 (define (gen-dir-name n)

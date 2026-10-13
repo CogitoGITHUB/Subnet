@@ -820,11 +820,14 @@ generation-provenance never raises. Proven: the recorded run id names
 a feed holding the activate decision, so the two reconstruct each
 other.
 
-** TODO G-11 search and status
-=check= validates specs; nothing answers "what is installed, what is
-held, what is outdated against the vault". Can be thin, must not be
-absent. / Done when: =pm status= and =pm held= print those three answers
-and each narrates which source it consulted.
+** DONE G-11 search and status
+pm status PROFILE LOCKFILE (installed with version, slot, held mark
+and paths, off the ledger with slots from the lock), pm held PROFILE
+(the holds file) and pm outdated VAULT LOCKFILE PROFILE (each lock pin
+against the vault, the only source that can answer). All three are
+real commands with JSON documents, API.org examples the gate
+re-renders, MCP tools, and narration naming the consulted source;
+outdated reuses update-all, whose behind case is already tested.
 
 ** DONE G-12 format migration rule
 One rule in core/spec-read.rkt read-format-version: anything but 2 is

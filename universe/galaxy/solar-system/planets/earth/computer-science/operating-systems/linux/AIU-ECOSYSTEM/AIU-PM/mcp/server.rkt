@@ -63,6 +63,9 @@
         (hash 'name "why" 'arity 1 'confirms? #f 'summary "explain a package")
         (hash 'name "owner" 'arity 2 'confirms? #f 'summary "who owns a path")
         (hash 'name "verify" 'arity 1 'confirms? #f 'summary "verify a tree")
+        (hash 'name "status" 'arity 2 'confirms? #f 'summary "what is installed")
+        (hash 'name "held" 'arity 1 'confirms? #f 'summary "what is held")
+        (hash 'name "outdated" 'arity 3 'confirms? #f 'summary "what is behind")
         (hash 'name "fetch" 'arity 1 'confirms? #t 'summary "fetch packages")
         (hash 'name "apply" 'arity 1 'confirms? #t 'summary "apply a plan")
         (hash 'name "update" 'arity 1 'confirms? #t 'summary "check all packages")
@@ -421,8 +424,8 @@
   (check-equal?
    (sort (map (lambda (t) (hash-ref t 'name)) listed-tools) string<?)
    '("activate" "apply" "check" "events.runs" "events.tail"
-     "fetch" "hold" "lock" "owner" "plan" "remove"
-     "rollback" "run.get" "update" "verify" "why"))
+     "fetch" "held" "hold" "lock" "outdated" "owner" "plan" "remove"
+     "rollback" "run.get" "status" "update" "verify" "why"))
   (define (tool-called name)
     (for/first ([t (in-list listed-tools)]
                 #:when (equal? (hash-ref t 'name) name))
@@ -434,7 +437,7 @@
 
   ;; The flat table marks the state-changing tools.
   (define table (tool-table-json #f))
-  (check-equal? (length (regexp-match* #rx"\"name\":\"[a-z.]+\"" table)) 16)
+  (check-equal? (length (regexp-match* #rx"\"name\":\"[a-z.]+\"" table)) 19)
   (check-true
    (regexp-match?
     #rx"\\{\"name\":\"apply\",\"arity\":1,\"confirmsConfirmation\":true"

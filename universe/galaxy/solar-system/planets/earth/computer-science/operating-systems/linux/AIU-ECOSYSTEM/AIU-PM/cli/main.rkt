@@ -7,6 +7,7 @@
 
 (require racket/contract/base
          racket/file
+         racket/list
          racket/port
          racket/string
          json
@@ -16,7 +17,10 @@
          "../core/spec-read.rkt"
          "../core/ui.rkt"
          "../core/verbose.rkt"
-         "../core/version.rkt")
+         "../core/version.rkt"
+         "../core/lock.rkt"
+         "../backends/query.rkt"
+         "../backends/update.rkt")
 
 (provide
  (struct-out command-check)
@@ -33,6 +37,9 @@
  (struct-out command-why)
  (struct-out command-owner)
  (struct-out command-verify)
+ (struct-out command-status)
+ (struct-out command-held)
+ (struct-out command-outdated)
  (contract-out
   ;; any -> boolean, a parsed command value
   [command? (-> any/c boolean?)]
@@ -89,6 +96,13 @@
 ;; profile : string?  profile directory; rel : string?  relative path
 (struct command-verify (name format) #:transparent)
 ;; name   : string?  package name to re-check against its pin
+(struct command-status (profile lockfile format) #:transparent)
+;; profile : string?  profile directory; lockfile : string?  lock path
+(struct command-held (profile format) #:transparent)
+;; profile : string?  profile directory
+(struct command-outdated (vault lockfile profile format) #:transparent)
+;; vault : string?  vault dir; lockfile : string?  lock path;
+;; profile : string?  profile directory for holds
 
 ;; any -> boolean, a parsed command value
 (define (command? v)
@@ -96,7 +110,8 @@
       (command-plan? v) (command-lock? v) (command-fetch? v)
       (command-apply? v) (command-update? v) (command-activate? v)
       (command-rollback? v) (command-remove? v) (command-hold? v)
-      (command-why? v) (command-owner? v) (command-verify? v)))
+      (command-why? v) (command-owner? v) (command-verify? v)
+      (command-status? v) (command-held? v) (command-outdated? v)))
 
 ;; ---------------------------------------------------------------------------
 ;; Parsing (one flag pass, then one command pass)
@@ -148,7 +163,14 @@
         (list "why" 1 (lambda (ops fmt) (command-why (car ops) fmt)))
         (list "owner" 2
               (lambda (ops fmt) (command-owner (car ops) (cadr ops) fmt)))
-        (list "verify" 1 (lambda (ops fmt) (command-verify (car ops) fmt)))))
+        (list "verify" 1 (lambda (ops fmt) (command-verify (car ops) fmt)))
+        (list "status" 2
+              (lambda (ops fmt)
+                (command-status (car ops) (cadr ops) fmt)))
+        (list "held" 1 (lambda (ops fmt) (command-held (car ops) fmt)))
+        (list "outdated" 3
+              (lambda (ops fmt)
+                (command-outdated (car ops) (cadr ops) (caddr ops) fmt)))))
 
 ;; (vectorof string) -> command
 (define (parse-args argv)
@@ -231,6 +253,18 @@
         [(command-verify? cmd)
          (list "verify" (command-verify-format cmd)
                (list (command-verify-name cmd)))]
+        [(command-status? cmd)
+         (list "status" (command-status-format cmd)
+               (list (command-status-profile cmd)
+                     (command-status-lockfile cmd)))]
+        [(command-held? cmd)
+         (list "held" (command-held-format cmd)
+               (list (command-held-profile cmd)))]
+        [(command-outdated? cmd)
+         (list "outdated" (command-outdated-format cmd)
+               (list (command-outdated-vault cmd)
+                     (command-outdated-lockfile cmd)
+                     (command-outdated-profile cmd)))]
         [(command-help? cmd) (list "help" 'sexp '())]
         [else (raise-pm-error 'internal 'pm "not a command"
                               #:fields `(("value" . ,(format "~s" cmd))))]))
@@ -277,6 +311,9 @@
     "  why NAME           explain a package (not executable yet)"
     "  owner PROFILE REL  who owns a path (not executable yet)"
     "  verify NAME        re-check a tree (not executable yet)"
+    "  status PROFILE LOCKFILE what is installed, with held marks"
+    "  held PROFILE       what is held"
+    "  outdated VAULT LOCKFILE PROFILE what is behind, from the vault"
     "  --format           output shape, sexp (default) or json"
    )))
 
@@ -391,6 +428,32 @@
                        (spec-name s)
                        (version->string (spec-version s)))))))
 
+;; path-string path-string -> jsexpr, one object per installed
+;; package, in name order. Reads the lock for versions and slots; the
+;; ledger underneath answers what is really there.
+(define (status-document profile lockfile)
+  (define locks (lockfile-entries (read-lockfile lockfile)))
+  (define rows (query-status profile locks))
+  (for/list ([r (in-list rows)])
+    (hasheq 'name (first r)
+            'version (second r)
+            'slot (third r)
+            'held (if (fourth r) #t #f)
+            'rels (fifth r))))
+
+;; path-string -> jsexpr, the holds as pairs
+(define (held-document profile)
+  (define holds (query-held profile))
+  (for/list ([h (in-list holds)])
+    (hasheq 'name (first h) 'slot (second h))))
+
+;; path-string path-string path-string -> (listof string), one info line
+;; per locked package, input order kept. Outdated is answered by the
+;; vault, not by the lock alone.
+(define (outdated-document vault lockfile profile)
+  (define locks (lockfile-entries (read-lockfile lockfile)))
+  (update-report (update-all vault locks '() profile)))
+
 ;; jsexpr -> string, write-json prints to the current port and returns
 ;; void; here the value is spliced into a bigger document.
 (define (json-text j)
@@ -412,6 +475,24 @@
      (string-append envelope
                     ",\"ok\":"
                     (json-text (check-ok-lines (command-check-dir cmd)))
+                    "}")]
+    [(command-status? cmd)
+     (string-append envelope
+                    ",\"packages\":"
+                    (json-text (status-document (command-status-profile cmd)
+                                               (command-status-lockfile cmd)))
+                    "}")]
+    [(command-held? cmd)
+     (string-append envelope
+                    ",\"holds\":"
+                    (json-text (held-document (command-held-profile cmd)))
+                    "}")]
+    [(command-outdated? cmd)
+     (string-append envelope
+                    ",\"report\":"
+                    (json-text (outdated-document (command-outdated-vault cmd)
+                                                 (command-outdated-lockfile cmd)
+                                                 (command-outdated-profile cmd)))
                     "}")]
     [(command-help? cmd) (string-append envelope "}")]
     [else
@@ -451,6 +532,38 @@
                    (for ([p (in-list (plan-document
                                       (command-plan-specs cmd)))])
                      (display-result (list (format "~a" p))))
+                   0))]
+            [(command-status? cmd)
+             (if (eq? 'json (command-status-format cmd))
+                 (begin (display-result (list (run-command-json cmd))) 0)
+                 (begin
+                   (for ([p (in-list (status-document
+                                      (command-status-profile cmd)
+                                      (command-status-lockfile cmd)))])
+                     (display-result
+                      (list (format "~a ~a [~a]~a" (hash-ref p 'name)
+                                    (hash-ref p 'version)
+                                    (hash-ref p 'slot)
+                                    (if (hash-ref p 'held) " held" "")))))
+                   0))]
+            [(command-held? cmd)
+             (if (eq? 'json (command-held-format cmd))
+                 (begin (display-result (list (run-command-json cmd))) 0)
+                 (begin
+                   (for ([h (in-list (held-document
+                                      (command-held-profile cmd)))])
+                     (display-result
+                      (list (format "~a ~a" (hash-ref h 'name)
+                                    (hash-ref h 'slot)))))
+                   0))]
+            [(command-outdated? cmd)
+             (if (eq? 'json (command-outdated-format cmd))
+                 (begin (display-result (list (run-command-json cmd))) 0)
+                 (begin
+                   (display-result
+                    (outdated-document (command-outdated-vault cmd)
+                                       (command-outdated-lockfile cmd)
+                                       (command-outdated-profile cmd)))
                    0))]
             [else
              (raise-pm-error 'config 'pm "command not executable yet"
@@ -648,8 +761,8 @@
                 [else (loop rest acc)]))]
         [else (loop (cdr ls) acc)])))
   (define examples (api-examples api-lines))
-  ;; Thirteen commands plus --help.
-  (check-equal? (length examples) 14)
+  ;; Sixteen commands plus --help.
+  (check-equal? (length examples) 17)
   (check-equal? (sort (remove-duplicates
                        (map (lambda (e)
                               (let ([words (string-split (car e) " ")])
