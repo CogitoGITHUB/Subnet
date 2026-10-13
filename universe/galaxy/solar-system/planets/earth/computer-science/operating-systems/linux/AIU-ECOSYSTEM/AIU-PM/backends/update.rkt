@@ -279,9 +279,11 @@
   (check-equal? (manifest-read mfile) (list ment))
   (check-equal? (length (journal-completions state "pkg-a" "default")) 1)
 
-  ;; E-16b (reduced): single-add shapes only. Multi-add batching in
-  ;; one pm-fetch call wedges (BLOCKED note on the item); these prove
-  ;; the fetch, present and failed paths that stay green.
+  ;; E-16b: three fixtures in one declaration fill the vault, and a
+  ;; second run reports all present. The multi-add wedge that blocked
+  ;; this (frozen sequential adds in one process) no longer reproduces:
+  ;; three bare vault-adds pass alone and the full suite passes, so the
+  ;; batch shape is proven directly instead of staying reduced.
   (define (ff-upstream sub)
     (define d (build-path test-root sub))
     (make-directory d)
@@ -310,6 +312,22 @@
       (pm-fetch froot fa-manifest)))
   (check-equal? ra2 (list (list "ff-a" 'present "refs/vault/ff-a")))
   (check-regexp-match #rx"ff-a: new" (car (update-report ra)))
+  ;; Three at once: the declaration fills the vault in one call, and
+  ;; the second run reports every one present without fetching.
+  (define f3-manifest (build-path test-root "fetch-3.rktd"))
+  (manifest-write f3-manifest (list (fentry "ff-1" (ff-upstream "ff-1"))
+                                    (fentry "ff-2" (ff-upstream "ff-2"))
+                                    (fentry "ff-3" (ff-upstream "ff-3"))))
+  (define r3
+    (parameterize ([current-allow-file-urls #t])
+      (pm-fetch froot f3-manifest)))
+  (check-equal? (map second r3) '(new new new))
+  (check-true (andmap (lambda (r) (regexp-match? #px"^[0-9a-f]{40}$" (third r)))
+                      r3))
+  (define r32
+    (parameterize ([current-allow-file-urls #t])
+      (pm-fetch froot f3-manifest)))
+  (check-equal? (map second r32) '(present present present))
   (define fx-manifest (build-path test-root "fetch-x.rktd"))
   (manifest-write fx-manifest
                   (list (manifest-entry "ff-x" "file:///nonexistent-pm-fetch"

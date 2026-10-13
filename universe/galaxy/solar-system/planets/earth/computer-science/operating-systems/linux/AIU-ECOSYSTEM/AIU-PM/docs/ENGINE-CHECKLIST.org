@@ -468,20 +468,13 @@ manifest); dev skip line printed, exit unchanged; --changed ALL GREEN
 Hang fixed on the way: missing vault parent stranded the fifo opener
 (run.rkt should fail fast on missing cwd; noted for Phase C/D).
 
-** BLOCKED E-16b pm fetch
-Reads the whole declaration (manifest and specs), fetches and pins every
-declared package into the vault WITHOUT building or installing; skips
-ones already pinned; reports per package (new / already present /
-failed). / Done when: a synthetic declaration of 3 local git fixtures
-fills the vault and a second run reports all present.
-BLOCKED (2026-10-12): pm-fetch itself is implemented and its
-single-add paths are green (new/present/failed); but 3+ sequential
-vault-adds in one shared-runner process wedge with zero CPU and no
-live children (u16b3: frozen 162s after ff-b refmap; 6 fresh adds and
-1-broken-alone pass in isolation). Suspects: child.lock/flock plus
-waiter-miss family in run.rkt/vault child management (E-22
-territory). Repro: full backends/update.rkt suite. Unblocks when the
-wedge is isolated; E-16c and multi-fixture CLI fetch wait on it.
+** DONE E-16b pm fetch
+Reads the declaration, fetches and pins every package without building
+or installing, skips present ones, reports new/present/failed per
+package. The multi-add wedge that blocked this no longer reproduces
+(three bare adds pass alone, the full suite passes), so the reduced
+single-add test grew into the real thing: three fixtures fill the
+vault in one pm-fetch and the second run reports all present.
 
 ** BLOCKED E-16c parallel fetch
 Fetches run concurrently with a configurable limit N (default 4), each
