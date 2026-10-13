@@ -791,10 +791,11 @@ sets live?". / Done when: the contract names the roots, in order:
 explicit config directories, then the local vault, and never an implicit
 network fetch.
 
-** TODO G-07 idempotent apply
-Applying the same plan twice must be a no-op with SKIPs naming the hash
-that matched, never a reinstall. / Done when: a second =apply= of an
-unchanged plan writes nothing and every action reports a SKIP.
+** DONE G-07 idempotent apply
+Second apply of an unchanged plan writes nothing: backends/apply.rkt
+already skipped done steps by input hash, and now a test proves the
+performer runs zero times on re-apply while a changed hash reruns
+everything. Each skipped action reports its SKIP with the hash.
 
 ** TODO G-08 partial failure law
 Fetch ok, build ok, apply dies halfway. The law must be stated, not

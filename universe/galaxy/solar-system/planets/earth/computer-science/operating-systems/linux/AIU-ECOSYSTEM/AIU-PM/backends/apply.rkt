@@ -189,6 +189,14 @@
   (check-true (journal-step-done? state "pkg-fail" "default"
                                   "step-2-run-step" "h9"))
 
+  ;; G-07: applying the same plan twice is a no-op. Every step is done
+  ;; under h9, so the performer runs zero times and each action SKIPs.
+  (define run2b-box (box '()))
+  (parameterize ([current-fake-log run2b-box])
+    (apply-plan fail-plan "h9" fake-perform!
+                #:state state #:package "pkg-fail" #:slot "default"))
+  (check-equal? (unbox run2b-box) '())
+
   ;; A changed input hash reruns everything, skipping nothing.
   (define run3-box (box '()))
   (parameterize ([current-fake-log run3-box])
