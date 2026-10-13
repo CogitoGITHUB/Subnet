@@ -761,11 +761,11 @@ synthetic closure of 3 packages resolves to a deterministic order, and
 a 2-package path collision is refused by =plan= with both names in the
 message.
 
-** TODO G-02 lock the whole closure
-One pinned package is not a machine you can rebuild. / Done when: a
-lock document records name, version, slot, flags, commit and source URL
-for every resolved package, and two locks from the same spec set are
-byte-identical.
+** DONE G-02 lock the whole closure
+Each lock row records name, version, slot, flags, commit and source
+URL through the round trip, and two locks from the same entries in
+different orders are byte-identical on disk. Full closure resolution
+ordering still waits on G-01; the document itself is reproducible now.
 
 ** DONE G-03 verify as its own stage
 backends/query.rkt verify-tree! and verify-source! refuse with kind

@@ -531,6 +531,25 @@
                                        (lock-entry-slot e)))
                      (lockfile-entries (read-lockfile round-path)))
                 '((aaa default) (aaa lts) (zzz default)))
+
+  ;; G-02: the lock records the whole closure row: name, version, slot,
+  ;; flags, commit and source URL survive the round trip.
+  (check-equal? (lock-entry-commit (car (lockfile-entries round-back)))
+                "9edb3f66fd807b096b48283debdcddccfea34bad")
+  (check-equal? (lock-entry-url (car (lockfile-entries round-back)))
+                "https://example.org/demo.git")
+
+  ;; G-02: two locks from the same entries in different orders are
+  ;; byte-identical on disk, so a closure is reproducible bit for bit.
+  (define lock-a (build-path round-dir "a.rktd"))
+  (define lock-b (build-path round-dir "b.rktd"))
+  (write-lockfile lock-a (lockfile (list (sort-entry 'zzz 'default)
+                                         (sort-entry 'aaa 'lts)
+                                         (sort-entry 'aaa 'default))))
+  (write-lockfile lock-b (lockfile (list (sort-entry 'aaa 'default)
+                                         (sort-entry 'aaa 'lts)
+                                         (sort-entry 'zzz 'default))))
+  (check-equal? (file->string lock-a) (file->string lock-b))
   (delete-directory/files round-dir)
 
   ;; string -> string, validation message for a lockfile text
