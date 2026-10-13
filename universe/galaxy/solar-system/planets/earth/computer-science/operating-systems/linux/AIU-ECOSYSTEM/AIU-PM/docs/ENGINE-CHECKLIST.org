@@ -797,11 +797,12 @@ already skipped done steps by input hash, and now a test proves the
 performer runs zero times on re-apply while a changed hash reruns
 everything. Each skipped action reports its SKIP with the hash.
 
-** TODO G-08 partial failure law
-Fetch ok, build ok, apply dies halfway. The law must be stated, not
-implied. / Done when: docs state whether the law is resume, rollback to
-last good, or manual repair, and the feed shows which one applies to a
-given interrupted run.
+** DONE G-08 partial failure law
+The law is RESUME for apply, ATOMIC for the profile link, RETRY for
+fetch, stated in docs/ENGINE.org "Partial-failure law". A test runs a
+failing apply and its resume inside one verbose run and asserts the
+feed holds FAIL, SKIP and the input hash, so the feed shows which law
+applied.
 
 ** TODO G-09 build isolation policy, stated either way
 Same-user builds, no chroot, no daemon -- but is the network available

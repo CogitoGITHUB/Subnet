@@ -204,6 +204,29 @@
                 #:state state #:package "pkg-fail" #:slot "default"))
   (check-equal? (length (unbox run3-box)) 4)
 
+  ;; G-08: the feed of an interrupted run shows the law. Inside one
+  ;; verbose run, the failing apply emits FAIL and the resumed apply
+  ;; emits SKIPs naming the hash, so a reader of the feed knows the run
+  ;; resumed rather than restarted.
+  (define feed-dir (build-path state "events-g08"))
+  (make-directory* feed-dir)
+  (define feed-text
+    (parameterize ([verbose-screen? #f])
+      (begin-run! #:who 'test #:events-dir feed-dir)
+      (with-handlers ([exn:fail:pm? void?])
+        (apply-plan fail-plan "hG08" boom-performer
+                    #:state state #:package "pkg-g08" #:slot "default"))
+      (apply-plan fail-plan "hG08" fake-perform!
+                  #:state state #:package "pkg-g08" #:slot "default")
+      (end-run! "done")
+      (for/fold ([acc ""])
+                ([f (in-list (directory-list feed-dir))]
+                 #:when (regexp-match? #rx"\\.jsonl$" (path->string f)))
+        (string-append acc (file->string (build-path feed-dir f))))))
+  (check-true (regexp-match? #rx"FAIL" feed-text))
+  (check-true (regexp-match? #rx"SKIP" feed-text))
+  (check-true (regexp-match? #rx"hG08" feed-text))
+
   ;; Cancel stops between steps: nothing performed, nothing journaled.
   (define cancel-err
     (with-handlers ([exn:fail:pm? (lambda (e) e)])

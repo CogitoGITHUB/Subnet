@@ -376,6 +376,25 @@ same =<pkg>/current= link pointed at the checkout, =pm status= flags it
 =update --all= lists dev packages as skipped without changing its exit
 code. Dev mode is the last engine item (checklist E-19).
 
+* Partial-failure law (G-08)
+When a run dies halfway, the law is RESUME for apply, ATOMIC for the
+profile link, and RETRY for fetch. Nothing else exists: there is no
+"half-applied" state that a human must repair by hand.
+- =apply=: the journal names every completed step under its input hash,
+  so a resumed run skips exactly those steps and re-runs from the first
+  unfinished one. A changed hash reruns everything. The feed shows
+  which: a FAIL with the error text, then SKIPs naming the matched
+  hash on resume.
+- =activate=/=rollback=/=remove=: the new generation is built beside
+  the old one and the =profile= link flips in one atomic swap. A kill
+  before the swap leaves the old generation live; a kill after leaves
+  the new one live. Either way the profile points at a whole
+  generation, never a half-written tree.
+- =fetch=: each package waits only on its own exit, so a dead fetch is
+  retried alone and never poisons the packages that succeeded.
+- =#:cancel= stops between steps, never mid-write, so cancellation is
+  an interrupted run and resumes like one.
+
 * Sequencing
 1. =core/flags.rkt= and the =slot=/=flags= spec fields.
 2. =core/plan.rkt= derivation, with =plan->text= goldens, then lowering.
