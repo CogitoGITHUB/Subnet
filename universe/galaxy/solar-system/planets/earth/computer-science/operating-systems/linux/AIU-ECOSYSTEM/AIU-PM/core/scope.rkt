@@ -20,7 +20,9 @@
  (struct-out roots)
  (contract-out
   ;; symbol -> roots, user scope today; anything else is deferred
-  [scope-roots (-> symbol? roots?)]))
+  [scope-roots (-> symbol? roots?)]
+  ;; (listof path-string) -> (listof path), the spec search order
+  [spec-search-roots (-> (listof path-string?) (listof path?))]))
 
 ;; ---------------------------------------------------------------------------
 ;; Roots (D-029: store, profile, state, config, cache come from one scope;
@@ -66,6 +68,29 @@
          (raise-pm-error 'config 'scope-roots "system scope deferred"
                          #:fields `(("scope" . ,(format "~a" scope)))
                          #:hint "v1 ships user scope only (D-029)")]))
+
+;; ---------------------------------------------------------------------------
+;; Spec discovery (G-06). Channels are gone, so this contract answers
+;; "where do .rktd sets live?" in one place. The order is the policy:
+;; explicit directories first, in the caller's order, then the config
+;; tree, then the local vault side of the data tree. There is no fourth
+;; source and especially no network: this function builds local paths
+;; only, so discovery can never fetch. Nothing calls it yet -- the CLI
+;; still takes an explicit DIR -- and that is recorded here rather than
+;; hidden: the wiring waits on the command set coming off "not
+;; executable yet".
+
+;; (listof path-string) -> (listof path), duplicates removed, order kept
+(define (spec-search-roots explicit)
+  (define r (scope-roots 'user))
+  (define candidates
+    (append (map (lambda (d) (if (path? d) d (string->path d))) explicit)
+            (list (build-path (roots-config r) "cyberdeck" "specs")
+                  (build-path (roots-data r) "cyberdeck" "specs"))))
+  (reverse
+   (for/fold ([seen '()])
+             ([p (in-list candidates)])
+     (if (member p seen) seen (cons p seen)))))
 
 ;; ---------------------------------------------------------------------------
 (module+ test
@@ -196,4 +221,26 @@
                 (roots-data (scope-roots 'user)))))
    (list (hash-ref nu-roots 'config)
          (hash-ref nu-roots 'cache)
-         (hash-ref nu-roots 'data))))
+         (hash-ref nu-roots 'data)))
+
+  ;; G-06: explicit dirs first in order, then config, then data. No
+  ;; network source exists anywhere in the answer.
+  (check-equal?
+   (parameterize ([current-environment-variables ev-full])
+     (map path->string (spec-search-roots '("/x/specs" "/y/specs"))))
+   '("/x/specs" "/y/specs"
+     "/tmp/pm-scope/config/cyberdeck/specs"
+     "/tmp/pm-scope/data/cyberdeck/specs"))
+  ;; Duplicates collapse, order kept; empty explicit still yields the two.
+  (check-equal?
+   (parameterize ([current-environment-variables ev-full])
+     (map path->string
+          (spec-search-roots '("/x/specs" "/x/specs"))))
+   '("/x/specs"
+     "/tmp/pm-scope/config/cyberdeck/specs"
+     "/tmp/pm-scope/data/cyberdeck/specs"))
+  (check-equal?
+   (parameterize ([current-environment-variables ev-full])
+     (map path->string (spec-search-roots '())))
+   '("/tmp/pm-scope/config/cyberdeck/specs"
+     "/tmp/pm-scope/data/cyberdeck/specs")))

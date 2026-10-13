@@ -785,11 +785,13 @@ Generations without pruning are a disk bomb. / Done when: =gc= keeps the
 last N (default 5), never deletes a generation named by a hold, and says
 in its own narration exactly what it kept and why.
 
-** TODO G-06 spec discovery contract
-Channels were removed, so something must still answer "where do =.rktd=
-sets live?". / Done when: the contract names the roots, in order:
-explicit config directories, then the local vault, and never an implicit
-network fetch.
+** DONE G-06 spec discovery contract
+core/scope.rkt spec-search-roots: explicit dirs in order, then
+config/cyberdeck/specs, then data/cyberdeck/specs, duplicates
+collapsed. No network source exists in the answer by construction.
+Nothing calls it yet; the CLI still takes an explicit DIR, recorded
+as the seam for later wiring. (The Nu cross-test in scope.rkt fails
+identically with and without this change: environmental, not mine.)
 
 ** DONE G-07 idempotent apply
 Second apply of an unchanged plan writes nothing: backends/apply.rkt
