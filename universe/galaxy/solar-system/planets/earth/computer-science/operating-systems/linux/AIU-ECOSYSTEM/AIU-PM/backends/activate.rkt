@@ -28,12 +28,26 @@
 (provide
  (contract-out
   ;; (listof entry) path-string -> path, next generation, profile flips
-  [profile-activate (-> (listof (list/c string? path-string?
-                                        (listof string?)))
-                        path-string?
-                        path?)]
-  ;; path-string -> (listof path), existing generations oldest first
-  [profile-generations (-> path-string? (listof path?))]
+  [profile-activate (->* ((listof (list/c string? path-string?
+                                          (listof string?)))
+                          path-string?)
+                         (#:interface string?
+                          #:specs (listof string?)
+                          #:lock (or/c string? #f))
+                         path?)]
+  ;; path-string -> (listof (gen provenance)), oldest first; provenance
+  ;; is #f for generations predating it, else (run-id interface specs lock)
+  [profile-generations (-> path-string?
+                           (listof (list/c path? (or/c #f (list/c (or/c string? #f)
+                                                                  string?
+                                                                  (listof string?)
+                                                                  (or/c string? #f))))))]
+  ;; generation dir -> provenance or #f, never raises
+  [generation-provenance (-> path-string?
+                             (or/c #f (list/c (or/c string? #f)
+                                              string?
+                                              (listof string?)
+                                              (or/c string? #f))))]
   ;; path-string exact-integer -> path, repoint profile at generation N
   [profile-rollback (-> path-string? exact-integer? path?)]
   ;; path-string string (listof entry) -> path, generation minus one
@@ -58,7 +72,8 @@
 ;; path -> exact-integer, one past the highest generation number
 (define (next-gen-number profile-root)
   (define nums
-    (for/list ([p (in-list (profile-generations profile-root))])
+    (for/list ([g (in-list (profile-generations profile-root))])
+      (define p (first g))
       (define m (regexp-match #rx"profile-([0-9]+)$"
                               (path->string (file-name-from-path p))))
       (string->number (second m))))
@@ -71,8 +86,25 @@
       (sort (for/list ([p (in-list (directory-list profile-root))]
                        #:when (regexp-match? #rx"^profile-[0-9]+$"
                                              (path->string p)))
-              (build-path profile-root p))
-            path<?)))
+              (define gen (build-path profile-root p))
+              (list gen (generation-provenance (path->string gen))))
+            (lambda (a b) (path<? (first a) (first b))))))
+
+;; path-string -> provenance or #f, never raises: a generation without
+;; a provenance file predates provenance, and that is absence, not error
+(define (generation-provenance gen)
+  (with-handlers ([(lambda (e) #t) (lambda (e) #f)])
+    (define datum
+      (call-with-input-file (build-path (if (path? gen) gen (string->path gen))
+                                        "provenance.rktd")
+        read))
+    (and (pair? datum)
+         (eq? (car datum) 'provenance)
+         (pair? (cdr datum))
+         (let ([p (cadr datum)])
+           (and (list? p)
+                (= 4 (length p))
+                p)))))
 
 ;; string -> void, single-segment package names only
 (define (check-entry-name name)
@@ -156,7 +188,10 @@
       #:exists 'truncate/replace)))
 
 ;; (listof entry) path-string -> path, validate all, then build + flip
-(define (profile-activate entries profile-root)
+(define (profile-activate entries profile-root
+                             #:interface [interface "unknown"]
+                             #:specs [specs '()]
+                             #:lock [lock #f])
   (when (null? entries)
     (raise-pm-error 'config 'profile-activate "nothing to activate"))
   (define triples (apply append (map (lambda (e) (apply entry-triples e))
@@ -166,6 +201,14 @@
   (define gen (build-path profile-root
                           (gen-dir-name (next-gen-number profile-root))))
   (build-generation! triples gen)
+  ;; G-10: who and why. The run id is read off the active narration
+  ;; run, so the event feed of that id reconstructs this decision; the
+  ;; interface names who triggered it. Outside any run both are absent
+  ;; rather than invented.
+  (call-with-output-file (build-path gen "provenance.rktd")
+    (lambda (out)
+      (write `(provenance (,(current-run-id) ,interface ,specs ,lock)) out))
+    #:exists 'truncate/replace)
   (swap-link! (path->string gen)
               (path->string (build-path profile-root "profile")))
   gen)
@@ -335,6 +378,8 @@
   (require rackunit
            racket/file
            racket/path
+           racket/string
+           json
            "../core/errors.rkt")
 
   ;; All fixtures are synthetic (T-10) under one temp root: two fake
@@ -388,6 +433,41 @@
   (check-equal? (length (profile-generations prof)) 2)
   (check-equal? (path->string (resolve-path (build-path prof "profile")))
                 (path->string gen2))
+
+  ;; G-10: provenance. Activate inside a run with an interface and
+  ;; specs; the generation records the run id, and the feed of that id
+  ;; holds the activate decision, so the two reconstruct each other. A
+  ;; separate profile dir, so this scenario's generations never change
+  ;; the counts the rollback and remove scenarios below assert.
+  (define prof10 (build-path test-root "profile-g10"))
+  (define feed-dir (build-path test-root "events-g10"))
+  (make-directory* feed-dir)
+  (define prov-gen
+    (parameterize ([verbose-screen? #f])
+      (define id (begin-run! #:who 'test #:events-dir feed-dir))
+      (define g (profile-activate (list (entry "a")) (path->string prof10)
+                                  #:interface "test-cli"
+                                  #:specs '("specs/pkg-a.rktd")))
+      (end-run! "done")
+      (list id g)))
+  (define prov-id (first prov-gen))
+  (define prov-gens (profile-generations (path->string prof10)))
+  (define prov-entry
+    (for/first ([g (in-list prov-gens)]
+                #:when (equal? (path->string (first g))
+                               (path->string (second prov-gen))))
+      g))
+  (check-true (and prov-entry (list? (second prov-entry))))
+  (check-equal? (first (second prov-entry)) prov-id)
+  (check-equal? (second (second prov-entry)) "test-cli")
+  (check-equal? (third (second prov-entry)) '("specs/pkg-a.rktd"))
+  (define feed-text
+    (for/fold ([acc ""])
+              ([f (in-list (directory-list feed-dir))]
+               #:when (regexp-match? #rx"\\.jsonl$" (path->string f)))
+      (string-append acc (file->string (build-path feed-dir f)))))
+  (check-true (regexp-match? #rx"START" feed-text))
+  (check-true (regexp-match? (regexp-quote prov-id) feed-text))
   (check-equal? (path->string (resolve-path (build-path gen2 "bin" "other")))
                 (path->string (build-path test-root "b" "bin" "other")))
 

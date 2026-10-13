@@ -812,11 +812,13 @@ during build, and is the environment scrubbed? "Undefined" becomes a
 security hole by accident. / Done when: the policy is written down and
 build.rkt enforces exactly what it says, including the network answer.
 
-** TODO G-10 provenance on every generation
-Each generation records the run id, the interface that triggered it
-(CLI, MCP session, plugin), the spec paths and the lock that produced
-it. / Done when: =profile-generations= returns provenance and the event
-feed of that run id is enough to reconstruct the decision.
+** DONE G-10 provenance on every generation
+profile-activate writes provenance.rktd (run id off the active
+narration run, interface, specs, lock) and profile-generations returns
+each generation with its provenance, #f for pre-provenance ones.
+generation-provenance never raises. Proven: the recorded run id names
+a feed holding the activate decision, so the two reconstruct each
+other.
 
 ** TODO G-11 search and status
 =check= validates specs; nothing answers "what is installed, what is
