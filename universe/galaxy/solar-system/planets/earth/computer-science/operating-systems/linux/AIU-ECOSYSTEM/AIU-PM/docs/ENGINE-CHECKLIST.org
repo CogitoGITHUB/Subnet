@@ -686,37 +686,13 @@ because it never covered the feed tools, which is how the bug hid.
 * PHASE S: security (runs BEFORE any package declaration, which is the
 final part of pm -- a declaration is a declaration only if pm refuses
 the ones that would compromise the machine)
-** TODO S-01 core/security.rkt: the policy, pure
-One place that answers "may pm do this?", with no I/O so it can be
-reasoned about and tested exhaustively. / Done when: the rules below
-exist as named predicates with a test each, and no other module may
-answer a security question.
-- *Source trust.* A git source is pinned to an exact commit or it is
-  refused: no branches, no tags, no "latest". Pin means a 40-hex
-  commit id, never a ref that can move. A tag is resolved once, then
-  recorded as the commit it resolved to.
-- *Origin.* A source may not come from a path, a file URL or a
-  =file://= transport. pm fetches over the network or not at all;
-  =GIT_ALLOW_PROTOCOL=file= exists only so the TEST fixtures work and
-  is refused outside a test root.
-- *Path escape.* Every destination an install form names is resolved
-  and must land under the prefix or the store. A =..= segment, an
-  absolute path, or a symlink that points outside refuses with kind
-  =install=, never silently clamped.
-- *Symlinks.* An installed symlink may point inside the prefix. One
-  that points outside refuses; a symlink whose target does not exist
-  yet refuses too, because it cannot be checked.
-- *Install mode.* The only modes pm ever writes are 755 for
-  bin/libexec and 644 for everything else. A mode requested from a
-  spec that is not one of those two refuses rather than being
-  widened.
-- *Credentials.* One redaction path (core/log.rkt trace-redact) runs
-  before ANY destination, so a URL with a password cannot reach the
-  screen, the log, the event feed, or an error message. Kind
-  =fetch= messages must not carry a raw URL.
-- *Confirmation.* A state-changing action requires the human
-  confirmation token, at every interface: CLI, MCP and the OpenCode
-  plugin alike. Approval at one layer is never authorisation in pm.
+** DONE S-01 core/security.rkt: the policy, pure
+One module, no I/O, eight predicates with a test each: commit-pinned?,
+source-pinned?, origin-allowed? (file:// only with an explicit test?
+flag, never an environment sniff -- DEFAULT D-037), path-contained?
+with a slash boundary, symlink-target-ok?, install-mode-allowed?
+(only 755 and 644), credential-safe? and state-changing? (the seven
+commands). 55 tests.
 
 ** TODO S-02 enforce S-01 at the choke points
 The policy above is worthless unless it is where the work happens. /
