@@ -476,17 +476,15 @@ package. The multi-add wedge that blocked this no longer reproduces
 single-add test grew into the real thing: three fixtures fill the
 vault in one pm-fetch and the second run reports all present.
 
-** BLOCKED E-16c parallel fetch
-Fetches run concurrently with a configurable limit N (default 4), each
-waiting only on its own process exit (D-015); the vault write path is
-serialized or per-package (read backends/vault.rkt and vault-lock first
-and record which in the item); one failing fetch does not stop the
-others; the summary lists failures. / Done when: 6 synthetic fixtures
-with N=3 finish with correct pins and one deliberately broken URL is
-reported as failed.
-BLOCKED (2026-10-12): depends on E-16b — parallel multi-fetch cannot
-go green while sequential multi-add wedges in the shared runner (see
-E-16b note). Unattempted on purpose; attempt after the wedge clears.
+** DONE E-16c parallel fetch
+pm-fetch-parallel: one thread per missing package, at most N in flight
+(default 4), each join waiting only on its own thread, one failure
+never stopping the others, results in manifest order. The vault write
+path is serialized through a process-wide gate semaphore with the
+try-only writer lock as backstop: one shared bare repo means threads
+bound in-flight work and isolate failures rather than speeding the
+vault, and that is recorded at the definition. Six fixtures at N=3
+finish with correct pins and the broken URL reports failed.
 
 ** DONE E-17 query.rkt
 =why=, =owner=, =verify=, read-only. / Done when: each answers on a

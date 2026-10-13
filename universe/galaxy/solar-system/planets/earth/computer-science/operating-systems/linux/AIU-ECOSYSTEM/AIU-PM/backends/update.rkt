@@ -50,7 +50,11 @@
                      void?)]
   ;; path-string path-string -> results, fetch missing namespaces
   [pm-fetch (-> path-string? path-string?
-                (listof (list/c string? symbol? string?)))]))
+                (listof (list/c string? symbol? string?)))]
+  ;; path-string path-string -> results, the same fetch concurrent
+  [pm-fetch-parallel (->* (path-string? path-string?)
+                          (#:limit exact-positive-integer?)
+                          (listof (list/c string? symbol? string?)))]))
 
 ;; path-string string string string -> result, fetch plus compare.
 ;; cancelled escapes; every other pm failure becomes fetch-failed.
@@ -173,6 +177,71 @@
                    (begin
                      (step 'fetch name "it is not in the vault, so it is fetched")
                      (fetch-new vault-root name (manifest-entry-url e))))))))
+
+;; E-16c: the same fetch, concurrent. One thread per missing package,
+;; at most LIMIT in flight; each thread waits only on its own fetch,
+;; and one failure never stops the others. The vault write path stays
+;; SERIALIZED through a process-wide gate semaphore admitting one
+;; vault-add at a time, with the existing try-only writer lock inside
+;; vault-add as the backstop rather than the mechanism. Recorded after
+;; reading vault.rkt and vault-lock: one shared bare repo plus try-only
+;; locks means threads bound in-flight work and isolate failures; they
+;; do not speed the vault itself. Results come back in manifest order,
+;; never in finish order, so the summary is deterministic.
+(define fetch-vault-gate (make-semaphore 1))
+
+(define (pm-fetch-parallel vault-root manifest-path #:limit [limit 4])
+  (with-op 'fetch (as-text manifest-path)
+           (format "every missing package is fetched, at most ~a at once"
+                   limit)
+           (lambda ()
+             (unless (directory-exists? vault-root)
+               (vault-init vault-root))
+             (define present
+               (with-handlers ([exn:fail:pm? (lambda (e) '())])
+                 (vault-list vault-root)))
+             (define missing
+               (filter (lambda (e)
+                         (not (member (manifest-entry-name e) present)))
+                       (manifest-read manifest-path)))
+             (for ([e (in-list missing)])
+               (skip 'fetch (manifest-entry-name e)
+                     "parallel fetch defers the per-package reason to its thread"))
+             (define sema (make-semaphore limit))
+             (define slots
+               (for/list ([e (in-list missing)])
+                 (define slot-box (box #f))
+                 (cons e slot-box)))
+             (define threads
+               (for/list ([s (in-list slots)])
+                 (thread
+                  (lambda ()
+                    (call-with-semaphore
+                     sema
+                     (lambda ()
+                       (define e (car s))
+                       ;; The gate serializes the vault writes; the
+                       ;; in-flight bound above is what stays parallel.
+                       (call-with-semaphore
+                        fetch-vault-gate
+                        (lambda ()
+                          (set-box! (cdr s)
+                                    (fetch-new vault-root
+                                               (manifest-entry-name e)
+                                               (manifest-entry-url e)))))))))))
+             ;; Each join waits only on its own thread: no polling, no
+             ;; timers, and a failure in one slot never touches another.
+             (for ([th (in-list threads)]) (thread-wait th))
+             (define done
+               (for/hash ([s (in-list slots)])
+                 (values (manifest-entry-name (car s)) (unbox (cdr s)))))
+             ;; Manifest order, never finish order, so the summary is
+             ;; deterministic no matter which thread won the race.
+             (for/list ([e (in-list (manifest-read manifest-path))])
+               (define name (manifest-entry-name e))
+               (if (member name present)
+                   (resolve-present name)
+                   (hash-ref done name))))))
 
 (module+ test
   (require rackunit
@@ -328,6 +397,37 @@
     (parameterize ([current-allow-file-urls #t])
       (pm-fetch froot f3-manifest)))
   (check-equal? (map second r32) '(present present present))
+
+  ;; E-16c: six fixtures at limit 3 finish with correct pins in
+  ;; manifest order, and the broken URL is reported failed without
+  ;; stopping the others.
+  (define p-manifest (build-path test-root "fetch-p.rktd"))
+  (manifest-write p-manifest
+                  (for/list ([n (in-range 1 7)])
+                    (fentry (format "ff-p~a" n)
+                            (ff-upstream (format "ff-p~a" n)))))
+  ;; The append reads back file:// URLs, so it needs the same test-only
+  ;; permission the fetches do.
+  (parameterize ([current-allow-file-urls #t])
+    (manifest-write p-manifest
+                    (append (manifest-read p-manifest)
+                            (list (manifest-entry "ff-bad"
+                                                  "file:///nonexistent-pm-fetch-p"
+                                                  "refs/vault/ff-bad" 1 #f '() #f)))))
+  (define rp
+    (parameterize ([current-allow-file-urls #t])
+      (pm-fetch-parallel froot p-manifest #:limit 3)))
+  (check-equal? (map second rp)
+                '(new new new new new new failed))
+  (check-equal? (map first rp)
+                '("ff-p1" "ff-p2" "ff-p3" "ff-p4" "ff-p5" "ff-p6" "ff-bad"))
+  (check-true (andmap (lambda (r) (regexp-match? #px"^[0-9a-f]{40}$" (third r)))
+                      (take rp 6)))
+  (define rp2
+    (parameterize ([current-allow-file-urls #t])
+      (pm-fetch-parallel froot p-manifest #:limit 3)))
+  (check-equal? (map second rp2)
+                '(present present present present present present failed))
   (define fx-manifest (build-path test-root "fetch-x.rktd"))
   (manifest-write fx-manifest
                   (list (manifest-entry "ff-x" "file:///nonexistent-pm-fetch"
