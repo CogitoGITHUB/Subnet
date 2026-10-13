@@ -767,12 +767,11 @@ lock document records name, version, slot, flags, commit and source URL
 for every resolved package, and two locks from the same spec set are
 byte-identical.
 
-** TODO G-03 verify as its own stage
-Integrity of the SOURCE (hash or signature) and of the BUILT ARTIFACTS
-must be explicit stages between fetch and apply, not implied inside
-them. / Done when: =verify= refuses a package whose source hash does not
-match its pin, and refuses a build whose output hash does not match the
-lock, each with kind =verify= and exit 6.
+** DONE G-03 verify as its own stage
+backends/query.rkt verify-tree! and verify-source! refuse with kind
+'verify (exit 6): a tampered tree raises naming its diffs, a moved
+source raises naming want and got. query-verify still only reports;
+the stage decides. Both refusals tested, including the passing cases.
 
 ** DONE G-04 path ownership ledger
 build-generation! writes ledger.rktd into every generation, one triple

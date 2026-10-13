@@ -37,7 +37,11 @@
   [query-verify (-> path-string? path-string? string? string?
                     (list/c string? boolean? (listof string?)))]
   ;; verify-datum -> string, one info line
-  [verify->text (-> (list/c string? boolean? (listof string?)) string?)]))
+  [verify->text (-> (list/c string? boolean? (listof string?)) string?)]
+  ;; vault current name pin -> void, G-03 refuses a tampered tree
+  [verify-tree! (-> path-string? path-string? string? string? void?)]
+  ;; vault name url pin -> void, G-03 refuses a moved source
+  [verify-source! (-> path-string? string? string? string? void?)]))
 
 ;; string -> string, store-layout owner segment or #f (dev trees: E-19)
 (define (target-owner target)
@@ -198,6 +202,52 @@
       (format "~a: verified" (first v))
       (format "~a: MISMATCH ~a" (first v) (string-join (third v) "; "))))
 
+;; G-03: verify as its own stage. query-verify REPORTS diffs; these two
+;; REFUSE with kind 'verify (exit 6). Source first, then tree: a moved
+;; source means the pin no longer names what was reviewed, and a
+;; changed tree means the bytes are not what the pin says.
+
+;; path-string path-string string string -> void
+(define (verify-tree! vault-root current name pin)
+  (with-op 'verify (format "~a at ~a" name pin)
+           "the live tree must be byte-identical to its pin"
+           #:inputs (list name pin)
+           (lambda ()
+             (define v (query-verify vault-root current name pin))
+             (if (second v)
+                 (step 'verify "match"
+                       "every byte of the tree matches the pinned commit")
+                 (begin
+                   (skip 'verify (format "~a ~a" name pin)
+                         (string-append "the tree differs: "
+                                        (string-join (third v) "; ")))
+                   (raise-pm-error 'verify 'verify-tree!
+                                   (format "~a: tree does not match pin ~a"
+                                           name pin)
+                                   #:fields `(("diffs" . ,(string-join
+                                                            (third v) "; ")))))))))
+
+;; path-string string string string -> void
+(define (verify-source! vault-root name url pin)
+  (with-op 'verify name "the source must still resolve to the pinned commit"
+           #:inputs (list url pin)
+           (lambda ()
+             (define remote
+               (vault-add-result-pin
+                (vault-add vault-root name url #:fsck-allow '())))
+             (if (equal? remote pin)
+                 (step 'verify "pin"
+                       "the source resolves to exactly the recorded commit")
+                 (begin
+                   (skip 'verify name
+                         (string-append "the source moved from " pin
+                                        " to " remote))
+                   (raise-pm-error 'verify 'verify-source!
+                                   (format "~a: source moved from ~a to ~a"
+                                           name pin remote)
+                                   #:fields `(("want" . ,pin)
+                                              ("got" . ,remote))))))))
+
 ;; ---------------------------------------------------------------------------
 (module+ test
   (require rackunit
@@ -337,6 +387,44 @@
   (check-not-false (member "changed: f.txt" (third bad)))
   (check-regexp-match #rx"MISMATCH" (verify->text bad))
   (check-equal? (verify->text (list "pkg-a" #t '())) "pkg-a: verified")
+  ;; G-03: the stage refuses. A clean tree passes silently; a tampered
+  ;; one raises kind 'verify, which exits 6.
+  (define cur2 (build-path test-root "current2"))
+  (make-directory cur2)
+  (vault-export-commit vg "pkg-a" vpin cur2)
+  (check-true (with-handlers ([exn:fail:pm? (lambda (e) #f)])
+                (verify-tree! (path->string vg) (path->string cur2)
+                              "pkg-a" vpin)
+                #t))
+  (call-with-output-file (build-path cur2 "f.txt")
+    (lambda (out) (display "tampered" out))
+    #:exists 'truncate/replace)
+  (define tampered-err
+    (with-handlers ([exn:fail:pm? (lambda (e) e)])
+      (verify-tree! (path->string vg) (path->string cur2) "pkg-a" vpin)
+      'no-error))
+  (check-pred verify-error? tampered-err)
+  (check-equal? (pm-error-exit-code tampered-err) 6)
+  ;; The source still resolves to the pin, so the source stage passes;
+  ;; move upstream one commit and it refuses too.
+  (parameterize ([current-allow-file-urls #t])
+    (check-true (with-handlers ([exn:fail:pm? (lambda (e) #f)])
+                  (verify-source! (path->string vg) "pkg-a"
+                                  (string-append "file://" (path->string up))
+                                  vpin)
+                  #t)))
+  (call-with-output-file (build-path up "g.txt")
+    (lambda (out) (displayln "G" out)))
+  (qgit up "add" "-A")
+  (qgit up "commit" "-qm" "second")
+  (define moved-err
+    (parameterize ([current-allow-file-urls #t])
+      (with-handlers ([exn:fail:pm? (lambda (e) e)])
+        (verify-source! (path->string vg) "pkg-a"
+                        (string-append "file://" (path->string up)) vpin)
+        'no-error)))
+  (check-pred verify-error? moved-err)
+  (check-equal? (pm-error-exit-code moved-err) 6)
   (check-pred config-error?
               (with-handlers ([exn:fail:pm? (lambda (e) e)])
                 (query-verify (path->string vg) "/nonexistent-pm-query"
