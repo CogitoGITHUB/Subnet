@@ -14,6 +14,7 @@
          racket/set
          "../core/errors.rkt"
          "../core/git-id.rkt"
+         "../core/security.rkt"
          "../core/git-url.rkt"
          "../core/scope.rkt"
          "../core/spec.rkt"
@@ -620,7 +621,8 @@
   (define ns (vault-namespace name))
   (check-git-url url)
   (when pin
-    (unless (git-id? pin)
+    ;; S-01: only an exact pinned commit is a pin.
+    (unless (commit-pinned? pin)
       (raise-pm-error 'spec 'vault-add "not a commit id"
                       #:fields `(("value" . ,pin)))))
   (for ([id (in-list fsck-allow)])

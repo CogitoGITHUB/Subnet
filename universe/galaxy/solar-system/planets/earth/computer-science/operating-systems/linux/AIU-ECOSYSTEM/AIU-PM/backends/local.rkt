@@ -171,17 +171,26 @@
         (path->string (build-path link-dir raw-target))))
   (define pre-text (path->string (absolute-path prefix)))
   (define resolved (resolve-fully (string->path abs-text)))
+  ;; S-01: the policy answers once for the resolved target; the arms
+  ;; below only word the refusal, so escape and dangling keep their
+  ;; own messages without re-deciding containment.
+  (define target-ok?
+    (and resolved
+         (symlink-target-ok? pre-text
+                             (path->string resolved)
+                             (or (file-exists? resolved)
+                                 (directory-exists? resolved)))))
   (cond [(not resolved)
          (raise-pm-error 'config 'local-perform! "symlink loop detected"
                          #:fields `(("link" . ,(path->string link))))]
-        ;; S-01: same policy, resolved target form.
-        [(not (path-contained? pre-text (path->string resolved)))
-         (raise-pm-error 'config 'local-perform!
-                         "symlink escapes the prefix"
+        [(and resolved
+              (not (or (file-exists? resolved) (directory-exists? resolved))))
+         (raise-pm-error 'config 'local-perform! "dangling symlink"
                          #:fields `(("link" . ,(path->string link))
                                     ("target" . ,raw-target)))]
-        [(not (or (file-exists? resolved) (directory-exists? resolved)))
-         (raise-pm-error 'config 'local-perform! "dangling symlink"
+        [(not target-ok?)
+         (raise-pm-error 'config 'local-perform!
+                         "symlink escapes the prefix"
                          #:fields `(("link" . ,(path->string link))
                                     ("target" . ,raw-target)))]
         [else

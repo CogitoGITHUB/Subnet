@@ -5,7 +5,8 @@
 (require racket/contract/base
          racket/string
          racket/list
-         "errors.rkt")
+         "errors.rkt"
+         "security.rkt")
 
 (provide
  (contract-out
@@ -39,21 +40,21 @@
         [(string-prefix? url "https://") (authority-problem url "https://")]
         [(string-prefix? url "ssh://") (authority-problem url "ssh://")]
         [(string-prefix? url "file://")
-         (if (current-allow-file-urls) #f "file URLs are test-only")]
+         ;; S-01: the test escape is explicit, never environmental.
+         (if (origin-allowed? url (current-allow-file-urls))
+             #f
+             "file URLs are test-only")]
         [(regexp-match? #rx"^[A-Za-z0-9._-]+@[A-Za-z0-9._-]+:" url) #f]
         [(regexp-match? #rx"^[a-zA-Z][a-zA-Z0-9+.-]*://" url)
          "scheme not allowed (https, ssh, scp-like, or test file only)"]
         [else "unrecognized URL shape"]))
 
-;; string string -> (or/c string? #f), password check on the authority
+;; string string -> (or/c string? #f), password check on the authority.
+;; S-01: the shape of "has a password" is the policy's question.
 (define (authority-problem url scheme-prefix)
-  (define rest (substring url (string-length scheme-prefix)))
-  (define auth (car (string-split rest "/")))
-  (define parts (string-split auth "@"))
-  (if (and (> (length parts) 1)
-           (regexp-match? #rx":" (string-join (drop-right parts 1) "@")))
-      "embedded password in URL (S-8)"
-      #f))
+  (if (credential-safe? url)
+      #f
+      "embedded password in URL (S-8)"))
 
 ;; ---------------------------------------------------------------------------
 (module+ test

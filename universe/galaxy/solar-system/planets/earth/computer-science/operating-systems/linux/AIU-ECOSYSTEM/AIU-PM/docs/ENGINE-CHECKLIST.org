@@ -710,11 +710,13 @@ negative fixture per rule, and spec-read.rkt refuses each file with its
 rule tag in a test. The dir is separate so pm check docs/examples
 stays green.
 
-** TODO S-04 gate the rules
-Stage 15 in =scripts/check.nu= fails when a security predicate exists
-but is never called, and when a new =open-output-file= or spawn lands
-outside the audited modules. / Done when: deleting one enforcement
-call turns the gate red.
+** DONE S-04 gate the rules
+Stage 15: every S-01 predicate must be called outside security.rkt in
+non-test code, and open-output-file/subprocess may only appear in the
+audited file list (dev scripts listed visibly). Proven to bite both
+ways: removing symlink-target-ok?'s single enforcement call turns the
+gate red naming the predicate, and an unaudited writer fails too. In
+the default stage list.
 
 * PHASE G: the structural spine (runs AFTER Phase D and BEFORE Phase
 S; these are the parts that must be designed before =apply= starts

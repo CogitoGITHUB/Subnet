@@ -41,6 +41,9 @@ use ./env.nu [scope-roots]
 #   10 test every file in ONE shared-process runner
 #   11 verdict: ALL GREEN / ALL GREEN (jobs parked) / CHECK FAILED
 #   12 paren check over every .rkt
+#   13 OBS-OK lint over .nu (no ignores, bare try, /dev/null, timers)
+#   14 one-printer lint: no raw print outside core/ui.rkt and core/verbose.rkt
+#   15 security gate: every S-01 predicate called, writers audited
 
 # Pinned Nushell (D-020). Change here and nowhere else.
 const PINNED = "0.116.1"
@@ -279,6 +282,85 @@ def print-lint-file [f] {
     $out
 }
 
+# S-04: the policy has teeth in the gate. Two checks, both with
+# file:line answers. First: every predicate core/security.rkt provides
+# must be CALLED somewhere outside security.rkt itself (non-test
+# code); a predicate nobody calls is a rule nobody enforces. Second:
+# open-output-file and subprocess may only appear in the audited files
+# below; a new writer or spawner anywhere else fails until it is
+# written down here deliberately.
+def sec-predicates [] {
+    open "core/security.rkt"
+    | lines
+    | where {|l| ($l | str trim | str starts-with "[") }
+    | each {|l|
+        $l | str trim | str substring 1.. | split row " " | first
+      }
+}
+
+def sec-call-count [pred, files] {
+    mut n = 0
+    for f in $files {
+        let ls = (open --raw $f | lines)
+        let starts = ($ls | enumerate | where {|r|
+            ($r.item | str trim) == "(module+ test"
+        } | get index)
+        let test_at = (if ($starts | is-empty) { -1 } else { $starts | first })
+        for l in ($ls | enumerate) {
+            if ($l.index >= $test_at) { continue }
+            let t = ($l.item | str trim)
+            if ($t | str starts-with ";") { continue }
+            let code = (strip-quotes $t)
+            if ($code | str contains ("(" + $pred)) { $n = $n + 1 }
+        }
+    }
+    $n
+}
+
+def run-stage-15-body [] {
+    print "[check] stage 15 security-gate lint"
+    let spec = ($env | get -o CYBERDECK_LINT_ROOTS? | default ".")
+    let roots = ($spec | split row " ")
+    mut violations = []
+    for r in $roots {
+        let files = (lint-files $r | where {|f| ($f | str ends-with ".rkt") })
+        let nonsec = ($files | where {|f| ($f | path basename) != "security.rkt" })
+        for pred in (sec-predicates) {
+            let n = (sec-call-count $pred $nonsec)
+            if $n == 0 {
+                $violations = ($violations | append $"security-gate: predicate ($pred) is never called outside core/security.rkt")
+            }
+        }
+        print $"security-gate: predicates checked, ($violations | length) violations so far"
+        # The audited writers and spawners. scripts/*.rkt are dev tools,
+        # audited by the V-0 inventory decision that they keep their own
+        # printing; they are listed here so that stays visible.
+        # A file outside this list
+        # that opens an output file or spawns a process fails here, so
+        # new effects get written down instead of slipping in.
+        let writers = ["activate.rkt" "apply.rkt" "build.rkt" "dev.rkt"
+            "git.rkt" "install.rkt" "jobs.rkt" "journal.rkt" "local.rkt"
+            "manifest.rkt" "query.rkt" "run.rkt" "store.rkt" "update.rkt"
+            "vault.rkt" "main.rkt" "ecosystem.rkt" "lock.rkt" "log.rkt"
+            "scope.rkt" "spec-read.rkt" "vault-lock.rkt" "verbose.rkt"
+            "server.rkt" "plan.rkt" "skill-examples.rkt"
+            "build-lua.rkt" "hello-fetch.rkt" "probe-blob.rkt" "repl.rkt"
+            "test-runner.rkt" "read-check.rkt"]
+        for f in $files {
+            let base = ($f | path basename)
+            if ($base in $writers) { continue }
+            let code = ((open --raw $f | lines | each {|l| strip-quotes ($l | str trim) }) | str join "
+")
+            if (($code | str contains "open-output-file") or ($code | str contains "subprocess")) {
+                $violations = ($violations | append ("security-gate: " + $f + " writes or spawns outside the audited list (S-04)"))
+            }
+        }
+        for v in $violations { print $v }
+        print $"security-gate: ($files | length) files, ($violations | length) violations"
+    }
+    if (($violations | length) > 0) { exit $EXIT_VIOLATIONS }
+}
+
 def run-stage-14-body [] {
     print "[check] stage 14 one-printer lint"
     let spec = ($env | get -o CYBERDECK_LINT_ROOTS? | default ".")
@@ -509,8 +591,8 @@ def main [--changed] {
     print $"[check] run start utc=(utc)"
     let changed_mode = ($changed or (($env | get -o CYBERDECK_CHANGED?) == "1"))
     let want = (if $changed_mode {
-        $env | get -o CYBERDECK_STAGES? | default "1,2,3,4,7,13,14,changed" } else {
-        $env | get -o CYBERDECK_STAGES? | default "1,2,3,4,6,7,8,9,10,11,12,13,14" })
+        $env | get -o CYBERDECK_STAGES? | default "1,2,3,4,7,13,14,15,changed" } else {
+        $env | get -o CYBERDECK_STAGES? | default "1,2,3,4,6,7,8,9,10,11,12,13,14,15" })
     let todo = ($want | split row ",")
     # `date now` is read twice and subtracted: measurement only, printed for
     # the record. Nothing waits on it (D-015).
@@ -594,6 +676,9 @@ def main [--changed] {
         }
         if "14" in $todo {
             run-stage-14-body
+        }
+        if "15" in $todo {
+            run-stage-15-body
         }
     let elapsed = (((date now | into int) - $started) / 1000000)
     print $"[check] end utc=(utc) after=($elapsed)ms"

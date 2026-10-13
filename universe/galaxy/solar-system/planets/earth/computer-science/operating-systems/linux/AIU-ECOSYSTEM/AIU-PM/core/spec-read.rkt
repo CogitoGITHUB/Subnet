@@ -171,7 +171,8 @@
 ;; syntax -> string, validated commit id or a located error
 (define (convert-commit stx)
   (define c (syntax->datum stx))
-  (unless (and (string? c) (git-id? c))
+  ;; S-01: a declaration pins or it refuses.
+  (unless (source-pinned? c)
     (fail stx (format "[source-trust] not a commit id ~s" c)))
   c)
 

@@ -25,7 +25,8 @@
          json
          "../cli/main.rkt"
          "../core/errors.rkt"
-         "../core/verbose.rkt")
+         "../core/verbose.rkt"
+         "../core/security.rkt")
 
 (provide
  (struct-out mcp-session)
@@ -195,7 +196,10 @@
         (rpc-error id -32602
                    (format "~a takes exactly ~a arguments"
                            name (hash-ref tool 'arity)))]
-       [(and (hash-ref tool 'confirms?)
+       ;; S-01: the policy names the state-changing set; the table
+       ;; still carries confirms? for discovery, and the test below
+       ;; asserts the two agree on every tool.
+       [(and (state-changing? name)
              (not (equal? (hash-ref args 'confirmation #f)
                           (session-token sess))))
         ;; The refusal the checklist asks for, in the RPC shape.
@@ -446,6 +450,12 @@
    (regexp-match?
     #rx"\\{\"name\":\"plan\",\"arity\":1,\"confirmsConfirmation\":false"
     table))
+  ;; S-01: the discovery table and the enforcement policy agree on
+  ;; every tool; a new command cannot be added to one and not the other.
+  (for ([t (in-list pm-tools)])
+    (check-equal? (hash-ref t 'confirms?)
+                  (state-changing? (hash-ref t 'name))
+                  (hash-ref t 'name)))
 
   ;; A synthetic fixture: two specs, nothing fetched, nothing real.
   (define fixture
