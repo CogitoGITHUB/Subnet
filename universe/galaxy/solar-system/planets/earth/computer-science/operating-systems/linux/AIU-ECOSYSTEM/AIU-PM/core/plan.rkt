@@ -9,6 +9,7 @@
          racket/port
          openssl/sha1
          "errors.rkt"
+         "security.rkt"
          "git-id.rkt"
          "spec.rkt"
          "version.rkt"
@@ -436,7 +437,14 @@
                            (string-append versioned "/" (car args)))
            mode)]
     [(mode)
-     (list #f (cadr args))]
+     ;; S-01: a requested mode outside 755 and 644 refuses here, at the
+     ;; lowering step, rather than being widened or narrowed downstream.
+     (define want (cadr args))
+     (unless (install-mode-allowed? want)
+       (raise-pm-error 'spec 'lower-package-plan "install mode refused"
+                       #:fields `(("mode" . ,(format "~s" want)))
+                       #:hint "pm writes only 755 and 644"))
+     (list #f want)]
     [else
      (raise-pm-error 'internal 'lower-package-plan "unknown install form"
                      #:fields `(("form" . ,(format "~s" form))))]))
@@ -876,4 +884,15 @@
   (check-pred internal-error?
               (with-handlers ([exn:fail:pm? (lambda (e) e)])
                 (lower-plans (list beta-plan) '() '() '() '())
-                'no-error)))
+                'no-error))
+
+  ;; S-02: a spec-requested mode outside 755 and 644 refuses with the
+  ;; rule's message, at lowering time, never downstream.
+  (define mode-err
+    (with-handlers ([exn:fail:pm? (lambda (e) e)])
+      (lower-one-install '(mode "bin/x" 777) "/stage" "/ver" #f)
+      'no-error))
+  (check-pred spec-error? mode-err)
+  (check-regexp-match #rx"install mode refused" (exn-message mode-err))
+  (check-equal? (lower-one-install '(mode "bin/x" 493) "/stage" "/ver" #f)
+                (list #f 493)))

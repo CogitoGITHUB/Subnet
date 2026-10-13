@@ -1142,6 +1142,23 @@
                (file-url (build-path test-root uname)) #:pin pin))
 
   ;; Names derive, never passed in; git agrees they are valid refs.
+  ;; S-02: the choke points refuse with their messages. A branch name
+  ;; is not a pin, and file:// refuses without the explicit test
+  ;; escape, even though this whole submodule runs with it on.
+  (define pin-err
+    (with-handlers ([exn:fail:pm? (lambda (e) e)])
+      (vault-add (build-path test-root "v-pin" "vault.git") "demo"
+                 "https://example.org/demo.git" #:pin "main")
+      'no-error))
+  (check-pred spec-error? pin-err)
+  (check-regexp-match #rx"not a commit id" (exn-message pin-err))
+  (define origin-err
+    (parameterize ([current-allow-file-urls #f])
+      (with-handlers ([exn:fail:pm? (lambda (e) e)])
+        (check-git-url "file:///tmp/pm-vault-test")
+        'no-error)))
+  (check-pred spec-error? origin-err)
+  (check-regexp-match #rx"rejected git URL" (exn-message origin-err))
   (check-equal? (vault-namespace "demo") "refs/vault/demo")
   (for ([bad (in-list '("" "Bad!" "../escape" "a/b" "-lead"))])
     (check-exn exn:fail:pm?

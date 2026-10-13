@@ -15,6 +15,7 @@
          "store.rkt"
          "vault.rkt"
          "../core/errors.rkt"
+         "../core/security.rkt"
          "../core/plan.rkt"
          "../core/verbose.rkt")
 
@@ -40,8 +41,8 @@
 (define (confine prefix what p)
   (define pre-text (path->string (absolute-path prefix)))
   (define abs-text (path->string (absolute-path p)))
-  (if (or (string=? abs-text pre-text)
-          (string-prefix? abs-text (string-append pre-text "/")))
+  ;; S-01: containment is the policy's question, not a local idiom.
+  (if (path-contained? pre-text abs-text)
       (string->path abs-text)
       (raise-pm-error 'config 'local-perform! "path escapes the prefix"
                       #:fields `(("field" . ,what)
@@ -173,7 +174,8 @@
   (cond [(not resolved)
          (raise-pm-error 'config 'local-perform! "symlink loop detected"
                          #:fields `(("link" . ,(path->string link))))]
-        [(not (inside-root? pre-text resolved))
+        ;; S-01: same policy, resolved target form.
+        [(not (path-contained? pre-text (path->string resolved)))
          (raise-pm-error 'config 'local-perform!
                          "symlink escapes the prefix"
                          #:fields `(("link" . ,(path->string link))

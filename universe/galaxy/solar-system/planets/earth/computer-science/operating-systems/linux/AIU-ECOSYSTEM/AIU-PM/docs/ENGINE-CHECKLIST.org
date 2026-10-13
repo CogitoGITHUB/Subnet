@@ -694,12 +694,14 @@ with a slash boundary, symlink-target-ok?, install-mode-allowed?
 (only 755 and 644), credential-safe? and state-changing? (the seven
 commands). 55 tests.
 
-** TODO S-02 enforce S-01 at the choke points
-The policy above is worthless unless it is where the work happens. /
-Done when: vault-add refuses an unpinned or file:// source; install
-refuses a path escape and an outside symlink; build refuses a host
-tool that is not on PATH; and each refusal has a test that shows the
-message, not just the exit code.
+** DONE S-02 enforce S-01 at the choke points
+Confinement and the symlink check in local.rkt answer from the policy
+now, and git.rkt's inside-root? delegates to it instead of re-deciding.
+A spec-requested mode outside 755/644 refuses at lowering with the
+rule's message. vault-add's pin and file:// refusals carry their
+messages and each has a test. (The vault large-blob failure in that
+file's suite predates this work -- same single failure on the parked
+logs -- and stays parked.)
 
 ** TODO S-03 declare: refuse a bad declaration, loudly
 The last step of pm is writing and accepting a declaration, so this is

@@ -7,6 +7,7 @@
          racket/string
          racket/file
          "../core/errors.rkt"
+         "../core/security.rkt"
          "../core/git-id.rkt"
          "../core/git-url.rkt"
          "../core/scope.rkt"
@@ -344,11 +345,12 @@
       (raise-pm-error 'config 'git-export-commit "cp executable not found"
                       #:hint "install coreutils so export can copy trees")))
 
-;; string path -> boolean, TARGET stays inside ROOT (absolute text)
+;; string path -> boolean, TARGET stays inside ROOT (absolute text).
+;; S-01: the policy lives in core/security.rkt; this keeps the name for
+;; git's callers but answers from the one place.
 (define (inside-root? root target)
   (define t (if (path? target) (path->string target) target))
-  (or (string=? root t)
-      (string-prefix? t (string-append root "/"))))
+  (path-contained? root t))
 
 ;; path path string exact-positive-integer -> void, gitlinks refused
 (define (check-no-submodules git work commit timeout)

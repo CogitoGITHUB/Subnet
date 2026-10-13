@@ -21,8 +21,8 @@
   [source-pinned? (-> any/c boolean?)]
   ;; string boolean -> boolean, file:// only with the test escape
   [origin-allowed? (-> string? boolean? boolean?)]
-  ;; string string -> boolean, target stays under prefix, lexically
-  [path-contained? (-> string? string? boolean?)]
+  ;; path-string path-string -> boolean, target stays under prefix
+  [path-contained? (-> path-string? path-string? boolean?)]
   ;; string string boolean -> boolean, resolved target inside and exists
   [symlink-target-ok? (-> string? string? boolean? boolean?)]
   ;; any -> boolean, only 755 and 644 are ever written
@@ -71,10 +71,14 @@
 
 ;; string string -> boolean
 (define (path-contained? prefix-text target-text)
-  (and (string? prefix-text)
-       (string? target-text)
-       (or (string=? target-text prefix-text)
-           (string-prefix? target-text (string-append prefix-text "/")))
+  ;; Path inputs coerce: callers like git's inside-root? pass resolved
+  ;; paths, and refusing them for their type would invert the answer.
+  (define pre (if (path? prefix-text) (path->string prefix-text) prefix-text))
+  (define tgt (if (path? target-text) (path->string target-text) target-text))
+  (and (string? pre)
+       (string? tgt)
+       (or (string=? tgt pre)
+           (string-prefix? tgt (string-append pre "/")))
        #t))
 
 ;; string string boolean -> boolean
@@ -150,9 +154,10 @@
   (check-true (origin-allowed? "/tmp/x" #t))
 
   ;; 3+4. Containment with a slash boundary; the evil-prefix attack
-  ;; fails; symlinks need existence plus containment.
+  ;; fails; symlinks need existence plus containment. Paths coerce.
   (check-true (path-contained? "/p" "/p/a/b"))
   (check-true (path-contained? "/p" "/p"))
+  (check-true (path-contained? (string->path "/p") (string->path "/p/a")))
   (check-false (path-contained? "/p" "/p-evil/a"))
   (check-false (path-contained? "/p" "/q/a"))
   (check-false (path-contained? "/p" "rel/a"))
