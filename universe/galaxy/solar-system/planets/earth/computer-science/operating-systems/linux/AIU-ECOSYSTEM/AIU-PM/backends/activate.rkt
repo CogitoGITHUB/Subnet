@@ -64,7 +64,11 @@
   ;; path-string -> path, where the profile link points today
   [current-generation (-> path-string? path?)]
   ;; path-string -> (listof (name slot)), absent reads as none held
-  [read-holds (-> path-string? (listof (list/c string? string?)))]))
+  [read-holds (-> path-string? (listof (list/c string? string?)))]
+  ;; path-string -> (kept deleted), G-05 prunes generations
+  [profile-gc (->* (path-string?)
+                   (#:keep exact-positive-integer?)
+                   (list/c (listof path?) (listof path?)))]))
 
 ;; exact-integer -> string, profile-001 style, sortable as text
 (define (gen-dir-name n)
@@ -243,6 +247,45 @@
             [else (void)])))
   (walk gen)
   (hash-map names (lambda (k v) k)))
+
+;; G-05 (DEFAULT: last 5, holds and the live link are absolute). Keep
+;; the newest KEEP generations, the live one the profile link points
+;; at, and any generation owning a currently held package; delete the
+;; rest and say exactly what went and why. Generations without pruning
+;; are a disk bomb, but a pruner that eats the live tree is worse.
+(define (profile-gc profile-root #:keep [keep 5])
+  (with-op 'gc (if (path? profile-root) (path->string profile-root)
+                   (format "~a" profile-root))
+           (format "generations past ~a go, the live and held stay" keep)
+           (lambda ()
+             (define gens (map first (profile-generations profile-root)))
+             (define live
+               (with-handlers ([(lambda (e) #t) (lambda (e) #f)])
+                 (path->string (resolve-path
+                                (build-path profile-root "profile")))))
+             (define held-names (map first (read-holds profile-root)))
+             (step 'gc "survey"
+                   "every generation is measured against keep, live and held")
+             (define (keeper? g i)
+               (or (< i keep)
+                   (and live (equal? (path->string g) live))
+                   (for/or ([n (in-list (generation-owner-names g))])
+                     (member n held-names))))
+             (define-values (kept doomed)
+               (for/fold ([k '()] [d '()])
+                         ([g (in-list (reverse gens))]
+                          [i (in-naturals)])
+                 (if (keeper? g i)
+                     (values (cons g k) d)
+                     (values k (cons g d)))))
+             (for ([g (in-list doomed)])
+               (step 'gc (path->string (file-name-from-path g))
+                     "past keep, neither live nor holding a held package")
+               (delete-directory/files g))
+             (for ([g (in-list kept)])
+               (skip 'gc (path->string (file-name-from-path g))
+                     "within keep, or live, or holding a held package"))
+             (list kept doomed))))
 
 ;; path-string exact-integer -> path, repoint at generation N
 (define (profile-rollback profile-root n)
@@ -572,4 +615,36 @@
               (with-handlers ([exn:fail:pm? (lambda (e) e)])
                 (profile-hold prof "" "default")
                 'no-error))
+
+  ;; G-05 (DEFAULT: last 5, holds and the live link are absolute).
+  ;; Seven generations, live rolled back to the oldest: gc keeps the
+  ;; newest five plus the live one, and says so per generation.
+  (define gprof (build-path test-root "profile-gc"))
+  (for ([i (in-range 7)])
+    (profile-activate (list (entry "a")) (path->string gprof)))
+  (profile-rollback (path->string gprof) 1)
+  (define-values (kept doomed)
+    (apply values (profile-gc (path->string gprof) #:keep 5)))
+  (check-equal? (length kept) 6)
+  (check-equal? (length doomed) 1)
+  (check-equal? (map (lambda (g) (path->string (file-name-from-path g)))
+                     doomed)
+                '("profile-002"))
+  (check-false (directory-exists? (build-path gprof "profile-002")))
+  (check-true (directory-exists? (build-path gprof "profile-001")))
+  ;; Held packages pin their generation: every generation here holds
+  ;; pkg h, so with keep 2 the oldest still survives by held status.
+  (define hprof (build-path test-root "profile-gch"))
+  (define hstore (build-path test-root "store" "h" "default" "1.0"))
+  (make-directory* (build-path hstore "bin"))
+  (call-with-output-file (build-path hstore "bin" "prog")
+    (lambda (out) (display "x" out)))
+  (for ([i (in-range 3)])
+    (profile-activate (list (list "h" (path->string hstore) '("bin/prog")))
+                      (path->string hprof)))
+  (profile-hold (path->string hprof) "h" "default")
+  (define-values (hkept hdoomed)
+    (apply values (profile-gc (path->string hprof) #:keep 1)))
+  (check-equal? (length hkept) 3)
+  (check-equal? hdoomed '())
   (delete-directory/files test-root))

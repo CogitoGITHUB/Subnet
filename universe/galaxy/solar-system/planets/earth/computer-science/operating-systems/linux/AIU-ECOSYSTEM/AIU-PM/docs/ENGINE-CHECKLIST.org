@@ -753,10 +753,12 @@ walk stays only for pre-ledger generations. Proven: the ledger names
 the original owner even after the tree's link was repointed, and
 activate asserts the ledger it wrote.
 
-** TODO G-05 generation GC policy
-Generations without pruning are a disk bomb. / Done when: =gc= keeps the
-last N (default 5), never deletes a generation named by a hold, and says
-in its own narration exactly what it kept and why.
+** DONE G-05 generation GC policy (DEFAULT: last 5, holds and live absolute)
+profile-gc keeps the newest KEEP, the live generation the link points
+at, and any generation owning a held package; it deletes the rest and
+narrates per generation what went and why. Proven: seven gens rolled
+back to the oldest keeps six with only profile-002 deleted, and a held
+package pins all three of its generations at keep 1.
 
 ** DONE G-06 spec discovery contract
 core/scope.rkt spec-search-roots: explicit dirs in order, then
