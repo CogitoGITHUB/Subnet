@@ -75,6 +75,12 @@
   (define feed-dir
     (build-path (find-system-path 'temp-dir) "pm-skill-feed"))
   (when (directory-exists? feed-dir) (delete-directory/files feed-dir))
+  ;; The gate runs EVERY .rkt in ONE shared process, so a run left open
+  ;; by an earlier file would make begin-run! refuse. Close any leftover
+  ;; first: this file must not depend on what ran before it.
+  (with-handlers ([(lambda (e) #t) (lambda (e) (void))])
+    (when (run-open?)
+      (end-run! "closed by the next test file")))
 
   ;; A synthetic run shaped like example 1's: a check over the fixture.
   (define run-id
@@ -134,16 +140,15 @@
   (check-not-false (member run-id (hash-ref (hash-ref runs 'result) 'runs)))
   (check-equal? (hash-ref (hash-ref runs 'result) 'current) run-id)
 
-  (define tail (rpc 11 "events.tail" (list run-id "0")))
+  (define tail (rpc 11 "events.tail" (list run-id "-1")))
   (define tail-result (hash-ref tail 'result))
-  (check-equal? (hash-ref tail-result 'from-seq) 0)
+  (check-equal? (hash-ref tail-result 'from-seq) -1)
   (check-equal? (hash-ref tail-result 'count) (length events))
   ;; The skill shows the line format "#seq KIND who: what (why)".
   (define lines (hash-ref tail-result 'lines))
-  (check-true (regexp-match? #rx"^#0 START pm: run \\(session start\\)"
+  (check-true (regexp-match? #rx"^#0 START test: run \\(session start\\)"
                              (car lines)))
-  (check-not-false (member run-id (regexp-match* #rx"pm-[0-9]+"
-                                                (car lines))))
+  (check-equal? (hash-ref tail-result 'run-id) run-id)
   ;; From the tail's own next-seq there is nothing new, which is what the
   ;; skill tells an AI to do when resuming.
   (define again (rpc 12 "events.tail"

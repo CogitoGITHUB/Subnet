@@ -125,16 +125,17 @@ cat ~/.local/share/cyberdeck/events/current          # the active run id
 tail -n 20 ~/.local/share/cyberdeck/events/pm-7040.jsonl
 #+end_src
 
-**Or over MCP*, which is what an AI should use:
+**Or over MCP*, which is what an AI should use (seqs start at 0, so
+-1 means "from the beginning"; afterwards pass back =next-seq=):
 
 #+begin_src json
-{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"events.tail","arguments":["pm-7040","0"]}}
+{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"events.tail","arguments":["pm-7040","-1"]}}
 #+end_src
 
 **What comes back* (abridged, one line per event):
 
 #+begin_src json
-{"run-id":"pm-7040","from-seq":0,"count":10,"lines":["#0 START pm | what: run | why: session start","#4 STEP check | what: bats-core 1.14.0 | why: the spec parsed and passed every field check","#9 END run | what: run | why: session end"],"next-seq":9}
+{"run-id":"pm-7040","from-seq":-1,"count":10,"lines":["#0 START pm | what: run | why: session start","#4 STEP check | what: bats-core 1.14.0 | why: the spec parsed and passed every field check","#9 END run | what: run | why: session end"],"next-seq":9}
 #+end_src
 
 **And for the summary only:*

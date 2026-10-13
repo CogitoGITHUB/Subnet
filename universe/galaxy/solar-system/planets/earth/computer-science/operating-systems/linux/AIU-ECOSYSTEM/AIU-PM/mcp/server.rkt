@@ -53,7 +53,7 @@
         ;; JSON Lines the OpenCode plugin reads, not a second format.
         (hash 'name "events.runs" 'arity 0 'confirms? #f
               'summary "list run ids pm has a feed for")
-        (hash 'name "events.tail" 'arity 1 'confirms? #f
+        (hash 'name "events.tail" 'arity 2 'confirms? #f
               'summary "events after a seq: RUN-ID FROM-SEQ")
         (hash 'name "run.get" 'arity 1 'confirms? #f
               'summary "START/END summary of one run")
@@ -225,11 +225,10 @@
   (define path (build-path (feed-dir) (string-append run-id ".jsonl")))
   (if (not (file-exists? path))
       '()
-      (for/list ([l (in-list (file->string path))]
+      (for/list ([l (in-list (string-split (file->string path) "\n"))]
                  #:unless (string=? (string-trim l) ""))
         (with-handlers ([exn:fail? (lambda (_) #f)])
-          (parameterize ([read-json (open-input-string l)])
-            (read-json))))))
+          (read-json (open-input-string l))))))
 
 ;; -> string or #f, the run pm says is active
 (define (feed-current)
@@ -256,9 +255,10 @@
                          (directory-list dir)))
             string<?)))
 
-;; jsexpr -> string, one line per event for a human or a model
+;; jsexpr -> string, one line per event for a human or a model.
+;; seq is a NUMBER in the feed, so it is formatted, not appended.
 (define (event->line e)
-  (string-append "#" (hash-ref e 'seq "0")
+  (string-append "#" (format "~a" (hash-ref e 'seq "0"))
                  " " (hash-ref e 'kind "?")
                  " " (hash-ref e 'who "?")
                  ": " (hash-ref e 'what "")
@@ -283,7 +283,9 @@
      (if (not (feed-exists? run-id))
          (rpc-error id -32602 (string-append "no such run: " run-id))
          (let* ([all (filter (lambda (e) (and (hash? e) e)) (feed-events run-id))]
-                [after (filter (lambda (e) (>= (hash-ref e 'seq 0) from)) all)]
+                ;; Strictly after: next-seq resumes cleanly with nothing
+                ;; re-delivered, matching the OpenCode plugin's tailEvents.
+                [after (filter (lambda (e) (> (hash-ref e 'seq 0) from)) all)]
                 [shown (if (> (length after) 200)
                            (take-right after 200)
                            after)])
@@ -576,5 +578,59 @@
                   (hash-ref (hash-ref loop-refusal 'error) 'message)))
   ;; A garbage line is answered too, never ignored and never fatal.
   (check-equal? (hash-ref (hash-ref (fourth parsed) 'error) 'code) -32601)
+
+  ;; --- the feed tools read a real synthetic run (regression) ---------
+  ;; feed-events once iterated the whole file as one string and treated
+  ;; read-json as a parameter, so every tail came back -32603 with no
+  ;; result key. The skill test caught it; this test keeps it caught
+  ;; here, in the module that owns the bug.
+  (define feed-dir
+    (build-path (find-system-path 'temp-dir) "pm-mcp-feed"))
+  (when (directory-exists? feed-dir)
+    (delete-directory/files feed-dir))
+  (define feed-run
+    (parameterize ([verbose-screen? #f])
+      (define id (begin-run! #:who 'test #:events-dir feed-dir))
+      (with-op 'fetch "pkg-alpha" "synthetic run for the feed tools"
+               #:inputs '("pkg-alpha")
+               (lambda ()
+                 (step 'fetch "download" "the fixture has no bytes to move")
+                 (skip 'fetch "verify" "the fixture source is already local")
+                 "pkg-alpha"))
+      (end-run! "exit=0")
+      id))
+  (define (feed-rpc id name args)
+    (parameterize ([current-feed-dir feed-dir])
+      (rpc id "tools/call" (hasheq 'name name 'arguments args))))
+  (define feed-runs-reply (feed-rpc 10 "events.runs" '()))
+  (check-not-false
+   (member feed-run
+           (hash-ref (hash-ref feed-runs-reply 'result) 'runs)))
+  (check-equal? (hash-ref (hash-ref feed-runs-reply 'result) 'current)
+                feed-run)
+  (define feed-tail-reply (feed-rpc 11 "events.tail" (list feed-run "0")))
+  (define feed-tail (hash-ref feed-tail-reply 'result))
+  (check-true (> (hash-ref feed-tail 'count) 3))
+  ;; From "0" the run START itself (seq 0) is excluded; the first line
+  ;; is the fetch op that opened inside it.
+  (check-true
+   (regexp-match? #rx"^#1 START fetch"
+                  (car (hash-ref feed-tail 'lines))))
+  (check-true
+   (regexp-match? #rx"SKIP fetch"
+                  (string-join (hash-ref feed-tail 'lines) "\n")))
+  (define feed-again
+    (feed-rpc 12 "events.tail"
+              (list feed-run (number->string (hash-ref feed-tail 'next-seq)))))
+  (check-equal? (hash-ref (hash-ref feed-again 'result) 'count) 0)
+  (define feed-get-reply (feed-rpc 13 "run.get" (list feed-run)))
+  (define feed-summary (hash-ref feed-get-reply 'result))
+  (check-equal? (hash-ref feed-summary 'ended) #t)
+  (check-equal? (hash-ref feed-summary 'end-result) "exit=0")
+  (check-true (>= (hash-ref feed-summary 'events) 5))
+  (define feed-missing
+    (feed-rpc 14 "run.get" (list "pm-no-such-run")))
+  (check-equal? (hash-ref (hash-ref feed-missing 'error) 'code) -32602)
+  (delete-directory/files feed-dir)
 
   (delete-directory/files fixture))

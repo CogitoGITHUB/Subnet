@@ -675,12 +675,18 @@ routed, enabling stage 14 by default would make the gate permanently
 red, which is worse than not having it. The stage is complete and
 runnable; the decision is when to switch it on.
 
-** TODO V-4 MCP feed tools and the skill
-mcp/server.rkt gains events.runs, events.tail and run.get over the same
-feed the plugin reads, all redacted, plus skills/aiu-pm/SKILL.md with
-three worked examples using synthetic names that run as a test.
- / Done when: the scripted client tails a synthetic fixture run and the
-three skill examples execute against the real CLI.
+** DONE V-4 MCP feed tools and the skill
+mcp/server.rkt serves events.runs, events.tail and run.get over the
+same JSON Lines feed the OpenCode plugin reads; the skill is
+skills/aiu-pm/SKILL.md and its three worked examples run as
+skills/aiu-pm/skill-examples.rkt against the real CLI and the real MCP
+handlers. Fixed on the way: feed-events iterated the whole file as one
+string and treated read-json as a parameter, so every tail came back
+-32603 with no result key; event->line appended a numeric seq; and tail
+resumed with >= so the boundary event was re-delivered. Tail is now
+strictly-after like the plugin, seq is formatted, and -1 means "from
+the beginning". The server's own suite carries the regression test
+because it never covered the feed tools, which is how the bug hid.
 
 * PHASE S: security (runs BEFORE any package declaration, which is the
 final part of pm -- a declaration is a declaration only if pm refuses
