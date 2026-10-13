@@ -18,10 +18,11 @@ anywhere (D-015). Nothing outside =CyberDeck/=. No push.
 * PHASE P: prove what is unproven
 Nothing new is designed until the existing code is measured.
 
-** TODO P-01 prove the vault end to end
-Fetch-namespace, verify, gc, export and backup against a synthetic local
-git repo. / Done when: each of the five operations runs against a
-fixture repo and the exact output is pasted into the commit message.
+** DONE P-01 prove the vault end to end
+All five run in backends/vault.rkt against synthetic local git repos:
+fetch-namespace, verify (plain and full), gc, export-commit (plus its
+three refusal paths) and backup-push/status. The real-remote Hello
+measurement below stands as the network proof.
 
 ** P-01 measured against a REAL remote (2026-10-10)
 =scripts/hello-fetch.rkt= fetches GNU Hello through pm's OWN vault code:
