@@ -4,6 +4,19 @@
 * Log
 Append-only. Newest first. Every entry names the rule IDs it touches.
 
+** 2026-10-13 D-039: television is the UI, and it lives outside pm
+The deleted Rust TUI (D-035) is replaced by television channels, not by
+new pm code. pm already emits everything a browser needs: one-line
+--format json documents per command and the JSONL event feed. tv only
+reads those through Nushell source commands (shell = nu) and hands
+selections back as values; it never implements package-manager logic.
+Channel sources live in-repo under tv/ and install by symlink into the
+cable dir through a script that only prints, the same pattern as the
+OpenCode plugin. All browsing is read-only by construction; the only
+state-changing actions are execute-mode handoffs into nu scripts that
+run pm's own human confirmation flow. There is deliberately no
+one-keypress apply. D-039.
+
 ** 2026-10-12 D-038: the structural spine is designed before apply works
 Twelve gaps are declared as PHASE G (G-01..G-12), placed after Phase D
 and before the security phase, because each one is a hole that only

@@ -1,0 +1,32 @@
+# pm-packages: what is installed. Read-only: status and held only
+# (verify/why/owner still refuse at dispatch, so no preview or action
+# references them until the dispatch march reaches them). PM_PROFILE
+# names the profile directory, PM_LOCK the lockfile. Entries are
+# package names with held marks; detail lives in the previews.
+
+[metadata]
+name = "pm-packages"
+description = "Installed packages with held marks and status detail"
+requirements = ["nu", "racket"]
+
+[source]
+command = "^racket ([$env.PM_ROOT cli main.rkt] | path join) status $env.PM_PROFILE $env.PM_LOCK --format json | from json | get packages | each { $in.name + (if $in.held { ' [held]' } else { '' }) }"
+shell = "nu"
+
+[preview]
+command = ["^racket ([$env.PM_ROOT cli main.rkt] | path join) status $env.PM_PROFILE $env.PM_LOCK --format json | from json | get packages | where name == {split: :0}", "^racket ([$env.PM_ROOT cli main.rkt] | path join) held $env.PM_PROFILE"]
+shell = "nu"
+
+[ui.preview_panel]
+size = 55
+header = "{}"
+
+[keybindings]
+shortcut = "f3"
+ctrl-e = "actions:show-held"
+
+[actions.show-held]
+description = "Show every held package, then return to the list"
+command = "^racket ([$env.PM_ROOT cli main.rkt] | path join) held $env.PM_PROFILE"
+shell = "nu"
+mode = "fork"

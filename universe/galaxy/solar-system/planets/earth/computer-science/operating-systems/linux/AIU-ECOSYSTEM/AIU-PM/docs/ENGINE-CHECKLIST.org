@@ -683,6 +683,14 @@ strictly-after like the plugin, seq is formatted, and -1 means "from
 the beginning". The server's own suite carries the regression test
 because it never covered the feed tools, which is how the bug hid.
 
+** DONE T-01 television specs and packages channels (D-039)
+tv/pm-specs.toml and tv/pm-packages.toml: read-only browsers over pm's
+JSON, every command through Nushell (shell = nu). Specs lists .rktd
+files with check verdicts in the preview; packages lists installed
+packages with held marks and why/owner/verify previews. No
+state-changing action anywhere in either channel. Verified by running
+each source command against the repo fixtures, not by reading the TOML.
+
 * PHASE S: security (runs BEFORE any package declaration, which is the
 final part of pm -- a declaration is a declaration only if pm refuses
 the ones that would compromise the machine)
