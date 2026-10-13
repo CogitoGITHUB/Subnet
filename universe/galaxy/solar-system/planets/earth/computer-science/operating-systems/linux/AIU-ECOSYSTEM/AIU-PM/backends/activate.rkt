@@ -139,7 +139,21 @@
         (hash-set! done rel #t)
         (define link (build-path gen rel))
         (make-directory* (or (path-only link) gen))
-        (make-file-or-directory-link (second t) link)))))
+        (make-file-or-directory-link (second t) link)))
+    ;; G-04: the generation records the ledger it was built from. One
+    ;; file, one triple per owned path, so query-owner answers from the
+    ;; record instead of re-walking the tree.
+    (call-with-output-file (build-path gen "ledger.rktd")
+      (lambda (out)
+        (write (cons 'ledger
+                     (map (lambda (t)
+                            (define d (second t))
+                            (list (first t)
+                                  (if (path? d) (path->string d) d)
+                                  (third t)))
+                          triples))
+               out))
+      #:exists 'truncate/replace)))
 
 ;; (listof entry) path-string -> path, validate all, then build + flip
 (define (profile-activate entries profile-root)
@@ -358,6 +372,16 @@
                 (path->string (build-path test-root "a" "bin" "prog")))
   (check-equal? (path->string (resolve-path (build-path prof "profile")))
                 (path->string gen1))
+  ;; G-04: the generation records the ledger it was built from.
+  (define ledger1
+    (call-with-input-file (build-path gen1 "ledger.rktd") read))
+  (check-equal? (car ledger1) 'ledger)
+  (define prog-triple
+    (for/first ([t (in-list (cdr ledger1))]
+                #:when (and (list? t) (= 3 (length t))
+                            (equal? (third t) "bin/prog")))
+      t))
+  (check-true (and prog-triple (equal? (first prog-triple) "a")))
 
   ;; A second generation keeps the first and moves the profile link.
   (define gen2 (profile-activate (list (entry "a") (entry "b")) prof))

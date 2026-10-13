@@ -96,7 +96,22 @@
   (define link (build-path profile-root "profile"))
   (unless (link-exists? link)
     (raise-pm-error 'config 'query-owner "no active profile"))
-  (define found
+  ;; G-04: the ledger answers first. It is the record the generation
+  ;; was built from; the tree walk below is only the fallback for
+  ;; generations predating ledgers.
+  (define from-ledger
+    (with-handlers ([(lambda (e) #t) (lambda (e) #f)])
+      (define ledger
+        (call-with-input-file (build-path (resolve-path link) "ledger.rktd")
+          read))
+      (and (pair? ledger)
+           (eq? (car ledger) 'ledger)
+           (for/or ([t (in-list (cdr ledger))])
+             (and (list? t)
+                  (= 3 (length t))
+                  (equal? (third t) rel)
+                  (list (first t) (second t)))))))
+  (or from-ledger
     (let walk ([dir (resolve-path link)] [acc #f])
       (if acc
           acc
@@ -113,8 +128,7 @@
                               (equal? here rel)
                               (list (target-owner target) target))]
                         [(directory-exists? full) (walk full #f)]
-                        [else #f])))))))
-  found)
+                        [else #f]))))))))
 
 ;; claim string -> string
 (define (owner->text claim rel)
@@ -245,6 +259,37 @@
               (with-handlers ([exn:fail:pm? (lambda (e) e)])
                 (query-owner (path->string prof) "/abs/path")
                 'no-error))
+
+  ;; G-04: with a ledger present, the ledger answers even when the tree
+  ;; has diverged. Repoint the link after the fact; the record still
+  ;; names the original owner.
+  (define gen2 (build-path prof "profile-002"))
+  (make-directory* (build-path gen2 "bin"))
+  (define store-b (build-path test-root "store" "pkg-b" "default" "1.0-x"))
+  (make-directory* (build-path store-b "bin"))
+  (call-with-output-file (build-path store-b "bin" "prog")
+    (lambda (out) (display "y" out)))
+  (make-file-or-directory-link (path->string (build-path store-a "bin" "prog"))
+                               (build-path gen2 "bin" "prog"))
+  (call-with-output-file (build-path gen2 "ledger.rktd")
+    (lambda (out)
+      ;; One triple per owned path: (ledger (NAME DIR REL) ...), the
+      ;; same shape build-generation! writes.
+      (write `(ledger ("pkg-a" ,(path->string (build-path store-a "bin" "prog"))
+                                 "bin/prog"))
+             out)))
+  (delete-file (build-path prof "profile"))
+  (make-file-or-directory-link (path->string gen2)
+                               (build-path prof "profile"))
+  ;; Diverge the tree: the link now points at pkg-b, but the ledger
+  ;; still says pkg-a, and the ledger wins.
+  (delete-file (build-path gen2 "bin" "prog"))
+  (make-file-or-directory-link (path->string (build-path store-b "bin" "prog"))
+                               (build-path gen2 "bin" "prog"))
+  (define ledged (query-owner (path->string prof) "bin/prog"))
+  (check-equal? (first ledged) "pkg-a")
+  (check-equal? (second ledged)
+                (path->string (build-path store-a "bin" "prog")))
 
   ;; verify compares the current tree against its pin, byte by byte.
   (define up (build-path test-root "upstream"))

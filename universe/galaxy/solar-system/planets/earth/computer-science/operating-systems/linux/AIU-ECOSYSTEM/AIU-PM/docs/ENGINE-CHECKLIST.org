@@ -774,11 +774,12 @@ them. / Done when: =verify= refuses a package whose source hash does not
 match its pin, and refuses a build whose output hash does not match the
 lock, each with kind =verify= and exit 6.
 
-** TODO G-04 path ownership ledger
-A per-generation record of which package owns which path, so =remove=
-and =rollback= can neither strand a path nor overwrite one. / Done when:
-=query-owner= answers from the LEDGER rather than by walking the tree,
-and a generation records the ledger it was built from.
+** DONE G-04 path ownership ledger
+build-generation! writes ledger.rktd into every generation, one triple
+per owned path, and query-owner answers from the ledger first; the tree
+walk stays only for pre-ledger generations. Proven: the ledger names
+the original owner even after the tree's link was repointed, and
+activate asserts the ledger it wrote.
 
 ** TODO G-05 generation GC policy
 Generations without pruning are a disk bomb. / Done when: =gc= keeps the
