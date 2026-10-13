@@ -19,6 +19,7 @@
          "../core/verbose.rkt"
          "../core/version.rkt"
          "../core/lock.rkt"
+         "../core/scope.rkt"
          "../core/plan.rkt"
          "../backends/query.rkt"
          "../backends/update.rkt")
@@ -302,7 +303,7 @@
     "  check DIR          validate every .rktd file, print ok lines"
     "  plan SPECDIR       show the install plan (not executable yet)"
     "  lock LOCKFILE      show the lockfile plan (not executable yet)"
-    "  fetch MANIFEST     fetch all declared packages (not yet)"
+    "  fetch MANIFEST     fetch all declared packages into the vault"
     "  apply STATEDIR     apply a plan (not executable yet)"
     "  update STATEDIR    check all packages (not executable yet)"
     "  activate PROFILE   flip the profile (not executable yet)"
@@ -456,6 +457,27 @@
   (for/list ([h (in-list holds)])
     (hasheq 'name (first h) 'slot (second h))))
 
+;; -> path, the vault pm commands use when none is given: the vault
+;; inside the user state root. One default, documented here, so every
+;; command finds the same vault without being told.
+(define (default-vault-dir)
+  (build-path (roots-data (scope-roots 'user)) "cyberdeck" "vault" "vault.git"))
+
+;; path-string -> jsexpr, one object per fetched package, manifest order.
+;; pm-fetch already narrates each package and the summary is
+;; deterministic, so this only shapes the document. The vault defaults
+;; to the shared one; tests pass a temp dir so the real state is never
+;; touched.
+(define (fetch-document manifest #:vault [vault #f])
+  (define vroot (if vault
+                    (if (path? vault) (path->string vault) vault)
+                    (path->string (default-vault-dir))))
+  (define results (pm-fetch vroot manifest))
+  (for/list ([r (in-list results)])
+    (hasheq 'name (first r)
+            'status (symbol->string (second r))
+            'detail (third r))))
+
 ;; path-string path-string path-string -> (listof string), one info line
 ;; per locked package, input order kept. Outdated is answered by the
 ;; vault, not by the lock alone.
@@ -503,6 +525,11 @@
                                                  (command-outdated-lockfile cmd)
                                                  (command-outdated-profile cmd)))
                     "}")]
+    [(command-fetch? cmd)
+     (string-append envelope
+                    ",\"results\":"
+                    (json-text (fetch-document (command-fetch-manifest cmd)))
+                    "}")]
     [(command-help? cmd) (string-append envelope "}")]
     [else
      (raise-pm-error 'config 'pm "command not executable yet"
@@ -534,6 +561,15 @@
       (cond [(command-help? cmd) (display-help) 0]
             [(command-check? cmd)
              (run-check (command-check-dir cmd))]
+            [(command-fetch? cmd)
+             (if (eq? 'json (command-fetch-format cmd))
+                 (begin (display-result (list (run-command-json cmd))) 0)
+                 (begin
+                   (display-result
+                    (update-report
+                     (pm-fetch (path->string (default-vault-dir))
+                               (command-fetch-manifest cmd))))
+                   0))]
             [(command-plan? cmd)
              (if (eq? 'json (command-plan-format cmd))
                  (begin (display-result (list (run-command-json cmd))) 0)
@@ -591,7 +627,9 @@
            racket/runtime-path
            racket/string
            json
-           "../core/errors.rkt")
+           "../core/errors.rkt"
+           "../core/git-url.rkt"
+           "../backends/manifest.rkt")
 
   ;; Parsing: empty and flags mean help; check takes one directory.
   (check-pred command-help? (parse-args #()))
@@ -795,4 +833,21 @@
     (check-equal? (command->json (parse-args argv))
                   (cadr ex)
                   (string-append "docs/API.org is stale for: " (car ex))))
+
+  ;; fetch dispatch shapes results without touching real state: a dead
+  ;; URL reports failed in a temp vault, and the JSON carries it.
+  (define fetch-manifest (build-path check-dir "fetch.rktd"))
+  (manifest-write fetch-manifest
+                  (list (manifest-entry "nope" "file:///nonexistent-pm-cli"
+                                        "refs/vault/nope" 1 #f '() #f)))
+  (define fetch-vault (build-path check-dir "vault.git"))
+  (define fetch-doc
+    (parameterize ([current-allow-file-urls #t]
+                   [verbose-screen? #f])
+      (fetch-document (path->string fetch-manifest)
+                      #:vault (path->string fetch-vault))))
+  (check-equal? (length fetch-doc) 1)
+  (check-equal? (hash-ref (car fetch-doc) 'name) "nope")
+  (check-equal? (hash-ref (car fetch-doc) 'status) "failed")
+  (check-true (string? (hash-ref (car fetch-doc) 'detail)))
   (delete-directory/files check-dir))
