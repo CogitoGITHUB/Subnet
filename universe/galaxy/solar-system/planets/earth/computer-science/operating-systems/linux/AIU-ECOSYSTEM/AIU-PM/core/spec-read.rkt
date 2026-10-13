@@ -695,6 +695,21 @@
                   "  hint: unsupported format-version 1 (neutral spec needs 2; see "
                   "docs/SPEC-NEUTRAL.org section 9)"))
 
+  ;; G-12: a v9 spec gets the same rule's own message, not a field error.
+  (check-equal?
+   (message-for '("(spec" "  (format-version 9)" "  (name demo)"
+                  "  (version \"1.0\")" "  (summary \"s\")"
+                  "  (source (git \"https://example.org/d.git\""
+                  "                  \"9edb3f66fd807b096b48283debdcddccfea34bad\"))"
+                  "  (build (steps (copy \"a\" \"b\")))"
+                  "  (install (prefix (bin \"b\")))"
+                  "  (license mit)"
+                  "  (homepage \"https://example.org\"))"))
+   (string-append "read-spec: invalid declaration;\n"
+                  "  at: pkg.rktd:2:19\n"
+                  "  hint: unsupported format-version 9 (neutral spec needs 2; see "
+                  "docs/SPEC-NEUTRAL.org section 9)"))
+
   ;; Exact message 2: bad version value at 4:11.
   (check-equal?
    (message-for '("(spec" " (format-version 2)"

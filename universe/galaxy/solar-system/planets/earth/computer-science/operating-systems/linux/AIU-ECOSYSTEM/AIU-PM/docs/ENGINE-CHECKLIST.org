@@ -820,10 +820,11 @@ held, what is outdated against the vault". Can be thin, must not be
 absent. / Done when: =pm status= and =pm held= print those three answers
 and each narrates which source it consulted.
 
-** TODO G-12 format migration rule
-=format-version 2= implies a v3 someday. / Done when: ONE rule says how
-an older or newer spec is refused or upgraded, and a v1 and a v9 spec
-each produce that rule's own message rather than a field error.
+** DONE G-12 format migration rule
+One rule in core/spec-read.rkt read-format-version: anything but 2 is
+refused with its own unsupported-format-version message naming
+SPEC-NEUTRAL.org section 9, never a field error. v1 and v9 each have
+an exact-message test.
 
 * PHASE R: restructure (runs AFTER Phase D, BEFORE any package
 declarations or NodeShape work)
