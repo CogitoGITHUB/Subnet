@@ -703,12 +703,12 @@ messages and each has a test. (The vault large-blob failure in that
 file's suite predates this work -- same single failure on the parked
 logs -- and stays parked.)
 
-** TODO S-03 declare: refuse a bad declaration, loudly
-The last step of pm is writing and accepting a declaration, so this is
-where the policy becomes visible to whoever wrote it. / Done when:
-=pm check= on a spec that violates an S-01 rule fails with the rule's
-own name in the message, and a SPECIFIC example of each refusal lives
-in docs/examples/ as a negative fixture.
+** DONE S-03 declare: refuse a bad declaration, loudly
+Commit, source-trust, origin, path-escape and install-mode refusals
+carry the rule's own name in the message. docs/examples-bad/ holds one
+negative fixture per rule, and spec-read.rkt refuses each file with its
+rule tag in a test. The dir is separate so pm check docs/examples
+stays green.
 
 ** TODO S-04 gate the rules
 Stage 15 in =scripts/check.nu= fails when a security predicate exists

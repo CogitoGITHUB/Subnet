@@ -1,0 +1,10 @@
+(spec
+  (format-version 2)
+  (name bad-url)
+  (version "1.0")
+  (summary "negative fixture: file URLs are test-only")
+  (source (git "file:///tmp/pm-example" "9edb3f66fd807b096b48283debdcddccfea34bad"))
+  (build (steps (copy "a" "b")))
+  (install (prefix (bin "b")))
+  (license mit)
+  (homepage "https://example.org"))

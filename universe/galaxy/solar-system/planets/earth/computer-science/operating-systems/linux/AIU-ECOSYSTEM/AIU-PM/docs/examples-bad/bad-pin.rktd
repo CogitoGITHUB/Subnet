@@ -1,0 +1,10 @@
+(spec
+  (format-version 2)
+  (name bad-pin)
+  (version "1.0")
+  (summary "negative fixture: a branch name is not a pin")
+  (source (git "https://example.org/demo.git" "main"))
+  (build (steps (copy "a" "b")))
+  (install (prefix (bin "b")))
+  (license mit)
+  (homepage "https://example.org"))

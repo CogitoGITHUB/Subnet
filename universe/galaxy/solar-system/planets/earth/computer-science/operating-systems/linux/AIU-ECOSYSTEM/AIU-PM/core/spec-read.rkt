@@ -5,8 +5,10 @@
 
 (require racket/contract/base
          racket/port
+         racket/runtime-path
          racket/string
          "errors.rkt"
+         "security.rkt"
          "version.rkt"
          "git-id.rkt"
          "git-url.rkt"
@@ -170,7 +172,7 @@
 (define (convert-commit stx)
   (define c (syntax->datum stx))
   (unless (and (string? c) (git-id? c))
-    (fail stx (format "not a commit id ~s" c)))
+    (fail stx (format "[source-trust] not a commit id ~s" c)))
   c)
 
 ;; syntax -> string, validated git URL or a located error
@@ -182,7 +184,7 @@
           (define reason
             (let ((cell (assoc "reason" (exn:fail:pm-fields e))))
               (if cell (cdr cell) "?")))
-          (fail stx (format "rejected git URL ~s (~a" u reason)))])
+          (fail stx (format "[origin] rejected git URL ~s (~a" u reason)))])
     (unless (string? u)
       (fail stx "URL must be a string"))
     (check-git-url u)
@@ -318,7 +320,7 @@
 ;; syntax string -> string, confined DST or a located error
 (define (confine-dst stx p)
   (unless (prefix-confined? p)
-    (fail stx (format "install path '~a escapes the prefix" p)))
+    (fail stx (format "[path-escape] install path '~a escapes the prefix" p)))
   p)
 
 ;; syntax (listof syntax) -> install-spec, one check form at most
@@ -351,7 +353,10 @@
                       (string? (car args))
                       (exact-integer? (cadr args)))
            (fail f "mode takes a path and an exact integer"))
-         (confine-dst f (car args))]
+         (confine-dst f (car args))
+         (unless (install-mode-allowed? (cadr args))
+           (fail f (format "[install-mode] mode ~a refused; pm writes only 755 and 644"
+                           (cadr args))))]
         [(check)
          (when seen-check?
            (fail f "only one check form per install"))
@@ -591,6 +596,64 @@
            "spec.rkt"
            "version.rkt")
 
+  ;; S-03: every negative fixture in docs/examples-bad refuses with its
+  ;; rule's own name. These files are the declarations pm must never
+  ;; accept, and this test is what keeps them honest.
+  (define-runtime-path spec-core-dir
+    "."
+  )
+  (define bad-dir
+    (simplify-path
+      (build-path spec-core-dir 'up "docs" "examples-bad"
+      )
+    )
+  )
+  (define bad-cases
+    (list
+      (cons "bad-pin.rktd" "source-trust"
+      )
+      (cons "bad-url.rktd" "origin"
+      )
+      (cons "bad-path.rktd" "path-escape"
+      )
+      (cons "bad-mode.rktd" "install-mode"
+      )
+    )
+  )
+  (for
+    (
+      [pair (in-list bad-cases)
+      ]
+    )
+    (define err
+      (with-handlers
+        (
+          [exn:fail:pm? (lambda (e) e)
+          ]
+        )
+        (read-spec-file
+          (path->string
+            (build-path bad-dir (car pair)
+            )
+          )
+        )
+        'no-error
+      )
+    )
+    (check-pred spec-error? err (car pair)
+    )
+    (check-regexp-match
+      (regexp
+        (string-append "\\[" (cdr pair) "\\]"
+        )
+      )
+      (exn-message err
+      )
+      (car pair
+      )
+    )
+  )
+
   ;; string (listof string) -> path, fixture file in a fresh temp dir
   (define (write-fixture name lines)
     (define dir (make-temporary-directory "pm-spec~a"))
@@ -740,7 +803,7 @@
      "  (build (steps (copy \"a\" \"b\")))"
      "  (install (prefix (bin \"b\")))" "  (license mit)"
      "  (homepage \"https://example.org\"))")
-   #rx"not a commit id")
+   #rx"\\[source-trust\\] not a commit id")
   (hint-matches?
    '("(spec" "  (format-version 2)" "  (name demo)"
      "  (version \"1.0\")" "  (summary \"s\")"
@@ -749,7 +812,7 @@
      "  (build (steps (copy \"a\" \"b\")))"
      "  (install (prefix (bin \"b\")))" "  (license mit)"
      "  (homepage \"https://example.org\"))")
-   #rx"rejected git URL")
+   #rx"\\[origin\\] rejected git URL")
   (hint-matches?
    '("(spec" "  (format-version 2)" "  (name a)" "  (name b))")
    #rx"duplicate field")
@@ -786,7 +849,16 @@
      "  (build (steps (copy \"a\" \"b\")))"
      "  (install (prefix (bin \"../etc/passwd\")))" "  (license mit)"
      "  (homepage \"https://example.org\"))")
-   #rx"install path '../etc/passwd escapes the prefix")
+   #rx"\\[path-escape\\] install path '../etc/passwd escapes the prefix")
+  (hint-matches?
+   '("(spec" "  (format-version 2)" "  (name demo)"
+     "  (version \"1.0\")" "  (summary \"s\")"
+     "  (source (git \"https://example.org/d.git\""
+     "                  \"9edb3f66fd807b096b48283debdcddccfea34bad\"))"
+     "  (build (steps (copy \"a\" \"b\")))"
+     "  (install (prefix (bin \"b\") (mode \"bin/b\" 777)))"
+     "  (license mit)" "  (homepage \"https://example.org\"))")
+   #rx"\\[install-mode\\] mode 777 refused")
   (hint-matches?
    '("(spec" "  (format-version 2)" "  (name demo)"
      "  (version \"1.0\")" "  (summary \"s\")"
