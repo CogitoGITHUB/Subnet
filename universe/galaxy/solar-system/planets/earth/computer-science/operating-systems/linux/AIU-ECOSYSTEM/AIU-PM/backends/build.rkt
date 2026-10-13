@@ -151,17 +151,26 @@
 (define (build-env #:prefix prefix #:source source #:work work)
   (define home (build-path work "fake-home"))
   (make-directory* home)
-  (list (cons "LANG" "C.UTF-8")
-        (cons "HOME" (path->string home))
-        (cons "PREFIX" (if (path? prefix)
-                           (path->string prefix)
-                           prefix))
-        (cons "SRCDIR" (if (path? source)
-                           (path->string source)
-                           source))
-        (cons "BUILDDIR" (if (path? work)
-                             (path->string work)
-                             work))))
+  ;; G-09: builds run without ambient network configuration. The proxy
+  ;; variables are emptied (not merely dropped: an empty proxy means no
+  ;; proxy to every tool that reads them), so a build cannot reach the
+  ;; network through the user's proxy setup and cannot present ambient
+  ;; proxy credentials. Blocking direct connections needs a sandbox pm
+  ;; does not have; that limit is stated in ENGINE.org, not hidden.
+  (append (list (cons "LANG" "C.UTF-8")
+                (cons "HOME" (path->string home))
+                (cons "PREFIX" (if (path? prefix)
+                                   (path->string prefix)
+                                   prefix))
+                (cons "SRCDIR" (if (path? source)
+                                   (path->string source)
+                                   source))
+                (cons "BUILDDIR" (if (path? work)
+                                     (path->string work)
+                                     work)))
+          (for/list ([v (in-list '("http_proxy" "https_proxy"
+                                   "HTTP_PROXY" "HTTPS_PROXY"))])
+            (cons v ""))))
 
 ;; ---------------------------------------------------------------------------
 ;; One spawn, mirroring local.rkt's run-step errors: missing exe or
@@ -651,4 +660,14 @@
                                      #:tools '("pm-no-such-tool-xyz"))
                 'no-error))
   (check-false (file-exists? (build-path work-copy "z.txt")))
+
+  ;; G-09: the build env carries no ambient network configuration.
+  ;; Proxy variables are present but empty, so no proxy (and no proxy
+  ;; credentials) reaches a build step.
+  (define benv (build-env #:prefix prefix-dir
+                          #:source work-copy
+                          #:work work-copy))
+  (for ([v (in-list '("http_proxy" "https_proxy"
+                       "HTTP_PROXY" "HTTPS_PROXY"))])
+    (check-equal? (cdr (assoc v benv)) ""))
   (delete-directory/files test-root))

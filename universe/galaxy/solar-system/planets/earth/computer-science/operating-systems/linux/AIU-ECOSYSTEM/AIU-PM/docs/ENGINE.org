@@ -395,6 +395,21 @@ profile link, and RETRY for fetch. Nothing else exists: there is no
 - =#:cancel= stops between steps, never mid-write, so cancellation is
   an interrupted run and resumes like one.
 
+* Build isolation policy (G-09, DEFAULT: scrubbed env, no ambient net)
+Same-user builds, no chroot, no daemon, no sandbox of any kind. What
+pm DOES enforce: every child spawns under =env -i= with a fixed
+allowlist (run.rkt), and build steps additionally run with the four
+proxy variables emptied (build-env), so a build cannot use the user's
+proxy setup or present ambient proxy credentials. Fetch keeps its
+proxies; only build is scrubbed. What pm does NOT enforce: direct
+network connections. Blocking those needs a sandbox pm does not have,
+so "no network during build" would be a slogan, not a rule. The rule
+is narrower and real: builds must not REQUIRE the network (sources are
+fetched in the fetch stage), and they run without ambient network
+configuration. A build that phones home directly violates the policy
+and will be caught by review, not by mechanism; that limit is stated
+here instead of hidden.
+
 * Sequencing
 1. =core/flags.rkt= and the =slot=/=flags= spec fields.
 2. =core/plan.rkt= derivation, with =plan->text= goldens, then lowering.

@@ -781,11 +781,14 @@ failing apply and its resume inside one verbose run and asserts the
 feed holds FAIL, SKIP and the input hash, so the feed shows which law
 applied.
 
-** TODO G-09 build isolation policy, stated either way
-Same-user builds, no chroot, no daemon -- but is the network available
-during build, and is the environment scrubbed? "Undefined" becomes a
-security hole by accident. / Done when: the policy is written down and
-build.rkt enforces exactly what it says, including the network answer.
+** DONE G-09 build isolation policy (DEFAULT, honestly narrowed)
+Same-user, no chroot, no daemon. Enforced: children spawn under env -i
+with a fixed allowlist, and build steps run with proxy vars emptied so
+no ambient proxy config or credentials reach a build. Stated in
+ENGINE.org: direct connections cannot be blocked without a sandbox, so
+the rule is "builds must not REQUIRE network, and run without ambient
+network config" -- not "no network", which would be a slogan. A build
+that phones home directly violates policy and is caught by review.
 
 ** DONE G-10 provenance on every generation
 profile-activate writes provenance.rktd (run id off the active
