@@ -141,10 +141,13 @@ child time, 53s fixture stall); rebuild them to share one fixture repo per
 group of tests instead of one repo per test; the large-blob test must print
 file-size of big-dir/big first, before any threshold is touched.
 
-** TODO P-02 prove the manifest store
-Round trip a synthetic manifest through =backends/manifest.rkt=. /
-Done when: a write/read round trip preserves entries and order, and a
-malformed manifest raises kind ='spec=.
+** DONE P-02 prove the manifest store
+Round trip in backends/manifest.rkt preserves entries and order, and
+malformed input refuses at both levels: a corrupt file or bad URL
+raises kind 'config on manifest-read, a bad struct shape raises kind
+'spec on manifest-entry. The item said 'spec for "malformed manifest";
+the file level is 'config because the file failed to parse, the value
+level is 'spec because the value failed to validate. Both refuse.
 
 ** TODO P-03 prove the jobs queue end to end
 Run a synthetic job to completion, then one that fails, then one that
