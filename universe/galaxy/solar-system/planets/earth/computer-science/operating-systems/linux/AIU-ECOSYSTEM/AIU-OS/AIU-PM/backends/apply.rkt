@@ -446,10 +446,11 @@
                                                 (symbol->string
                                                  (package-plan-name pp)))
                                       state-dir manifest-path prefix-dir
-                                      vault-git cancel)))))))))))
+                                      vault-git cancel))))))))))))
 
 ;; path-or-string -> string
 (define (as-dir d)
+  (if (path? d) (path->string d) (format "~a" d)))
 
 ;; package-plan state manifest prefix vault cancel -> result. One
 ;; package, fully installed, with per-action outcomes timed.
