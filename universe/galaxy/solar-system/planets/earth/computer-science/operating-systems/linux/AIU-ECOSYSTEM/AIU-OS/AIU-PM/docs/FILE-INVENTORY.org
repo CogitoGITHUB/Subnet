@@ -1,0 +1,127 @@
+#+TITLE: File inventory — what each file really does
+#+AUTHOR: Shape
+
+Phase R, item R-01. Every line below came from reading the code, not
+from the name. The verdict is about whether the NAME earns its place:
+a name that lies costs more than a missing comment, because every
+reader trusts it.
+
+* The verdict in one line
+
+Seven files are over-loaded: each does between five and seven unrelated
+jobs behind one vague name. They hold ~6800 of the ~14000 lines in the
+tree. Renaming those seven fixes most of the friction by itself.
+
+** The words that tell you nothing
+| word | where | what it actually means here |
+|------+-------+---------------------------|
+| core/ | the whole directory | nothing. It means "not a backend", which is a location, not a job |
+| plan | core/plan.rkt | not a plan. It hashes specs, derives package plans, LOWERS build steps into install actions, and enforces path conflicts |
+| run | backends/run.rkt | not a run. It spawns processes AND owns the exit-status fifo protocol AND drains pipes AND kills process groups |
+| local | backends/local.rkt | "local" as opposed to what? It is the performer that actually touches the filesystem |
+| jobs | backends/jobs.rkt | a queue, a fifo, worker locks, job validation, and a serialization format — five things |
+| vault | backends/vault.rkt | git env, refs, creation, clone/fetch/pack, fsck, and a disk-space collision check |
+| dev | backends/dev.rkt | the developer-mode link/unlink path |
+| build | backends/build.rkt | env construction AND six separate build-system executors |
+
+** The fake files living in the production tree
+=backends/fake.rkt= and =backends/dry-run.rkt= are test doubles sitting
+beside real code. Anyone reading the tree has to know to skip them. They
+belong under a =test-doubles/= directory so the production tree reads
+as production code.
+
+* Over-loaded files and where the split lines are
+
+** backends/vault.rkt — 1652 lines, 6 jobs
+- git plumbing environment (cwd, child lock, env, git binary path)
+- ref storage (=vault-namespace=, =vault-refmap=, =tips-only=, ref
+  collision checks, ref delete/set)
+- creating a vault from nothing (=vault-init=, =ensure-vault=)
+- network transfer (=vault-fetch-run=, =vault-pack-refs=)
+- integrity (=vault-assert-child-free=)
+- capacity (=vault-df-collisions=)
+Split: =vault-refs.rkt=, =vault-create.rkt=, =vault-transfer.rkt=,
+=vault-checks.rkt=, and the git-env pieces move to git.rkt.
+
+** backends/jobs.rkt — 1043 lines, 5 jobs
+- job record shape and its validation (=check-job-package=, -name=,
+  -url=, -pin=, -fsck=)
+- on-disk format (=job-write=, =job-read=)
+- the queue (=queue-read=, =queue-write=, =queue-all-ids=, =queue-resume=)
+- worker exclusion (=job-lock-path=, =worker-lock-path=, =job-live?=)
+- status (=job-status=)
+Split: =job-record.rkt=, =job-queue.rkt=, =job-worker-locks.rkt=.
+
+** core/spec-read.rkt — 1024 lines, 4 jobs
+- the typo suggester (=levenshtein=, =suggest-key=) — this is a text
+  utility that happens to be used while parsing
+- field plumbing (=need-field=, =field-args=, =check-keys=)
+- source and dependency parsing (=read-source=, =read-deps=)
+- build and install forms (=read-build=, =read-step-args=, install forms)
+Split: =spec-typos.rkt=, =spec-fields.rkt=, =spec-source.rkt=,
+=spec-build-steps.rkt=.
+
+** core/plan.rkt — 974 lines, 4 jobs
+- content hashing (=string-sha=, =package-plan-identity=)
+- deriving the package plan from a spec (=derive-package-plan=)
+- LOWERING: turning build steps and install forms into actions
+  (=lower-one-step=, =lower-install-forms=, =lower-package-plan=) —
+  this is the compiler and the name hides it
+- refusing conflicts (=check-spec-conflicts=, =spec-install-dests=)
+Split: =plan-hash.rkt=, =plan-derive.rkt=, =plan-lower.rkt=,
+=plan-conflicts.rkt=.
+
+** backends/build.rkt — 673 lines, 3 jobs
+- the build environment (=build-env=, arg and variable expansion,
+  prefix confinement)
+- the step EXECUTOR protocol (=execute-build-step=,
+  =execute-build-steps=)
+- six build-system implementations: make, cmake (configure + build +
+  install), cargo, configure, run, and a generic do-run
+Split: =build-env.rkt=, =build-executor.rkt=, and
+=build-systems/{make,cmake,cargo,configure,run}.rkt=.
+
+** backends/activate.rkt — 650 lines, 4 jobs
+- generation naming and provenance (=gen-dir-name=, =next-gen-number=,
+  =generation-provenance=)
+- building a generation and flipping the profile
+  (=build-generation!=, =profile-activate=)
+- reclaiming space (=profile-gc=)
+- moving and deleting (=profile-rollback=, =profile-remove=)
+- holds (=holds-file=, =read-holds=, =profile-hold=)
+Split: =generation.rkt=, =profile-flip.rkt=, =profile-gc.rkt=,
+=profile-holds.rkt=.
+
+** cli/main.rkt — 1223 lines, 5 jobs
+- argument parsing (=parse-format=, =parse-apply-args=, =parse-args=)
+- the command structs and the discovery table
+- one document builder per command (=status-document=, =why-document=,
+  =verify-document=, ... about fifteen)
+- the dispatch that turns a command into a call
+- the module's own test suite, inline
+Split: =cli/parse.rkt=, =cli/commands.rkt=, =cli/documents.rkt=,
+=cli/dispatch.rkt=, and move the inline tests to
+=cli/main-test.rkt=.
+
+* Files whose names are honest
+These need no change: =core/verbose.rkt= (narration),
+=core/errors.rkt=, =core/scope.rkt=, =core/lock.rkt=, =core/ui.rkt=,
+=core/security.rkt=, =core/cancel.rkt=, =backends/local.rkt= (once
+renamed to say it performs), =backends/store.rkt=, =backends/journal.rkt=,
+=backends/manifest.rkt=, =backends/query.rkt=.
+
+* Dependency facts that constrain the rename
+- =core/verbose.rkt= is required nearly everywhere; renaming it is cheap
+  but it must not gain a dependency on anything that requires it.
+- =backends/activate.rkt= and =backends/apply.rkt= both need the
+  lowering vocabulary from =core/plan.rkt=. Splitting =plan.rkt= moves
+  that boundary, so the split has to name which half callers want.
+- =cli/main.rkt= requires nine backend and core files. After the split
+  it should require only =commands.rkt= and =dispatch.rkt=.
+
+* What this costs
+Roughly 7 files become ~28, and =cli/main.rkt= becomes 5. Every require
+line changes. The test suite catches any missed require, because a
+missing module fails the build rather than passing silently — the same
+property that caught four stale documentation examples during the
+command wiring.
