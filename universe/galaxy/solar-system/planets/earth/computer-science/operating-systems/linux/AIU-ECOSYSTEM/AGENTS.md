@@ -9,6 +9,11 @@ contact with a real implementation (the package manager).
 
 1. **Nothing important is silent** → every operation narrates through
    one path. See `agents/narration.md`.
+1a. **If it can block, it says so first** → the verbose ten, and the
+   discipline that separates it from step-logging. See
+   `agents/verbosity.md`. This is not optional and it is not a debug
+   flag; a silent block is the one failure mode that costs more than
+   every other bug put together.
 2. **Nothing important is irreversible without a record** → stepwise
    work is journaled by content hash; re-runs skip with reasons.
    See `agents/reversibility.md`.
@@ -43,5 +48,8 @@ contact with a real implementation (the package manager).
 1. Copy this file and `agents/` as the starting point.
 2. Write the decision log from day one (D-001 is cheap, archaeology is not).
 3. Emit the event schema from the first operation, before any UI.
-4. Keep one scope seam for environment/roots; nothing else reads HOME.
-5. Ship a skill file alongside the CLI the day commands start working.
+4. Enumerate your project's blocking primitives and put every one of
+   them behind the wait door **before** you write a blocking feature —
+   not after your first hang. See `agents/verbosity.md` rule 2.
+5. Keep one scope seam for environment/roots; nothing else reads HOME.
+6. Ship a skill file alongside the CLI the day commands start working.

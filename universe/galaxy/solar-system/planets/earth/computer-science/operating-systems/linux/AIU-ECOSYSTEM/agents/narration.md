@@ -46,6 +46,16 @@ utc, mono-ms, duration-ms
 indented two spaces per depth. Durations vary, so golden tests assert
 shape (kinds, order, indentation), never timestamps.
 
+## Blocking is a separate verb
+
+This file covers what *finished*. What is *waiting* is a different
+discipline with two extra kinds — `WAIT` emitted **before** the block and
+`WAIT-DONE` after — because a log of completed steps tells you nothing
+while nothing is completing. That gap cost us a 41-minute hang. The
+rules live in `agents/verbosity.md`; the short form is: every blocking
+primitive goes through one door, every wait has an escape, and a `WAIT`
+with no `WAIT-DONE` names the hang for you.
+
 ## What we got wrong first
 
 - Per-level sequence counters (restart at zero per nesting): broke

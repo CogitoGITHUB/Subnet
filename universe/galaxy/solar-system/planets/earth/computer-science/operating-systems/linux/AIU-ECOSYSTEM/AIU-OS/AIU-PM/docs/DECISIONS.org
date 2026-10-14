@@ -4,6 +4,52 @@
 * Log
 Append-only. Newest first. Every entry names the rule IDs it touches.
 
+** 2026-10-14 D-041: if it can block, it says so first
+   Touches D-036 (narration), E-27 (AI surfaces), stage 14.
+1. NEW VERB: WAIT is emitted BEFORE a blocking operation and WAIT-DONE
+   after it returns. Same fields, same one seq counter, same screen
+   line as every other event, so it nests and orders for free. A WAIT
+   with no WAIT-DONE names the hang.
+2. WHY A NEW VERB: step logging records what finished, which is no use
+   while nothing is finishing. The apply suite hung 41 minutes after its
+   last event; the feed was a perfect record of the run up to the hang
+   and total silence after it, which is worse than no log, because it
+   points at the last logged step.
+3. EVERY BLOCKING PRIMITIVE GOES THROUGH ONE DOOR: sync, thread-wait,
+   semaphore-wait, channel get/put, read-line on a fifo or pipe,
+   close-input-port on a pipe, subprocess-wait, network reads. Enumerate
+   once; grep for new ones.
+4. EVERY WAIT HAS AN ESCAPE: a deadline, an event, or a detectable dead
+   peer. A wait that can never return is a design error. Opening a
+   named pipe for reading with no writer blocks inside the open with no
+   error and no timeout, which is the canonical case.
+5. `why` IS MANDATORY ON A WAIT, same as on a step.
+6. NO OFF-SWITCH, consistent with D-036: no --quiet, no env var, no
+   level. Tests may redirect the screen port; the feed is never silenced.
+7. UN-NARRATED BLOCKING PATHS ARE TEST FAILURES. Find them by grepping
+   for blocking primitives, not by reading code.
+8. SUPERSEDES nothing. D-036 stands; this adds the blocking axis to it.
+   Portable form: AIU-ECOSYSTEM/agents/verbosity.md.
+
+** 2026-10-14 D-040: pm apply, the first command that changes the machine
+1. apply derives its plan on the spot: specs dir plus lock through
+scan, resolve, lower and apply-plan. No plan file is stored or read,
+so no stale plan can ever be applied.
+2. Performer is local-perform!: every action is already narrated, so
+the command adds no new output path.
+3. NEVER AUTO-APPLY: without --confirm, pm apply prints the full plan
+and exits 0 having changed nothing. --confirm applies. MCP and AI
+callers need the human confirmation token for apply, as for every
+state-changing tool (E-27 rule, unchanged).
+4. State lives under the scope roots and only there: prefixes under
+<state>/store, resume in the journal, one current link per name and
+slot, the manifest written by apply only. The E-12c writer lock is
+taken before the first action; a second apply fails at once naming
+the holder.
+5. A prefix stays marked .pm-incomplete until its check passes; a
+failed or cancelled apply leaves the old current untouched. Fail
+closed, always. D-040.
+
 ** 2026-10-13 D-039: television is the UI, and it lives outside pm
 The deleted Rust TUI (D-035) is replaced by television channels, not by
 new pm code. pm already emits everything a browser needs: one-line
@@ -400,7 +446,7 @@ anything else raises kind 'fetch with E-8 fields. P-8, E-8, E-14.
 ** 2026-10-06 D-006 git ONLY; D-011 vault; D-012 pin refs
 Sources are git and nothing else: no tarballs, no MELPA, no other
 archive or manager. Every package keeps a full mirror (=git clone
---mirror=) in =~/.local/share/cyberdeck/vault/<name>.git=. Installs
+--mirror=) in =~/.local/share/aiu-pm/vault/<name>.git=. Installs
 export from the mirror at the pinned commit, never from the network;
 updates are =git fetch= into the mirror (D-011). Installing a commit
 creates a private ref =refs/cyberdeck/pinned/<commit>= so force-pushes
@@ -477,7 +523,7 @@ boundary) and pushed. G-2, G-4.
 |-------+-----------------------------------------------------------|
 | D-003 | S-expr .rktd now; custom #lang deferred; Tier A default |
 | D-004 | lockfile.rktd, sorted, in the state dir (not prefix) |
-| D-005 | ~/.local/share/cyberdeck; versioned dirs; current link |
+| D-005 | ~/.local/share/aiu-pm; versioned dirs; current link |
 | D-006 | git ONLY; full mirror per package; export at pin |
 | D-007 | Exact commit id only (git); versions match equal |
 | D-009 | Data-only default; Tier B own-repo files only |

@@ -821,6 +821,42 @@ refused with its own unsupported-format-version message naming
 SPEC-NEUTRAL.org section 9, never a field error. v1 and v9 each have
 an exact-message test.
 
+* PHASE S2: the verbose ten (D-041)
+  Motive: the apply suite hung 41 minutes with zero output. The feed
+  was a perfect record up to the hang and silence after it, which points
+  at the wrong step. Cost of the silence: an fd dump and a manual
+  bisect. Rule: if it can block, it says so first.
+** DONE S2-00 wait narration API (wait-for / wait-done, WAIT + WAIT-DONE)
+Added to core/verbose.rkt with contracts. WAIT is emitted BEFORE the
+block, WAIT-DONE after, pushing depth and parent, sharing the run's one
+seq counter. why is mandatory. Tested in-file: kinds, order, depth
+indent. Portable form in AIU-ECOSYSTEM/agents/verbosity.md.
+** DONE S2-01 portable rule set
+AIU-ECOSYSTEM/agents/verbosity.md: the ten rules, the WAIT/WAIT-DONE
+table, the escape requirement, and the three things we got wrong first.
+Cross-referenced from AGENTS.md and agents/narration.md, and added to
+the new-project checklist (enumerate blocking primitives before you
+write a blocking feature).
+** TODO S2-02 narrate the subprocess/wait path
+backends/run.rkt and backends/local.rkt: every spawn, sync, thread-wait,
+pipe close, and the status-fifo opener. Also fix the fifo hazard: a
+named pipe opened for reading with no writer blocks inside the open,
+which is the prime suspect for the 41-minute hang.
+** TODO S2-03 narrate the apply path
+backends/apply.rkt: every phase of pm-apply and every step of apply-one,
+plus each E2E case boundary and cleanup, so the next occurrence names
+itself.
+** TODO S2-04 gate stage: no un-narrated blocking primitive
+New lint stage over non-test sources: every blocking primitive
+(sync/timeout, sync, thread-wait, semaphore-wait, channel-get/put,
+read-line, subprocess-wait) must sit inside a wait-for, or appear in a
+named allowlist. Same shape as stage 15's audited-writers check: narrow
+until every hit is real, prove it bites, then switch on by default.
+** TODO S2-05 E2E suite green with narration on
+The apply suite must complete. A hang now reports its last WAIT line
+instead of nothing, which is the acceptance condition even if a rare
+ordering issue survives.
+
 * PHASE R: restructure (runs AFTER Phase D, BEFORE any package
 declarations or NodeShape work)
 ** TODO R-01 inventory

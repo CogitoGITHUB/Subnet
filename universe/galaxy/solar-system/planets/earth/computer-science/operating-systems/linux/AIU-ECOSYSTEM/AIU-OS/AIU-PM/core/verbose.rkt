@@ -70,6 +70,11 @@
                   #:total (or/c exact-nonnegative-integer? #f))
                  void?)]
   [warn (-> symbol? string? void?)]
+  ;; D-041 wait narration. A blocking operation records itself BEFORE it
+  ;; blocks, so a hang always leaves a last word on disk. Never optional.
+  [wait-for (symbol? string? string? #:how (or/c string? #f) #:inputs (listof any/c) -> any)]
+  [wait-done (symbol? string? #:how (or/c string? #f) #:inputs (listof any/c) -> any)]
+  [wait-narrated? (-> boolean?)]
   ;; Tests only: quiet the screen without touching the feed.
   [verbose-screen? (parameter/c boolean?)]))
 
@@ -99,7 +104,7 @@
 
 ;; -> path, <state>/events. Only core/scope.rkt reads HOME or XDG_*.
 (define (default-events-dir)
-  (build-path (roots-data (scope-roots 'user)) "cyberdeck" "events"))
+  (build-path (roots-data (scope-roots 'user)) "aiu-pm" "events"))
 
 ;; string -> path, the feed for RUN-ID under the real events dir
 (define (events-file run-id)
@@ -307,6 +312,81 @@
   (void))
 
 ;; symbol string done total -> void, PROGRESS
+;; ---------------------------------------------------------------------------
+;; Wait narration (D-041)
+;;
+;; The law: a process that blocks says so first. A silent region is
+;; indistinguishable from a hang, and a hang that left no record cost a
+;; 41-minute bisect in the apply suite. Every blocking primitive goes
+;; through here, so the last line of the feed always names the thing
+;; that never came back.
+;;
+;; wait-for pushes the depth/parent of the blocking operation for the
+;; duration of the call, so a thread-wait nested inside a run-command
+;; reports as a child of that run-command rather than of the whole run.
+;;
+;; wait-done closes the pair. Its duration-ms is the measured wait,
+;; taken off the monotonic clock, so a slow block is visible as a slow
+;; block and not as a fast one.
+
+;; Boxes for the in-flight wait. #f when nothing is waiting, which is
+;; the normal state; `wait-narrated?` exists so a test can assert that
+;; a blocking path really did narrate rather than merely seeming to.
+(define wait-in-flight (box #f))
+
+(define wait-narrated? (make-parameter #t))
+
+;; who what why #:how #:inputs [thunk] -> the thunk's value.
+;; `why` is mandatory for the same reason it is mandatory for a step: a
+;; wait with no reason is a hang with no explanation.
+(define (wait-for who what why #:how [how #f] #:inputs [inputs '()]
+                  [thunk (lambda ()
+                           (raise-pm-error 'internal 'wait-for
+                                           "a thunk is required"
+                                           #:fields '()))])
+  (require-why 'wait-for why)
+  (cond
+    [(not (wait-narrated?))
+     (call-with-values thunk (lambda vs (apply values vs)))]
+    [else
+     (define outer (current-verbose-run))
+     (define parent-id (here-id))
+     (define start (emit! 'WAIT who what why how inputs '() #f))
+     (define inner
+       (verbose-run (if outer (verbose-run-id outer) "adhoc")
+                    (if outer (verbose-run-seq-box outer) (box 0))
+                    (string-append (hash-ref start 'run-id)
+                                   "#"
+                                   (number->string (hash-ref start 'seq)))
+                    (add1 (hash-ref start 'depth 0))
+                    (mono-ms)
+                    (if outer (verbose-run-port outer) #f)))
+     (set-box! wait-in-flight start)
+     (define failure #f)
+     (define outs
+       (parameterize ([current-verbose-run inner])
+         (with-handlers
+             ([exn:fail?
+               (lambda (e)
+                 (set! failure (exn-message e))
+                 (emit! 'FAIL who what why how inputs '() failure)
+                 (raise e))])
+           (call-with-values thunk (lambda vs (list vs))))))
+     (set-box! wait-in-flight #f)
+     (unless failure
+       (let* ([vals (car outs)]
+              [single (if (pair? vals) (car vals) vals)])
+         (emit! 'WAIT-DONE who what why how inputs vals (summary vals))
+         single))]))
+
+;; Standalone close, for a wait narrated by hand across several
+;; statements rather than one expression. wait-for is the normal door;
+;; this exists so a spawn and its wait can be narrated as two halves.
+(define (wait-done who what #:how [how #f] #:inputs [inputs '()])
+  (emit! 'WAIT-DONE who what "the wait returned" how inputs '() '())
+  (set-box! wait-in-flight #f))
+
+;; symbol string -> void, PROGRESS
 (define (progress who what #:done [done #f] #:total [total #f])
   (emit! 'PROGRESS
          who
