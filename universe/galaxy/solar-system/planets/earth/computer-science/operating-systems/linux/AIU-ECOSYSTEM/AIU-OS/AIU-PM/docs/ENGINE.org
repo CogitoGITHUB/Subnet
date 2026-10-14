@@ -75,7 +75,7 @@ Shared plan identities lower once (E-06).
 Store dir = =<state>/store/<name>/<slot>/<version>-<hash12>/=. PREFIX is
 that dir. The dir holds =.pm-incomplete= until check passes, and the
 marker is removed by =clear-incomplete-action=. One =current= link per
-name/slot. The profile lives in =$XDG_DATA_HOME/cyberdeck/profile/=
+name/slot. The profile lives in =$XDG_DATA_HOME/aiu-pm/profile/=
 with numbered generations and an atomic symlink swap (SPEC-NEUTRAL
 section 4). Two active packages claiming the same relative path fail
 closed before anything changes (D-024 =owner=, exit 9).
@@ -185,7 +185,7 @@ Round trip through =list->lock= / =lock->list=; sortedness is checked
 because a diff must be stable. A plan whose flags changed produces a
 different input hash.
 : Notes
-- =lockfile.rktd= lives in the state dir (~/.local/share/cyberdeck per
+- =lockfile.rktd= lives in the state dir (~/.local/share/aiu-pm per
   D-005), not in the prefix (D-004).
 - DECIDED: =lock= records the base pin plus a hash of the spec's
   build and install forms. It does NOT record the =dev= fingerprint;

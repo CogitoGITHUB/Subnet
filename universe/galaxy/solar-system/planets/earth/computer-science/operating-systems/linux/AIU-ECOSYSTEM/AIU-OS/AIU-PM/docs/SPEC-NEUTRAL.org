@@ -94,7 +94,7 @@ the prefix, under the same allowlisted env. Argv runs without a shell
 under the prefix). Exit 0 is required and output is captured into the
 build log: a failing check keeps the =.pm-incomplete= marker, fails the
 build (exit 7), and activation stays refused.
-PREFIX = the final versioned dir (~/.local/share/cyberdeck/NAME/VERSION).
+PREFIX = the final versioned dir (~/.local/share/aiu-pm/NAME/VERSION).
 There is no staging prefix and no DESTDIR relocation: builds and
 placement write into the FINAL directory from the start, so every path
 embedded by a build (bats bin script, .pc and cmake config files) is
@@ -113,8 +113,8 @@ Assumed host tools (not pm deps, documented per spec): lua needs
 gcc/ar/make; cjson needs cc/cmake/make; bats needs bash/install/coreutils.
 
 * 4. ACTIVATION (DECIDED: profile forest with generations)
-Location: $XDG_DATA_HOME/cyberdeck/profile/ (default
-~/.local/share/cyberdeck/profile/), inside the proot rootfs, never on
+Location: $XDG_DATA_HOME/aiu-pm/profile/ (default
+~/.local/share/aiu-pm/profile/), inside the proot rootfs, never on
 shared storage. The engine probes at init that symlinks work there;
 if not, init refuses with a plan-kind error ([VERIFY] on this phone).
 Layout: profile/ holds generation dirs profile-NNN/ plus a =profile=
@@ -183,7 +183,7 @@ the NEXT explicit command touching the package reports it; exact form:
 #+begin_example
 build: interrupted, package left incomplete;
   package: lua 5.5.1
-  dir: ~/.local/share/cyberdeck/lua/5.5.1
+  dir: ~/.local/share/aiu-pm/lua/5.5.1
   marker: .pm-incomplete
   hint: rerun the build or run 'pm clean-incomplete lua 5.5.1'
 #+end_example
