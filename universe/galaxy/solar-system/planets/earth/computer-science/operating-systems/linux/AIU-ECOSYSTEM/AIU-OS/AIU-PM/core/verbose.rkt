@@ -72,9 +72,18 @@
   [warn (-> symbol? string? void?)]
   ;; D-041 wait narration. A blocking operation records itself BEFORE it
   ;; blocks, so a hang always leaves a last word on disk. Never optional.
-  [wait-for (symbol? string? string? #:how (or/c string? #f) #:inputs (listof any/c) -> any)]
-  [wait-done (symbol? string? #:how (or/c string? #f) #:inputs (listof any/c) -> any)]
-  [wait-narrated? (-> boolean?)]
+  [wait-for (->* (symbol? string? string?)
+                 ((-> any)
+                  #:how (or/c string? #f)
+                  #:inputs (listof any/c))
+                 any)]
+  [wait-done (->* (symbol? string?)
+                  (#:how (or/c string? #f)
+                   #:inputs (listof any/c))
+                  void?)]
+  ;; Tests only: prove a blocking path really narrated rather than merely
+  ;; seeming to. There is no way to turn narration OFF from a caller.
+  [wait-narrated? (parameter/c boolean?)]
   ;; Tests only: quiet the screen without touching the feed.
   [verbose-screen? (parameter/c boolean?)]))
 

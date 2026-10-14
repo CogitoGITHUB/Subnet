@@ -85,8 +85,8 @@
   (define r (scope-roots 'user))
   (define candidates
     (append (map (lambda (d) (if (path? d) d (string->path d))) explicit)
-            (list (build-path (roots-config r) "cyberdeck" "specs")
-                  (build-path (roots-data r) "cyberdeck" "specs"))))
+            (list (build-path (roots-config r) "aiu-pm" "specs")
+                  (build-path (roots-data r) "aiu-pm" "specs"))))
   (reverse
    (for/fold ([seen '()])
              ([p (in-list candidates)])

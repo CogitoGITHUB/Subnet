@@ -66,7 +66,7 @@
 ;; scope seam (E-00), never a direct home-dir read
 (define (git-global-config-path)
   (build-path (roots-config (scope-roots 'user))
-              "cyberdeck" "gitconfig"))
+              "aiu-pm" "gitconfig"))
 
 ;; -> (listof (cons string string)), isolated non-interactive env (item 7, 3)
 (define (git-env)

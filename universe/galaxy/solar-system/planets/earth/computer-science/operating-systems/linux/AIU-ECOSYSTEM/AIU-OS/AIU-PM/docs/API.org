@@ -52,13 +52,31 @@ Shows the lockfile plan. One operand: the lockfile path.
 : {"name":"fetch","format":"json","operands":["pm.manifest"]}
 Fetches every declared package. One operand: the manifest path.
 
-** =pm apply state --format json=
-: {"name":"apply","format":"json","operands":["state"]}
-Applies a plan. One operand: the state directory.
+** =pm apply specs --format json=
+: {"name":"apply","format":"json","operands":["specs", "no"]}
+Derives the plan from the specs directory and prints it. Nothing
+changes. The last operand is the gate state: ="no" means the plan was
+shown and deliberately not applied.
 
-** =pm update state --format json=
-: {"name":"update","format":"json","operands":["state"]}
-Checks all installed packages. One operand: the state directory.
+** =pm apply specs --lock pm.lock --confirm --format json=
+: {"name":"apply","format":"json","operands":["specs", "pm.lock", "yes"]}
+Applies the plan. =--lock= names a lockfile the declaration must agree
+with; =--confirm= is the human gate.
+
+*** The gate is not optional
+Without =--confirm=, apply derives the plan, prints it, and changes
+nothing, exiting 0. =--confirm= takes no value: it is crossed by naming
+it, never by setting a variable. There is no environment variable and no
+third state, so there is no way for an automated caller to reach the
+machine-changing path by accident. The JSON always carries
+="confirmed" and ="applied", both false on a preview, so a machine
+reader can never mistake a preview for a change.
+
+** =pm update vault pm.lock profile --format json=
+: {"name":"update","format":"json","operands":["vault", "pm.lock", "profile"]}
+Checks every locked package. Three operands, the same three =outdated=
+takes: the vault supplies the truth, the lockfile the claim, the
+profile the pins.
 
 ** =pm activate default --format json=
 : {"name":"activate","format":"json","operands":["default"]}
@@ -78,18 +96,21 @@ Removes a package from a profile. Two operands: profile, then name.
 Pins a package to a slot. Three operands: profile, name, slot as a
 string.
 
-** =pm why lua --format json=
-: {"name":"why","format":"json","operands":["lua"]}
-Explains why a package is present. One operand: the package name.
+** =pm why pm.lock pm.manifest lua --format json=
+: {"name":"why","format":"json","operands":["pm.lock", "pm.manifest", "lua"]}
+Explains why a package is present. Three operands: the lockfile and
+manifest that were consulted, and the package name. Both documents are
+named operands rather than hidden defaults, so the answer can be
+reproduced later instead of taken on trust.
 
 ** =pm owner default docs --format json=
 : {"name":"owner","format":"json","operands":["default", "docs"]}
 Reports which manifest owns a path. Two operands: profile, then the
 relative path.
 
-** =pm verify lua --format json=
-: {"name":"verify","format":"json","operands":["lua"]}
-Verifies an installed package against its manifest. One operand: the
+** =pm verify vault pm.lock lua --format json=
+: {"name":"verify","format":"json","operands":["vault", "pm.lock", "lua"]}
+Verifies an installed package against the pin the lockfile recorded.
 package name.
 
 ** =pm status default pm.lock --format json=

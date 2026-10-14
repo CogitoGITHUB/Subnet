@@ -170,10 +170,21 @@
    "\"$exe\" \"$@\"; st=$?; echo \"EXIT:$st\" >&3"))
 
 ;; path-string string -> void, mkfifo or kind 'config when missing/failed
+;; The three ports process* hands back MUST be closed, exactly as
+;; make-killer below does. This runs once per subprocess call, so
+;; leaving them open leaks three file descriptors on EVERY call, for
+;; ever: measured at exactly 3.0 per call, and collect-garbage reclaims
+;; none of them. A long apply makes hundreds of calls, the descriptor
+;; table fills, and the process then fails in ways that have nothing to
+;; do with the code being debugged. That was the real shape of the
+;; 41-minute hang: the 100+ leaked fds in the evidence.
 (define (make-status-fifo! fifo-path operation)
   (define mkfifo-exe (find-helper "mkfifo"))
   (define maker (process* (path->string mkfifo-exe) fifo-path))
   ((list-ref maker 4) 'wait)
+  (close-input-port (list-ref maker 0))
+  (close-output-port (list-ref maker 1))
+  (close-input-port (list-ref maker 3))
   (unless (file-exists? fifo-path)
     (raise-pm-error 'config 'run-command "could not create status fifo"
                     #:fields `(("operation" . ,operation))))
@@ -215,8 +226,8 @@
   (cond [(string? ruling) ruling]
         [(eq? ruling 'cancelled)
          (define pending (channel-try-get line-ch))
-         (if (and pending (pair? pending) (string? (cadr pending)))
-             (let ((r (decide (cadr pending))))
+         (if (and pending (string? pending))
+             (let ((r (decide pending)))
                (if (string? r) r (begin (kill-thunk) 'cancelled)))
              (begin (kill-thunk) 'cancelled))]
         [else (kill-thunk) 'cancelled]))
@@ -547,6 +558,25 @@
   (check-equal? (run-result-exit basic) 0)
   (check-equal? (run-result-stdout-lines basic) '("hi"))
   (check-equal? (run-result-stderr-lines basic) '())
+
+  ;; THE 41-MINUTE HANG, as a regression test.
+  ;;
+  ;; make-status-fifo! runs once per subprocess call. It used to open
+  ;; three ports and close none, leaking exactly three file descriptors
+  ;; on every call, and collect-garbage reclaimed none of them. A long
+  ;; apply makes hundreds of calls; the descriptor table fills and the
+  ;; process starts failing in ways unrelated to the code being
+  ;; debugged. Those leaked descriptors ARE the 100+ fds in the
+  ;; original evidence.
+  ;;
+  ;; The assertion is the shape that matters: the count must not grow
+  ;; with the number of calls. Asserting an exact number would be
+  ;; brittle across environments; asserting "no growth" is the law.
+  (define (fd-count)
+    (length (directory-list "/proc/self/fd")))
+  (define fds-before (fd-count))
+  (for ([i (in-range 6)]) (run-ok echo-exe (list (number->string i))))
+  (check-equal? (fd-count) fds-before)
 
   ;; Observability: START/END lines on the error port, flushed.
   (define obs-out (open-output-string))

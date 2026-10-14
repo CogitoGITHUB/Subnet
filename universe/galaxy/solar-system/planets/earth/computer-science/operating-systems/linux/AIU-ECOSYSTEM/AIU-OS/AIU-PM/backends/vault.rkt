@@ -158,7 +158,7 @@
   `(("GIT_CONFIG_NOSYSTEM" . "1")
     ("GIT_CONFIG_GLOBAL"
      . ,(path->string (build-path (roots-config (scope-roots 'user))
-                                  "cyberdeck" "gitconfig")))
+                                  "aiu-pm" "gitconfig")))
     ("GIT_TERMINAL_PROMPT" . "0")
     ("GIT_CEILING_DIRECTORIES" . ,(dir-string (vault-cwd vault-root)))))
 

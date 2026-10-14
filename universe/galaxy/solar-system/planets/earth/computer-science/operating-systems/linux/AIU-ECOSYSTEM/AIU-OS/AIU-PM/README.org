@@ -67,6 +67,36 @@ is the reference:
   (homepage "https://www.lua.org"))
 #+end_src
 
+* Commands
+
+Every command takes =--format sexp|json=. The table is data: the same
+list drives parsing, the =--help= text, and a test that fails when the
+documented commands and the dispatchable ones disagree.
+
+| command | changes the machine? | state |
+|---------+---------------------+-------|
+| =pm check DIR= | no | live |
+| =pm plan SPECDIR= | no | live |
+| =pm lock LOCKFILE= | no | live |
+| =pm fetch MANIFEST= | yes (vault) | live |
+| =pm apply SPECDIR= | **no** — prints the plan | live |
+| =pm apply SPECDIR --lock LOCK --confirm= | **yes** | live |
+| =pm status PROFILE LOCK= | no | live |
+| =pm held PROFILE= | no | live |
+| =pm outdated VAULT LOCK PROFILE= | no | live |
+| =pm why LOCK MANIFEST PKG= | no | live |
+| =pm owner PROFILE REL= | no | live |
+| =pm update/activate/rollback/remove/hold/verify= | yes | engine ready, not yet wired |
+
+** The gate
+=pm apply= without =--confirm= derives the plan, prints it, and changes
+nothing, exiting 0. A preview is the ordinary answer, not an error.
+=--confirm= takes no value: it is crossed by naming it. There is no
+environment variable and no third state, so an automated caller cannot
+reach the machine-changing path by accident. The JSON always carries
+="confirmed" and ="applied", both false on a preview, so a reader can
+never mistake one for the other.
+
 * Layout
 
 | directory | what lives there |
@@ -111,7 +141,7 @@ command and how to read the feed.
 * The event feed
 
 Every pm invocation opens a run under
-=$XDG_DATA_HOME/cyberdeck/events/= (or =~/.local/share/...=):
+=$XDG_DATA_HOME/aiu-pm/events/= (or =~/.local/share/...=):
 
 - =<run-id>.jsonl= -- one JSON object per event, flushed per event.
 - =current= -- the active run id, written then renamed, never partial.
@@ -133,8 +163,8 @@ and the feed by three different routes.
 Reading a live run:
 
 #+begin_src sh
-cat ~/.local/share/cyberdeck/events/current
-tail -f ~/.local/share/cyberdeck/events/pm-*.jsonl
+cat ~/.local/share/aiu-pm/events/current
+tail -f ~/.local/share/aiu-pm/events/pm-*.jsonl
 #+end_src
 
 * Errors and exit codes
@@ -158,7 +188,7 @@ context so it can be reported.
 
 Home and =XDG_*= are read in exactly one place, =core/scope.rkt=, so
 roots cannot drift between modules. The state root is
-=$XDG_DATA_HOME/cyberdeck/=; there is one scope today (user), and a
+=$XDG_DATA_HOME/aiu-pm/=; there is one scope today (user), and a
 second one raises rather than half-working.
 
 * Further reading

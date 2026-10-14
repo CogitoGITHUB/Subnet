@@ -22,7 +22,10 @@
          "../core/scope.rkt"
          "../core/plan.rkt"
          "../backends/query.rkt"
-         "../backends/update.rkt")
+         "../backends/update.rkt"
+         "../backends/apply.rkt"
+         "../backends/activate.rkt"
+         "../backends/manifest.rkt")
 
 (provide
  (struct-out command-check)
@@ -80,9 +83,16 @@
 ;; lockfile : string?  lockfile path
 (struct command-fetch (manifest format) #:transparent)
 ;; manifest : string?  declaration manifest path
-(struct command-apply (state format) #:transparent)
-;; state  : string?  state directory the plan applies inside
-(struct command-update (state format) #:transparent)
+;; D-040. specs is the declaration directory to apply FROM. `lock` is
+;; the lockfile the declaration must agree with, or #f to skip that
+;; check. `confirm` is the human gate: #f prints the full plan and
+;; changes NOTHING, #t is the only way the machine changes. There is no
+;; third value and no way to set it from the environment.
+(struct command-apply (specs lock confirm format) #:transparent)
+;; vault, lockfile, profile : string?; update matches outdated's inputs
+;; because both answer from the same engine call, update-all: the vault
+;; supplies the truth, the lockfile the claim, the profile the pins.
+(struct command-update (vault lockfile profile format) #:transparent)
 ;; state  : string?  state directory update checks inside
 (struct command-activate (profile format) #:transparent)
 ;; profile : string?  profile directory to flip
@@ -92,11 +102,21 @@
 ;; profile : string?  profile directory; name : string?  package name
 (struct command-hold (profile name slot format) #:transparent)
 ;; profile name : string?; slot : string?  pinned version stream
-(struct command-why (name format) #:transparent)
-;; name   : string?  package name to explain
+;; D-026: `why` answers "why is this package here", and that answer is
+;; only checkable if the two documents it consulted travel with it. So
+;; both inputs are named operands, not hidden defaults: a lock and a
+;; manifest and a name. One operand (the name alone) could not say
+;; which lock it read, which makes the answer unreproducible.
+(struct command-why (lockfile manifest name format) #:transparent)
+;; lockfile, manifest : string?  the documents consulted
+;; name : string?  package name to explain
 (struct command-owner (profile rel format) #:transparent)
 ;; profile : string?  profile directory; rel : string?  relative path
-(struct command-verify (name format) #:transparent)
+;; vault, lockfile : string?; name : string?  the package to re-check.
+;; The pin is deliberately NOT an operand: a caller-supplied pin would
+;; let verify be asked to confirm something nobody ever claimed. Taking
+;; the pin from the lockfile is what makes the check mean anything.
+(struct command-verify (vault lockfile name format) #:transparent)
 ;; name   : string?  package name to re-check against its pin
 (struct command-status (profile lockfile format) #:transparent)
 ;; profile : string?  profile directory; lockfile : string?  lock path
@@ -150,8 +170,10 @@
   (list (list "plan" 1 (lambda (ops fmt) (command-plan (car ops) fmt)))
         (list "lock" 1 (lambda (ops fmt) (command-lock (car ops) fmt)))
         (list "fetch" 1 (lambda (ops fmt) (command-fetch (car ops) fmt)))
-        (list "apply" 1 (lambda (ops fmt) (command-apply (car ops) fmt)))
-        (list "update" 1 (lambda (ops fmt) (command-update (car ops) fmt)))
+        (list "apply" 1 (lambda (ops fmt) (command-apply (car ops) #f #f fmt)))
+        (list "update" 3
+              (lambda (ops fmt)
+                (command-update (car ops) (cadr ops) (caddr ops) fmt)))
         (list "activate" 1
               (lambda (ops fmt) (command-activate (car ops) fmt)))
         (list "rollback" 2
@@ -162,10 +184,14 @@
         (list "hold" 3
               (lambda (ops fmt)
                 (command-hold (car ops) (cadr ops) (caddr ops) fmt)))
-        (list "why" 1 (lambda (ops fmt) (command-why (car ops) fmt)))
+        (list "why" 3
+              (lambda (ops fmt)
+                (command-why (car ops) (cadr ops) (caddr ops) fmt)))
         (list "owner" 2
               (lambda (ops fmt) (command-owner (car ops) (cadr ops) fmt)))
-        (list "verify" 1 (lambda (ops fmt) (command-verify (car ops) fmt)))
+        (list "verify" 3
+              (lambda (ops fmt)
+                (command-verify (car ops) (cadr ops) (caddr ops) fmt)))
         (list "status" 2
               (lambda (ops fmt)
                 (command-status (car ops) (cadr ops) fmt)))
@@ -175,6 +201,37 @@
                 (command-outdated (car ops) (cadr ops) (caddr ops) fmt)))))
 
 ;; (vectorof string) -> command
+;; apply's own flags, lifted out before the fixed-arity table pass so
+;; every OTHER command keeps its exact one-table arity rule. One walk
+;; collects all three answers at once, so no flag is parsed twice and
+;; none is silently dropped.
+;;
+;; --confirm takes no value: it is a gate you cross by NAMING it, never
+;; by setting something. There is no env var and no third state, so
+;; there is no way to apply without asking for it. D-040.
+(define (parse-apply-args args)
+  (define (loop rest ops lock confirm?)
+    (cond
+      [(null? rest) (values (reverse ops) lock confirm?)]
+      [(string=? (car rest) "--confirm")
+       (when confirm?
+         (raise-pm-error 'config 'pm "duplicate --confirm flag"
+                         #:fields `(("args" . ,(string-join args " ")))))
+       (loop (cdr rest) ops lock #t)]
+      [(string=? (car rest) "--lock")
+       (when (null? (cdr rest))
+         (raise-pm-error 'config 'pm "--lock needs a lockfile path"
+                         #:fields `(("args" . ,(string-join args " ")))
+                         #:hint "pm apply <specs-dir> --lock LOCK"))
+       (when lock
+         (raise-pm-error 'config 'pm "duplicate --lock flag"
+                         #:fields `(("args" . ,(string-join args " ")))))
+       (loop (cddr rest) ops (cadr rest) confirm?)]
+      [else
+       (loop (cdr rest) (cons (car rest) ops) lock confirm?)]))
+
+  (loop args '() #f #f))
+
 (define (parse-args argv)
   (define-values (format args) (parse-format (vector->list argv)))
   (cond [(null? args) (command-help)]
@@ -186,6 +243,15 @@
         [(and (pair? args) (string=? (car args) "check"))
          (raise-pm-error 'config 'pm "check takes exactly one directory"
                          #:fields `(("args" . ,(string-join args " "))))]
+        [(and (pair? args) (string=? (car args) "apply"))
+         (define-values (ops lock confirm?)
+           (parse-apply-args (cdr args)))
+         (unless (= (length ops) 1)
+           (raise-pm-error
+            'config 'pm "apply takes exactly one specs directory"
+            #:fields `(("args" . ,(string-join args " ")))
+            #:hint "pm apply <specs-dir> [--lock FILE] [--confirm]"))
+         (command-apply (car ops) lock confirm? format)]
         [(and (pair? args) (assoc (car args) command-table))
          (define entry (assoc (car args) command-table))
          (define want (cadr entry))
@@ -225,10 +291,16 @@
                (list (command-fetch-manifest cmd)))]
         [(command-apply? cmd)
          (list "apply" (command-apply-format cmd)
-               (list (command-apply-state cmd)))]
+               (append (list (command-apply-specs cmd))
+                       (if (command-apply-lock cmd)
+                           (list (command-apply-lock cmd))
+                           '())
+                       (list (if (command-apply-confirm cmd) "yes" "no"))))]
         [(command-update? cmd)
          (list "update" (command-update-format cmd)
-               (list (command-update-state cmd)))]
+               (list (command-update-vault cmd)
+                     (command-update-lockfile cmd)
+                     (command-update-profile cmd)))]
         [(command-activate? cmd)
          (list "activate" (command-activate-format cmd)
                (list (command-activate-profile cmd)))]
@@ -247,14 +319,18 @@
                      (command-hold-slot cmd)))]
         [(command-why? cmd)
          (list "why" (command-why-format cmd)
-               (list (command-why-name cmd)))]
+               (list (command-why-lockfile cmd)
+                     (command-why-manifest cmd)
+                     (command-why-name cmd)))]
         [(command-owner? cmd)
          (list "owner" (command-owner-format cmd)
                (list (command-owner-profile cmd)
                      (command-owner-rel cmd)))]
         [(command-verify? cmd)
          (list "verify" (command-verify-format cmd)
-               (list (command-verify-name cmd)))]
+               (list (command-verify-vault cmd)
+                     (command-verify-lockfile cmd)
+                     (command-verify-name cmd)))]
         [(command-status? cmd)
          (list "status" (command-status-format cmd)
                (list (command-status-profile cmd)
@@ -302,16 +378,20 @@
     ""
     "  check DIR          validate every .rktd file, print ok lines"
     "  plan SPECDIR       show the install plan (not executable yet)"
-    "  lock LOCKFILE      show the lockfile plan (not executable yet)"
+    "  lock LOCKFILE      show what the lockfile pins"
     "  fetch MANIFEST     fetch all declared packages into the vault"
-    "  apply STATEDIR     apply a plan (not executable yet)"
+    "  apply SPECDIR      show the apply plan; changes NOTHING"
+     "  apply SPECDIR --lock LOCK --confirm   apply it (the gate)"
     "  update STATEDIR    check all packages (not executable yet)"
     "  activate PROFILE   flip the profile (not executable yet)"
     "  rollback PROFILE N repoint at generation N (not yet)"
     "  remove PROFILE PKG unlink a package (not executable yet)"
     "  hold PROFILE PKG SLOT pin a slot (not executable yet)"
-    "  why NAME           explain a package (not executable yet)"
-    "  owner PROFILE REL  who owns a path (not executable yet)"
+    "  why LOCK MAN PKG   why this package is declared"
+    "  owner PROFILE REL  who claims a relative path"
+    "  update VAULT LOCK PROFILE   check every locked package"
+    "  hold PROFILE PKG SLOT  pin a slot against updates"
+    "  verify VAULT LOCK PKG  re-check a package against its pin"
     "  verify NAME        re-check a tree (not executable yet)"
     "  status PROFILE LOCKFILE what is installed, with held marks"
     "  held PROFILE       what is held"
@@ -461,7 +541,7 @@
 ;; inside the user state root. One default, documented here, so every
 ;; command finds the same vault without being told.
 (define (default-vault-dir)
-  (build-path (roots-data (scope-roots 'user)) "cyberdeck" "vault" "vault.git"))
+  (build-path (roots-data (scope-roots 'user)) "aiu-pm" "vault" "vault.git"))
 
 ;; path-string -> jsexpr, one object per fetched package, manifest order.
 ;; pm-fetch already narrates each package and the summary is
@@ -485,6 +565,84 @@
   (define locks (lockfile-entries (read-lockfile lockfile)))
   (update-report (update-all vault locks '() profile)))
 
+;; path-string -> jsexpr, the lockfile as it stands. `lock` is a READ:
+;; it reports what is locked, it never rewrites the lock behind the
+;; user's back. Writing a lock is apply's job, and apply derives one.
+(define (lock-document lockfile)
+  (hasheq 'path lockfile
+          'entries (for/list ([e (in-list (lockfile-entries
+                                          (read-lockfile lockfile)))])
+                     (hasheq 'name (lock-entry-name e)
+                             'version (lock-entry-version e)
+                             'commit (lock-entry-commit e)
+                             'url (lock-entry-url e)
+                             'slot (lock-entry-slot e)
+                             'flags (lock-entry-flags e)
+                             'deps (lock-entry-deps e)))))
+
+;; path-string path-string string -> jsexpr, why this package is in the
+;; declaration at all. The answer is provenance, so the inputs are
+;; named in the result: a reader can see which lock and which manifest
+;; were consulted, or the answer cannot be checked later.
+(define (why-document lockfile manifest name)
+  (define locks (lockfile-entries (read-lockfile lockfile)))
+  (define mans (manifest-read manifest))
+  (define w (query-why locks mans name))
+  (hasheq 'name name
+          'lock lockfile
+          'manifest manifest
+          'verdict (first w)
+          'declared-by (second w)
+          'version (third w)
+          'files (fourth w)
+          'run (fifth w)
+          'why (sixth w)))
+
+;; path-string string -> jsexpr, who owns a relative path in the profile.
+;; A path nobody claims is a real answer, not an empty result: `owner`
+;; and `target` are both null, and that is worth printing plainly.
+(define (owner-document profile target)
+  (define c (query-owner profile target))
+  (if c
+      (hasheq 'path target 'owner (car c) 'target (cadr c))
+      (hasheq 'path target 'owner #f 'target #f)))
+
+;; ---------------------------------------------------------------------------
+;; Documents for the commands that read state. Each one names its inputs
+;; in the result, so an answer cannot be repeated against different
+;; inputs later and still look like the same answer.
+
+;; path-string -> jsexpr, the generations of a profile, oldest first,
+;; each with its provenance or an explicit null. A generation whose
+;; provenance predates provenance recording says so rather than
+;; pretending it was never recorded.
+(define (generations-document profile)
+  (for/list ([g (in-list (profile-generations profile))])
+    (define dir (first g))
+    (define prov (second g))
+    (hasheq 'path (path->string dir)
+            'run (if prov (car prov) #f)
+            'interface (if prov (cadr prov) #f)
+            'specs (if prov (caddr prov) #f))))
+
+;; path-string -> jsexpr, one lock entry, or a refusal. verify needs
+;; the pin to have come from somewhere; taking it from the lock is what
+;; makes the check meaningful rather than decorative.
+(define (verify-pin lockfile name)
+  (for/or ([e (in-list (lockfile-entries (read-lockfile lockfile)))])
+    (and (string=? (lock-entry-name e) name) (lock-entry-commit e))))
+
+;; path-string path-string string -> jsexpr, the verify verdict.
+(define (verify-document vault lockfile name)
+  (define pin (verify-pin lockfile name))
+  (unless pin
+    (raise-pm-error 'config 'pm "no such package in the lockfile"
+                    #:fields `(("name" . ,name) ("lockfile" . ,lockfile))))
+  (define v (query-verify vault "" name pin))
+  (hasheq 'name name 'pin pin
+          'verdict (first v) 'ok (second v) 'detail (third v)))
+
+;; ---------------------------------------------------------------------------
 ;; jsexpr -> string, write-json prints to the current port and returns
 ;; void; here the value is spliced into a bigger document.
 (define (json-text j)
@@ -531,9 +689,103 @@
                     (json-text (fetch-document (command-fetch-manifest cmd)))
                     "}")]
     [(command-help? cmd) (string-append envelope "}")]
+    [(command-apply? cmd)
+     (string-append
+      envelope
+      ",\"confirmed\":"
+      (json-text (if (command-apply-confirm cmd) #t #f))
+      ",\"applied\":"
+      (json-text (if (command-apply-confirm cmd) #t #f))
+      ",\"results\":"
+      (json-text (apply-document (command-apply-specs cmd)
+                                 (command-apply-lock cmd)
+                                 (command-apply-confirm cmd)))
+      "}")]
+    [(command-lock? cmd)
+     (string-append envelope
+                    ",\"lock\":"
+                    (json-text (lock-document (command-lock-lockfile cmd)))
+                    "}")]
+    [(command-why? cmd)
+     (string-append
+      envelope
+      ",\"why\":"
+      (json-text (why-document (command-why-lockfile cmd)
+                              (command-why-manifest cmd)
+                              (command-why-name cmd)))
+      "}")]
+    [(command-owner? cmd)
+     (string-append
+      envelope
+      ",\"owner\":"
+      (json-text (owner-document (command-owner-profile cmd)
+                                 (command-owner-rel cmd)))
+      "}")]
+    [(command-update? cmd)
+     (string-append
+      envelope
+      ",\"report\":"
+      (json-text (outdated-document (command-update-vault cmd)
+                                   (command-update-lockfile cmd)
+                                   (command-update-profile cmd)))
+      "}")]
+    [(command-verify? cmd)
+     (string-append
+      envelope
+      ",\"verify\":"
+      (json-text (verify-document (command-verify-vault cmd)
+                                  (command-verify-lockfile cmd)
+                                  (command-verify-name cmd)))
+      "}")]
+    [(command-hold? cmd)
+     (string-append
+      envelope
+      ",\"pinned\":"
+      (json-text (hasheq 'profile (command-hold-profile cmd)
+                         'name (command-hold-name cmd)
+                         'slot (command-hold-slot cmd)))
+      "}")]
     [else
      (raise-pm-error 'config 'pm "command not executable yet"
                      #:fields `(("command" . ,(car (command->datum cmd)))))]))
+
+;; ---------------------------------------------------------------------------
+;; pm apply (D-040)
+;;
+;; The whole human gate lives here and nowhere else. Without --confirm
+;; we derive the plan, print it, and change NOTHING, exiting 0: a
+;; preview is not a lesser success, it is the ordinary answer to "what
+;; would this do". With --confirm the same pm-apply performs it. Both
+;; paths call the SAME pm-apply, so the plan that is shown and the plan
+;; that is run cannot drift apart.
+;;
+;; The JSON document carries `confirmed` and `applied` explicitly, so a
+;; machine reader can never mistake a preview for a change.
+
+;; string? (or/c string? #f) -> (listof (list string symbol? (listof string?)))
+;; One row per package: name, outcome, and the actions it takes. The
+;; dry derivation is the single source of the plan for both paths.
+(define (apply-document specs lock)
+  (for/list ([row (in-list (pm-apply-dry specs #:lock lock))])
+    (list (car row) (cadr row) (caddr row))))
+
+;; string? (listof rows) -> list, the text preview. It says plainly that
+;; nothing changed; an empty plan printed with no such line would be
+;; the worst possible reading of nothing happening.
+(define (apply-preview specs rows)
+  (list (string-append
+         (format "~a package(s) planned from ~a, nothing changed"
+                 (length rows) specs)
+         "\n"
+         (string-join
+          (for/list ([r (in-list rows)])
+            (format "  ~a ~a~a"
+                    (car r) (cadr r)
+                    (if (null? (caddr r))
+                        ""
+                        (format " (~a action(s))" (length (caddr r))))))
+          "\n")
+         "re-run with --confirm to apply this plan")))
 
 ;; ---------------------------------------------------------------------------
 (module+ main
@@ -601,6 +853,105 @@
                       (list (format "~a ~a" (hash-ref h 'name)
                                     (hash-ref h 'slot)))))
                    0))]
+            [(command-hold? cmd)
+             ;; hold pins a slot. The pin is the whole action; there is
+             ;; no dry run to offer, because nothing is fetched or
+             ;; built — it records an intent that later updates honour.
+             (profile-hold (command-hold-profile cmd)
+                           (command-hold-name cmd)
+                           (command-hold-slot cmd))
+             (if (eq? 'json (command-hold-format cmd))
+                 (begin (display-result (list (run-command-json cmd))) 0)
+                 (begin
+                   (display-result
+                    (list (format "pinned ~a [~a] in ~a"
+                                  (command-hold-name cmd)
+                                  (command-hold-slot cmd)
+                                  (command-hold-profile cmd))))
+                   0))]
+            [(command-verify? cmd)
+             (let ([v (verify-document (command-verify-vault cmd)
+                                       (command-verify-lockfile cmd)
+                                       (command-verify-name cmd))])
+               (if (eq? 'json (command-verify-format cmd))
+                   (begin (display-result (list (run-command-json cmd))) 0)
+                   (begin
+                     (display-result (list (verify->text
+                                            (list (hash-ref v 'verdict)
+                                                  (hash-ref v 'ok)
+                                                  (hash-ref v 'detail)))))
+                     0)))]
+            [(command-update? cmd)
+             (if (eq? 'json (command-update-format cmd))
+                 (begin (display-result (list (run-command-json cmd))) 0)
+                 (begin
+                   (for ([r (in-list
+                             (outdated-document (command-update-vault cmd)
+                                                (command-update-lockfile cmd)
+                                                (command-update-profile cmd)))])
+                     (display-result (list (format "~a" r))))
+                   0))]
+            [(command-lock? cmd)
+             (if (eq? 'json (command-lock-format cmd))
+                 (begin (display-result (list (run-command-json cmd))) 0)
+                 (begin
+                   (for ([e (in-list (lockfile-entries
+                                      (read-lockfile
+                                       (command-lock-lockfile cmd))))])
+                     (display-result
+                      (list (format "~a ~a [~a] ~a"
+                                    (lock-entry-name e)
+                                    (lock-entry-version e)
+                                    (lock-entry-slot e)
+                                    (lock-entry-commit e)))))
+                   0))]
+            [(command-why? cmd)
+             (let ([w (why-document (command-why-lockfile cmd)
+                                   (command-why-manifest cmd)
+                                   (command-why-name cmd))])
+               (if (eq? 'json (command-why-format cmd))
+                   (begin (display-result (list (run-command-json cmd))) 0)
+                   (begin (display-result (list (why->text
+                                                (list (hash-ref w 'verdict)
+                                                      (hash-ref w 'declared-by)
+                                                      (hash-ref w 'version)
+                                                      (hash-ref w 'files)
+                                                      (hash-ref w 'run)
+                                                      (hash-ref w 'why)))))
+                          0)))]
+            [(command-owner? cmd)
+             (if (eq? 'json (command-owner-format cmd))
+                 (begin (display-result (list (run-command-json cmd))) 0)
+                 (begin
+                   (display-result
+                    (list (owner->text
+                           (query-owner (command-owner-profile cmd)
+                                        (command-owner-rel cmd)))))
+                   0))]
+            [(command-apply? cmd)
+             (if (command-apply-confirm cmd)
+                 (let ([rows (pm-apply (command-apply-specs cmd)
+                                       #:lock (command-apply-lock cmd)
+                                       #:cancel cancel-evt)])
+                   (if (eq? 'json (command-apply-format cmd))
+                       (begin (display-result (list (run-command-json cmd))) 0)
+                       (begin
+                         (display-result
+                          (list (format "applied ~a package(s) from ~a"
+                                        (length rows)
+                                        (command-apply-specs cmd))))
+                         0)))
+                 ;; no --confirm: derive the plan, show it, change nothing,
+                 ;; exit 0. A preview is the ordinary answer, not a lesser
+                 ;; one, so this is not an error path.
+                 (let ([rows (apply-document (command-apply-specs cmd)
+                                             (command-apply-lock cmd))])
+                   (if (eq? 'json (command-apply-format cmd))
+                       (begin (display-result (list (run-command-json cmd))) 0)
+                       (begin
+                         (display-result
+                          (apply-preview (command-apply-specs cmd) rows))
+                         0))))]
             [(command-outdated? cmd)
              (if (eq? 'json (command-outdated-format cmd))
                  (begin (display-result (list (run-command-json cmd))) 0)
@@ -730,12 +1081,9 @@
   (check-command command-fetch? #("fetch" "manifest.rktd")
                  "(\"fetch\" sexp (\"manifest.rktd\"))"
                  "{\"name\":\"fetch\",\"format\":\"sexp\",\"operands\":[\"manifest.rktd\"]}")
-  (check-command command-apply? #("apply" "state")
-                 "(\"apply\" sexp (\"state\"))"
-                 "{\"name\":\"apply\",\"format\":\"sexp\",\"operands\":[\"state\"]}")
-  (check-command command-update? #("update" "state")
-                 "(\"update\" sexp (\"state\"))"
-                 "{\"name\":\"update\",\"format\":\"sexp\",\"operands\":[\"state\"]}")
+  (check-command command-update? #("update" "vault" "pm.lock" "profile")
+                 "(\"update\" sexp (\"vault\" \"pm.lock\" \"profile\"))"
+                 "{\"name\":\"update\",\"format\":\"sexp\",\"operands\":[\"vault\", \"pm.lock\", \"profile\"]}")
   (check-command command-activate? #("activate" "profile")
                  "(\"activate\" sexp (\"profile\"))"
                  "{\"name\":\"activate\",\"format\":\"sexp\",\"operands\":[\"profile\"]}")
@@ -749,22 +1097,42 @@
                  "(\"hold\" sexp (\"profile\" \"pkg-a\" \"default\"))"
                  (string-append "{\"name\":\"hold\",\"format\":\"sexp\","
                                 "\"operands\":[\"profile\", \"pkg-a\", \"default\"]}"))
-  (check-command command-why? #("why" "pkg-a")
-                 "(\"why\" sexp (\"pkg-a\"))"
-                 "{\"name\":\"why\",\"format\":\"sexp\",\"operands\":[\"pkg-a\"]}")
+  ;; D-026: why names the lock and the manifest it read, so the answer
+  ;; can be reproduced later. Three operands, not one.
+  (check-command command-why? #("why" "pm.lock" "pm.manifest" "pkg-a")
+                 "(\"why\" sexp (\"pm.lock\" \"pm.manifest\" \"pkg-a\"))"
+                 (string-append
+                  "{\"name\":\"why\",\"format\":\"sexp\","
+                  "\"operands\":[\"pm.lock\", \"pm.manifest\", \"pkg-a\"]}"))
   (check-command command-owner? #("owner" "profile" "bin/prog")
                  "(\"owner\" sexp (\"profile\" \"bin/prog\"))"
                  "{\"name\":\"owner\",\"format\":\"sexp\",\"operands\":[\"profile\", \"bin/prog\"]}")
-  (check-command command-verify? #("verify" "pkg-a")
-                 "(\"verify\" sexp (\"pkg-a\"))"
-                 "{\"name\":\"verify\",\"format\":\"sexp\",\"operands\":[\"pkg-a\"]}")
+  (check-command command-verify? #("verify" "vault" "pm.lock" "pkg-a")
+                 "(\"verify\" sexp (\"vault\" \"pm.lock\" \"pkg-a\"))"
+                 (string-append
+                  "{\"name\":\"verify\",\"format\":\"sexp\","
+                  "\"operands\":[\"vault\", \"pm.lock\", \"pkg-a\"]}"))
   (check-command command-help? #()
                  "(\"help\" sexp ())"
                  "{\"name\":\"help\",\"format\":\"sexp\",\"operands\":[]}")
   ;; --format rides along on the new commands too.
-  (check-command command-why? #("why" "pkg-a" "--format" "json")
-                 "(\"why\" json (\"pkg-a\"))"
-                 "{\"name\":\"why\",\"format\":\"json\",\"operands\":[\"pkg-a\"]}")
+  (check-command command-why?
+                 #("why" "pm.lock" "pm.manifest" "pkg-a" "--format" "json")
+                 "(\"why\" json (\"pm.lock\" \"pm.manifest\" \"pkg-a\"))"
+                 (string-append
+                  "{\"name\":\"why\",\"format\":\"json\","
+                  "\"operands\":[\"pm.lock\", \"pm.manifest\", \"pkg-a\"]}"))
+  ;; apply's own flags: the gate parses, the datum carries it, and the
+  ;; bare form is the un-confirmed one. D-040.
+  (check-command command-apply? #("apply" "specs")
+                 "(\"apply\" sexp (\"specs\" \"no\"))"
+                 "{\"name\":\"apply\",\"format\":\"sexp\",\"operands\":[\"specs\", \"no\"]}")
+  (check-command command-apply?
+                 #("apply" "specs" "--lock" "pm.lock" "--confirm")
+                 "(\"apply\" sexp (\"specs\" \"pm.lock\" \"yes\"))"
+                 (string-append
+                  "{\"name\":\"apply\",\"format\":\"sexp\","
+                  "\"operands\":[\"specs\", \"pm.lock\", \"yes\"]}"))
   ;; Wrong arity refuses; unknown commands exit 2 (D-008).
   (check-pred config-error?
               (with-handlers ([exn:fail:pm? (lambda (e) e)])
@@ -808,8 +1176,10 @@
                 [else (loop rest acc)]))]
         [else (loop (cdr ls) acc)])))
   (define examples (api-examples api-lines))
-  ;; Sixteen commands plus --help.
-  (check-equal? (length examples) 17)
+  ;; Sixteen commands plus --help, with apply documented twice: the bare
+  ;; form and the confirmed form. Both are real invocations, so both are
+  ;; parsed and checked here (docs/API.org is a test, not prose).
+  (check-equal? (length examples) 18)
   (check-equal? (sort (remove-duplicates
                        (map (lambda (e)
                               (let ([words (string-split (car e) " ")])

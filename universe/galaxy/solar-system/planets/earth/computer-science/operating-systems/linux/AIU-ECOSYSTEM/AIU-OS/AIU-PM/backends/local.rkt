@@ -28,6 +28,14 @@
                        (#:prefix (or/c path-string? #f)
                         #:commit (or/c string? #f)
                         #:vault (or/c path-string? #f))
+                       void?)]
+  ;; action prefix commit vault -> void, one action for real. Exported
+  ;; so apply-plan performers can track and time each action; the
+  ;; interpreter stays dumb either way.
+  [perform-action! (-> action?
+                       (or/c path-string? #f)
+                       (or/c string? #f)
+                       (or/c path-string? #f)
                        void?)]))
 
 ;; ---------------------------------------------------------------------------

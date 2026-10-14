@@ -837,15 +837,31 @@ table, the escape requirement, and the three things we got wrong first.
 Cross-referenced from AGENTS.md and agents/narration.md, and added to
 the new-project checklist (enumerate blocking primitives before you
 write a blocking feature).
-** TODO S2-02 narrate the subprocess/wait path
-backends/run.rkt and backends/local.rkt: every spawn, sync, thread-wait,
-pipe close, and the status-fifo opener. Also fix the fifo hazard: a
-named pipe opened for reading with no writer blocks inside the open,
-which is the prime suspect for the 41-minute hang.
-** TODO S2-03 narrate the apply path
-backends/apply.rkt: every phase of pm-apply and every step of apply-one,
-plus each E2E case boundary and cleanup, so the next occurrence names
-itself.
+** DONE S2-02 the 41-minute hang, root-caused by measurement
+Not the deadlock it looked like. make-status-fifo! opened three ports
+per subprocess call and closed none: measured at exactly 3.0 fds per
+call, and collect-garbage reclaimed NONE of them (20 calls = +60 fds,
+unchanged after two GC passes; 120 real run-command calls = +3 every
+time). A long apply makes hundreds of calls, the descriptor table
+fills, and the process fails in ways unrelated to the code. Those are
+the 100+ leaked fds in the original evidence. Fixed with three
+close-* calls matching make-killer.
+Second real bug found on the way: channel-try-get returns the RAW LINE
+(a string), but the guard tested (pair? pending), which is always
+false. A status line arriving at the same instant as a cancel was
+therefore discarded and the tree killed anyway -- the exact opposite of
+the documented rule "finished work counts".
+backends/run.rkt 57/57 green, including a regression test that asserts
+the fd count does NOT grow across repeated calls.
+** DONE S2-03 narrate the apply path
+backends/apply.rkt: wait-for on every phase of pm-apply and every step
+of apply-one (lower-plan, clear-staging, make-staging, per-action
+perform, apply-plan itself, journal read/start/end, manifest
+read/write, writer lock, GC, vault-init, per-package preflight). New
+action-why gives each action kind its own reason, so a park names what
+was unfinished rather than an index. Every E2E case boundary now
+prints an fd/thread census before and after, so the next occurrence of
+anything similar names itself instead of going quiet.
 ** TODO S2-04 gate stage: no un-narrated blocking primitive
 New lint stage over non-test sources: every blocking primitive
 (sync/timeout, sync, thread-wait, semaphore-wait, channel-get/put,
@@ -853,6 +869,36 @@ read-line, subprocess-wait) must sit inside a wait-for, or appear in a
 named allowlist. Same shape as stage 15's audited-writers check: narrow
 until every hit is real, prove it bites, then switch on by default.
 ** TODO S2-05 E2E suite green with narration on
+The apply suite must complete. A hang now reports its last WAIT line
+instead of nothing, which is the acceptance condition even if a rare
+ordering issue survives.
+
+* PHASE S3: E-18 command wiring (cli/main.rkt)
+** DONE S3-00 pm apply wired with the D-040 gate
+=pm apply SPECDIR= derives the plan, prints it, changes NOTHING, exits 0.
+=--confirm= applies. =--lock FILE= names the lockfile the declaration
+must agree with. --confirm takes no value: crossed by naming it, no env
+var, no third state. apply's flags are lifted before the fixed-arity
+table pass so every other command keeps its exact one-table arity rule.
+JSON carries confirmed and applied, both false on a preview.
+** DONE S3-01 lock, why, owner wired (read-only)
+=lock= reports what the lockfile pins and never rewrites it. =why= now
+takes THREE operands -- lockfile, manifest, name -- because an answer
+that does not name the documents it read cannot be reproduced later.
+=owner= reports who claims a relative path, and an unclaimed path is a
+real answer (both fields null), not an empty result.
+** DONE S3-02 docs as tests caught four stale examples
+Renaming apply and why made docs/API.org wrong in four places, and the
+doc-as-test check failed the build on every one. That is the feature
+working: the doc could not rot silently. cli/main.rkt 94/94 green.
+** TODO S3-03 update, activate, rollback, remove, hold, verify
+Engine is ready for all six (backends/update.rkt, activate.rkt,
+query.rkt); the dispatch is not written yet. One command per commit.
+  / Done when: each refuses nothing and its JSON example is rendered
+  by the suite.
+  / NOT COMMITTED YET: cli/main.rkt requires backends/apply.rkt, which
+  is still uncommitted work in another lane. Committing the CLI alone
+  would land a tree that cannot load.
 The apply suite must complete. A hang now reports its last WAIT line
 instead of nothing, which is the acceptance condition even if a rare
 ordering issue survives.

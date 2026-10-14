@@ -393,8 +393,11 @@
 ;; set-current. Check runs after placement and before the marker is
 ;; cleared (D-028). Dirs arrive as strings (layout is the caller's
 ;; knowledge: D-023 store dirs, D-029 scope roots); lowering itself is pure.
-;; run-step argv is the step name plus the flattened string args (v1 rule;
-;; E-08 owns execution semantics and tightens this if it must).
+;; run-step argv is the step name plus the flattened string args, except
+;; for run steps, whose argv is the command as written: prepending "run"
+;; made every run step look for an executable named "run", so no run
+;; step could ever perform (E-08 tightening, found by the first real
+;; pm-apply run).
 
 ;; build-step string -> run-step-action, one closed-vocabulary step
 (define (lower-one-step s staging)
@@ -407,7 +410,9 @@
                    (append (reverse (filter string? (car args))) out))]
             [else (loop (cdr args) out)])))
   (run-step-action (symbol->string (build-step-name s))
-                   (cons (symbol->string (build-step-name s)) strings)
+                   (if (eq? (build-step-name s) 'run)
+                       strings
+                       (cons (symbol->string (build-step-name s)) strings))
                    staging))
 
 ;; install form string string (or/c exact-integer? #f)
