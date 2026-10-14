@@ -1,0 +1,40 @@
+#+TITLE: tv/ -- television channels for pm (D-039)
+#+AUTHOR: Shape
+
+* What this is
+Two read-only television channels over pm's JSON. tv never implements
+package-manager logic: every line on screen comes from =pm --format
+json= reshaped in Nushell, and every selection flows back as a value.
+All commands run under =shell = "nu"=.
+
+* Environment
+- =PM_ROOT= (required): the AIU-PM checkout. Channels invoke
+  =racket $PM_ROOT/cli/main.rkt ...=; without it nothing runs.
+- =PM_SPECS= (optional): specs directory for pm-specs. Default: the
+  repo's =docs/examples=.
+- =PM_PROFILE=, =PM_LOCK= (required by pm-packages): profile directory
+  and lockfile to inspect.
+
+* Channels
+- =pm-specs.toml= (f2): one line per =.rktd=, display shows the file
+  name. Previews cycle file contents and the =pm check= verdict for
+  the directory. One action: validate the directory, then return.
+- =pm-packages.toml= (f3): one line per installed package with held
+  marks. Previews cycle the package's status row and the hold list.
+  One action: show held, then return.
+- Nothing here changes the machine. There is deliberately no apply,
+  activate, rollback or remove: those stay behind pm's human
+  confirmation, outside tv.
+
+* Installing
+=scripts/install-tv-channels.nu= PRINTS the commands; it writes
+nothing. television itself is a pm package: =docs/examples/tv.rktd=
+pins v0.4.21, so =pm= fetches, builds and installs the =tv= binary
+and these channels are never lost with it.
+
+* Verified
+Each source, preview and action command above was executed against
+the repo fixtures (specs) and a synthetic profile+lock (packages)
+before commit. television itself is not installed on this machine
+yet; these channels are config, verified at the source level. The
+end-to-end install of =tv= is finish-plan step 6/7 territory.

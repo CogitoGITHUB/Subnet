@@ -9,12 +9,12 @@ description = "Browse pm package declarations with check verdicts"
 requirements = ["nu", "racket"]
 
 [source]
-command = "ls ($env.PM_SPECS | default (($env.PM_ROOT | path join docs examples)))/*.rktd | get name"
+command = "ls (($env | get -o PM_SPECS) | default (($env.PM_ROOT | path join docs examples)))/*.rktd | get name"
 shell = "nu"
 display = "{split:/:-1}"
 
 [preview]
-command = ["open {}", "^racket ([$env.PM_ROOT cli main.rkt] | path join) check (($env.PM_SPECS | default (($env.PM_ROOT | path join docs examples))))"]
+command = ["open {}", "^racket ([$env.PM_ROOT cli main.rkt] | path join) check ((($env | get -o PM_SPECS) | default (($env.PM_ROOT | path join docs examples))))"]
 shell = "nu"
 
 [ui.preview_panel]
@@ -27,6 +27,6 @@ ctrl-e = "actions:check-dir"
 
 [actions.check-dir]
 description = "Validate every spec in the specs directory, then return"
-command = "^racket ([$env.PM_ROOT cli main.rkt] | path join) check (($env.PM_SPECS | default (($env.PM_ROOT | path join docs examples))))"
+command = "^racket ([$env.PM_ROOT cli main.rkt] | path join) check ((($env | get -o PM_SPECS) | default (($env.PM_ROOT | path join docs examples))))"
 shell = "nu"
 mode = "fork"

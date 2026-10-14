@@ -79,7 +79,7 @@ pm check docs/examples --format json
 **What comes back* (real output from this repository):
 
 #+begin_src json
-{"name":"check","format":"json","operands":["docs/examples"],"ok":["ok: bats-core 1.14.0","ok: cjson 1.7.19","ok: hello 2.12.3","ok: lua 5.5.1"]}
+{"name":"check","format":"json","operands":["docs/examples"],"ok":["ok: bats-core 1.14.0","ok: cjson 1.7.19","ok: hello 2.12.3","ok: lua 5.5.1","ok: television 0.4.21"]}
 #+end_src
 
 **What the feed said* while that ran:
@@ -108,7 +108,7 @@ pm plan docs/examples --format json
 **What comes back*:
 
 #+begin_src json
-{"name":"plan","format":"json","operands":["docs/examples"],"packages":[{"deps":[],"name":"bats-core","version":"1.14.0"},{"deps":[],"name":"cjson","version":"1.7.19"},{"deps":[],"name":"hello","version":"2.12.3"},{"deps":[],"name":"lua","version":"5.5.1"}]}
+{"name":"plan","format":"json","operands":["docs/examples"],"packages":[{"deps":[],"name":"bats-core","version":"1.14.0"},{"deps":[],"name":"cjson","version":"1.7.19"},{"deps":[],"name":"hello","version":"2.12.3"},{"deps":[],"name":"lua","version":"5.5.1"},{"deps":[],"name":"television","version":"0.4.21"}]}
 #+end_src
 
 **How to read it:* =packages= is the declarations as written, in file

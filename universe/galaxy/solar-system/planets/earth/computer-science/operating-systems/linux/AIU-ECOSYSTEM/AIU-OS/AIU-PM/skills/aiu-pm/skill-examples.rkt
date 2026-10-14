@@ -52,7 +52,7 @@
   ;; or removed the skill is stale and must be updated.
   (check-equal?
    (sort (map (lambda (l) (cadr (string-split l " "))) ok-lines) string<?)
-   '("bats-core" "cjson" "hello" "lua"))
+   '("bats-core" "cjson" "hello" "lua" "television"))
 
   ;; --- example 2: pm plan --format json -------------------------------
   (define plan-doc
@@ -61,10 +61,10 @@
   (define plan-j (string->json plan-doc))
   (check-equal? (hash-ref plan-j 'name) "plan")
   (define packages (hash-ref plan-j 'packages))
-  (check-equal? (length packages) 4)
+  (check-equal? (length packages) 5)
   (check-equal?
    (sort (map (lambda (p) (hash-ref p 'name)) packages) string<?)
-   '("bats-core" "cjson" "hello" "lua"))
+   '("bats-core" "cjson" "hello" "lua" "television"))
   ;; The skill says deps is empty for all four, because pm does not
   ;; resolve a closure yet (G-01). If that ever changes, the skill is
   ;; wrong and this must fail.
