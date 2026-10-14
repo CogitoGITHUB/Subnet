@@ -1,0 +1,124 @@
+#+TITLE: Hard rules — binding across the ecosystem
+#+AUTHOR: Shape
+
+These are not guidance. Every project under `AIU-ECOSYSTEM/` obeys
+them, and each one is written so a gate can check it mechanically. A
+rule that cannot be checked is a preference; these are not.
+
+Each rule names the pm evidence that forced it, because a rule with a
+story gets kept and a rule without one gets "simplified" away.
+
+* 1. Complete and precise output, always
+
+: Every operation produces a record of what happened, in full, before
+: the next thing starts.
+
+- 1.1 **Nothing important is silent.** Every operation narrates: what,
+  why, how, UTC, monotonic duration. =why= is mandatory. See
+  =agents/narration.md=.
+- 1.2 **If it can block, it says so first.** A =WAIT= event is emitted
+  BEFORE the block and =WAIT-DONE= after. A =WAIT= with no =WAIT-DONE=
+  names the hang. See =agents/verbosity.md=. *This rule exists because
+  a 41-minute hang left no trace at all.*
+- 1.3 **Partial output is output.** A failure reports what was
+  completed, what was not, and what state it left behind. Never a bare
+  error code.
+- 1.4 **A refusal names its rule.** Every refusal says which rule
+  refused, what was rejected, and what would be accepted instead.
+- 1.5 **Refusals are not errors.** Asking "what would this do?" is a
+  legitimate operation. It returns the full answer and changes
+  nothing. Exit 0.
+- 1.6 **Flushed per record.** A killed process leaves a readable
+  prefix, not a torn record.
+
+* 2. AI integration from the first day, not bolted on
+
+: AI is a first-class operator of the system, not an afterthought.
+
+- 2.1 **The machine surface exists in the first working version.** If a
+  project has a human interface but no JSON output, the JSON output is
+  the missing half, not a nice-to-have.
+- 2.2 **Four surfaces ship together**, or the project is not done:
+  1. the engine,
+  2. an =MCP= server over it,
+  3. a =skill= file whose examples EXECUTE in the test suite,
+  4. an =OpenCode= plugin for live read-only visibility.
+- 2.3 **One JSON shape for everything.** Same envelope, same key order,
+  everywhere. Two shapes means two things drift.
+- 2.4 **The engine owns the decisions; every surface is a reader.** No
+  surface may re-implement logic.
+- 2.5 **Read is free, mutate needs a human.** Read-only tools run
+  without ceremony. State-changing tools require an explicit
+  confirmation that the ENGINE re-checks itself; approval at one layer
+  is never authorization in the engine.
+- 2.6 **Approval is never inferred.** No environment variable, no
+  config default, no "if the caller looks automated". The gate is
+  crossed by naming it, or not at all.
+- 2.7 **Plugins never mutate.** Read-only, file-watcher driven, never
+  polling, never a state-changing tool.
+- 2.8 **A skill whose examples do not run is fiction.** Examples are
+  executed by the test suite.
+
+* 3. Names say what the thing does
+
+: A name that lies costs more than a missing comment, because every
+  reader trusts it.
+
+- 3.1 **The name must state the job, not the layer or the era.**
+  =core/plan.rkt= says nothing; =lower-build-steps-into-install-actions.rkt=
+  says everything. =core/= is banned as a directory name because it
+  describes a location, not a job.
+- 3.2 **Banned names**, with no exceptions: =core=, =engine=, =main=,
+  =utils=, =helpers=, =common=, =base=, =manager=, =service=,
+  =handler=, =misc=, =stuff=, =data=, =types=, =config=.
+- 3.3 **A function name states what it DOES, not what it IS.**
+  =plan= is a noun that hides a compiler. =resolve-deps-in-order= does
+  not.
+- 3.4 **One file, one job.** If a file does two unrelated things, it is
+  two files. Splitting costs an hour once; not splitting costs every
+  future reader.
+- 3.5 **Test doubles live apart from production code.** A fake
+  implementation sitting beside real code forces every reader to know
+  which is which.
+- 3.6 **Directories are named for the job, grouped by being.**
+  Not =core/= versus =backends/=; not =services/= versus =utils/=.
+
+* 4. Nushell is the shell, and output is data
+
+: Text is for humans; structured output is for everything else.
+
+- 4.1 **Gate and scripts are Nushell.** A gate written in another
+  language is a gate nobody can read at 3am on a phone.
+- 4.2 **Every command can emit JSON.** A tool that only prints for
+  humans cannot be composed.
+- 4.3 **The JSON is the contract.** Key order is fixed and readers
+  diff on it. One envelope, always: =name=, =format=, =operands=,
+  then the result keys.
+- 4.4 **Errors are exit codes, not error objects.** A machine must
+  distinguish "empty result" from "refused", and only the exit code
+  carries that honestly. A half-formed object that looks like a
+  result is worse than a non-zero exit.
+- 4.5 **Documentation examples are executed by the tests.** A stale
+  example fails the build. *This rule caught four wrong examples in
+  one session during the pm command wiring.*
+- 4.6 **The gate prints one line.** Version, files, failed, total,
+  and the parked list. Anything else is commentary.
+- 4.7 **Gates must bite.** Prove each lint stage by breaking the rule
+  deliberately and confirming the gate goes red. A lint stage that has
+  never failed has never been tested.
+
+* 5. Finish means finished
+
+: An item is done when it is committed, tested, and documented.
+
+- 5.1 **One item, one commit.** The DONE mark and the commit hash land
+  together.
+- 5.2 **A blocked item never stops the run.** Record why, skip to the
+  next independent item, keep going.
+- 5.3 **Hard stops only:** a decision contradiction, an out-of-tree
+  edit, a missing tool.
+- 5.4 **Never commit a tree that cannot load.** If A requires B and B
+  is uncommitted, commit both or neither.
+- 5.5 **No timers.** No sleeps, no polling loops, no heartbeats. Wait
+  for an event or a completion signal. A timer is a guess about when
+  something finishes; the signal is the truth.

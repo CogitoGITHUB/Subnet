@@ -5,6 +5,33 @@ editor, TM, OS tooling). The ecosystem ReadMe states the design laws;
 this file and `agents/` turn them into build rules that survived
 contact with a real implementation (the package manager).
 
+## Read this first: `HARD-RULES.org`
+
+Those rules are **binding**, not guidance. Each one is written so a gate
+can check it mechanically. If you find yourself breaking one, either
+the rule is wrong — say so and change it deliberately, naming the old
+number — or the code is wrong. Do not quietly drift.
+
+In short:
+
+1. **Complete and precise output.** Every operation narrates what, why,
+   how, when. Anything that can block says so *before* it blocks.
+   Refusals name their rule. Asking "what would this do?" is a normal
+   operation, not an error.
+2. **AI integration from day one.** Engine, MCP server, skill, and
+   OpenCode plugin ship together or the project is not done. One JSON
+   shape for all four. Read is free; mutate needs a human, and the
+   engine re-checks the confirmation itself.
+3. **Names say what the thing does.** No `core/`, `engine`, `utils`,
+   `manager`, `handler`. A name that lies costs more than a missing
+   comment. One file, one job.
+4. **Nushell for gates and scripts. Output is data.** Every command can
+   emit JSON with a fixed key order. Errors are exit codes, not error
+   objects. Doc examples execute in the test suite, so they cannot rot.
+5. **Finish means finished.** One item one commit, DONE and the hash
+   together. A blocked item never stops the run. Never commit a tree
+   that cannot load. No timers, ever.
+
 ## The laws, operationalized
 
 1. **Nothing important is silent** → every operation narrates through
