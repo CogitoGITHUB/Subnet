@@ -48,7 +48,7 @@ function stateRoot(env) {
 }
 
 function eventsDir(env) {
-  return join(stateRoot(env), "cyberdeck", "events");
+  return join(stateRoot(env), "aiu-pm", "events");
 }
 
 // ---------------------------------------------------------------------------

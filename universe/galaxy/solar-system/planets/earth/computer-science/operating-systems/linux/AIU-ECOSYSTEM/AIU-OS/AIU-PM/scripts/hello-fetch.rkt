@@ -32,8 +32,8 @@
 (define (cache-dir)
   (roots-cache (scope-roots 'user)))
 
-(define (default-vault) (build-path (cache-dir) "cyberdeck" "hello-vault"))
-(define (default-out) (build-path (cache-dir) "cyberdeck" "hello-build"))
+(define (default-vault) (build-path (cache-dir) "aiu-pm" "hello-vault"))
+(define (default-out) (build-path (cache-dir) "aiu-pm" "hello-build"))
 
 ;; Progress and narration go to stderr so --discover can keep stdout pure.
 (define (note fmt . args)

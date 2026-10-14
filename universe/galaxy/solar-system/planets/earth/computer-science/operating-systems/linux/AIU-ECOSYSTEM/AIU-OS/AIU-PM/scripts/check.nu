@@ -705,7 +705,7 @@ def raco-exe [] {
 # never from a direct env read.
 def gate-log-dir [] {
     let base = (scope-roots | get cache)
-    let d = ($base | path join "cyberdeck" "gate")
+    let d = ($base | path join "aiu-pm" "gate")
     mkdir $d
     $d
 }

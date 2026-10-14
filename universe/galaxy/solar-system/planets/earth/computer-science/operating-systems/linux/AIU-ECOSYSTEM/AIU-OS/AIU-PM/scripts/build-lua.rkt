@@ -60,12 +60,12 @@
   (define slot (symbol->string (package-plan-slot pp)))
   (define hash12 (substring hash 0 12))
   (define pin7 (substring pin 0 7))
-  (define state (build-path (roots-data (scope-roots 'user)) "cyberdeck"))
+  (define state (build-path (roots-data (scope-roots 'user)) "aiu-pm"))
   (define versioned (build-path state "store" (package-plan-store-dir pp)))
   (define current (build-path state "store" name slot "current"))
   (define cache (roots-cache (scope-roots 'user)))
-  (define vault-git (build-path cache "cyberdeck" "vault.git"))
-  (define work (build-path cache "cyberdeck" "build"
+  (define vault-git (build-path cache "aiu-pm" "vault.git"))
+  (define work (build-path cache "aiu-pm" "build"
                            (string-append name "-" ver "-" pin7)))
   (define src (build-path work "src"))
   (define logf (build-path work "build.log"))
@@ -96,7 +96,7 @@
       (note "vault warm ~a, no fetch" (path->string vault-git))
       (let ([added (begin
                       (note "vault cold, fetching ~a" url)
-                      (make-directory* (build-path cache "cyberdeck"))
+                      (make-directory* (build-path cache "aiu-pm"))
                       (vault-init vault-git)
                       (vault-add vault-git name url #:pin pin
                                  #:on-progress report-progress

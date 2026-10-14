@@ -39,7 +39,7 @@ not try to work around it by shelling out.
 * Reading the feed
 Each run writes =<state>/events/<run-id>.jsonl=, one JSON object per
 line, plus =<state>/events/current= naming the active run. The state
-root is =$XDG_DATA_HOME/cyberdeck/= or =~/.local/share/cyberdeck/=.
+root is =$XDG_DATA_HOME/aiu-pm/= or =~/.local/share/aiu-pm/=.
 
 An event carries =run-id=, =seq=, =parent-id=, =kind=, =depth=, =who=,
 =what=, =why=, =how=, =inputs=, =outputs=, =result=, =utc=, =mono-ms=
@@ -121,8 +121,8 @@ install order" or "the dependency graph"; it is neither yet.
 anything skipped?" without guessing.
 
 #+begin_src sh
-cat ~/.local/share/cyberdeck/events/current          # the active run id
-tail -n 20 ~/.local/share/cyberdeck/events/pm-7040.jsonl
+cat ~/.local/share/aiu-pm/events/current          # the active run id
+tail -n 20 ~/.local/share/aiu-pm/events/pm-7040.jsonl
 #+end_src
 
 **Or over MCP*, which is what an AI should use (seqs start at 0, so

@@ -29,7 +29,7 @@
 
 ;; Cache dir comes from the scope seam (E-00), never from direct env reads.
 (define root (build-path (roots-cache (scope-roots 'user))
-                         "cyberdeck"
+                         "aiu-pm"
                          "probe-blob"))
 (when (directory-exists? root) (delete-directory/files root))
 (make-directory* (build-path root "up"))
