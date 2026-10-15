@@ -94,12 +94,25 @@
 ;; supplies the truth, the lockfile the claim, the profile the pins.
 (struct command-update (vault lockfile profile format) #:transparent)
 ;; state  : string?  state directory update checks inside
-(struct command-activate (profile format) #:transparent)
-;; profile : string?  profile directory to flip
+;; profile, specs, state : string?; lock : (or/c string? #f)
+;; D-041. activate needs the DECLARATION to learn each package's
+;; relative install paths, and the STATE root to find where each package
+;; was actually installed. Neither is derivable from the profile alone,
+;; so both are named operands rather than hidden defaults: a profile is
+;; a set of relative links and says nothing about where the store is.
+;; `lock` is the same optional lockfile apply takes, and it becomes
+;; provenance on the new generation.
+(struct command-activate (profile specs state lock format) #:transparent)
+;; profile, specs, state : string?; lock : (or/c string? #f)
 (struct command-rollback (profile n format) #:transparent)
 ;; profile : string?  profile directory; n : string?  generation number
-(struct command-remove (profile name format) #:transparent)
-;; profile : string?  profile directory; name : string?  package name
+;; rollback needs no declaration: a generation already exists, so
+;; repointing at one needs nothing but the profile and the number.
+(struct command-remove (profile name specs state format) #:transparent)
+;; profile, name, specs, state : string?  package to unlink
+;; remove rebuilds the generation minus one package, so it needs the
+;; same entries activate does: who is being removed, and what they
+;; installed, so the surviving generation still accounts for every path.
 (struct command-hold (profile name slot format) #:transparent)
 ;; profile name : string?; slot : string?  pinned version stream
 ;; D-026: `why` answers "why is this package here", and that answer is
@@ -174,13 +187,19 @@
         (list "update" 3
               (lambda (ops fmt)
                 (command-update (car ops) (cadr ops) (caddr ops) fmt)))
-        (list "activate" 1
-              (lambda (ops fmt) (command-activate (car ops) fmt)))
+        ;; activate is lifted out of this table by parse-args, which owns
+        ;; its --lock flag exactly as it owns apply's; the entry stays so
+        ;; `assoc` still finds the name and the arity error is ours.
+        (list "activate" 3
+              (lambda (ops fmt)
+                (command-activate (car ops) (cadr ops) (caddr ops) #f fmt)))
         (list "rollback" 2
               (lambda (ops fmt)
                 (command-rollback (car ops) (cadr ops) fmt)))
-        (list "remove" 2
-              (lambda (ops fmt) (command-remove (car ops) (cadr ops) fmt)))
+        (list "remove" 4
+              (lambda (ops fmt)
+                (command-remove (car ops) (cadr ops) (caddr ops)
+                                (cadddr ops) fmt)))
         (list "hold" 3
               (lambda (ops fmt)
                 (command-hold (car ops) (cadr ops) (caddr ops) fmt)))
@@ -209,7 +228,12 @@
 ;; --confirm takes no value: it is a gate you cross by NAMING it, never
 ;; by setting something. There is no env var and no third state, so
 ;; there is no way to apply without asking for it. D-040.
-(define (parse-apply-args args)
+;; ONE flag parser for every command that takes --lock/--confirm.
+;; apply and activate both need them, and two copies of a parser is how
+;; the two drift apart: a duplicate --lock would be refused by one and
+;; accepted by the other. `usage` is the caller's own invocation, so a
+;; refusal quotes the command the user actually typed.
+(define (parse-flag-args args usage)
   (define (loop rest ops lock confirm?)
     (cond
       [(null? rest) (values (reverse ops) lock confirm?)]
@@ -222,7 +246,7 @@
        (when (null? (cdr rest))
          (raise-pm-error 'config 'pm "--lock needs a lockfile path"
                          #:fields `(("args" . ,(string-join args " ")))
-                         #:hint "pm apply <specs-dir> --lock LOCK"))
+                         #:hint usage))
        (when lock
          (raise-pm-error 'config 'pm "duplicate --lock flag"
                          #:fields `(("args" . ,(string-join args " ")))))
@@ -245,13 +269,26 @@
                          #:fields `(("args" . ,(string-join args " "))))]
         [(and (pair? args) (string=? (car args) "apply"))
          (define-values (ops lock confirm?)
-           (parse-apply-args (cdr args)))
+           (parse-flag-args (cdr args) "pm apply <specs-dir> --lock LOCK"))
          (unless (= (length ops) 1)
            (raise-pm-error
             'config 'pm "apply takes exactly one specs directory"
             #:fields `(("args" . ,(string-join args " ")))
             #:hint "pm apply <specs-dir> [--lock FILE] [--confirm]"))
          (command-apply (car ops) lock confirm? format)]
+        [(and (pair? args) (string=? (car args) "activate"))
+         ;; activate takes the same flags as apply, so it uses the same
+         ;; parser; the only difference is that it has no --confirm,
+         ;; because profile-activate IS the act.
+         (define-values (ops lock _confirm?)
+           (parse-flag-args (cdr args)
+                            "pm activate <profile> <specs-dir> <state> --lock LOCK"))
+         (unless (= (length ops) 3)
+           (raise-pm-error
+            'config 'pm "activate takes a profile, a specs directory and a state root"
+            #:fields `(("args" . ,(string-join args " ")))
+            #:hint "pm activate <profile> <specs-dir> <state> [--lock FILE]"))
+         (command-activate (car ops) (cadr ops) (caddr ops) lock format)]
         [(and (pair? args) (assoc (car args) command-table))
          (define entry (assoc (car args) command-table))
          (define want (cadr entry))
@@ -303,7 +340,12 @@
                      (command-update-profile cmd)))]
         [(command-activate? cmd)
          (list "activate" (command-activate-format cmd)
-               (list (command-activate-profile cmd)))]
+               (append (list (command-activate-profile cmd)
+                             (command-activate-specs cmd)
+                             (command-activate-state cmd))
+                       (if (command-activate-lock cmd)
+                           (list (command-activate-lock cmd))
+                           '())))]
         [(command-rollback? cmd)
          (list "rollback" (command-rollback-format cmd)
                (list (command-rollback-profile cmd)
@@ -311,7 +353,9 @@
         [(command-remove? cmd)
          (list "remove" (command-remove-format cmd)
                (list (command-remove-profile cmd)
-                     (command-remove-name cmd)))]
+                     (command-remove-name cmd)
+                     (command-remove-specs cmd)
+                     (command-remove-state cmd)))]
         [(command-hold? cmd)
          (list "hold" (command-hold-format cmd)
                (list (command-hold-profile cmd)
@@ -383,9 +427,9 @@
     "  apply SPECDIR      show the apply plan; changes NOTHING"
      "  apply SPECDIR --lock LOCK --confirm   apply it (the gate)"
     "  update STATEDIR    check all packages (not executable yet)"
-    "  activate PROFILE   flip the profile (not executable yet)"
-    "  rollback PROFILE N repoint at generation N (not yet)"
-    "  remove PROFILE PKG unlink a package (not executable yet)"
+    "  rollback PROFILE N   repoint the profile at generation N"
+    "  activate PROF SPECS STATE  build a generation and flip [--lock F]"
+    "  remove PROF PKG SPECS STATE  build a generation minus one package"
     "  hold PROFILE PKG SLOT pin a slot (not executable yet)"
     "  why LOCK MAN PKG   why this package is declared"
     "  owner PROFILE REL  who claims a relative path"
@@ -643,6 +687,97 @@
           'verdict (first v) 'ok (second v) 'detail (third v)))
 
 ;; ---------------------------------------------------------------------------
+;; ---------------------------------------------------------------------------
+;; THE ENTRIES BUILDER.
+;;
+;; profile-activate and profile-remove both take a list of
+;;   (name source rels)
+;; where rels are the RELATIVE paths a package installed. Until this
+;; function existed, nothing in production built that list: it appeared
+;; only as hand-written literals in two tests. Every profile command
+;; therefore starts here, and there is one definition, not three.
+;;
+;; Why a lockfile alone cannot do this: a lock-entry is
+;; (name version commit url slot flags spec-hash input-hash deps) and
+;; carries NO relative paths. Those live in the spec's install form. So
+;; the walk here is spec-install-dests -- the SAME walk
+;; check-spec-conflicts and spec-install-dests already use -- rather
+;; than a second one written to agree with it later.
+;;
+;; The install directory is the store path apply writes to:
+;; <state>/store/<name>/<slot>/<version>-<hash12>/, which is exactly
+;; package-plan-store-dir under "store". Deriving it any other way would
+;; let activate disagree with apply about where a package lives.
+;;
+;; specs-dir : string?  the declaration to read
+;; state-dir : string?  the state root holding the store
+;; -> (listof (list name:string? source:path-string? rels:(listof string?)))
+
+(define (profile-entries specs-dir state-dir)
+  ;; preflight off: these packages are already installed, so there is
+  ;; nothing to resolve against the vault yet, and refusing on a missing
+  ;; source would be wrong here.
+  (define specs (wait-for 'activate "read-declaration"
+                          "no package's install paths are known until its spec is read"
+                          #:how (format "read every spec under ~a" specs-dir)
+                          (lambda ()
+                            ;; the vault argument must still be a real
+                            ;; path-string: scan-specs' contract rejects
+                            ;; "", and with preflight off it is never read
+                            ;; anyway. state-dir is the honest stand-in.
+                            (scan-specs specs-dir state-dir #:preflight #f))))
+  (define by-name
+    (for/hash ([s (in-list specs)])
+      (values (symbol->string (spec-name s)) s)))
+  (define plans
+    (wait-for 'activate "derive-plans"
+              "the store path of a package is its resolved plan's, not its spec's"
+              #:how (format "derive ~a package(s) in resolve order" (length specs))
+              (lambda ()
+                (derive-plans specs '() '()))))
+  (for/list ([pp (in-list plans)])
+    (define name (symbol->string (package-plan-name pp)))
+    (define spec (hash-ref by-name name))
+    (list name
+          (path->string
+           (build-path state-dir "store" (package-plan-store-dir pp)))
+          (spec-install-dests spec))))
+
+;; ---------------------------------------------------------------------------
+;; Documents for the three profile commands.
+;;
+;; Each returns the generation the profile points at AFTER the change, so
+;; a caller can see where it landed, not merely that it moved. That is
+;; the same rule the rest of the surface follows: report the result, not
+;; the fact of a result.
+
+;; string? string? -> path, generation N of a profile. The number arrives
+;; as a string from the command line, so it is parsed and checked HERE:
+;; profile-rollback's contract demands an exact integer, and a bad number
+;; must be a refusal naming the argument, never a contract violation from
+;; deep inside the engine.
+(define (rollback-generation profile n)
+  (define parsed (string->number n))
+  (unless (and parsed (exact-integer? parsed) (>= parsed 0))
+    (raise-pm-error 'config 'pm "generation must be a non-negative whole number"
+                    #:fields `(("generation" . ,n))
+                    #:hint "pm rollback <profile> <n>, where n is 0, 1, 2, ..."))
+  (profile-rollback profile parsed))
+
+;; string? path? -> jsexpr, the generation a flip landed on.
+(define (generation-document path)
+  (hasheq 'generation (path->string path)))
+
+;; string? string? string? (or/c string? #f) -> jsexpr, the new generation
+;; after activate, with its provenance. The lockfile travels back in the
+;; result when one was named, so a reader can tell a pinned flip from an
+;; unpinned one without re-reading the command line.
+(define (activate-document specs state lock gen)
+  (hasheq 'generation (path->string gen)
+          'specs specs
+          'state state
+          'lock (or lock #f)))
+
 ;; jsexpr -> string, write-json prints to the current port and returns
 ;; void; here the value is spliced into a bigger document.
 (define (json-text j)
@@ -743,6 +878,44 @@
       (json-text (hasheq 'profile (command-hold-profile cmd)
                          'name (command-hold-name cmd)
                          'slot (command-hold-slot cmd)))
+      "}")]
+    [(command-rollback? cmd)
+     (string-append
+      envelope
+      ",\"generation\":"
+      (json-text
+       (generation-document
+        (rollback-generation (command-rollback-profile cmd)
+                             (command-rollback-n cmd))))
+      "}")]
+    [(command-activate? cmd)
+     (string-append
+      envelope
+      ",\"activated\":"
+      (json-text
+       (activate-document
+        (command-activate-specs cmd)
+        (command-activate-state cmd)
+        (command-activate-lock cmd)
+        (profile-activate
+         (profile-entries (command-activate-specs cmd)
+                          (command-activate-state cmd))
+         (command-activate-profile cmd)
+         #:interface (command-activate-profile cmd)
+         #:specs (command-activate-specs cmd)
+         #:lock (command-activate-lock cmd))))
+      "}")]
+    [(command-remove? cmd)
+     (string-append
+      envelope
+      ",\"generation\":"
+      (json-text
+       (generation-document
+        (profile-remove
+         (command-remove-profile cmd)
+         (command-remove-name cmd)
+         (profile-entries (command-remove-specs cmd)
+                          (command-remove-state cmd)))))
       "}")]
     [else
      (raise-pm-error 'config 'pm "command not executable yet"
@@ -960,6 +1133,45 @@
                                        (command-outdated-lockfile cmd)
                                        (command-outdated-profile cmd)))
                    0))]
+            [(command-rollback? cmd)
+             (let ([gen (rollback-generation (command-rollback-profile cmd)
+                                             (command-rollback-n cmd))])
+               (if (eq? 'json (command-rollback-format cmd))
+                   (begin (display-result (list (run-command-json cmd))) 0)
+                   (begin
+                     (display-result
+                      (list (format "profile now points at ~a"
+                                    (path->string gen))))
+                     0)))]
+            [(command-activate? cmd)
+             (let ([gen (profile-activate
+                         (profile-entries (command-activate-specs cmd)
+                                          (command-activate-state cmd))
+                         (command-activate-profile cmd)
+                         #:interface (command-activate-profile cmd)
+                         #:specs (command-activate-specs cmd)
+                         #:lock (command-activate-lock cmd))])
+               (if (eq? 'json (command-activate-format cmd))
+                   (begin (display-result (list (run-command-json cmd))) 0)
+                   (begin
+                     (display-result
+                      (list (format "activated; profile now points at ~a"
+                                    (path->string gen))))
+                     0)))]
+            [(command-remove? cmd)
+             (let ([gen (profile-remove
+                         (command-remove-profile cmd)
+                         (command-remove-name cmd)
+                         (profile-entries (command-remove-specs cmd)
+                                          (command-remove-state cmd)))])
+               (if (eq? 'json (command-remove-format cmd))
+                   (begin (display-result (list (run-command-json cmd))) 0)
+                   (begin
+                     (display-result
+                      (list (format "removed ~a; profile now points at ~a"
+                                    (command-remove-name cmd)
+                                    (path->string gen))))
+                     0)))]
             [else
              (raise-pm-error 'config 'pm "command not executable yet"
                              #:fields `(("command" . ,(car (command->datum cmd)))))])))
@@ -1041,6 +1253,78 @@
                 0)
   (check-regexp-match #rx"ok: demo 1.0" (get-output-string check-out))
 
+  ;; THE ENTRIES BUILDER. This is the one function three commands depend
+  ;; on, and the list it returns is what profile-activate and
+  ;; profile-remove both consume -- so it is tested against real specs,
+  ;; not mocked. Two packages on purpose: one installs a single file, one
+  ;; installs several, because a builder that only ever sees one shape is
+  ;; not tested.
+  (define entries-dir (make-temporary-directory "pm-entries~a"))
+  (call-with-output-file (build-path entries-dir "one.rktd")
+    (lambda (port)
+      (displayln "(spec (format-version 2) (name one) (version \"1.0\")" port)
+      (displayln "  (summary \"s\")" port)
+      (displayln "  (source (git \"https://example.org/one.git\"" port)
+      (displayln "                  \"9edb3f66fd807b096b48283debdcddccfea34bad\"))" port)
+      (displayln "  (build (steps (copy \"a\" \"b\")))" port)
+      ;; a path the OTHER package does not claim: check-spec-conflicts
+      ;; refuses two packages claiming one destination, and it is right
+      ;; to. The first draft of this fixture had both claiming "b".
+      (displayln "  (install (prefix (bin \"solo\")))" port)
+      (displayln "  (license mit) (homepage \"https://example.org\"))" port)))
+  (call-with-output-file (build-path entries-dir "many.rktd")
+    (lambda (port)
+      (displayln "(spec (format-version 2) (name many) (version \"2.0\")" port)
+      (displayln "  (summary \"s\")" port)
+      (displayln "  (source (git \"https://example.org/many.git\"" port)
+      (displayln "                  \"9edb3f66fd807b096b48283debdcddccfea34bad\"))" port)
+      (displayln "  (build (steps (copy \"a\" \"b\")))" port)
+      (displayln "  (install (prefix (bin \"b\") (lib \"l\") (share \"s\")))" port)
+      (displayln "  (license mit) (homepage \"https://example.org\"))" port)))
+  (define entries-state (make-temporary-directory "pm-entries-state~a"))
+  (define built
+    (parameterize ([current-allow-file-urls #t])
+      (profile-entries entries-dir (path->string entries-state))))
+  ;; Two entries, in resolve order, each a (name source rels) triple.
+  (check-equal? (length built) 2)
+  (check-equal? (map (lambda (e) (car e)) built) '("many" "one"))
+  ;; The single-file package contributes exactly one relative path.
+  (check-equal? (map (lambda (e) (length (caddr e))) built) '(3 1))
+  ;; source is the STORE path apply writes to, so activate cannot
+  ;; disagree with apply about where a package lives. Both must start
+  ;; under <state>/store/ and carry name/slot/version-hash.
+  (for ([e (in-list built)])
+    (define src (cadr e))
+    (check-true (regexp-match? (regexp-quote (string-append (path->string entries-state)
+                                                          "/store/"))
+                               src))
+    (check-true (regexp-match? (regexp-quote (car e)) src)))
+  ;; resolve order is deterministic: many before one, and the same on
+  ;; every call, so a second build of the same declaration is identical.
+  (check-equal? built
+               (parameterize ([current-allow-file-urls #t])
+                 (profile-entries entries-dir (path->string entries-state))))
+
+  ;; A missing declaration directory is a REFUSAL naming the path, not
+  ;; a raw filesystem error. This is the case that used to escape. The
+  ;; assertion is on the MESSAGE, because a refusal that does not say
+  ;; what was wrong is not a refusal: a bare "not found" leaves the
+  ;; reader guessing which of the two inputs was the problem.
+  (define missing-specs (path->string (build-path entries-dir "nope")))
+  (with-handlers ([exn:fail?
+                   (lambda (e)
+                     (check-pred config-error? e)
+                     (check-regexp-match (regexp-quote missing-specs)
+                                         (exn-message e)))]
+                  ;; with-handlers takes predicate/handler PAIRS, so the
+                  ;; "did not refuse at all" case needs a catch-all
+                  ;; predicate rather than a bare else.
+                  [(lambda (_) #t)
+                   (lambda (_)
+                     (check-true #f "a missing specs directory must refuse"))])
+    (parameterize ([current-allow-file-urls #t])
+      (profile-entries missing-specs (path->string entries-state))))
+
   ;; A bad file prints its error and exits 3; others still checked.
   (call-with-output-file (build-path check-dir "bad.rktd")
     (lambda (port)
@@ -1085,15 +1369,30 @@
                  (string-append
                   "{\"name\":\"update\",\"format\":\"sexp\","
                   "\"operands\":[\"vault\", \"pm.lock\", \"profile\"]}"))
-  (check-command command-activate? #("activate" "profile")
-                 "(\"activate\" sexp (\"profile\"))"
-                 "{\"name\":\"activate\",\"format\":\"sexp\",\"operands\":[\"profile\"]}")
+  (check-command command-activate? #("activate" "profile" "specs" "state")
+                 (string-append
+                  "(\"activate\" sexp (\"profile\" \"specs\" \"state\"))")
+                 (string-append
+                  "{\"name\":\"activate\",\"format\":\"sexp\","
+                  "\"operands\":[\"profile\", \"specs\", \"state\"]}"))
+  ;; activate's own --lock rides along, and the lockfile becomes a named
+  ;; operand so a reader can tell a pinned flip from an unpinned one.
+  (check-command command-activate?
+                 #("activate" "profile" "specs" "state" "--lock" "pm.lock")
+                 (string-append
+                  "(\"activate\" sexp (\"profile\" \"specs\" \"state\" \"pm.lock\"))")
+                 (string-append
+                  "{\"name\":\"activate\",\"format\":\"sexp\","
+                  "\"operands\":[\"profile\", \"specs\", \"state\", \"pm.lock\"]}"))
   (check-command command-rollback? #("rollback" "profile" "3")
                  "(\"rollback\" sexp (\"profile\" \"3\"))"
                  "{\"name\":\"rollback\",\"format\":\"sexp\",\"operands\":[\"profile\", \"3\"]}")
-  (check-command command-remove? #("remove" "profile" "pkg-a")
-                 "(\"remove\" sexp (\"profile\" \"pkg-a\"))"
-                 "{\"name\":\"remove\",\"format\":\"sexp\",\"operands\":[\"profile\", \"pkg-a\"]}")
+  (check-command command-remove? #("remove" "profile" "pkg-a" "specs" "state")
+                 (string-append
+                  "(\"remove\" sexp (\"profile\" \"pkg-a\" \"specs\" \"state\"))")
+                 (string-append
+                  "{\"name\":\"remove\",\"format\":\"sexp\","
+                  "\"operands\":[\"profile\", \"pkg-a\", \"specs\", \"state\"]}"))
   (check-command command-hold? #("hold" "profile" "pkg-a" "default")
                  "(\"hold\" sexp (\"profile\" \"pkg-a\" \"default\"))"
                  (string-append "{\"name\":\"hold\",\"format\":\"sexp\","
@@ -1177,10 +1476,12 @@
                 [else (loop rest acc)]))]
         [else (loop (cdr ls) acc)])))
   (define examples (api-examples api-lines))
-  ;; Sixteen commands plus --help, with apply documented twice: the bare
-  ;; form and the confirmed form. Both are real invocations, so both are
-  ;; parsed and checked here (docs/API.org is a test, not prose).
-  (check-equal? (length examples) 18)
+  ;; Sixteen commands plus --help. Two are documented twice -- apply as
+  ;; the bare form and the confirmed form, activate with and without
+  ;; --lock -- because both variants are real invocations and a reader
+  ;; needs to see the gate spelled out. Every example here is parsed and
+  ;; checked against the real parser (docs/API.org is a test, not prose).
+  (check-equal? (length examples) 19)
   (check-equal? (sort (remove-duplicates
                        (map (lambda (e)
                               (let ([words (string-split (car e) " ")])

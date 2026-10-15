@@ -914,6 +914,32 @@ Stage 6 (one-printer) and stage 15 (audited effects) do not scan
 S2-10 was one instance found by reading; there may be more.
 
 * PHASE S3: E-18 command wiring (cli/main.rkt)
+** DONE S3-00b activate, rollback, remove wired, and the entries builder
+THE GAP: profile-activate and profile-remove both take an ENTRIES list
+  (listof (list name source rels))
+and NOTHING in production built one. It existed only as hand-written
+literals in two tests. profile-entries in cli/main.rkt is now that one
+builder, and all three commands go through it.
+A lockfile cannot do this job: a lock-entry is
+  (name version commit url slot flags spec-hash input-hash deps)
+and carries NO relative paths. Those live in the spec's install form.
+So the builder reuses spec-install-dests -- the same walk
+check-spec-conflicts uses -- rather than writing a second one to agree
+with it later. The install dir is package-plan-store-dir under "store",
+which is exactly where apply writes, so activate cannot disagree with
+apply about where a package lives.
+Operands grew for a reason, not for symmetry: activate and remove take
+the declaration and the state root because a profile is a set of
+RELATIVE links and says nothing about where the store is. rollback
+takes neither, because a generation already exists.
+One --lock/--confirm parser now serves apply AND activate instead of
+two copies that would drift on a duplicate flag.
+rollback validates its generation number in the CLI and refuses with a
+message, rather than letting a contract violation escape the engine.
+Tested against real specs, two packages, one installing a single file
+and one installing three, asserting resolve order, rel counts, and
+determinism across two builds. cli/main.rkt 108/108 (was 94).
+
 ** DONE S3-00 pm apply wired with the D-040 gate
 =pm apply SPECDIR= derives the plan, prints it, changes NOTHING, exits 0.
 =--confirm= applies. =--lock FILE= names the lockfile the declaration

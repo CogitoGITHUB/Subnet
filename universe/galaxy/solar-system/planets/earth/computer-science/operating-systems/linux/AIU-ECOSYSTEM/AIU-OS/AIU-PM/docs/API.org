@@ -78,18 +78,31 @@ Checks every locked package. Three operands, the same three =outdated=
 takes: the vault supplies the truth, the lockfile the claim, the
 profile the pins.
 
-** =pm activate default --format json=
-: {"name":"activate","format":"json","operands":["default"]}
-Flips the profile. One operand: the profile name.
+** =pm activate default specs state --format json=
+: {"name":"activate","format":"json","operands":["default", "specs", "state"]}
+Builds a generation and flips the profile to it. Three operands:
+profile, the declaration directory, and the state root. The declaration
+is needed because a package's relative install paths live in its spec,
+never in the lockfile, and the state root is needed because the
+generation links into the store beneath it.
+
+** =pm activate default specs state --lock pm.lock --format json=
+: {"name":"activate","format":"json","operands":["default", "specs", "state", "pm.lock"]}
+The same flip with a lockfile, which is recorded as the generation's
+provenance so a reader can tell a pinned flip from an unpinned one
+without re-reading the command line.
 
 ** =pm rollback default 1 --format json=
 : {"name":"rollback","format":"json","operands":["default", "1"]}
 Repoints a profile at generation 1. Two operands: profile, then the
 generation as a string.
 
-** =pm remove default lua --format json=
-: {"name":"remove","format":"json","operands":["default", "lua"]}
-Removes a package from a profile. Two operands: profile, then name.
+** =pm remove default lua specs state --format json=
+: {"name":"remove","format":"json","operands":["default", "lua", "specs", "state"]}
+Rebuilds the generation without one package. Four operands: profile,
+package name, declaration directory, state root. The declaration and
+state are the same two =activate= needs, because the surviving
+generation must still account for every path its packages installed.
 
 ** =pm hold default lua 3 --format json=
 : {"name":"hold","format":"json","operands":["default", "lua", "3"]}
