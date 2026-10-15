@@ -1,0 +1,46 @@
+#+TITLE: PROGRESS — one line per step, resume from the last green commit
+#+AUTHOR: Shape
+
+One line per step: what it was, the hash, what comes next. Appended after
+each commit, never rewritten. If this file and =git log= disagree, =git log=
+is true.
+
+Resuming: read the last line, then =plan/MOVE-ORDER.org= for the script.
+
+| step | what | hash | next |
+|------+------+------+------|
+| 1 | =plan/= and =agent/= created, 28 references updated, symlink untracked | 9fe48f8 | 2 |
+| 2 | ARCHITECTURE, NAMING-REGISTER, MOVE-ORDER written before any move | 896d82c | 3 |
+| 3 | split =core/plan.rkt= into actions/hash/derive/lower/conflicts + facade | pending | 4 |
+| 4 | split =backends/run.rkt= into spawn, fifo, drain, kill, wait, progress | pending | 5 |
+| 5 | =core/spec-read.rkt= facade already split; verify and record | pending | 6 |
+| 6 | split =backends/build.rkt= | pending | 7 |
+| 7 | split =backends/activate.rkt= | pending | 8 |
+| 8 | split =cli/main.rkt= into cli/documents/dispatch | pending | 9 |
+| 9 | =jobs.rkt= and =vault.rkt= move WHOLE, unsplit | pending | 10 |
+| 10 | =core/*.rkt= into =package-manager/src/<area>/= | pending | 11 |
+| 11 | =backends/*.rkt= into src areas; fake/dry-run into test-doubles | pending | 12 |
+| 12 | =cli/= and =mcp/= into =src/entry/= | pending | 13 |
+| 13 | =scripts/= into =gate/= and =tools/= | pending | 14 |
+| 14 | inline tests into =package-manager/tests/= mirroring src | pending | 15 |
+| 15 | =gate/check.nu= learns the new root and every allowlist path | pending | 16 |
+| 16 | identifier renames from NAMING-REGISTER | pending | 17 |
+| 17 | gate stage 17, banned words, file:line | pending | 18 |
+| 18 | gate stage 18, one-way dependency, file:line | pending | 19 |
+| 19 | mirror feature in =src/mirror/= | pending | 20 |
+| 20 | per-area README.org files | pending | 21 |
+| 21 | ENGINE-CHECKLIST entries reconciled into OPEN-DECISIONS | pending | 22 |
+| 22 | full verification, prove stages 17/18 bite, final gate, push | pending | — |
+
+* Rule per step
+No test runs between steps. =read-check= on the touched files, =raco make= on
+the touched files and their direct dependents, then the commit. If =raco make=
+is red, fix it before moving on: a compile error is not a test.
+
+* The one tightening of that rule
+A split is the only step where a wrong-but-compiling result is invisible until
+the very end, when the tree has moved far and localising the fault is
+expensive. So each split also runs =raco test= on the files it produced and
+checks the total against the count from before the split. That is a compile
+plus identity check, not a gate run, and it is why the split steps are the only
+ones that do it.

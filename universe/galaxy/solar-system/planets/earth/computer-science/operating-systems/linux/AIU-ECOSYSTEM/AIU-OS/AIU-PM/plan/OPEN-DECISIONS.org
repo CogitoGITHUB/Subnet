@@ -248,15 +248,21 @@ intent, and each has a testable "done when" here.
   deleted.
 - *Decision:* =(DEFAULT: none needed; each has a stated done-when.)=
 
-* Phase R: restructure and rebrand -- NOT IN THIS RUN
-Listed only, as instructed. R-01 inventory (delivered:
-=plan/FILE-INVENTORY.org=), R-02 naming proposals, R-03 apply the chosen
-renames, R-04 move or merge thin files, R-05 rebrand to AIU-PM.
-Note: the directory has already been moved to =AIU-ECOSYSTEM/AIU-PM=
-and most of R-05 is therefore already done by that move. The remaining
-R-05 work is the in-tree naming and the docs titles.
-- *Decision:* =(DEFAULT: leave all of Phase R until the owner says
-  otherwise.)=
+* Phase R: restructure and rebrand -- THIS IS THE RUN
+Corrected in place, because this run is Phase R and leaving the heading
+saying NOT IN THIS RUN would make the file lie to the next reader.
+
+R-01 inventory is delivered (=plan/FILE-INVENTORY.org=). R-02 naming
+proposals are delivered (=plan/NAMING-REGISTER.org=, 53 files). R-03
+apply the chosen renames, R-04 move or merge thin files, and the
+remaining R-05 (the in-tree naming and the doc titles) are the steps
+this run executes, in the order =plan/MOVE-ORDER.org= fixes.
+
+The directory move to =AIU-ECOSYSTEM/AIU-OS/AIU-PM= already happened,
+so the "rename to AIU-PM" half of R-05 is done; what is left is that
+every file NAME states its job.
+- *Decision:* =(DEFAULT: execute R-03, R-04 and the rest of R-05 now,
+  one commit per step, following =plan/MOVE-ORDER.org=.)=
 
 * Carried over from the deleted checklist
 Four owed items lived only in =docs/ENGINE-CHECKLIST.org=, which is
@@ -351,3 +357,54 @@ act for some reason other than a bad =#:cwd=, the reader still parks in
 child now goes through the wait door (=wait-for=), so such a block is
 narrated rather than silent, and the cwd guard removes the one path
 observed in practice.
+
+- *Recorded as ACCEPTED-MITIGATED* at the run.rkt split (MOVE-ORDER step
+  4). The cause is fixed and measured; the belt-and-braces holder is
+  impossible in Racket 9.3 and was removed rather than shipped
+  pretending. It is not a live bug and it is not silently dropped.
+
+* The mirror's two open questions, decided
+
+** Where the mirror repo lives
+- *Question:* a new XDG config root, or a sibling of the vault?
+- *Options:* (a) new XDG root, =<state>/mirror-repo=; (b) sibling of
+  the vault, so it sits next to the thing it backs up; (c) inside the
+  vault, as a subdirectory.
+- *Recommendation:* (b). The vault is the one location that is already
+  git-owned, already a sibling of the store, and already on the same
+  volume as the state it backs up. A second XDG root adds a place to
+  configure for no gain.
+- *(DEFAULT: (b), the mirror repo is a sibling of the vault under the
+  state root, overridable by =PM_MIRROR_PATH= exactly as the vault is
+  overridable by =PM_VAULT=. Not configurable means SKIP, never error.)*
+- *Rejected:* (c). Putting a git repo inside another git repo is how
+  you get a backup that silently never gets pushed, because the outer
+  repo treats it as an ordinary directory.
+
+** Does a push retry block the caller
+- *Question:* block in the wait door, or run detached and record the
+  result?
+- *Options:* (a) block, narrated; (b) detached, with a result record;
+  (c) neither, fail the fetch.
+- *Recommendation:* (a). D-015 forbids timers, and a detached push needs
+  somewhere to record its result and something to wake it; that is a
+  second queue, and =P-03= already showed that a queue is a second way
+  to be stuck.
+- *(DEFAULT: (a), the push runs inside =wait-for= with a non-blank why,
+  and a push failure warns and leaves the commit local for the next run
+  to retry. A mirror failure NEVER fails the fetch that preceded it.)*
+- *Rejected:* (b) and (c), for the reasons above and because (c)
+  violates the mirror's first invariant.
+
+* A fifth module in the plan split, and why
+MOVE-ORDER step 3 named four new modules for =core/plan.rkt=. Reality
+needs five. The twelve action structs plus =plan= and =package-plan=
+must live somewhere that is NOT the facade, because the facade
+re-provides them: a module that re-provides cannot also be required by
+what it re-provides without a cycle, and Racket rejects cycles at
+compile time rather than at run time. So the data model gets its own
+=plan-actions.rkt= and the four job modules sit above it.
+- *Decision:* =(DEFAULT: five modules. A module with no code of its own is
+  not a violation of one-file-one-job; a module with two is.)= The
+  amendment is recorded in =plan/MOVE-ORDER.org= in the same commit that
+  makes it true.
