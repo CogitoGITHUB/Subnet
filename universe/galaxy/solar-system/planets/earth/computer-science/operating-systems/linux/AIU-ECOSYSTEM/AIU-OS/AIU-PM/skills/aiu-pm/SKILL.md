@@ -181,4 +181,3 @@ evidence that a step did not happen.
 - =docs/OPEN-DECISIONS.org= -- everything not finished, with the
   defaults being used
 - =docs/DECISIONS.org= -- why things are the way they are
-- =docs/ENGINE-CHECKLIST.org= -- the build state of each item

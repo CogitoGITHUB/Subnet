@@ -25,8 +25,9 @@ Two properties drive every design decision:
 **Status: the engine is not finished.** The gate is green and the
 pieces are real, but most commands still refuse with =command not
 executable yet= rather than pretending to work. See
-=docs/ENGINE-CHECKLIST.org= for exactly what is done, what is partial
-and what is still owed. Nothing here claims more than it does.
+=docs/OPEN-DECISIONS.org= for what is still owed and what state each
+capability is in, and =docs/DECISIONS.org= for why each thing is the way
+it is. Nothing here claims more than it does.
 
 * Quick start
 
@@ -104,7 +105,7 @@ never mistake one for the other.
 | =core/= | pure: spec reading, the build vocabulary, plans, errors, scope, narration |
 | =backends/= | effects: git, vault, store, build, apply, activate, run |
 | =cli/= | =pm= itself: argument parsing, =--format json/sexp=, dispatch |
-| =docs/= | the contract, the decisions, the API, the checklist |
+| =docs/= | the contract, the decisions, the API, what is still owed |
 | =scripts/= | the gate and dev scripts, all Nushell |
 | =ecosystems/= | package-kind templates (=make-c=, =cargo=) |
 | =mcp/= | the MCP server: JSON-RPC over stdio |
@@ -195,8 +196,8 @@ second one raises rather than half-working.
 
 - =0.FOUNDATION.org= -- the contract
 - =docs/DECISIONS.org= -- the decision log, newest first (D-036 and up)
-- =docs/ENGINE-CHECKLIST.org= -- what is done, partial or owed
+- =docs/OPEN-DECISIONS.org= -- what is done, partial or owed
 - =docs/API.org= -- the JSON surface, with live examples
 - =docs/ERRORS.org=, =docs/GLOSSARY.org=, =docs/LESSONS.org=
-- =docs/SPEC-NEUTRAL.org=, =docs/PKGDEF-DESIGN.org=, =docs/VAULT-SPEC.org=
+- =docs/SPEC-NEUTRAL.org=, =docs/VAULT-SPEC.org=
 - =docs/VERBOSE.org= -- the narration rules and the output inventory

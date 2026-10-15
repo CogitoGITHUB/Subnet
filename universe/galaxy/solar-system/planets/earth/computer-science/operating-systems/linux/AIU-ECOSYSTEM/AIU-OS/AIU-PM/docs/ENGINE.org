@@ -4,9 +4,9 @@
 * Status
 Final design. Nothing here is implemented yet: =plan/= and =lock/= exist
 only as =core/plan.rkt= and =backends/dry-run.rkt=. The work order is
-docs/ENGINE-CHECKLIST.org, which is the file a resuming session reads
-first. No item in this file is open; anything still unconfirmed became a
-checklist item to inspect, not a question parked here.
+docs/OPEN-DECISIONS.org, which is the file a resuming session reads
+first. No item in this file is open; anything still unconfirmed became an
+item in that file to inspect, not a question parked here.
 
 * Rules
 These hold for every module below.
@@ -164,7 +164,7 @@ in two slots plan to two store dirs.
   =run-step-action= (D-025).
 - =verify-action= is deleted from this module (D-025).
 - Confirm nothing else in the tree already derives a plan from a spec
-  before writing the derivation (checklist E-04).
+  before writing the derivation (was checklist item E-04).
 
 * core/lock.rkt
 : Purpose
@@ -374,7 +374,8 @@ Follows docs/DEV-MODE.org unchanged: a dev checkout appears through the
 same =<pkg>/current= link pointed at the checkout, =pm status= flags it
 =dev=, activation treats dev and normal packages identically, and
 =update --all= lists dev packages as skipped without changing its exit
-code. Dev mode is the last engine item (checklist E-19).
+code. Dev mode is the last engine item (was checklist item E-19; see
+docs/OPEN-DECISIONS.org).
 
 * Partial-failure law (G-08)
 When a run dies halfway, the law is RESUME for apply, ATOMIC for the

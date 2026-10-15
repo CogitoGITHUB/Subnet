@@ -2,8 +2,9 @@
 #+AUTHOR: Shape
 
 * SUPERSEDED (D-018): moved here from PKGDEF-REQUIREMENTS.org (2b, 2d)
-* and PKGDEF-DESIGN.org (examples). The neutral spec (STEP 2) replaces
-* these; this file is history only.
+* and PKGDEF-DESIGN.org (examples; that file is since deleted, recover
+* it with =git log -- docs/PKGDEF-DESIGN.org=). The neutral spec (STEP 2)
+* replaces these; this file is history only.
 
 * 2b. Eight real Emacs packages (simple to hard)
 1. Single-file (htmlize): one .el, no deps, byte-compile, trivial wiring.

@@ -2,16 +2,19 @@
 #+AUTHOR: Shape
 
 * What this is
-Every item that is not DONE, read out of =docs/ENGINE-CHECKLIST.org=,
-with the one thing that would unblock it. Items needing an owner
-decision carry the question, the options, a recommendation and the
-DEFAULT that will be used if nobody says otherwise.
+Every item that is not DONE, with the one thing that would unblock it.
+Items needing an owner decision carry the question, the options, a
+recommendation and the DEFAULT that will be used if nobody says
+otherwise.
 
-Defaults are marked =(DEFAULT: ...)= in the checklist when they get
-built, so a defaulted item is visible afterwards, not just before.
+Defaults are marked =(DEFAULT: ...)= here when they get built, so a
+defaulted item is visible afterwards, not just before.
 
-Read =docs/ENGINE-CHECKLIST.org= for the item text. This file is the
-index and the decision surface.
+There is no per-item checklist any more: docs/ENGINE-CHECKLIST.org is
+deleted, DONE history included. This file is the index, the item text
+and the decision surface all at once, so every owed item is here. What
+was DONE lives in the D-number log and in =git log=, not in a second
+list that drifts.
 
 ** The v1 bar
 "pm fetches, pins, builds, installs, updates, rolls back, and supports
@@ -191,8 +194,8 @@ is mapped to that sentence in the last column of the first table.
   the exemption is a named list in the gate.
 
 * Phase G: the structural spine
-All twelve are declared in the checklist with a "done when". The ones
-that genuinely need an owner decision:
+All twelve are declared in D-038. The ones that genuinely need an
+owner decision:
 
 ** G-01 dependency resolution and path conflicts
 - *Question:* when two packages claim one path, does pm fail, or is
@@ -225,7 +228,7 @@ that genuinely need an owner decision:
 
 ** The other nine (G-02, G-03, G-04, G-06, G-07, G-08, G-10, G-11,
 G-12) need no owner decision. Each is implementation of a declared
-intent, and each has a testable "done when" in the checklist.
+intent, and each has a testable "done when" here.
 
 * Phase S: security
 ** S-01 =core/security.rkt=, the pure policy
@@ -246,14 +249,48 @@ intent, and each has a testable "done when" in the checklist.
 - *Decision:* =(DEFAULT: none needed; each has a stated done-when.)=
 
 * Phase R: restructure and rebrand -- NOT IN THIS RUN
-Listed only, as instructed. R-01 inventory, R-02 naming proposals,
-R-03 apply the chosen renames, R-04 move or merge thin files, R-05
-rebrand to AIU-PM per =docs/REBRAND.org=.
+Listed only, as instructed. R-01 inventory (delivered:
+=docs/FILE-INVENTORY.org=), R-02 naming proposals, R-03 apply the chosen
+renames, R-04 move or merge thin files, R-05 rebrand to AIU-PM.
 Note: the directory has already been moved to =AIU-ECOSYSTEM/AIU-PM=
 and most of R-05 is therefore already done by that move. The remaining
 R-05 work is the in-tree naming and the docs titles.
 - *Decision:* =(DEFAULT: leave all of Phase R until the owner says
   otherwise.)=
+
+* Carried over from the deleted checklist
+Four owed items lived only in =docs/ENGINE-CHECKLIST.org=, which is
+deleted. They are owed work, not DONE history, so their text moves here
+verbatim. Recover the full checklist (DONE history included) with
+=git log -- docs/ENGINE-CHECKLIST.org=.
+
+** TODO S2-04 gate stage: no un-narrated blocking primitive
+New lint stage over non-test sources: every blocking primitive
+(sync/timeout, sync, thread-wait, semaphore-wait, channel-get/put,
+read-line, subprocess-wait) must sit inside a wait-for, or appear in a
+named allowlist. Same shape as stage 15's audited-writers check: narrow
+until every hit is real, prove it bites, then switch on by default.
+
+** TODO S2-05 E2E suite green with narration on
+The apply suite must complete. A hang now reports its last WAIT line
+instead of nothing, which is the acceptance condition even if a rare
+ordering issue survives.
+
+** TODO S2-11 close the lint blind spot on test submodules
+Stage 6 (one-printer) and stage 15 (audited effects) do not scan
+(module+ test ...) bodies, so a test can break either rule silently.
+S2-10 was one instance found by reading; there may be more.
+
+** TODO S3-03 update, activate, rollback, remove, hold, verify
+Engine is ready for all six (backends/update.rkt, activate.rkt,
+query.rkt); the dispatch is not written yet. One command per commit.
+  / Done when: each refuses nothing and its JSON example is rendered
+  by the suite.
+  / NOT COMMITTED YET: cli/main.rkt requires backends/apply.rkt, which
+  is still uncommitted work in another lane. Committing the CLI alone
+  would land a tree that cannot load.
+(The checklist repeated the S2-05 acceptance paragraph under this item;
+the copy is not carried twice.)
 
 * Anything else missing for the v1 bar
 

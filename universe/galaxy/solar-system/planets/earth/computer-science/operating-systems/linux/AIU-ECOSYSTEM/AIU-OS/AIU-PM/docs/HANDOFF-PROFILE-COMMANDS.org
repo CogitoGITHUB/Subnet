@@ -181,8 +181,7 @@ Also available and already exported: =profile-gc=,
 4. The gate: =CYBERDECK_STAGES=6 ... scripts/check.nu --changed= → 0 violations
 5. =docs/API.org= has an example for each new command, matching the real
    output exactly
-6. =docs/ENGINE-CHECKLIST.org= gains a DONE entry naming your commands
-7. One commit with explicit paths.
+6. One commit with explicit paths, its message naming the command.
 
 * 10. Suggested order
 
