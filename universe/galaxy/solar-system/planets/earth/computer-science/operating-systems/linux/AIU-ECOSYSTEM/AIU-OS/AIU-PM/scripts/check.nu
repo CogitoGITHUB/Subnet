@@ -83,8 +83,6 @@ const MAX_LINE = 102
 const FILE_PARKED = [
   ["backends/vault.rkt"
    "large-blob test fails, 851 git processes, 470s, see P-01"]
-  ["core/vault-lock.rkt"
-   "re-acquire blocks in a shared process, see P-01"]
   ["backends/jobs.rkt"
    "e2e: worker race and file:// allowance cannot cross processes; needs production design (P-03)"]
 ]
@@ -850,7 +848,7 @@ def log-path [f tag] {
 # cannot disagree about format.
 #
 # One process, never one per file. A file that hangs here is a test
-# isolation bug to fix (see ENGINE-CHECKLIST), not a reason for a tier.
+# isolation bug to fix (see docs/OPEN-DECISIONS.org), not a reason for a tier.
 # D-015: no timer, no timeout, no sleep; the wait ends on process exit.
 def run-runner [files] {
     let racketx = ($nu.home-dir | path join "opt" "racket-full" "bin" "racket")

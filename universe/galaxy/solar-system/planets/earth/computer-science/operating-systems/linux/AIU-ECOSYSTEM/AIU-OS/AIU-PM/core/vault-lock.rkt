@@ -145,8 +145,13 @@
                 'ran-again)
 
   ;; Re-entrant attempt in the same process fails at once naming the holder.
-  ;; PARKED at file level (see ENGINE-CHECKLIST P-01): this file never runs
-  ;; in the gate.
+  ;; This is a designed refusal, not a hang: both exclusions are tried ONCE
+  ;; and never waited on, so a re-entry cannot block. It used to be PARKED
+  ;; because of a hang that had nothing to do with locking -- the FIFO child
+  ;; was handed a require naming a path that did not exist, died on load
+  ;; before opening the write end, and parked this process in (read-line).
+  ;; Fixed by resolving the module path with define-runtime-path, so the
+  ;; file runs in the gate again. See 8d97368.
   (define reentry-error
     (with-handlers ([exn:fail:pm? (lambda (e) e)])
       (call-with-vault-lock vault-dir "outer" "outer op"
