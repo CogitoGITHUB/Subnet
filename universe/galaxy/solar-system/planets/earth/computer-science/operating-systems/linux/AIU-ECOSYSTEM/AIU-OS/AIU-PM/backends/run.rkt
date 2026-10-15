@@ -340,13 +340,33 @@
         ;; The read end opens in its own thread: opening blocks until the
         ;; wrapper's first act, and the wrapper is guaranteed to act (it
         ;; opens before anything else can fail).
+        ;; The opener is the ONLY thing that ever puts on line-ch, and the
+        ;; only other wake source in wait-command is cancel. So when there
+        ;; is no cancel, this thread is the entire wake path: if it
+        ;; raises -- the status file was never created, or cannot be
+        ;; opened -- nothing wakes the sync and the process parks
+        ;; forever, silently, which from the outside is indistinguishable
+        ;; from a slow program. That is the silent block the law forbids.
+        ;;
+        ;; So every exit goes on the channel. decide() maps anything that
+        ;; is not EXIT:n to 'died, and the caller raises, so an opener
+        ;; failure becomes a reported error instead of an eternal wait.
+        ;; The comment above used to claim the wrapper is guaranteed to
+        ;; open the file before anything can fail; that assumption is
+        ;; exactly what let this park.
         (define opener
           (thread
            (lambda ()
-             (define in (open-input-file status-path))
-             (define line (read-line in 'any))
-             (close-input-port in)
-             (channel-put line-ch line))))
+             (with-handlers
+                 ([exn?
+                   (lambda (e)
+                     (channel-put line-ch
+                                  (string-append "OPENER-FAILED: "
+                                                 (exn-message e))))])
+               (define in (open-input-file status-path))
+               (define line (read-line in 'any))
+               (close-input-port in)
+               (channel-put line-ch line)))))
         (define outcome
           (with-handlers ([exn:break?
                            (lambda (e)
@@ -496,13 +516,33 @@
                            '("spawned" "tree killed")
                            '("no result" "temp files removed"))))
       (parameterize ([current-custodian cust])
+        ;; The opener is the ONLY thing that ever puts on line-ch, and the
+        ;; only other wake source in wait-command is cancel. So when there
+        ;; is no cancel, this thread is the entire wake path: if it
+        ;; raises -- the status file was never created, or cannot be
+        ;; opened -- nothing wakes the sync and the process parks
+        ;; forever, silently, which from the outside is indistinguishable
+        ;; from a slow program. That is the silent block the law forbids.
+        ;;
+        ;; So every exit goes on the channel. decide() maps anything that
+        ;; is not EXIT:n to 'died, and the caller raises, so an opener
+        ;; failure becomes a reported error instead of an eternal wait.
+        ;; The comment above used to claim the wrapper is guaranteed to
+        ;; open the file before anything can fail; that assumption is
+        ;; exactly what let this park.
         (define opener
           (thread
            (lambda ()
-             (define in (open-input-file status-path))
-             (define line (read-line in 'any))
-             (close-input-port in)
-             (channel-put line-ch line))))
+             (with-handlers
+                 ([exn?
+                   (lambda (e)
+                     (channel-put line-ch
+                                  (string-append "OPENER-FAILED: "
+                                                 (exn-message e))))])
+               (define in (open-input-file status-path))
+               (define line (read-line in 'any))
+               (close-input-port in)
+               (channel-put line-ch line)))))
         (define outcome
           (with-handlers ([exn:break?
                            (lambda (e)
