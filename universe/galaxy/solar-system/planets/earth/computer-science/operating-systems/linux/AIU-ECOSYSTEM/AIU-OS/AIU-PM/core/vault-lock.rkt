@@ -128,6 +128,7 @@
 (module+ test
   (require rackunit
            racket/file
+           racket/runtime-path
            racket/system
            "errors.rkt")
 
@@ -198,13 +199,17 @@
   ;; flock/fcntl -- a kill -9 leaves it stale by design, and the owner
   ;; record names the dead holder).
   (define holder-path (build-path test-root "holder.rkt"))
-  ;; Absolute path of this module, for the holder child's require: derived
-  ;; from the load directory so the suite runs from anywhere.
-  (define this-mod
-    (path->string
-     (simplify-path
-      (build-path (or (current-load-relative-directory) (current-directory))
-                  "vault-lock.rkt"))))
+  ;; Absolute path of this module, for the holder child's require.
+  ;; define-runtime-path, NOT current-load-relative-directory: that
+  ;; parameter is bound only while a file is being LOADED, so under raco
+  ;; test it names this directory, but the shared runner loads every file
+  ;; in ONE process from the repo root, where it is #f. The fallback then
+  ;; built <repo-root>/vault-lock.rkt, which names no file: the holder
+  ;; child died on load, no writer ever reached up.fifo, and the parent
+  ;; parked on that read for the rest of the run. The file was parked as
+  ;; a lock bug and was in fact failing on this path.
+  (define-runtime-path this-mod-path "vault-lock.rkt")
+  (define this-mod (path->string (simplify-path this-mod-path)))
   (define up-path (build-path test-root "up.fifo"))
   (define block-path (build-path test-root "block.fifo"))
   (define die-path (build-path test-root "die.fifo"))
