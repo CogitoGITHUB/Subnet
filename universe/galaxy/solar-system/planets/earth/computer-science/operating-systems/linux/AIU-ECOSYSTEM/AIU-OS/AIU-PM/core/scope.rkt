@@ -13,6 +13,7 @@
 ;; only: store/profile layout is owned by E-07/E-13, not by this seam.
 
 (require racket/contract/base
+         racket/runtime-path
          racket/string
          "errors.rkt")
 
@@ -23,6 +24,14 @@
   [scope-roots (-> symbol? roots?)]
   ;; (listof path-string) -> (listof path), the spec search order
   [spec-search-roots (-> (listof path-string?) (listof path?))]))
+
+;; The checkout dir, resolved from THIS FILE's location rather than the
+;; cwd. `raco test core/scope.rkt` sets the cwd to core/, so a path built
+;; from (current-directory) named core/scripts/env.nu, which does not
+;; exist, and the nu subprocess failed with module_not_found. A path that
+;; claims not to depend on the cwd has to be built from something that is
+;; not the cwd.
+(define-runtime-path checkout-dir "..")
 
 ;; ---------------------------------------------------------------------------
 ;; Roots (D-029: store, profile, state, config, cache come from one scope;
@@ -175,7 +184,7 @@
   ;; The checkout dir without a trailing slash, so the absolute `use`
   ;; path below never depends on the cwd nu starts in.
   (define here-dirs
-    (let ((d (path->string (current-directory))))
+    (let ((d (path->string (simplify-path checkout-dir))))
       (if (and (> (string-length d) 1)
                (string-suffix? d "/"))
           (substring d 0 (- (string-length d) 1))
@@ -229,18 +238,18 @@
    (parameterize ([current-environment-variables ev-full])
      (map path->string (spec-search-roots '("/x/specs" "/y/specs"))))
    '("/x/specs" "/y/specs"
-     "/tmp/pm-scope/config/cyberdeck/specs"
-     "/tmp/pm-scope/data/cyberdeck/specs"))
+     "/tmp/pm-scope/config/aiu-pm/specs"
+     "/tmp/pm-scope/data/aiu-pm/specs"))
   ;; Duplicates collapse, order kept; empty explicit still yields the two.
   (check-equal?
    (parameterize ([current-environment-variables ev-full])
      (map path->string
           (spec-search-roots '("/x/specs" "/x/specs"))))
    '("/x/specs"
-     "/tmp/pm-scope/config/cyberdeck/specs"
-     "/tmp/pm-scope/data/cyberdeck/specs"))
+     "/tmp/pm-scope/config/aiu-pm/specs"
+     "/tmp/pm-scope/data/aiu-pm/specs"))
   (check-equal?
    (parameterize ([current-environment-variables ev-full])
      (map path->string (spec-search-roots '())))
-   '("/tmp/pm-scope/config/cyberdeck/specs"
-     "/tmp/pm-scope/data/cyberdeck/specs")))
+   '("/tmp/pm-scope/config/aiu-pm/specs"
+     "/tmp/pm-scope/data/aiu-pm/specs")))
