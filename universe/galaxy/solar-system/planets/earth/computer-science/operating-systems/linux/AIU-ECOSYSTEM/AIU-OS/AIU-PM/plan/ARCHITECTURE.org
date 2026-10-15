@@ -1,0 +1,119 @@
+#+TITLE: ARCHITECTURE — areas, what each holds, and which way depends
+#+AUTHOR: Shape
+
+* The law
+Dependencies point ONE WAY. A lower area never requires a higher one.
+An =A= that is lower may be required by anything above it; an =A= that
+is higher may require anything below it, never the reverse.
+
+The ordering, lowest first:
+
+  1. =errors=      the error type and how it renders
+  2. =narration=   the event schema and the wait door
+  3. =machine=     directories, file locks, cancellation
+  4. =security=    policy predicates
+  5. =spec=        the declaration format and its parser
+  6. =git=         repositories, mirrors, export
+  7. =process=     spawning, pipes, status, kill trees
+  8. =store=       packages, manifests, lockfiles, queries
+  9. =queue=       jobs, workers, the journal
+  10. =build=      build steps and their executors
+  11. =install=    apply, activate, generations, profiles
+  12. =mirror=     backup of declarations and sources
+  13. =entry=      CLI parsing, documents, dispatch, MCP
+
+=process= sits below =git= because every git call spawns a process. The
+two known fifo hangs lived in =process=, and =git/= is where the mirror
+feature must call for its work.
+
+* Why =process= is low and not lowest
+It needs =errors= and =narration= and nothing else. It is low because
+everything that does real work eventually spawns something.
+
+* Each area
+
+** =errors/=
+The error type and its rendering. =error-type.rkt= defines
+=exn:fail:pm= and the kinds; =error-message.rkt= renders it and maps a
+kind to an exit code. Depends on: nothing. Must never be depended on by
+anything except =narration/=, which reports through it.
+
+** =narration/=
+How an operation speaks. =events.rkt= is the schema and must not
+decide anything. =narration.rkt= opens and closes a run and carries
+step, note, warn, skip, decide. =wait-door.rkt= is the blocking door:
+=wait-for= before, =wait-done= after, =why= never blank. The console
+printer lives here and nowhere else. Depends on: =errors=. Must never
+be required by =errors=.
+
+** =machine/=
+The machine's shape. =directories.rkt= is the ONE place that reads
+HOME or XDG (the other is =env.nu= on the Nushell side).
+=file-lock.rkt= is cross-process exclusion. =cancel.rkt= is the
+cancellation door. Depends on: =errors=, =narration=. Must never be
+required by them.
+
+** =security/=
+Policy as total predicates. Nothing here performs an effect; it only
+answers. Depends on: =errors=. A gate stage fails when a predicate is
+defined but never called.
+
+** =spec/=
+What a declaration means and how it is read. The struct, the parser
+(facade plus field, source, build-step, and typo modules), the plan
+hash, derivation, LOWERING into install actions, and conflict refusal.
+Depends on: =errors=, =security=, =spec/= internal only. Must not
+depend on =process=, =git=, =store=, =install= or =entry=.
+
+** =git/=
+Repositories. Env isolation, commit identity, mirror fetch and pin,
+export of a tree, and the vault ref/create/transfer/checks modules.
+Depends on: =errors=, =narration=, =process=, =machine=. Must not
+depend on =store=, =install=, =queue= or =entry=.
+
+** =process/=
+Everything that spawns. =spawn.rkt= validates the cwd and spawns,
+=status-fifo.rkt= owns the fifo protocol, =drain.rkt= reads pipes,
+=kill-tree.rkt= kills a process group, =cancel-wait.rkt= decides an
+outcome, =progress.rkt= bounds captured lines. Depends on: =errors=,
+=narration=, =machine=. Must not depend on anything above it.
+
+** =store/=
+What is installed and what it is pinned to. Store materialisation,
+manifest, lockfile, query, update. Depends on: =spec=, =git=,
+=errors=, =narration=. Must not depend on =install= or =entry=.
+
+** =queue/=
+Work that outlives one call. Job record and validation, the queue file,
+worker exclusion, and the journal. Depends on: =errors=, =narration=,
+=machine=, =store=. Must not depend on =install= or =entry=.
+
+** =build/=
+Build steps. The environment, the executor protocol, and one module per
+build system (make, cmake, cargo, configure, run). Depends on:
+=process=, =errors=, =narration=, =spec=. Must not depend on =install=.
+
+** =install/=
+Making it so. The apply operation, activation, generation naming,
+profile flip, reclaim, holds, and the local performer. Depends on:
+everything below it. Must not depend on =entry=.
+
+** =mirror/=
+Backup only. Copies declarations and sources into one repo and pushes.
+Depends on: =git=, =spec=, =errors=, =narration=. Must not depend on
+=install=, =queue= or =entry=, and must never be an input to install.
+
+** =entry/=
+What the user or an agent touches. Argument parsing, one JSON document
+per command, dispatch, and the MCP server. Depends on: everything below
+it. Nothing depends on =entry=.
+
+* The two directions that must never appear
+- =errors= requiring anything. It is the floor.
+- Any area requiring =entry=. =entry= is the ceiling.
+
+* Reading order for a newcomer
+1. =errors/error-type.rkt= — what can go wrong and how it is named.
+2. =narration/wait-door.rkt= — why nothing blocks silently.
+3. =machine/directories.rkt= — the one seam onto the filesystem.
+4. Then follow the numbering above.

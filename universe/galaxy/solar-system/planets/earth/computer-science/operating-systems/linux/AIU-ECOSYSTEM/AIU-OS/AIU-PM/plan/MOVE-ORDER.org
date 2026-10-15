@@ -1,0 +1,70 @@
+#+TITLE: MOVE-ORDER — the exact sequence
+#+AUTHOR: Shape
+
+Every step is one commit with explicit paths. Per step: =read-check= on
+touched files, =raco make= on touched files and their direct
+dependents, then commit. No test runs between steps; the gate runs at
+the end.
+
+If reality disagrees with this file, fix this file in the same commit
+as the change that disagreed.
+
+* Already done
+- step 1: =plan/= and =agent/= created, references updated. @ 9fe48f8
+
+* Splits, in dependency order
+Each split keeps the old path as a thin facade when other files require
+it, so no dependent's require line changes at this stage.
+
+1. =core/plan.rkt= (974) -> =src/spec/=: =plan-hash.rkt=,
+   =plan-derive.rkt=, =plan-lower.rkt=, =plan-conflicts.rkt=, facade
+   stays =core/plan.rkt=. First because =activate= and =apply= both need
+   the lowering vocabulary and this moves that boundary.
+2. =core/spec-read.rkt= (748) -> tighten the facade over the four
+   modules that already exist. No new modules.
+3. =backends/run.rkt= (1063) -> =spawn.rkt=, =status-fifo.rkt=,
+   =drain.rkt=, =kill-tree.rkt=, =cancel-wait.rkt=, =progress.rkt=.
+   The substrate; split last of the big ones so its two known hangs are
+   documented first (accepted-mitigated, in OPEN-DECISIONS).
+4. =backends/build.rkt= (673) -> =build-env.rkt=, =build-executor.rkt=,
+   =build-systems/{make,cmake,cargo,configure,run}.rkt=
+5. =backends/activate.rkt= (650) -> =generation.rkt=,
+   =profile-flip.rkt=, =profile-gc.rkt=, =profile-holds.rkt=
+6. =cli/main.rkt= (1525) -> =cli.rkt=, =documents.rkt=, =dispatch.rkt=,
+   tests to =tests/entry/cli-test.rkt=. Last of the splits: it requires
+   nine files today and should require two afterwards.
+7. =backends/jobs.rkt= (1043) and =backends/vault.rkt= (1653).
+   BOTH ARE STILL PARKED, so they move WHOLE and UNSPLIT into their
+   areas, and the reason is recorded in OPEN-DECISIONS. Splitting a
+   parked file moves thousands of lines with no behavioural net.
+
+* Pure moves
+8. =core/*.rkt= -> =package-manager/src/<area>/=, per ARCHITECTURE.
+9. =backends/*.rkt= -> =package-manager/src/<area>/=, except =fake.rkt=
+   and =dry-run.rkt= which go to =package-manager/test-doubles/=.
+10. =cli/= and =mcp/= -> =package-manager/src/entry/=. =main.rkt= becomes
+    =cli.rkt=, =mcp/server.rkt= becomes =mcp-server.rkt= (main and
+    server are both banned words).
+11. =scripts/= splits: =check.nu=, =read-check.rkt=, =test-runner.rkt=,
+    =env.nu=, =tree.nu= to =gate/=; =repl.rkt=, =hello-fetch.rkt=,
+    =build-lua.rkt=, =probe-blob.rkt=, and the rest to =tools/=.
+12. Inline =(module+ test= bodies -> =package-manager/tests/<area>/=,
+    mirroring =src/= one to one. Last, because every earlier step
+    depends on those tests living beside the code they test.
+13. =gate/check.nu= learns the new root and every allowlist path.
+
+* Names
+14. Identifier renames listed in =NAMING-REGISTER.org=. Only names that
+    lie or say nothing.
+
+* Gate
+15. Stage 17: banned words, reporting file:line.
+16. Stage 18: one-way dependencies, reporting file:line.
+    Both are written and wired here; proving they bite is the next step,
+    not this one.
+
+* Feature
+17. The mirror, in =src/mirror/= per =MIRROR-FEATURE.org=.
+
+* Close
+18. Full gate. 0 violations including stage 6. Push.
