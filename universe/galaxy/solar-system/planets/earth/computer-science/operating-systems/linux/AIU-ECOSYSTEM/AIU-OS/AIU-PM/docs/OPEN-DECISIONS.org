@@ -318,3 +318,36 @@ the copy is not carried twice.)
 4. S-01 and S-02: the policy, then the choke points.
 5. The rest of G, in dependency order, each as its own commit.
 6. P-01 and P-02: finish the proofs that are nearly done.
+
+* BLOCKED, platform: the parent cannot hold a fifo writer open
+:PROPERTIES:
+:END:
+
+The =run-command= fifo strand is FIXED at its cause: =#:cwd= is now
+validated in =spawn-prelude= before anything is created or spawned, so a
+nonexistent directory raises a named =exn:fail:pm= instead of letting the
+child die in =chdir= before the wrapper's first act. That was the whole
+of the measured hang (backends/git.rkt, 7+ minutes on a =git-has-commit?=
+against a =demo.git= that was never created).
+
+What is NOT done is the belt-and-braces part: having the PARENT hold a
+fifo write end so the reader can never lack a writer. Racket 9.3 cannot
+express it. Probed in a scratch file, all three file-open functions:
+
+| call | result on an existing fifo |
+|------+-----------------------------|
+| =open-output-file= (=#:exists 'error=) | raises "file exists" |
+| =open-output-file= (truncate/replace, update, append) | RETURNS AT ONCE, never blocks |
+| =open-input-output-file= | raises "file exists" |
+
+=open-file-output= does not exist in this Racket. So there is no call
+that BLOCKS on a fifo write end, which is precisely what a holder needs.
+The holder was written, measured not to work, and removed rather than
+shipped with a comment claiming a guarantee the code did not provide.
+
+Consequence, stated plainly: if a child dies before the wrapper's first
+act for some reason other than a bad =#:cwd=, the reader still parks in
+=open()= on the fifo read end with nothing to wake it. The wait on the
+child now goes through the wait door (=wait-for=), so such a block is
+narrated rather than silent, and the cwd guard removes the one path
+observed in practice.

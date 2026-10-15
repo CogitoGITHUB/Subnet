@@ -244,6 +244,28 @@
   (unless (file-exists? exe)
     (raise-pm-error 'config 'run-command "executable not found"
                     #:fields `(("exe" . ,exe))))
+  ;; A cwd that is not an existing directory is refused HERE, before the
+  ;; temp dir and the fifo are created and before anything is spawned.
+  ;;
+  ;; It used to reach process*, which chdirs the CHILD. The child died in
+  ;; chdir before the wrapper's first act, so the wrapper never ran
+  ;; `exec 3>"$fifo"` and never became a writer. The reader -- the only
+  ;; thing that ever wakes wait-command -- then blocked inside open() on
+  ;; the fifo's read end, for ever, silently: opening a fifo read end
+  ;; waits for a writer that is not coming, and that is a BLOCK, not a
+  ;; raise, so no handler could ever have caught it. process* hands back a
+  ;; valid pid for that child, so the claim that a spawn failure raises
+  ;; synchronously was false in this case.
+  (unless (directory-exists? cwd)
+    (raise-pm-error 'config 'run-command "cwd is not an existing directory"
+                    #:fields `(("cwd" . ,(if (path? cwd)
+                                            (path->string cwd)
+                                            cwd))
+                               ("operation" . ,operation))
+                    #:hint (string-append
+                            "the child is chdir'd there before it runs, so "
+                            "create the directory first, or pass one that "
+                            "already exists")))
   (define exe-string (if (path? exe) (path->string exe) exe))
   ;; Atomic exclusive create (mkdtemp): uniqueness never comes from a clock.
   (define temp-dir (make-temporary-directory "pm-run~a"))
@@ -373,11 +395,19 @@
                              (kill-tree pgid)
                              (custodian-shutdown-all cust)
                              (raise e))])
-            (if cancel
-                (wait-command line-ch cancel
-                              (lambda () (kill-tree pgid)))
-                (wait-command line-ch never-evt
-                              (lambda () (kill-tree pgid))))))
+            (wait-for 'run "child process exits"
+                      (string-append
+                       "the wrapper writes EXIT:<code> to the status fifo as "
+                       "its last act, so nothing about this result is "
+                       "knowable until that process is gone")
+                      #:how (string-append
+                               "exe=" (if (path? exe) (path->string exe) exe))
+                      (lambda ()
+                        (if cancel
+                            (wait-command line-ch cancel
+                                          (lambda () (kill-tree pgid)))
+                            (wait-command line-ch never-evt
+                                          (lambda () (kill-tree pgid))))))))
         (cond [(string? outcome)
                (define code (string->number
                              (cadr (regexp-match #rx"^EXIT:([0-9]+)$"
@@ -549,11 +579,19 @@
                              (kill-tree pgid)
                              (custodian-shutdown-all cust)
                              (raise e))])
-            (if cancel
-                (wait-command line-ch cancel
-                              (lambda () (kill-tree pgid)))
-                (wait-command line-ch never-evt
-                              (lambda () (kill-tree pgid))))))
+            (wait-for 'run "child process exits"
+                      (string-append
+                       "the wrapper writes EXIT:<code> to the status fifo as "
+                       "its last act, so nothing about this result is "
+                       "knowable until that process is gone")
+                      #:how (string-append
+                               "exe=" (if (path? exe) (path->string exe) exe))
+                      (lambda ()
+                        (if cancel
+                            (wait-command line-ch cancel
+                                          (lambda () (kill-tree pgid)))
+                            (wait-command line-ch never-evt
+                                          (lambda () (kill-tree pgid))))))))
         (cond [(string? outcome)
                (define code (string->number
                              (cadr (regexp-match #rx"^EXIT:([0-9]+)$"
@@ -598,6 +636,57 @@
   (check-equal? (run-result-exit basic) 0)
   (check-equal? (run-result-stdout-lines basic) '("hi"))
   (check-equal? (run-result-stderr-lines basic) '())
+
+  ;; REGRESSION, found by hanging backends/git.rkt: run-command must not
+  ;; park for ever when #:cwd names a directory that does not exist.
+  ;;
+  ;; What happened: process* chdirs the CHILD into cwd. With a missing
+  ;; directory the child dies in chdir before the wrapper's first act, so
+  ;; the wrapper never ran `exec 3>"$fifo"`. The reader had no writer, and
+  ;; blocking on open() of a fifo read end waits for a writer that is
+  ;; never coming. No exception was raised -- the comment claiming spawn
+  ;; failure raises synchronously is false for this case -- so nothing was
+  ;; reported. Measured: 7+ minutes with a pm-run-start and no pm-run-end.
+  ;;
+  ;; The test bounds ITSELF. A hang in the code under test must not become
+  ;; a hang in the suite, or the suite cannot report the very thing it
+  ;; exists to catch.
+  (define missing-cwd (build-path cwd "no-such-dir-regression"))
+  ;; The outcome travels on a channel, not off a thread: syncing a thread
+  ;; yields the THREAD, not the value it produced, so the failure would be
+  ;; reported as a mystery object instead of the refusal it actually is.
+  (define cwd-ch (make-channel))
+  (define cwd-thread
+    (thread
+     (lambda ()
+       (channel-put cwd-ch
+                    (with-handlers ([exn? (lambda (e) e)])
+                      (run-command echo-exe '("unreachable")
+                                   #:cwd missing-cwd
+                                   #:kind 'fetch
+                                   #:operation "nonexistent cwd regression"))))))
+  ;; sync/timeout returns #f when the event never becomes ready, and the
+  ;; channel below can only ever carry a run-result or an exn, so #f is
+  ;; an unambiguous "it parked".
+  (define cwd-outcome (sync/timeout 20 cwd-ch))
+  (when (eq? cwd-outcome #f) (kill-thread cwd-thread))
+  (check-not-equal? #f cwd-outcome
+                    "run-command parked for ever on a nonexistent #:cwd")
+  ;; and it must be a NAMED refusal, not a result and not a silence
+  (check-pred exn:fail:pm? cwd-outcome)
+
+
+  ;; Large output must arrive whole. The drainers read continuously while
+  ;; the parent waits; a parent that waited for the child FIRST would
+  ;; deadlock the moment the child filled the pipe buffer. 330000 bytes is
+  ;; far past any pipe buffer here, and the count is exact so a truncated
+  ;; capture cannot pass.
+  (define big (parameterize ([current-captured-lines 40000])
+               (run-ok sh-exe '("-c" "yes ABCDEFGHIJ | head -n 30000"))))
+  (check-equal? (run-result-exit big) 0)
+  (define big-lines (run-result-stdout-lines big))
+  (check-equal? (length big-lines) 30000)
+  (check-equal? (for/sum ([l big-lines]) (add1 (string-length l))) 330000)
 
   ;; THE 41-MINUTE HANG, as a regression test.
   ;;
