@@ -9,62 +9,94 @@ the end.
 If reality disagrees with this file, fix this file in the same commit
 as the change that disagreed.
 
+Numbering note: the numbers below are THIS RUN's step numbers, matching
+=plan/PROGRESS.org=, which is the index. An earlier version of this file
+numbered its own list from 1 with nothing marked done, so "step 1" here
+meant =core/plan.rkt= while the owner meant step 1 = =plan/= and
+=agent/=. That is fixed: this file and PROGRESS.org now agree, and
+PROGRESS.org is where the hash lands.
+
 * Already done
 - step 1: =plan/= and =agent/= created, references updated. @ 9fe48f8
+- step 2: ARCHITECTURE, NAMING-REGISTER and this file written before any
+  move. @ 896d82c
 
 * Splits, in dependency order
 Each split keeps the old path as a thin facade when other files require
 it, so no dependent's require line changes at this stage.
 
-1. =core/plan.rkt= (974) -> =src/spec/=: =plan-hash.rkt=,
-   =plan-derive.rkt=, =plan-lower.rkt=, =plan-conflicts.rkt=, facade
-   stays =core/plan.rkt=. First because =activate= and =apply= both need
-   the lowering vocabulary and this moves that boundary.
-2. =core/spec-read.rkt= (748) -> tighten the facade over the four
-   modules that already exist. No new modules.
-3. =backends/run.rkt= (1063) -> =spawn.rkt=, =status-fifo.rkt=,
+3. =core/plan.rkt= (974) -> =src/spec/=: =plan-actions.rkt=,
+   =plan-hash.rkt=, =plan-derive.rkt=, =plan-lower.rkt=,
+   =plan-conflicts.rkt=, facade stays =core/plan.rkt=. First because
+   =activate= and =apply= both need the lowering vocabulary and this
+   moves that boundary.
+   AMENDED: five modules, not the four first written here. The twelve
+   action structs plus =plan= and =package-plan= cannot live in the
+   facade, because a module that re-provides cannot also be required by
+   what it re-provides, and Racket rejects the cycle at compile time.
+   The data model gets =plan-actions.rkt= and the four job modules sit
+   above it. Reason in =plan/OPEN-DECISIONS.org=.
+4. =backends/run.rkt= (1063) -> =spawn.rkt=, =status-fifo.rkt=,
    =drain.rkt=, =kill-tree.rkt=, =cancel-wait.rkt=, =progress.rkt=.
-   The substrate; split last of the big ones so its two known hangs are
-   documented first (accepted-mitigated, in OPEN-DECISIONS).
-4. =backends/build.rkt= (673) -> =build-env.rkt=, =build-executor.rkt=,
+   The substrate. Its two known hangs are already documented
+   (accepted-mitigated, in OPEN-DECISIONS), so splitting it does not
+   have to wait for that decision.
+5. =core/spec-read.rkt= (748) -> ALREADY SPLIT at abd748c into four
+   modules with the facade intact; this step VERIFIES the public surface
+   and records the result. No new modules. Its 432 test lines are why the
+   file is still 748: the code is 316, and step 14 takes the tests out.
+6. =backends/build.rkt= (673) -> =build-env.rkt=, =build-executor.rkt=,
    =build-systems/{make,cmake,cargo,configure,run}.rkt=
-5. =backends/activate.rkt= (650) -> =generation.rkt=,
-   =profile-flip.rkt=, =profile-gc.rkt=, =profile-holds.rkt=
-6. =cli/main.rkt= (1525) -> =cli.rkt=, =documents.rkt=, =dispatch.rkt=,
+7. =backends/activate.rkt= (650) -> =generation.rkt=,
+   =profile-flip.rkt=, =profile-gc.rkt=, =profile-holds.rkt=.
+   =profile-activate=, =profile-rollback= and =profile-remove= are
+   contracts that must not change, so their contract-out stays on the
+   facade.
+8. =cli/main.rkt= (1525) -> =cli.rkt=, =documents.rkt=, =dispatch.rkt=,
    tests to =tests/entry/cli-test.rkt=. Last of the splits: it requires
    nine files today and should require two afterwards.
-7. =backends/jobs.rkt= (1043) and =backends/vault.rkt= (1653).
+9. =backends/jobs.rkt= (1043) and =backends/vault.rkt= (1653).
    BOTH ARE STILL PARKED, so they move WHOLE and UNSPLIT into their
    areas, and the reason is recorded in OPEN-DECISIONS. Splitting a
    parked file moves thousands of lines with no behavioural net.
 
 * Pure moves
-8. =core/*.rkt= -> =package-manager/src/<area>/=, per ARCHITECTURE.
-9. =backends/*.rkt= -> =package-manager/src/<area>/=, except =fake.rkt=
-   and =dry-run.rkt= which go to =package-manager/test-doubles/=.
-10. =cli/= and =mcp/= -> =package-manager/src/entry/=. =main.rkt= becomes
+10. =core/*.rkt= -> =package-manager/src/<area>/=, per ARCHITECTURE.
+11. =backends/*.rkt= -> =package-manager/src/<area>/=, except =fake.rkt=
+    and =dry-run.rkt= which go to =package-manager/test-doubles/=.
+12. =cli/= and =mcp/= -> =package-manager/src/entry/=. =main.rkt= becomes
     =cli.rkt=, =mcp/server.rkt= becomes =mcp-server.rkt= (main and
     server are both banned words).
-11. =scripts/= splits: =check.nu=, =read-check.rkt=, =test-runner.rkt=,
+13. =scripts/= splits: =check.nu=, =read-check.rkt=, =test-runner.rkt=,
     =env.nu=, =tree.nu= to =gate/=; =repl.rkt=, =hello-fetch.rkt=,
     =build-lua.rkt=, =probe-blob.rkt=, and the rest to =tools/=.
-12. Inline =(module+ test= bodies -> =package-manager/tests/<area>/=,
+14. Inline =(module+ test= bodies -> =package-manager/tests/<area>/=,
     mirroring =src/= one to one. Last, because every earlier step
     depends on those tests living beside the code they test.
-13. =gate/check.nu= learns the new root and every allowlist path.
+15. =gate/check.nu= learns the new root and every allowlist path.
+    This is the step the briefing calls out: AFTER the pure moves, and
+    BEFORE any later step, run =raco make= on the ENTIRE tree and
+    =read-check= on every file. Those moves touched every =require= in
+    the repo, so a stale path must be found here, where the diff is one
+    commit, not at the end where it is twenty.
 
 * Names
-14. Identifier renames listed in =NAMING-REGISTER.org=. Only names that
+16. Identifier renames listed in =NAMING-REGISTER.org=. Only names that
     lie or say nothing.
 
 * Gate
-15. Stage 17: banned words, reporting file:line.
-16. Stage 18: one-way dependencies, reporting file:line.
-    Both are written and wired here; proving they bite is the next step,
-    not this one.
+17. Stage 17: banned words, reporting file:line.
+18. Stage 18: one-way dependencies, reporting file:line.
+    Both are written and wired here; proving they bite is step 22, not
+    this one.
 
 * Feature
-17. The mirror, in =src/mirror/= per =MIRROR-FEATURE.org=.
+19. The mirror, in =src/mirror/= per =MIRROR-FEATURE.org=.
+20. Per-area =README.org=: what the area does, what it may depend on, what
+    must never depend on it.
 
 * Close
-18. Full gate. 0 violations including stage 6. Push.
+21. ENGINE-CHECKLIST entries reconciled into =plan/OPEN-DECISIONS.org=.
+22. Full gate. 0 violations including stage 6. Stages 17 and 18 proven to
+    BITE: add one violation, see red with file:line, remove it, see green.
+    Then push.
