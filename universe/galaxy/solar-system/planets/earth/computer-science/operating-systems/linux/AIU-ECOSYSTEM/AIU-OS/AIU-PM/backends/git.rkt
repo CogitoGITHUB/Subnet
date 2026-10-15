@@ -27,6 +27,13 @@
   [git-fetch-mirror (->* (path-string?)
                          (#:timeout exact-positive-integer?)
                          void?)]
+  ;; path -> void, fetch MORE history into a shallow mirror. Called only
+  ;; when a pin is not already present, so the common case never pays for
+  ;; history it will not read. #:to 0 means fully unshallow.
+  [git-deepen-mirror (->* (path-string?)
+                          (#:to exact-nonnegative-integer?
+                           #:timeout exact-positive-integer?)
+                          void?)]
   ;; path string -> boolean; #t iff the type is commit (exit table probed)
   [git-has-commit? (->* (path-string? string?)
                          (#:timeout exact-positive-integer?)
@@ -66,7 +73,7 @@
 ;; scope seam (E-00), never a direct home-dir read
 (define (git-global-config-path)
   (build-path (roots-config (scope-roots 'user))
-              "aiu-pm" "gitconfig"))
+              "cyberdeck" "gitconfig"))
 
 ;; -> (listof (cons string string)), isolated non-interactive env (item 7, 3)
 (define (git-env)
@@ -221,6 +228,19 @@
 ;; ---------------------------------------------------------------------------
 ;; Operations
 
+;; How much history a mirror fetches by default.
+;;
+;; A pin is a COMMIT HASH. Verifying it, building it and exporting its
+;; tree all need that one commit, never the commits before it. Several
+;; upstreams this package manager will meet have hundreds of thousands of
+;; commits and gigabytes of history, none of which will ever be read.
+;;
+;; So the mirror is shallow. Depth 3 covers the common case with room to
+;; spare, and a pin older than that is MISSING, not wrong: the export
+;; path deepens and retries before it refuses, so correctness never
+;; depends on the default being deep enough. Only speed does.
+(define mirror-fetch-depth 3)
+
 ;; string path -> void, fresh bare mirror with pinned config (D-011, 4, 6)
 (define (git-clone-mirror url dir #:timeout [timeout 600])
   (check-git-url url)
@@ -266,8 +286,14 @@
                         #:kind 'fetch
                         #:operation "git remote add")
               ;; Upstream refs land under refs/upstream/*; never --prune (4).
+              ;; SHALLOW: a pin is a commit hash, so verifying and
+              ;; exporting it need that commit's TREE, never its
+              ;; history. Some upstreams have gigabytes of history that
+              ;; would never be read. git-deepen-mirror fetches more on
+              ;; demand when a pin is older than the depth.
               (git-run! git 'git-clone-mirror tmp
-                        `("fetch" "origin" "--" "+refs/*:refs/upstream/*")
+                        `("fetch" "--depth" ,(number->string mirror-fetch-depth)
+                          "origin" "--" "+refs/*:refs/upstream/*")
                         #:kind 'fetch
                         #:operation "git fetch mirror")))
           (rename-file-or-directory tmp dir))
@@ -284,9 +310,35 @@
       (with-ssh-timeout-hint url 'fetch 'git-fetch-mirror
         (lambda ()
           (git-run! git 'git-fetch-mirror dir
-                    '("fetch" "origin" "--" "+refs/*:refs/upstream/*")
+                    `("fetch" "--depth" ,(number->string mirror-fetch-depth)
+                      "origin" "--" "+refs/*:refs/upstream/*")
                     #:kind 'fetch
                     #:operation "git fetch mirror"))))))
+
+;; path -> void, fetch MORE history into a shallow mirror.
+;;
+;; The mirror is shallow on purpose, so an old pin is MISSING rather than
+;; wrong. This is the on-demand answer: each call deepens further, so a
+;; pin far back converges in a few steps instead of a full clone, and the
+;; common case (the pin is present) never calls this at all.
+(define (git-deepen-mirror dir #:to [to 0] #:timeout [timeout 600])
+  (define git (git-executable-path))
+  (with-mirror-lock dir 'fetch 'git-deepen-mirror timeout
+    (lambda ()
+      (define url (mirror-origin-url dir))
+      (with-ssh-timeout-hint url 'fetch 'git-deepen-mirror
+        (lambda ()
+          (define refspec "+refs/*:refs/upstream/*")
+          (if (zero? to)
+              (git-run! git 'git-deepen-mirror dir
+                        `("fetch" "--unshallow" "origin" "--" ,refspec)
+                        #:kind 'fetch
+                        #:operation "git fetch mirror")
+              (git-run! git 'git-deepen-mirror dir
+                        `("fetch" "--depth" ,(number->string to)
+                          "origin" "--" ,refspec)
+                        #:kind 'fetch
+                        #:operation "git fetch mirror")))))))
 
 ;; path string -> boolean; #t iff the type is commit (exit table probed)
 (define (git-has-commit? dir commit #:timeout [timeout 30])
@@ -473,12 +525,26 @@
                     #:hint "export writes into an empty dir only"))
   (with-mirror-lock dir 'fetch 'git-export-commit timeout
     (lambda ()
-      (unless (git-has-commit? dir commit #:timeout timeout)
-        (raise-pm-error 'verify 'git-export-commit
-                        "commit missing from mirror"
-                        #:fields `(("commit" . ,commit)
-                                   ("mirror" . ,(dir-string dir)))
-                        #:hint "fetch the mirror first"))
+      ;; The mirror is shallow, so an old pin is MISSING, not wrong.
+      ;; Deepen and retry before refusing: the pin is what was asked for
+      ;; and the depth limit is only a speed decision. A commit that is
+      ;; genuinely absent still refuses, naming both the pin and the
+      ;; upstream it was looked for in.
+      (let deepen ([to (* 8 mirror-fetch-depth)])
+        (cond
+          [(git-has-commit? dir commit #:timeout timeout) (void)]
+          [(<= to 0)
+           (raise-pm-error 'verify 'git-export-commit
+                           "commit missing from mirror"
+                           #:fields `(("commit" . ,commit)
+                                      ("mirror" . ,(dir-string dir))
+                                      ("history" . "fully fetched")
+                                      ("upstream" . ,(mirror-origin-url dir)))
+                           #:hint "the pin does not exist upstream, or the "
+                                  "source moved; check the url and the pin")]
+          [else
+           (git-deepen-mirror dir #:to to #:timeout timeout)
+           (deepen (* 2 to))]))
       (define work-tmp
         (build-path parent (format ".tmp-export-~a-~a"
                                    (current-milliseconds) (gensym))))
