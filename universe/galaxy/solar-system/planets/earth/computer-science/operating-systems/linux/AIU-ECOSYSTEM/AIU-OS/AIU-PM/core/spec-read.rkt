@@ -2,17 +2,37 @@
 ;; spec-read.rkt -- read and validate .rktd spec files. No syntax/parse
 ;; at runtime (D-014): a hand-written table-driven validator walks the
 ;; read-syntax objects so every error carries file:line:col (D-3, D-4).
+;;
+;; This file is the ENTRY POINT and the facade. It used to do four jobs
+;; at once; each job now lives in one file of its own, and the split
+;; runs strictly downward so nothing can cycle:
+;;
+;;   spec-typos.rkt       edit distance, "did you mean"
+;;   spec-fields.rkt      the located failure, the key table, converters
+;;   spec-source.rkt      the git pin and the dependency lists
+;;   spec-build-steps.rkt the step vocabulary and install forms
+;;
+;; read-spec-file stays here because it is the composition of all four:
+;; it reads every field in order and hands each one to the parser that
+;; owns it. It also owns the fields nobody else wanted -- format-version,
+;; extends, slot, flags, variants, whens -- because those are read
+;; straight into the spec struct and are not a job of their own.
+;;
+;; The provide below is the public promise and has not changed: ten
+;; files require this module and three bindings are all they use. The
+;; contracts stay HERE, on the facade, so blame still lands on the
+;; caller of read-spec-file and not on an intermediate parser.
 
 (require racket/contract/base
+         racket/list
          racket/port
          racket/runtime-path
-         racket/string
          "errors.rkt"
-         "security.rkt"
-         "version.rkt"
-         "git-id.rkt"
-         "git-url.rkt"
-         "spec.rkt")
+         "spec.rkt"
+         "spec-typos.rkt"
+         "spec-fields.rkt"
+         "spec-source.rkt"
+         "spec-build-steps.rkt")
 
 (provide
  (contract-out
@@ -60,146 +80,9 @@
   (if (path? p) (path->string p) p))
 
 ;; ---------------------------------------------------------------------------
-;; Locations (D-4: columns print +1, lines stay raw)
-
-;; syntax -> string, file:line:col of STX for messages
-(define (loc-string stx)
-  (format "~a:~a:~a"
-          (or (syntax-source stx) "?")
-          (or (syntax-line stx) "?")
-          (let ((c (syntax-column stx))) (if c (+ c 1) "?"))))
-
-;; syntax string -> never returns (E-1, E-2, E-4)
-(define (fail stx hint)
-  (raise-pm-error 'spec 'read-spec "invalid declaration"
-                  #:fields `(("at" . ,(loc-string stx)))
-                  #:hint hint))
-
-;; ---------------------------------------------------------------------------
-;; Field table
-
-;; Known single-form keys; when-clauses use the head symbol when.
-(define known-keys
-  '(format-version name version summary source deps build-deps build
-                   install license homepage extends variants slot flags))
-
-;; string string -> exact-integer, classic edit distance
-(define (levenshtein a b)
-  (define la (string-length a))
-  (define lb (string-length b))
-  (define prev (for/vector ([j (in-range (+ lb 1))]) j))
-  (for ([i (in-range 1 (+ la 1))])
-    (define cur (make-vector (+ lb 1) 0))
-    (vector-set! cur 0 i)
-    (for ([j (in-range 1 (+ lb 1))])
-      (vector-set! cur j
-                   (min (+ (vector-ref prev j) 1)
-                        (+ (vector-ref cur (- j 1)) 1)
-                        (+ (vector-ref prev (- j 1))
-                           (if (char=? (string-ref a (- i 1))
-                                       (string-ref b (- j 1)))
-                               0 1)))))
-    (set! prev cur))
-  (vector-ref prev lb))
-
-;; symbol -> string, closest known key within 2 edits, or ""
-(define (suggest-key head)
-  (define s (symbol->string head))
-  (define best #f)
-  (define best-d 3)
-  (for ([k (in-list known-keys)])
-    (define d (levenshtein s (symbol->string k)))
-    (when (< d best-d)
-      (set! best k)
-      (set! best-d d)))
-  (if best
-      (format " (did you mean '~a?)" best)
-      ""))
-
-;; (listof syntax) -> void, unknown keys and duplicates are errors (D-2)
-(define (check-keys forms)
-  (define seen '())
-  (for ([f (in-list forms)])
-    (define parts (syntax->list f))
-    (unless (and parts (pair? parts))
-      (fail f "expected a (KEY ...) form"))
-    (define head (syntax->datum (car parts)))
-    (cond [(eq? head 'when) (void)]
-          [(not (memq head known-keys))
-           (fail (car parts) (format "unknown key '~a~a" head
-                                     (if (symbol? head)
-                                         (suggest-key head)
-                                         "")))]
-          [(memq head seen)
-           (fail (car parts) (format "duplicate field '~a" head))]
-          [else (set! seen (cons head seen))])))
-
-;; (listof syntax) symbol -> (or/c syntax #f), the field form for KEY
-(define (find-field forms key)
-  (for/or ([f (in-list forms)])
-    (define parts (syntax->list f))
-    (and parts (pair? parts)
-         (eq? (syntax->datum (car parts)) key)
-         f)))
-
-;; (listof syntax) symbol -> syntax, missing fields are errors
-(define (need-field forms key top)
-  (or (find-field forms key)
-      (fail top (format "missing required field '~a" key))))
-
-;; syntax exact-integer -> (listof syntax), arity-checked value forms
-(define (field-args form n key)
-  (define parts (cdr (syntax->list form)))
-  (unless (= (length parts) n)
-    (fail form (format "field '~a takes exactly ~a value" key n)))
-  parts)
-
-;; ---------------------------------------------------------------------------
-;; Value converters (wrap sub-validator failures with srcloc)
-
-;; syntax -> version, bad input names the value at its location
-(define (convert-version stx)
-  (with-handlers
-      ([exn:fail:pm?
-        (lambda (_) (fail stx (format "invalid version ~s"
-                                      (syntax->datum stx))))])
-    (define v (syntax->datum stx))
-    (unless (string? v)
-      (fail stx "version must be a string"))
-    (string->version v)))
-
-;; syntax -> string, validated commit id or a located error
-(define (convert-commit stx)
-  (define c (syntax->datum stx))
-  ;; S-01: a declaration pins or it refuses.
-  (unless (source-pinned? c)
-    (fail stx (format "[source-trust] not a commit id ~s" c)))
-  c)
-
-;; syntax -> string, validated git URL or a located error
-(define (convert-url stx)
-  (define u (syntax->datum stx))
-  (with-handlers
-      ([exn:fail:pm?
-        (lambda (e)
-          (define reason
-            (let ((cell (assoc "reason" (exn:fail:pm-fields e))))
-              (if cell (cdr cell) "?")))
-          (fail stx (format "[origin] rejected git URL ~s (~a" u reason)))])
-    (unless (string? u)
-      (fail stx "URL must be a string"))
-    (check-git-url u)
-    u))
-
-;; syntax -> package-name symbol or a located error
-(define (convert-name stx)
-  (define n (syntax->datum stx))
-  (unless (package-name? n)
-    (fail stx (format "invalid package name ~s" n)))
-  n)
-
-;; ---------------------------------------------------------------------------
-;; Field readers (each returns plain data for the struct)
+;; The fields this file reads itself: everything that goes straight
+;; into the spec struct. source/deps/build come from spec-source.rkt and
+;; spec-build-steps.rkt; the rest is here.
 
 ;; syntax -> exact-integer 2
 (define (read-format-version form)
@@ -209,166 +92,6 @@
     (fail (v) (format "unsupported format-version ~a (neutral spec needs 2; see ~a)"
                       n "docs/SPEC-NEUTRAL.org section 9")))
   n)
-
-;; syntax -> source
-(define (read-source form)
-  (define (v) (car (field-args form 1 'source)))
-  (define inner (syntax->list (v)))
-  (unless (and inner (= (length inner) 3)
-               (eq? (syntax->datum (car inner)) 'git))
-    (fail (v) "source must be (git URL COMMIT)"))
-  (source (convert-url (cadr inner)) (convert-commit (caddr inner))))
-
-;; syntax -> (listof dep)
-(define (read-deps form)
-  (define vals (field-args form 1 'deps))
-  (define items (syntax->list (car vals)))
-  (unless items
-    (fail (car vals) "deps must be a list"))
-  (for/list ([item (in-list items)])
-    (define pair (syntax->list item))
-    (if (and pair (= (length pair) 2))
-        (dep (convert-name (car pair))
-             (convert-version (cadr pair)))
-        (fail item "dep must be (NAME VERSION)"))))
-
-;; syntax -> (listof dep), same shape as deps, build-time only
-(define (read-build-deps form)
-  (define vals (field-args form 1 'build-deps))
-  (define items (syntax->list (car vals)))
-  (unless items
-    (fail (car vals) "build-deps must be a list"))
-  (for/list ([item (in-list items)])
-    (define pair (syntax->list item))
-    (if (and pair (= (length pair) 2))
-        (dep (convert-name (car pair))
-             (convert-version (cadr pair)))
-        (fail item "build-dep must be (NAME VERSION)"))))
-;; Closed build vocabulary (SPEC-NEUTRAL.org section 2), alphabetical:
-;; the unknown-step hint prints this list verbatim.
-(define valid-steps
-  '(cmake-build cmake-configure cmake-install configure copy make
-                make-info cargo run))
-
-;; symbol -> boolean, closed build vocabulary membership
-(define (valid-build-step? step)
-  (if (memq step valid-steps) #t #f))
-
-;; symbol -> (listof keyword) or #f, required keys for typed steps.
-;; Plain-data steps (configure cargo make-info copy) take any data args.
-(define (step-required-keys step)
-  (case step
-    [(make) '(#:targets)]
-    [(cmake-configure) '(#:srcdir #:builddir)]
-    [(cmake-build) '(#:builddir)]
-    [(cmake-install) '(#:builddir)]
-    [(run) '(#:argv)]
-    [else '()]))
-
-;; syntax -> (listof build-step), (steps STEP ...) with any step count
-(define (read-build form)
-  (define steps-form (car (field-args form 1 'build)))
-  (define wrap (syntax->list steps-form))
-  (define head-ok?
-    (and wrap (pair? wrap) (eq? (syntax->datum (car wrap)) 'steps)))
-  (if (not head-ok?)
-      (fail steps-form "build must be (steps STEP ...)")
-      (for/list ([s (in-list (cdr wrap))])
-        (read-one-step s))))
-
-;; syntax -> build-step, one (NAME ARG ...) datum
-(define (read-one-step s)
-  (define parts (syntax->list s))
-  (define shape-ok?
-    (and parts (pair? parts) (symbol? (syntax->datum (car parts)))))
-  (if (not shape-ok?)
-      (fail s "step must be (NAME ARG ...)")
-      (read-named-step s (syntax->datum (car parts)))))
-
-;; syntax symbol -> build-step, vocabulary and required keys
-(define (read-named-step s step-name)
-  (unless (memq step-name valid-steps)
-    (fail s (format "unknown build step '~a (valid: ~a)" step-name
-                    (string-join (map symbol->string valid-steps) " "))))
-  (read-step-args s step-name (step-required-keys step-name)))
-
-;; syntax symbol (listof keyword) -> build-step, required keys present
-(define (read-step-args s step-name need)
-  (define data (map syntax->datum (cdr (syntax->list s))))
-  (for ([k (in-list need)])
-    (unless (member k data)
-      (fail s (format "step '~a needs ~a" step-name k))))
-  (build-step step-name data))
-
-;; syntax -> install-spec, (prefix FORM ...) with kind-checked forms
-(define (read-install form)
-  (define install-form (car (field-args form 1 'install)))
-  (define inner (syntax->list install-form))
-  (define head-ok?
-    (and inner (pair? inner)
-         (eq? (syntax->datum (car inner)) 'prefix)))
-  (if (not head-ok?)
-      (fail install-form "install must be (prefix ...)")
-      (read-install-forms install-form (cdr inner))))
-
-;; string -> boolean, DST stays inside the prefix (no absolute, no ..)
-(define (prefix-confined? p)
-  (and (string? p)
-       (> (string-length p) 0)
-       (not (string-prefix? p "/"))
-       (not (member ".." (string-split p "/")))))
-
-;; syntax string -> string, confined DST or a located error
-(define (confine-dst stx p)
-  (unless (prefix-confined? p)
-    (fail stx (format "[path-escape] install path '~a escapes the prefix" p)))
-  p)
-
-;; syntax (listof syntax) -> install-spec, one check form at most
-(define (read-install-forms form forms)
-  (define seen-check? #f)
-  (define datums
-    (for/list ([f (in-list forms)])
-      (define parts (syntax->list f))
-      (unless (and parts (pair? parts)
-                   (symbol? (syntax->datum (car parts))))
-        (fail f "install forms must be a list of lists"))
-      (define head (syntax->datum (car parts)))
-      (define args (map syntax->datum (cdr parts)))
-      (case head
-        [(bin lib include share man libexec)
-         (unless (and (<= 1 (length args) 2)
-                      (andmap string? args))
-           (fail f "install kind takes one or two paths"))
-         (confine-dst f (car (reverse args)))]
-        [(copy-tree symlink)
-         (unless (and (= (length args) 2) (andmap string? args))
-           (fail f "install kind takes two paths"))
-         (confine-dst f (if (eq? head 'copy-tree)
-                            (cadr args)
-                            (car args)))
-         (when (eq? head 'symlink)
-           (confine-dst f (cadr args)))]
-        [(mode)
-         (unless (and (= (length args) 2)
-                      (string? (car args))
-                      (exact-integer? (cadr args)))
-           (fail f "mode takes a path and an exact integer"))
-         (confine-dst f (car args))
-         (unless (install-mode-allowed? (cadr args))
-           (fail f (format "[install-mode] mode ~a refused; pm writes only 755 and 644"
-                           (cadr args))))]
-        [(check)
-         (when seen-check?
-           (fail f "only one check form per install"))
-         (set! seen-check? #t)
-         (unless (and (>= (length args) 1) (andmap string? args))
-           (fail f "check takes a program and args"))
-         (void)]
-        [else (fail (car (syntax->list f))
-                    (format "unknown install form '~a" head))])
-      (syntax->datum f)))
-  (install-spec 'prefix datums))
 
 ;; any -> boolean, true for syntax holding a list
 (define (syntax-list? x)
@@ -499,6 +222,7 @@
                       install license homepage when slot flags))
          #f]
         [else (format "unknown key '~a" head)]))
+
 ;; syntax (listof symbol) -> when-spec, conds come from the fixed table.
 ;; A (flag NAME) cond names a USE flag the spec must declare (D-022);
 ;; naming anything else is kind 'spec on the NAME, not the file.
@@ -524,7 +248,7 @@
        (fail (cadr parts) "flag cond is (flag NAME)"))
      (define named (syntax->datum (cadr cond-parts)))
      (unless (memq named known-flags)
-       (fail (cadr cond-parts)
+       (fail (cadr parts)
              (format "unknown flag '~a" named)))]
     [else (fail (car cond-parts)
                 (format "unknown condition '~a" head))])
@@ -923,7 +647,7 @@
    #rx"trailing data")
   ;; Kind is always spec, even for hostile bytes.
   (check-pred spec-error?
-              (let ((dir (write-fixture "pkg.rktd" '("(spec"))))
+              (let ([dir (write-fixture "pkg.rktd" '("(spec"))])
                 (define result
                   (parameterize ([current-directory dir])
                     (with-handlers ([exn:fail:pm? (lambda (e) e)])
