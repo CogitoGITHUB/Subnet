@@ -195,16 +195,40 @@
     (split-path mirror-dir))
   (build-path base (string-append (path->string name) ".lock")))
 
+;; The mirror locks this thread already holds, innermost first.
+;;
+;; This is load-bearing and it exists because a nested acquisition used
+;; to deadlock. git-export-commit holds the mirror lock for the whole
+;; export and then calls git-deepen-mirror, which takes the SAME lock for
+;; the fetch that deepens it. The fcntl lock is exclusive and not
+;; re-entrant, so the inner acquisition blocked on the outer's until the
+;; 300s timeout fired: deepening could therefore never succeed, and the
+;; export of an old pin failed with "could not acquire mirror lock"
+;; instead of either deepening or refusing. The lock a thread already
+;; holds is simply kept.
+;;
+;; Held as a parameter value, not a shared mutable set: parameterize is
+;; thread-local in Racket, so one thread's lock never makes another
+;; thread believe it may skip the lock.
+(define held-mirror-locks (make-parameter '()))
+
 ;; path pm-kind symbol exact-int (-> any) -> any
 (define (with-mirror-lock mirror-dir kind op timeout thunk)
-  (call-with-file-lock/timeout
-   mirror-dir 'exclusive thunk
-   (lambda ()
-     (raise-pm-error kind op "could not acquire mirror lock"
-                     #:fields `(("mirror" . ,(path->string mirror-dir))
-                                ("timeout-seconds" . ,(number->string timeout)))))
-   #:lock-file (mirror-lock-path mirror-dir)
-   #:max-delay timeout))
+  (define key (path->string (simplify-path mirror-dir)))
+  (cond
+    [(member key (held-mirror-locks)) (thunk)]
+    [else
+     (call-with-file-lock/timeout
+      mirror-dir 'exclusive
+      (lambda ()
+        (parameterize ([held-mirror-locks (cons key (held-mirror-locks))])
+          thunk))
+      (lambda ()
+        (raise-pm-error kind op "could not acquire mirror lock"
+                        #:fields `(("mirror" . ,(path->string mirror-dir))
+                                   ("timeout-seconds" . ,(number->string timeout)))))
+      #:lock-file (mirror-lock-path mirror-dir)
+      #:max-delay timeout)]))
 
 ;; ---------------------------------------------------------------------------
 ;; Commit validation and lookup
@@ -240,6 +264,21 @@
 ;; path deepens and retries before it refuses, so correctness never
 ;; depends on the default being deep enough. Only speed does.
 (define mirror-fetch-depth 3)
+
+;; How far deepen-and-retry climbs before it asks for the whole history
+;; once and then gives up. This bound is load-bearing, not a tuning knob.
+;; The retry loop doubles its depth, and doubling a POSITIVE number never
+;; reaches zero, so the "commit missing from mirror" refusal in
+;; git-export-commit was unreachable. A pin that does not exist upstream --
+;; a stale pin, a rewritten history, a typo -- therefore deepened without
+;; end instead of refusing: measured on a fixture pin of bbbb..., the
+;; export fetched 24, 48, 96 ... commits forever and never returned. A
+;; pin that is genuinely absent must be REFUSED, naming itself, because
+;; the user can act on a refusal and not on a fetch that never finishes.
+;; Past this cap we spend one fetch on the full history -- the correct
+;; answer for a legitimately old pin, and still the right thing to try --
+;; and if the commit is not in complete history it does not exist.
+(define mirror-deepen-cap 1024)
 
 ;; string path -> void, fresh bare mirror with pinned config (D-011, 4, 6)
 (define (git-clone-mirror url dir #:timeout [timeout 600])
@@ -544,7 +583,11 @@
                                   "source moved; check the url and the pin")]
           [else
            (git-deepen-mirror dir #:to to #:timeout timeout)
-           (deepen (* 2 to))]))
+           ;; Past the cap, go to 0 exactly once -- that is the request for
+           ;; the whole history -- so the refusal above is reachable.
+           ;; Without this the depth only ever doubled and a pin that is
+           ;; absent upstream deepened forever instead of refusing.
+           (deepen (if (>= to mirror-deepen-cap) 0 (* 2 to)))]))
       (define work-tmp
         (build-path parent (format ".tmp-export-~a-~a"
                                    (current-milliseconds) (gensym))))
