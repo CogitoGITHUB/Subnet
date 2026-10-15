@@ -1083,7 +1083,9 @@
                  "{\"name\":\"fetch\",\"format\":\"sexp\",\"operands\":[\"manifest.rktd\"]}")
   (check-command command-update? #("update" "vault" "pm.lock" "profile")
                  "(\"update\" sexp (\"vault\" \"pm.lock\" \"profile\"))"
-                 "{\"name\":\"update\",\"format\":\"sexp\",\"operands\":[\"vault\", \"pm.lock\", \"profile\"]}")
+                 (string-append
+                  "{\"name\":\"update\",\"format\":\"sexp\","
+                  "\"operands\":[\"vault\", \"pm.lock\", \"profile\"]}"))
   (check-command command-activate? #("activate" "profile")
                  "(\"activate\" sexp (\"profile\"))"
                  "{\"name\":\"activate\",\"format\":\"sexp\",\"operands\":[\"profile\"]}")

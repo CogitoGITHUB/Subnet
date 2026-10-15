@@ -16,11 +16,18 @@ tree. Renaming those seven fixes most of the friction by itself.
 | word | where | what it actually means here |
 |------+-------+---------------------------|
 | core/ | the whole directory | nothing. It means "not a backend", which is a location, not a job |
-| plan | core/plan.rkt | not a plan. It hashes specs, derives package plans, LOWERS build steps into install actions, and enforces path conflicts |
-| run | backends/run.rkt | not a run. It spawns processes AND owns the exit-status fifo protocol AND drains pipes AND kills process groups |
-| local | backends/local.rkt | "local" as opposed to what? It is the performer that actually touches the filesystem |
-| jobs | backends/jobs.rkt | a queue, a fifo, worker locks, job validation, and a serialization format — five things |
-| vault | backends/vault.rkt | git env, refs, creation, clone/fetch/pack, fsck, and a disk-space collision check |
+| plan | core/plan.rkt |
+|  not a plan. It hashes specs, derives package plans, LOWERS build steps into install actions, and
+| enforces path conflicts |
+| run | backends/run.rkt |
+|  not a run. It spawns processes AND owns the exit-status fifo protocol AND drains pipes AND kills
+| process groups |
+| local | backends/local.rkt |
+|  "local" as opposed to what? It is the performer that actually touches the filesystem |
+| jobs | backends/jobs.rkt | a queue, a fifo, worker locks, job
+| validation, and a serialization format — five things |
+| vault | backends/vault.rkt | git env, refs, creation,
+| clone/fetch/pack, fsck, and a disk-space collision check |
 | dev | backends/dev.rkt | the developer-mode link/unlink path |
 | build | backends/build.rkt | env construction AND six separate build-system executors |
 

@@ -100,9 +100,9 @@ the committed version.
 
 | need | command |
 |------|---------|
-| check parens / parse | `~/opt/racket/bin/racket scripts/read-check.rkt <files...>` |
-| interactive Racket | `~/opt/racket/bin/racket scripts/repl.rkt` |
-| quick test of fast-tier files | `~/opt/racket/bin/racket scripts/test-runner.rkt <files...>` |
+| check parens / parse | `~/opt/racket-full/bin/racket scripts/read-check.rkt <files...>` |
+| interactive Racket | `~/opt/racket-full/bin/racket scripts/repl.rkt` |
+| quick test of fast-tier files | `~/opt/racket-full/bin/racket scripts/test-runner.rkt <files...>` |
 | the gate | `~/opt/nushell/0.116.1/nu --no-config-file scripts/check.nu --fast` |
 | between items | `... scripts/check.nu --changed` |
 | full gate, end of phase | `... scripts/check.nu` |

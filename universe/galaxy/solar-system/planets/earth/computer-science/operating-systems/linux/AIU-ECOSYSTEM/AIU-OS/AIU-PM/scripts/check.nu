@@ -573,7 +573,7 @@ def parked-total [] {
 # compiles, so a file that cannot even be read is caught before raco.
 def stage-12 [] {
     print "[check] stage 12 paren check"
-    let racketx = ($nu.home-dir | path join "opt" "racket" "bin" "racket")
+    let racketx = ($nu.home-dir | path join "opt" "racket-full" "bin" "racket")
     let fs = (stage-8-files)
     let code = (try {
         ^$racketx "scripts/read-check.rkt" ...$fs
@@ -697,7 +697,8 @@ def main [--changed] {
 #
 # -> string, the raco check.sh uses (line 6), overridable for fixtures.
 def raco-exe [] {
-    $env | get -o CYBERDECK_RACO? | default ($nu.home-dir | path join "opt" "racket" "bin" "raco")
+    let raco_default = ($nu.home-dir | path join "opt" "racket-full" "bin" "raco")
+    $env | get -o CYBERDECK_RACO? | default $raco_default
 }
 
 # -> string, the gate log directory, created on demand. Child output goes
@@ -733,7 +734,7 @@ def log-path [f tag] {
 # isolation bug to fix (see ENGINE-CHECKLIST), not a reason for a tier.
 # D-015: no timer, no timeout, no sleep; the wait ends on process exit.
 def run-runner [files] {
-    let racketx = ($nu.home-dir | path join "opt" "racket" "bin" "racket")
+    let racketx = ($nu.home-dir | path join "opt" "racket-full" "bin" "racket")
     # Parked files never reach this call: the caller hands over the file
     # list MINUS the FILE_PARKED entries, so there is no skip mechanism in
     # the runner and nothing to fail to deliver.

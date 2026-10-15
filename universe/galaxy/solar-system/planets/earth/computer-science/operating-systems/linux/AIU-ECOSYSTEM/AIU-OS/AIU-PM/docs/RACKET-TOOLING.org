@@ -2,7 +2,7 @@
 #+AUTHOR: Shape
 
 * What is installed
-Racket 9.3 CS minimal lives in =~/opt/racket=. It is the tarball
+Racket 9.3 CS FULL lives in =~/opt/racket-full=. It is the tarball
 distribution, chosen on purpose (DECISIONS.org, 2026-10-06 "Racket 9.3
 minimal via tarball"). =rackunit-lib= is the only package added on top.
 
@@ -83,6 +83,6 @@ not compute, and every separate process pays it. That is the reason
   18s unset, REJECTED in D-027. =compiled/= stays in-tree.
 
 * How packages get installed here
-=#~/opt/racket/bin/raco pkg install NAME=, always with
+=#~/opt/racket-full/bin/raco pkg install NAME=, always with
 =GIT_TERMINAL_PROMPT=0= so a network problem fails fast instead of
 waiting for a prompt. No timers, no polling (D-015).
