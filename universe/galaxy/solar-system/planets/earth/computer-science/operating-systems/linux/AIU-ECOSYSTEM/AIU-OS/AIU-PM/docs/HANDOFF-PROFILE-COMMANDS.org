@@ -25,8 +25,11 @@ Files that matter:
 
 | file | what it holds |
 |------|---------------|
-| =backends/activate.rkt= | =profile-activate=, =profile-rollback=, =profile-remove=, =profile-gc=, holds. READ the contracts; do not change them |
-| =cli/main.rkt= | command structs, the discovery table, the parser, the documents, the dispatch. YOU EDIT THIS |
+| =backends/activate.rkt= |
+|  =profile-activate=, =profile-rollback=, =profile-remove=, =profile-gc=, holds. READ the
+| contracts; do not change them |
+| =cli/main.rkt= |
+|  command structs, the discovery table, the parser, the documents, the dispatch. YOU EDIT THIS |
 | =core/lock.rkt= | =read-lockfile=, =lockfile-entries=, =lock-entry= accessors |
 | =core/spec-read.rkt= | =read-spec-file=, =read-install= — where relative install paths come from |
 | =core/verbose.rkt= | narration verbs. READ ONLY |

@@ -247,8 +247,23 @@
 ;; vault presence it ensures, which fetch would do anyway; dry runs
 ;; pass #:preflight #f and change nothing at all.
 (define (scan-specs specs-dir vault-root #:preflight [preflight #t])
-  (with-op 'scan (if (path? specs-dir) (path->string specs-dir)
-                     (format "~a" specs-dir))
+  ;; Check the declaration directory BEFORE narrating the scan. Without
+  ;; this, a path that does not exist escaped as a raw
+  ;; "directory-list: could not open directory" from deep inside the
+  ;; listing: not a refusal, no rule named, and on the MCP surface it
+  ;; became an internal error that blamed the server for the caller's
+  ;; typo. A missing or wrong-shaped declaration directory is a refusal
+  ;; that names what was expected and what was given.
+  (define specs-path (if (path? specs-dir) (path->string specs-dir)
+                         (format "~a" specs-dir)))
+  (cond
+    [(not (directory-exists? specs-path))
+     ;; one refusal covers both "missing" and "is a file": either way it
+     ;; is not a directory of specs, and the caller needs the same fix
+     (raise-pm-error 'config 'scan-specs "specs directory not found"
+                     #:fields `(("specs" . ,specs-path))
+                     #:hint "point the command at a directory of .rktd spec files")])
+  (with-op 'scan specs-path
            "every declaration is valid and every source resolves"
            #:inputs (list (if (path? specs-dir) (path->string specs-dir)
                               (format "~a" specs-dir)))
@@ -828,16 +843,24 @@
                 (path->string e12-ver))
   (check-equal? (length (journal-completions state "pkg-alpha" "default"))
                 8)
-  (displayln "--- e12 store tree (ls -lR) ---")
+  ;; These dumps went to stdout, which the one-printer rule forbids: the
+  ;; gate's text lint does not scan test submodules, so it passed while
+  ;; breaking the law. They are narrated instead, which keeps the
+  ;; diagnostic AND puts it where a reader looks. `note` is the INFO verb.
+  ;; ONE event, not one per line. Narrating every line of an ls -lR
+  ;; tree means one flushed write per line, and this suite runs on proot
+  ;; where a flush costs about as much as the git spawns. Doing it that
+  ;; way took the file from 155s to over 22 minutes and it was killed.
+  ;; The count is the diagnostic; the assertions above already check the
+  ;; journal, and the tree is checked by the install assertions.
   (define e12-ls
     (run-command (find-executable-path "ls")
                  (list "-lR" (path->string (build-path state-root "store")))
                  #:cwd state
                  #:kind 'build #:operation "e12-ls"))
-  (for ([line (in-list (run-result-stdout-lines e12-ls))])
-    (displayln line))
-  (displayln "--- e12 journal ---")
-  (displayln (file->string (journal-file state "pkg-alpha" "default")))
+  (note 'e12 (format "store tree: ~a line(s) from ls -lR, exit ~a"
+                     (length (run-result-stdout-lines e12-ls))
+                     (run-result-exit e12-ls)))
 
   ;; E-12c: one writer. The outer apply holds (id outer-apply) while
   ;; its performer runs the inner apply on the same state: the inner

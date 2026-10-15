@@ -15,7 +15,6 @@
          racket/string)
 
 (define files (vector->list (current-command-line-arguments)))
-
 (define (bad-at f line msg)
   (printf "READ-BAD ~a:~a ~a\n" f line msg)
   (flush-output)

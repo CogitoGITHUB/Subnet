@@ -4,3 +4,4 @@ compiled/
 tmp/
 sources/vault.git/
 opencode-plugin/node_modules/
+.probe-scratch/

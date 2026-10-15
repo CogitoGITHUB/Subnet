@@ -698,8 +698,7 @@
       (json-text (if (command-apply-confirm cmd) #t #f))
       ",\"results\":"
       (json-text (apply-document (command-apply-specs cmd)
-                                 (command-apply-lock cmd)
-                                 (command-apply-confirm cmd)))
+                                 (command-apply-lock cmd)))
       "}")]
     [(command-lock? cmd)
      (string-append envelope

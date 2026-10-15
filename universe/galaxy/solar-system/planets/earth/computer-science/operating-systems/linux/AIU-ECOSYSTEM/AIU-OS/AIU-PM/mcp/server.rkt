@@ -339,8 +339,27 @@
 ;; and run-command-json the CLI uses, so a refusal here is the refusal
 ;; a user would see on the command line.
 (define (run-tool name argv id)
+  ;; Three classes of failure, three different answers.
+  ;;
+  ;; exn:fail:pm? is pm's own refusal and is already a well-formed
+  ;; message. exn:fail:filesystem? and exn:fail:contract? are what the
+  ;; CALLER's arguments cause -- a specs directory that does not exist, a
+  ;; lockfile that is not there -- and they belong with the refusals, at
+  ;; -32000, because from the caller's side that is a command that could
+  ;; not run, not a broken server. Before this, `pm apply /no/such/dir`
+  ;; came back as -32603 Internal error with a raw exn message: true,
+  ;; useless, and it taught a client that the server was at fault.
+  ;;
+  ;; Everything else still reaches the catch-all in handle-message and
+  ;; stays -32603, so a genuine server fault is still reported as one.
   (with-handlers
       ([exn:fail:pm?
+        (lambda (e)
+          (rpc-error id -32000 (exn-message e)))]
+       [exn:fail:filesystem?
+        (lambda (e)
+          (rpc-error id -32000 (exn-message e)))]
+       [exn:fail:contract?
         (lambda (e)
           (rpc-error id -32000 (exn-message e)))])
     (define words (append (list name) argv (list "--format" "json")))
@@ -520,8 +539,12 @@
                   'confirmation "not-the-token")))
   (check-equal? (hash-ref (hash-ref wrong-token 'error) 'code) -32001)
 
-  ;; With the RIGHT token the command runs, and refuses for its own
-  ;; honest reason: apply is not executable yet.
+  ;; With the RIGHT token the command RUNS. The gate is the token, not
+  ;; executability: apply is a live command now (D-040), so what comes
+  ;; back is its own honest failure about the specs directory we named --
+  ;; not "not executable". Asserting the ABSENCE of the old stub refusal
+  ;; is deliberate: it is what proves the state-changing tool reached the
+  ;; engine instead of stopping at the surface.
   (define right-token
     (rpc 6 "tools/call"
           (hasheq 'name "apply"
@@ -529,8 +552,9 @@
                   'confirmation (session-token sess))))
   (define right-token-error (hash-ref right-token 'error))
   (check-equal? (hash-ref right-token-error 'code) -32000)
-  (check-true (regexp-match? #rx"not executable"
-                             (hash-ref right-token-error 'message)))
+  (define right-token-msg (hash-ref right-token-error 'message))
+  (check-false (regexp-match? #rx"not executable" right-token-msg))
+  (check-true (regexp-match? #rx"state" right-token-msg))
 
   ;; Unknown method, unknown tool, wrong arity, bad params: every one
   ;; is a JSON-RPC error, never an exception out of the handler.

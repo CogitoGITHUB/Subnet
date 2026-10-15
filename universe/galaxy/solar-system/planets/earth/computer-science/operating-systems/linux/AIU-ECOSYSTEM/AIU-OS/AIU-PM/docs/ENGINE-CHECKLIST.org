@@ -873,6 +873,46 @@ The apply suite must complete. A hang now reports its last WAIT line
 instead of nothing, which is the acceptance condition even if a rare
 ordering issue survives.
 
+** DONE S2-06 the E2E hang: a synchronous channel nobody read
+A Racket channel is SYNCHRONOUS. (channel-put ch 'stop-now) on a bare
+(make-channel) blocks until another thread receives, and nothing ever
+read it, so the test armed its own cancel and wedged at zero CPU with
+flat fds and threads. The narration named it unaided: the last line the
+feed ever produced was a WAIT with no WAIT-DONE, and that WAIT was the
+put. Replaced with core/cancel.rkt's make-cancel-source.
+The hang had been HIDING that cases (e), (f), (g) and both teardowns
+had never executed even once, so this suite was never green. Fixing it
+exposed two further defects, both test-side: e2e-live ran the apply
+outside the narrated thunk, so a park inside an apply left the previous
+case's WAIT-DONE as the last word; and e2e-write-spec lacked #:exists
+'truncate/replace, so case (e) aborted the rest of the file.
+E2E 84/84. Census flat at fds=8 threads=2 across 22 points.
+** DONE S2-07 pm apply --format json threw an arity error
+run-command-json called apply-document with three arguments; it is
+defined with two. Every JSON apply therefore died on a contract
+violation instead of returning a document. Found by probing the real
+path, not by reading.
+** DONE S2-08 a bad specs path escaped as a raw filesystem error
+scan-specs listed the directory with no check, so a typo came back as
+"directory-list: could not open directory": no rule named, and on the
+MCP surface as an internal error blaming the server for the caller's
+mistake. It now refuses with kind 'config, naming the path and what was
+expected.
+** DONE S2-09 MCP run-tool returned -32603 for the caller's bad input
+Only exn:fail:pm? was handled, so a filesystem or contract error from
+the caller's own arguments escaped to the catch-all and became
+"Internal error". Those two classes now answer -32000 like every other
+refusal; genuine server faults still answer -32603.
+** DONE S2-10 the E-12 block printed to stdout
+displayln dumps of the store tree and journal broke the one-printer
+rule and passed anyway, because the text lint does not scan test
+submodules. They are narrated now. The lint blind spot itself is still
+open: see TODO S2-11.
+** TODO S2-11 close the lint blind spot on test submodules
+Stage 6 (one-printer) and stage 15 (audited effects) do not scan
+(module+ test ...) bodies, so a test can break either rule silently.
+S2-10 was one instance found by reading; there may be more.
+
 * PHASE S3: E-18 command wiring (cli/main.rkt)
 ** DONE S3-00 pm apply wired with the D-040 gate
 =pm apply SPECDIR= derives the plan, prints it, changes NOTHING, exits 0.
