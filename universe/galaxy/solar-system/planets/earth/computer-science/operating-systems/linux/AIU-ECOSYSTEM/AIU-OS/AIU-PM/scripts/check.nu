@@ -368,6 +368,122 @@ def run-stage-15-body [] {
     if (($violations | length) > 0) { exit $EXIT_VIOLATIONS }
 }
 
+# ---------------------------------------------------------------------------
+# stage 16: the one-printer rule INSIDE test bodies.
+#
+# WHY THIS STAGE EXISTS. Stages 14 and 15 both stop at `(module+ test`.
+# That was deliberate -- a test may print whatever it needs to assert on --
+# but the skip was total and only ever stated in a code comment. So a
+# `displayln` in a test block printed straight to the console and the gate
+# stayed green: a real violation, invisible, found by reading.
+#
+# THE POLICY, stated rather than skipped:
+#
+#   * A test MAY print. That is how it asserts. But it must print to a
+#     port it names -- a captured string port, a temp file, a
+#     parameterised output port. A bare `(displayln "x")` with no port is
+#     unsuppressed console output and is a violation.
+#   * The designated printers (display-pm-error, display-internal-error,
+#     display-result, display-warning-summary) are exempt, and exempt for a
+#     structural reason: they ARE the one printer, so calling one obeys
+#     the rule rather than breaking it.
+#   * EFFECTS IN TESTS ARE ALLOWED, and that is a decision, not a gap. A
+#     test exists to write fixtures and to spawn real tools; forbidding
+#     that would forbid testing. Stage 15's audited-writers rule exists so
+#     an effect cannot slip in undeclared in PRODUCTION code. Here the
+#     declaration is the file itself: everything past `(module+ test` is
+#     test code by construction, reviewed as such. This paragraph is the
+#     record of that decision, so it cannot quietly become a gap.
+#
+# PRECISION, measured before this was switched on. 145 test-block prints
+# already named a port. The 4 that appeared not to were ALL false
+# positives: two designated printers called across lines, one multi-line
+# call naming its port two lines later, and `(displayln "go" uniq-held)`
+# where the port is `uniq-held`. Matching the words "out"/"port" flagged
+# exactly that last one, so every hit was false and the rule protected
+# nothing. A lint whose hits are all noise is decoration.
+#
+# What ships is therefore narrow and honest, and it UNDER-reports on
+# purpose:
+#
+#   * Only lines that BEGINS with a raw print name and ENDS with a closing
+#     paren are judged, which means the whole call is on one line. A
+#     multi-line call begins `(displayln` and does not end with `)`, so it
+#     is skipped rather than guessed at.
+#   * The call name must MATCH exactly, not merely start the same way, so
+#     `display-pm-error` is never mistaken for `display`. The earlier
+#     prefix test would have flagged every designated-printer call whose
+#     only argument was a string.
+#   * String literals are removed BEFORE the argument test. Without that,
+#     `(displayln "a long message")` counts as four arguments and passes.
+#     After removal, the port -- which is never inside a string -- is the
+#     only thing left, so "nothing left but the closing paren" means the
+#     call printed data and named no port.
+#   * A `#:port` keyword exempts the line, which covers the keyword form.
+#
+# No paren counting is used anywhere. Nushell will not accept
+# `str count "("`, and a rule that has to balance brackets across lines is
+# a rule that will be wrong somewhere. Zero true violations on the tree at
+# switch-on, so this runs on by default.
+
+def test-print-call-name [t] {
+    let first = ($t | split row " " | where {|x| ($x | str trim | is-not-empty) } | first)
+    ($first | str replace --all --regex '^\(' "")
+}
+
+def test-print-names-port [t] {
+    let nostr = ($t | str replace --all --regex '"[^"]*"' " ")
+    let rest = ($nostr | str replace --all --regex '^\(\w+' " ")
+    let toks = ($rest | split row " " | where {|x| ($x | str trim | is-not-empty) })
+    not (($toks | length) == 1 and ($toks | first) == ")")
+}
+
+def test-print-hits [f] {
+    let ls = (open --raw $f | lines)
+    let markers = ($ls | enumerate | where {|r| ($r.item | str trim) == "(module+ test" } | get index)
+    if ($markers | is-empty) { return [] }
+    let at = ($markers | first)
+    let total = ($ls | length)
+    let raw_prints = ["displayln" "display" "printf" "print" "newline"]
+    mut hits = []
+    mut i = $at
+    while $i < $total {
+        let t = ($ls | get $i | str trim)
+        # Skip comments: a commented-out call prints nothing.
+        if (not ($t | str starts-with ";")) {
+            if ($t | str ends-with ")") {
+                let n = (test-print-call-name $t)
+                if ($n in $raw_prints) {
+                    let keyword = ($t | str contains "#:port")
+                    if ((not $keyword) and (not (test-print-names-port $t))) {
+                        $hits = ($hits | append (
+                          "test-print: " + $f + ":" + ($i + 1 | into string)
+                          + " prints with no port named (S-14)"
+                        ))
+                    }
+                }
+            }
+        }
+        $i = $i + 1
+    }
+    $hits
+}
+
+def run-stage-16-body [] {
+    print "[check] stage 16 test-body printer lint"
+    let spec = ($env | get -o CYBERDECK_LINT_ROOTS? | default ".")
+    let roots = ($spec | split row " ")
+    mut violations = []
+    for r in $roots {
+        let files = (lint-files $r | where {|f| ($f | str ends-with ".rkt") })
+        let hits = ($files | each {|f| test-print-hits $f } | flatten)
+        for v in $hits { print $v }
+        print $"test-print: ($files | length) files, ($hits | length) violations"
+        $violations = ($violations | append $hits)
+    }
+    if (($violations | length) > 0) { exit $EXIT_VIOLATIONS }
+}
+
 def run-stage-14-body [] {
     print "[check] stage 14 one-printer lint"
     let spec = ($env | get -o CYBERDECK_LINT_ROOTS? | default ".")
@@ -598,8 +714,8 @@ def main [--changed] {
     print $"[check] run start utc=(utc)"
     let changed_mode = ($changed or (($env | get -o CYBERDECK_CHANGED?) == "1"))
     let want = (if $changed_mode {
-        $env | get -o CYBERDECK_STAGES? | default "1,2,3,4,7,13,14,15,changed" } else {
-        $env | get -o CYBERDECK_STAGES? | default "1,2,3,4,6,7,8,9,10,11,12,13,14,15" })
+        $env | get -o CYBERDECK_STAGES? | default "1,2,3,4,7,13,14,15,16,changed" } else {
+        $env | get -o CYBERDECK_STAGES? | default "1,2,3,4,6,7,8,9,10,11,12,13,14,15,16" })
     let todo = ($want | split row ",")
     # `date now` is read twice and subtracted: measurement only, printed for
     # the record. Nothing waits on it (D-015).
@@ -686,6 +802,9 @@ def main [--changed] {
         }
         if "15" in $todo {
             run-stage-15-body
+        }
+        if "16" in $todo {
+            run-stage-16-body
         }
     let elapsed = (((date now | into int) - $started) / 1000000)
     print $"[check] end utc=(utc) after=($elapsed)ms"
