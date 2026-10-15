@@ -593,6 +593,7 @@
            "git.rkt"
            "run.rkt"
            "vault.rkt"
+           "../core/cancel.rkt"
            "../core/git-url.rkt"
            "../core/errors.rkt"
            "../core/plan.rkt")
@@ -1008,6 +1009,10 @@
   (define e2e-pin-b (cadr e2e-up-b-list))
   (define e2e-specs (build-path e2e-root "specs"))
   (make-directory e2e-specs)
+  ;; REWRITES the file: case (e) bumps pkg-alpha's version in this same
+  ;; specs dir, which is what "a changed input hash" means. Without the
+  ;; truncate/replace the rewrite raised "file exists" and case (e) never
+  ;; ran at all.
   (define (e2e-write-spec dir name ver deps pin up prog extra-install)
     (call-with-output-file (build-path dir (string-append name ".rktd"))
       (lambda (out)
@@ -1025,7 +1030,8 @@
             extra-install "))"
             " (license mit)"
             " (homepage \"https://example.invalid/\"))")
-          out))))
+          out))
+      #:exists 'truncate/replace))
   (e2e-write-spec e2e-specs "pkg-alpha" "1.0.0" "()" e2e-pin-a
                   (string-append "file://" (path->string e2e-up-a))
                   "prog" "")
@@ -1043,18 +1049,24 @@
   ;; call-with-values to survive a wrapper that keeps only the first
   ;; value; that was defending against a problem this call site does not
   ;; have, and the box is what broke it.
+  ;;
+  ;; The apply is INSIDE the narration, not before it: an earlier version
+  ;; computed `rows` first and passed the finished list to e2e-case, so
+  ;; every live case emitted its WAIT only after the work was over -- the
+  ;; (c) wait read +0.001s over a forty-second apply, and a park in the
+  ;; apply left the previous case's WAIT-DONE as the last word. A case that
+  ;; narrates after the thing it describes is the same silence D-041 forbids.
   (define (e2e-live #:state state #:manifest manifest #:prefix prefix
                     #:case tag)
-    (define rows
-      (parameterize ([current-allow-file-urls #t])
-        (pm-apply (path->string e2e-specs)
-                  #:state state
-                  #:manifest manifest
-                  #:prefix prefix
-                  #:vault e2e-vault)))
     (e2e-case tag
               "the installed tree is not inspectable until this apply has returned"
-              (lambda () rows)))
+              (lambda ()
+                (parameterize ([current-allow-file-urls #t])
+                  (pm-apply (path->string e2e-specs)
+                            #:state state
+                            #:manifest manifest
+                            #:prefix prefix
+                            #:vault e2e-vault)))))
   ;; (a) dry run prints the plan and touches nothing.
   (define dry-plans
     (e2e-case "(a) dry-run"
@@ -1103,8 +1115,21 @@
   (define e2e-prefix2 (path->string (build-path e2e-root "prefix2")))
   (define e2e-manifest2
     (path->string (build-path e2e-state2 "manifest.rktd")))
-  (define e2e-cancel-box (make-channel))
-  (channel-put e2e-cancel-box 'stop-now)
+  ;; A cancel that has ALREADY fired, which is the whole point of this case.
+  ;; It is core/cancel.rkt's source, so it is the same primitive the CLI and
+  ;; jobs use, and its trigger is a semaphore-post: that never blocks and
+  ;; never waits for a reader.
+  ;;
+  ;; It was a bare (make-channel) with a channel-put instead, and THAT is the
+  ;; hang this case used to cost. A channel made with no buffer is
+  ;; SYNCHRONOUS: channel-put blocks until some other thread takes the value,
+  ;; and nothing ever reads this one, so the put waited forever -- between the
+  ;; (c) census and the (d) case, at no CPU, with flat fds and flat threads,
+  ;; which is why it read as "not the leak" and went looking for a resource.
+  ;; A channel here needs a reader that is never started, so the cancel
+  ;; source that can already be posted is the semaphore one.
+  (define-values (e2e-cancel-evt e2e-fire-cancel!) (make-cancel-source))
+  (e2e-fire-cancel!)
   (define e2e-cancel-err
     (e2e-case "(d) cancel before any step"
               "nothing is installed until this apply has decided to stop"
@@ -1116,10 +1141,18 @@
                               #:manifest e2e-manifest2
                               #:prefix e2e-prefix2
                               #:vault e2e-vault
-                              #:cancel e2e-cancel-box))
+                              #:cancel e2e-cancel-evt))
                   'no-error))))
   (check-pred cancelled-error? e2e-cancel-err)
-  (check-false (directory-exists? (build-path e2e-prefix2 "pkg-alpha")))
+  ;; "Nothing was performed" is proved by the store, the current link and
+  ;; the journal. It is NOT proved by the absence of prefix/<package>:
+  ;; pm-apply makes every package's prefix dir before it takes the writer
+  ;; lock (its own "prefix-dirs" wait says why: a current link cannot land
+  ;; without it), and the cancel only fires inside apply-plan, long after.
+  ;; Asserting that dir's absence tested a precondition, not the law.
+  (check-false (directory-exists? (build-path e2e-state2 "store")))
+  (check-false (link-exists? (build-path e2e-prefix2 "pkg-alpha" "current")))
+  (check-equal? (journal-completions e2e-state2 "pkg-alpha" "default") '())
   (define after-cancel-results
     (e2e-live #:state e2e-state2
               #:manifest e2e-manifest2
