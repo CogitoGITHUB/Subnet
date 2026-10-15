@@ -2,7 +2,7 @@
 // OpenCode runtime, no network: synthetic JSON Lines exactly as
 // core/verbose.rkt writes them, fed through the real functions.
 //
-//   node opencode-plugin/test.mjs
+//   node agent/opencode-plugin/test.mjs
 
 import assert from "node:assert/strict";
 import { mkdtempSync, writeFileSync, rmSync } from "node:fs";

@@ -178,6 +178,6 @@ evidence that a step did not happen.
 
 * Where to look next
 - =docs/API.org= -- every field and a real example, and the doc is a test
-- =docs/OPEN-DECISIONS.org= -- everything not finished, with the
+- =plan/OPEN-DECISIONS.org= -- everything not finished, with the
   defaults being used
-- =docs/DECISIONS.org= -- why things are the way they are
+- =plan/DECISIONS.org= -- why things are the way they are

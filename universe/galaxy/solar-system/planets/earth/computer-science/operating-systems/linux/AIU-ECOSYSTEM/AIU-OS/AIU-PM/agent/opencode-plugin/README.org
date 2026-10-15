@@ -1,4 +1,4 @@
-* opencode-plugin/ -- the pm side of OpenCode (V-5)
+* agent/opencode-plugin/ -- the pm side of OpenCode (V-5)
 
 pm stays the only implementation of package-manager policy. This
 directory is a shim: it runs pm, reads its =--format json= output, and

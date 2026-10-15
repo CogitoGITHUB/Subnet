@@ -1,0 +1,289 @@
+#+TITLE: AIU-PM reorganisation plan — placement, names, splits, order
+#+AUTHOR: Shape
+
+#+STARTUP: showeverything
+
+* What this document is
+
+A complete proposal for how =AIU-PM/= should be arranged: what lives in
+which directory, what each file is called, which over-loaded files split
+into what, and the order to do it in so the tree is never broken.
+
+It is written to be handed to a reviewer with no other context. Every
+line count and every "current" claim was measured on the tree at
+=9a9c552=, not remembered. Where I am uncertain I say so and say what
+would settle it — there are no silent guesses.
+
+Nothing here has been implemented. The working tree is clean and every
+commit made so far is green at the checks it was run against.
+
+* The problem, measured
+
+The tree is 20,837 lines of Racket across 48 =.rkt= files, plus 1,003
+lines of Nushell in the gate.
+
+| area | files | lines |
+|------+-------|-------|
+| =core/= | 23 | 6,173 |
+| =backends/= | 17 | 10,223 |
+| =cli/= | 1 | 1,525 |
+| =mcp/= | 1 | 673 |
+| =scripts/= | 6 + 9 =.nu= | 1,243 + 1,555 |
+
+Three defects, in order of cost:
+
+**1. =core/= means nothing.** It reads as "not a backend", which is a
+location, not a job. It holds narration (=verbose=), the error type
+(=errors=), the scope seam (=scope=), locking (=lock=, =vault-lock=),
+and the spec parser. Those are five unrelated things behind one
+meaningless prefix.
+
+**2. =backends/= is worse — it is a lie.** The directory holds the
+process spawner, the fifo status protocol, the pipe drainers, the tree
+killer, the job queue, the vault, and git. =run.rkt= is not a backend;
+it is the subprocess layer everything else is built on.
+
+**3. Seven files do five to seven jobs each behind one vague name.**
+=plan=, =run=, =jobs=, =vault=, =spec-read=, =build=, =cli/main=.
+
+*=run.rkt= deserves its own note.* It is 1,063 lines and it is the
+substrate: the fifo status protocol, the drain threads, the process-tree
+killer, and the cancellation door. Two real hangs this session lived
+here, and one of them is still only mitigated. The direction of travel
+must be away from "one file holds the substrate".
+
+* The rule that decides every name
+
+From =HARD-RULES.org= rule 3: "Names say what the thing does. No
+=core/=, =engine=, =utils=, =manager=, =handler=. A name that lies
+costs more than a missing comment."
+
+Applied strictly, that sentence also condemns =backends/=, =cli/=, and
+=core/. This plan takes the rule at its word.
+
+* Target layout
+
+#+BEGIN_EXAMPLE
+AIU-PM/
+  src/
+    narration/     how every operation speaks
+      events.rkt           the event schema, one record shape
+      narration.rkt        begin/end a run, step/note/warn/skip/decide
+      wait-door.rkt        wait-for / wait-done: the blocking door
+      print-console.rkt    the one printer (from core/verbose.rkt)
+    errors/
+      error-type.rkt        exn:fail:pm and the kinds (from core/errors.rkt)
+      error-message.rkt     rendering, exit codes (from core/errors.rkt)
+    machine/
+      directories.rkt      the scope seam (from core/scope.rkt)
+      file-lock.rkt        cross-process lock (from core/lock.rkt)
+      cancel.rkt           the cancellation door (from core/cancel.rkt)
+    spec/
+      spec.rkt             the spec struct (from core/spec.rkt)
+      spec-read.rkt        facade, unchanged public surface
+      spec-fields.rkt      (already split)
+      spec-source.rkt      (already split)
+      spec-build-steps.rkt (already split)
+      spec-typos.rkt       (already split)
+      spec-plan.rkt        identity hashing, from plan.rkt
+      plan-derive.rkt      spec -> package plan
+      plan-lower.rkt       build steps -> install actions  (the compiler)
+      plan-conflicts.rkt   path conflict refusal
+      ecosystem-file.rkt   from core/ecosystem.rkt
+      resolve.rkt          from core/resolve.rkt
+    process/
+      spawn.rkt            spawn + cwd validation (from run.rkt)
+      status-fifo.rkt      the fifo protocol + the holder decision
+      drain.rkt            pipe drain threads
+      kill-tree.rkt        process-group killer
+      cancel-wait.rkt      wait-command
+      progress.rkt         captured-lines limit, on-progress
+    git/
+      git-env.rkt          git binary, isolated env
+      git-commit.rkt       cat-file, has-commit, rev-parse
+      mirror-fetch.rkt     clone/fetch/pack (shallow)
+      mirror-pin.rkt       pinning, refs
+      export-tree.rkt      checkout + export
+      vault-refs.rkt       from vault.rkt
+      vault-create.rkt     from vault.rkt
+      vault-transfer.rkt   from vault.rkt
+      vault-checks.rkt     from vault.rkt
+    store/
+      store.rkt
+      manifest.rkt
+      lockfile.rkt
+      query.rkt
+      update.rkt
+    install/
+      apply.rkt            the apply operation
+      activate.rkt
+      generation.rkt       from activate.rkt
+      profile-flip.rkt     from activate.rkt
+      profile-gc.rkt       from activate.rkt
+      profile-holds.rkt    from activate.rkt
+      local-perform.rkt    from local.rkt
+      install-command.rkt  from install.rkt
+    build/
+      build-env.rkt
+      build-executor.rkt
+      build-systems/make.rkt cmake.rkt cargo.rkt configure.rkt run.rkt
+    queue/
+      job-record.rkt       from jobs.rkt
+      job-queue.rkt        from jobs.rkt
+      job-worker-locks.rkt from jobs.rkt
+      journal.rkt
+    security/
+      security.rkt
+    entry/
+      cli.rkt              argv -> command
+      documents.rkt        one JSON document per command
+      dispatch.rkt         command -> call
+      mcp-server.rkt       from mcp/server.rkt
+  gate/
+    check.nu               the gate
+    read-check.rkt
+    test-runner.rkt
+    tree.nu
+    env.nu
+  test-doubles/
+    fake-git.rkt           from backends/fake.rkt
+    dry-run-perform.rkt    from backends/dry-run.rkt
+  tools/
+    repl.rkt  hello-fetch.rkt  build-lua.rkt  probe-blob.rkt
+  docs/
+  agent/skills/
+  ecosystems/  targets/  agent/tv/  agent/opencode-plugin/
+#+END_EXAMPLE
+
+Total: ~62 files, each under ~400 lines except =spawn.rkt= and
+=apply.rkt=, which are the two legitimately large ones.
+
+* The splits, in dependency order
+
+Each is one commit. Each is verified by read-check, =raco make=, the
+file's own tests, and the dependent set, before the next begins.
+
+| # | from | to | why this order |
+|---|------|-----|----------------|
+| 1 | =core/plan.rkt= (974) | 4 files | =activate= and =apply= both need the lowering vocabulary |
+| 2 | =core/spec-read.rkt= (748) | facade | four modules already exist and work; finish the job |
+| 3 | =backends/jobs.rkt= (1043) | 3 files | **parked, no test net — see the warning** |
+| 4 | =backends/vault.rkt= (1653) | 5 files | **parked, no test net — see the warning** |
+| 5 | =backends/run.rkt= (1063) | 6 files | the substrate; split once its hangs are closed |
+| 6 | =backends/build.rkt= (673) | 3 + 5 files | self-contained executors |
+| 7 | =backends/activate.rkt= (650) | 4 files | depends on plan lowering, hence #1 |
+| 8 | =cli/main.rkt= (1525) | 4 files | requires nine files today; should require two |
+
+* The two warnings that decide whether this plan is safe
+
+**1. =jobs.rkt= and =vault.rkt= have no behavioural test net.** Both
+are on =FILE_PARKED= in =gate/check.nu=, so the gate does not run
+their tests. That is 2,696 lines being moved with nothing able to see a
+wiring mistake that still compiles.
+
+Their stated reasons:
+- =vault.rkt= — "large-blob test fails, 851 git processes, 470s"
+- =jobs.rkt= — "e2e: worker race and =file://= allowance cannot cross
+  processes; needs production design"
+
+Neither is "this file is untestable". The first is one pathological test
+that should be made cheap (a smaller blob still exercises the same code);
+the second is a real design question that should be decided.
+
+*Recommendation:* un-park both BEFORE splitting them. Compiling still
+catches a missing require, but not a mis-wired call that compiles and
+behaves wrongly. Splitting a parked file is the one item in this plan I
+would argue against.
+
+**2. =run.rkt= has one mitigated, not eliminated, hang.** The =#:cwd=
+guard removes the path that was observed. The general case — a child
+dying before the wrapper's first act — can still park the reader in
+=open()= on the fifo. It is narrated, not fixed. The holder that would
+fix it is not expressible in Racket 9.3 (probed; recorded in
+=plan/OPEN-DECISIONS.org=). Splitting =run.rkt= before that is closed
+means moving a file that still has a known open defect in it.
+
+* Directory moves that are pure renames
+
+Safe, mechanical, and independently verifiable:
+- =core/*.rkt= → =src/<area>/= per the table above
+- =backends/fake.rkt=, =backends/dry-run.rkt= → =test-doubles/=
+- =scripts/= → split into =gate/= (=check.nu=, =read-check.rkt=,
+  =test-runner.rkt=, =env.nu=, =tree.nu=) and =tools/= (the rest)
+- =cli/main.rkt= → =src/entry/cli.rkt=
+- =mcp/server.rkt= → =src/entry/mcp-server.rkt=
+
+Every require in the tree changes for these. The test suite catches a
+missing module — it fails to build rather than passing silently — which
+is the property that caught four stale doc examples during the earlier
+command wiring.
+
+* What must not change
+
+- The public surface of =core/spec-read.rkt=: ten files require it.
+- The JSON event schema in =core/verbose.rkt=: "lift it verbatim, feeds
+  from different tools stay mutually readable."
+- =profile-activate= / =profile-rollback= / =profile-remove=
+  contracts — wired in =69aa0f1=, do not touch.
+- No timers, anywhere (=D-015=). If a rename tempts a timeout, that is
+  the wrong fix.
+
+* What I could not settle, and what would settle it
+
+Stated rather than guessed:
+
+1. **Are =ecosystems/=, =targets/emacs=, =agent/tv/=, =agent/opencode-plugin/= in
+   scope?** They are sibling directories in the same repo and are not
+   Racket. Moving or renaming them touches a wider blast radius than
+   the package manager itself. *Settled by:* the owner saying whether
+   this plan covers =AIU-PM/= only, or the whole =AIU-OS= tree.
+2. **=backends/tmp/= and =agent/tv/= hold generated or channel content?**
+   *Settled by:* reading them; they were outside the line counts above.
+3. **Does =src/= suit the owner, or a flat top level?** The layout above
+   puts every =.rkt= under =src/= with area subdirectories. A flatter
+   option is =core/ backends/ cli/ mcp/ scripts/= renamed to honest
+   names in place, which is a much smaller diff but keeps the
+   meaningless =core/= prefix. *Settled by:* preference — I recommend
+   =src/= because the area directories are what make placement
+   self-explaining, which is the stated goal.
+
+* Verification per step
+
+Every step, without exception:
+1. =racket gate/read-check.rkt= on every touched =.rkt= — 0 bad
+2. =$RACO make= on every touched file
+3. the file's own tests
+4. the dependent set, run through =gate/test-runner.rkt=
+5. =gate/check.nu= — 0 violations, **including stage 6 text lint**
+
+Point 5 is there because of a miss this session: =abd748c= was pushed
+after read-check, =raco make= and the dependent tests all passed, and
+five of its files had no final newline, which stage 6 rejects. A subset
+that passes is not a gate.
+
+One item, one commit, explicit paths, DONE and the hash together.
+#+BEGIN_EXAMPLE
+DONE <what it fixes> @ <hash>
+#+END_EXAMPLE
+
+* The order I would actually execute
+
+1. Un-park =jobs.rkt= and =vault.rkt=, or accept the stated risk.
+2. Close the remaining =run.rkt= fifo hang, or record it as accepted.
+3. =core/plan.rkt= split. Gate green.
+4. =core/spec-read.rkt= facade tightened. Gate green.
+5. =jobs.rkt= split. Gate green.
+6. =vault.rkt= split. Gate green.
+7. =run.rkt= split. Gate green.
+8. =build.rkt= split. Gate green.
+9. =activate.rkt= split. Gate green.
+10. =cli/main.rkt= split. Gate green.
+11. =core/ → =src/= moves. Gate green.
+12. =backends/ → =src/= moves. Gate green.
+13. =scripts/ → =gate/= + =tools/=. Gate green.
+14. =fake.rkt=, =dry-run.rkt= → =test-doubles/=. Gate green.
+15. Final gate, 0 violations, push.
+
+Steps 1 and 2 come first on purpose. Both are preconditions for the
+moves being safe, and both are cheaper to do now than after 3,000 lines
+have been relocated.

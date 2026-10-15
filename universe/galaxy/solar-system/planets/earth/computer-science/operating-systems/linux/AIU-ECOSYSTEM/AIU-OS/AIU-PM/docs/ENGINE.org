@@ -4,7 +4,7 @@
 * Status
 Final design. Nothing here is implemented yet: =plan/= and =lock/= exist
 only as =core/plan.rkt= and =backends/dry-run.rkt=. The work order is
-docs/OPEN-DECISIONS.org, which is the file a resuming session reads
+plan/OPEN-DECISIONS.org, which is the file a resuming session reads
 first. No item in this file is open; anything still unconfirmed became an
 item in that file to inspect, not a question parked here.
 
@@ -375,7 +375,7 @@ same =<pkg>/current= link pointed at the checkout, =pm status= flags it
 =dev=, activation treats dev and normal packages identically, and
 =update --all= lists dev packages as skipped without changing its exit
 code. Dev mode is the last engine item (was checklist item E-19; see
-docs/OPEN-DECISIONS.org).
+plan/OPEN-DECISIONS.org).
 
 * Partial-failure law (G-08)
 When a run dies halfway, the law is RESUME for apply, ATOMIC for the

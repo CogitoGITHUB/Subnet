@@ -848,7 +848,7 @@ def log-path [f tag] {
 # cannot disagree about format.
 #
 # One process, never one per file. A file that hangs here is a test
-# isolation bug to fix (see docs/OPEN-DECISIONS.org), not a reason for a tier.
+# isolation bug to fix (see plan/OPEN-DECISIONS.org), not a reason for a tier.
 # D-015: no timer, no timeout, no sleep; the wait ends on process exit.
 def run-runner [files] {
     let racketx = ($nu.home-dir | path join "opt" "racket-full" "bin" "racket")

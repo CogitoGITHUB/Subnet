@@ -161,7 +161,7 @@ is mapped to that sentence in the last column of the first table.
   result; the rest refuse honestly.
 
 ** E-28 skill -- TODO
-- *Purpose:* =skills/aiu-pm/SKILL.md= with when to use each command,
+- *Purpose:* =agent/skills/aiu-pm/SKILL.md= with when to use each command,
   the confirmation rule, the redaction rule, and three worked examples
   with synthetic names that run as a test.
 - *Blocked by:* V-4, and by the fact that most commands still refuse.
@@ -250,7 +250,7 @@ intent, and each has a testable "done when" here.
 
 * Phase R: restructure and rebrand -- NOT IN THIS RUN
 Listed only, as instructed. R-01 inventory (delivered:
-=docs/FILE-INVENTORY.org=), R-02 naming proposals, R-03 apply the chosen
+=plan/FILE-INVENTORY.org=), R-02 naming proposals, R-03 apply the chosen
 renames, R-04 move or merge thin files, R-05 rebrand to AIU-PM.
 Note: the directory has already been moved to =AIU-ECOSYSTEM/AIU-PM=
 and most of R-05 is therefore already done by that move. The remaining

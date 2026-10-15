@@ -6,7 +6,7 @@
 - This is the contract between the user and any AI working in this repo.
 - Rules have IDs (P-1, E-5, ...). Cite them in commit messages and whenever you deviate.
 - If a user instruction conflicts with a rule: name the rule, ask once, then do what the
-  user decides and log it in =docs/DECISIONS.org=.
+  user decides and log it in =plan/DECISIONS.org=.
 - [VERIFY] = researched in the docs but not tested. Test in the REPL before relying on it.
 - [PROPOSAL] = a default to confirm with the user, not a fact.
 - If reality disagrees with this file, say so. Fix reality, or amend this file through
@@ -420,7 +420,7 @@ build: step failed;
   cases) pass; =check.nu= green; no rule violated or the deviation logged; commit made;
   next step stated.
 
-* 14. Open decisions (seed =docs/DECISIONS.org= with these)
+* 14. Open decisions (seed =plan/DECISIONS.org= with these)
 | ID    | Decision                                                                  |
 |-------+---------------------------------------------------------------------------|
 | D-001 | Project name (directory name below is a working name)                      |

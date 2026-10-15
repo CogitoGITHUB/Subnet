@@ -56,7 +56,7 @@ new pm code. pm already emits everything a browser needs: one-line
 --format json documents per command and the JSONL event feed. tv only
 reads those through Nushell source commands (shell = nu) and hands
 selections back as values; it never implements package-manager logic.
-Channel sources live in-repo under tv/ and install by symlink into the
+Channel sources live in-repo under agent/tv/ and install by symlink into the
 cable dir through a script that only prints, the same pattern as the
 OpenCode plugin. All browsing is read-only by construction; the only
 state-changing actions are execute-mode handoffs into nu scripts that
@@ -150,7 +150,7 @@ toolchains from source). The =run= escape hatch stays flagged. D-032.
 
 ** 2026-10-11 D-031: project name is AIU-PM
 Project name is AIU-PM (Atomic Information Unit Package Manager);
-rebrand runs last in Phase R (R-05, listed in docs/OPEN-DECISIONS.org),
+rebrand runs last in Phase R (R-05, listed in plan/OPEN-DECISIONS.org),
 after the engine, after the restructure, before any package declarations.
 Git history, D-number wording and old commit messages stay as they are.
 D-031.

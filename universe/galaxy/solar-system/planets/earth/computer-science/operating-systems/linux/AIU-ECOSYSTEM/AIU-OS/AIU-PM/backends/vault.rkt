@@ -1619,7 +1619,7 @@
 
   ;; Large blobs refuse without the explicit flag. PARKED at file level:
   ;; this file never runs in the gate, because this case alone spawns 851
-  ;; git processes and takes 470s. See docs/OPEN-DECISIONS.org.
+  ;; git processes and takes 470s. See plan/OPEN-DECISIONS.org.
   (define big-dir (build-path test-root "up-big"))
   (make-directory big-dir)
   (fixture-git big-dir "init" "-b" "main" ".")

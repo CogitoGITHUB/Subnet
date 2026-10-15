@@ -1,6 +1,6 @@
 #lang racket/base
 ;; skill-examples.rkt -- the three worked examples in
-;; skills/aiu-pm/SKILL.md, run as a test (E-28).
+;; agent/skills/aiu-pm/SKILL.md, run as a test (E-28).
 ;;
 ;; The skill is documentation, and documentation rots. Every command it
 ;; shows is executed here against the real CLI or the real MCP server,
@@ -14,9 +14,9 @@
          racket/file
          racket/list
          json
-         "../../cli/main.rkt"
-         "../../mcp/server.rkt"
-         "../../core/verbose.rkt")
+         "../../../cli/main.rkt"
+         "../../../mcp/server.rkt"
+         "../../../core/verbose.rkt")
 
 (module+ main
   (dynamic-require "skill-examples.rkt" 'test #f))
