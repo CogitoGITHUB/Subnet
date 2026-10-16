@@ -1,0 +1,24 @@
+#+TITLE: 20 — Done-line crossing
+# One job: one small checklist item of the shared build up to the done line.
+# Status: TODO; added 2026-10-16, in chronological order.
+
+* What
+# the work, in a line or two.
+  The closing state of the shared checklist: output working, the full
+  architecture in place, the full basic version working in the multiplexer
+  and the editor, the notation core hosted in the editor, the joins
+  proven, and select and send working to both OpenCode and Hermes from
+  both programs.
+
+* Done when
+# the single observable check.
+  Every done-line clause holds; the shared checklist is deleted and each
+  program starts its own checklist from its tier-2 seed.
+
+* Dependencies
+# the items that must be DONE first.
+  all items above.
+
+* State
+# TODO; DONE records its commit hash; BLOCKED names its blocker.
+  TODO.
