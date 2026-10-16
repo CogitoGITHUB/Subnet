@@ -1,0 +1,10 @@
+#+TITLE: Non-goals — AIU TERMINAL MULTIPLEXER
+# One job: what this program will never do, and which tempting things are refused anyway
+# Status: skeleton; step 8 fills it. Plans stay general; detailed design comes later.
+
+* Deliberately not done
+# one line per thing this program will never do, with the reason.
+
+* Tempting but out
+# things that look useful and are still refused, with the reason.
+

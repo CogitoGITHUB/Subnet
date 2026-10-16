@@ -1,0 +1,26 @@
+#+TITLE: Rule 02 — Dev mode in every program that has config or plugins
+# One job: the hard rule and what it demands in this program
+# Status: current; the rule text is the owner's and changes only with the owner.
+
+* The rule
+# the owner's words, repeated unchanged. Do not soften or reinterpret them here.
+  Dev mode in every program that has config or plugins. Work mode loads my config and plugins
+  live from source. A rebuild command bakes them into a new binary as first-class defaults and
+  keeps the last good build. The baked binary loads no config or plugin at startup, opens
+  instantly, and prints its measured start time. Rebuild is manual: I start it when I decide,
+  it may run long, it runs while I keep working and tells me when done. Measured times are
+  information, not gates. It works with PM: install, then bake in.
+
+* What it demands here
+# how this rule bites in this program. No examples; the plan carries the detail.
+  Work mode loads the pane layout and key config live from source; one rebuild command,
+  started by hand, bakes them in as defaults and keeps the last good build.
+
+* What breaks it
+# the failure this rule exists to prevent.
+  A binary that needs its config present to start, or a rebuild that surprises the owner.
+
+* Where it is proven
+# the checklist item that shows this rule holds; todo until step 10 names it.
+  todo — step 10 names the checklist item
+

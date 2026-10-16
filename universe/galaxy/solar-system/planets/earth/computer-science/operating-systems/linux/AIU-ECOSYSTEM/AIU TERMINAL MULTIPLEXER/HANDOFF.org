@@ -1,0 +1,29 @@
+#+TITLE: HANDOFF — AIU TERMINAL MULTIPLEXER
+# One job: everything a fresh conversation needs to start on the multiplexer.
+# Status: current at the base commit; skeleton only, nothing built yet.
+
+* What this program is
+# Shells, panes, a layout tree, and a session holder with detach and reattach.
+# The holder owns the shells and the screen is a thin client; Nushell command records are first class.
+# Terminals are a facade over tty; what the phone cannot promise is written down, never assumed.
+
+* What binds it
+# The rules are binding, not guidance; read them before designing anything.
+  - rules/ — the owner's hard rules, one file each; rule 12 is not here, it is notation only.
+  - ../contract/ — the shared contract; read before designing anything that crosses programs.
+  - ../agents/ — the agent design; either agent opens in its own pane beside the work.
+
+* Current state
+# What is true right now.
+  - Skeleton only: directories, planned files, indexes; no implementation.
+  - The plan fills in step 8; the contract it obeys is frozen in step 9.
+
+* Next step
+# One line, so a fresh conversation starts in the right place.
+  - No build work yet. Continue the planning steps from ../HANDOFF.org.
+
+* How to work here
+# House rules.
+  - Docs only while planning: no code, no examples inside plans.
+  - Small commits, explicit paths, never a blanket add, no pushes.
+  - Phone limits are recorded in ../WHEN-ON-LAPTOP.org the moment they appear.

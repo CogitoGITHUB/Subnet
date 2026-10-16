@@ -1,0 +1,13 @@
+#+TITLE: Goal — AIU TERMINAL MULTIPLEXER
+# One job: what finished looks like for this program, in one paragraph, and how it is known to be met
+# Status: skeleton; step 8 fills it. Plans stay general; detailed design comes later.
+
+* The goal
+# what finished looks like for this program, in one paragraph.
+
+* When it is met
+# the observable signs, one per line. No dates.
+
+* What it rejects
+# directions this program refuses; the reasons live in non-goals.org.
+

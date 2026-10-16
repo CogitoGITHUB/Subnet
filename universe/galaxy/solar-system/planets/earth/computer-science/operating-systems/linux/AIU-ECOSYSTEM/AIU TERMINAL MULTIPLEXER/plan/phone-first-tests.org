@@ -1,0 +1,13 @@
+#+TITLE: Phone-first tests — AIU TERMINAL MULTIPLEXER
+# One job: what must be proven on the phone first, what waits for the laptop, and how each is proven
+# Status: skeleton; step 8 fills it. Plans stay general; detailed design comes later.
+
+* Proven on the phone first
+# one line per thing that must work on the phone before anything is built on it.
+
+* Waiting for the laptop
+# what the phone cannot prove; every line here is also appended to WHEN-ON-LAPTOP.org.
+
+* How each is proven
+# the single check for each phone-first item.
+

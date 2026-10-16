@@ -1,0 +1,13 @@
+#+TITLE: Reused vs written — AIU TERMINAL MULTIPLEXER
+# One job: what comes from the package manager, what comes from research, what is written here
+# Status: skeleton; step 8 fills it. Plans stay general; detailed design comes later.
+
+* Reused from the package manager
+# what PM already does, with the PM surface that provides it.
+
+* Reused from research
+# what a studied project contributes, as a lesson or a reference.
+
+* Written here
+# what must be written for this program fresh.
+

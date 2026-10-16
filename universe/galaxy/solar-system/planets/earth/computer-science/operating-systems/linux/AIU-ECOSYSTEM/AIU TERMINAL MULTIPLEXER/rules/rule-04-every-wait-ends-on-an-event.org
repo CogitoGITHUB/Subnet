@@ -1,0 +1,23 @@
+#+TITLE: Rule 04 — No timers anywhere; every wait ends on an event
+# One job: the hard rule and what it demands in this program
+# Status: current; the rule text is the owner's and changes only with the owner.
+
+* The rule
+# the owner's words, repeated unchanged. Do not soften or reinterpret them here.
+  No timers anywhere, every wait ends on an event. Only exception: the hang-notify timer
+  already used inside test scripts. Where terminals force a wait (key input, rendering), adopt
+  what existing tools already do; do not reinvent.
+
+* What it demands here
+# how this rule bites in this program. No examples; the plan carries the detail.
+  Key input, rendering and a pane exiting all end on events. Where the terminal forces a wait,
+  copy what proven tools do, never invent a tick.
+
+* What breaks it
+# the failure this rule exists to prevent.
+  A timer that fires with nothing to say, or a wait that never announces itself.
+
+* Where it is proven
+# the checklist item that shows this rule holds; todo until step 10 names it.
+  todo — step 10 names the checklist item
+
