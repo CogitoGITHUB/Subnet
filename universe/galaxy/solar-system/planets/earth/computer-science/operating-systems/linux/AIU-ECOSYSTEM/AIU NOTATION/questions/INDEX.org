@@ -5,8 +5,8 @@
 * Files
 # one line per file: its name, then the single job it performs. This index is updated in the same commit as any change here.
 
-  - usage-inventory.org — the owner questionnaire: what is used from Org and Markdown, what is missed, and typing comfort for the sign
+  - usage-inventory.org — the owner questionnaire: what is used from Org and Markdown, what is missed, and typing comfort for the sign; answered 2026-10-16
 
 * Later
-# Owner questions, answerable on a phone. Step 5 delivers usage-inventory.org and then stops.
+# Owner questions, answerable on a phone. Step 5 delivered usage-inventory.org; the owner answered 2026-10-16; typing comfort still open.
 

@@ -1,19 +1,39 @@
 #+TITLE: Usage inventory
 # One job: the owner questionnaire: what is used from Org and Markdown, what is missed, and typing comfort for the sign
-# Status: waiting for the owner; answered on a phone in step 5.
+# Status: answered 2026-10-16 on a phone; transcribed in the owner's words; typing comfort still open.
 
 * What is used from Org
 # the owner answers on a phone, short lines. Do not guess any of it.
+  - Literate capacity: proper documentation with code blocks in the file, to
+    be loaded itself or to send the code into other files (like Org Babel).
+    [1, 2026-10-16]
 
 * What is used from Markdown
 # the same, however small.
+  - Markdown has some easy, good syntax; the owner is not sure whether to use
+    any of it. [2, 2026-10-16]
 
 * What is wished for
 # what Org and Markdown do not do well enough, in the owner's words.
+  - Owner's words: "most signs but we will use names directly like title
+    paragraph code block etc" — read as: drop most signs; name elements in
+    words (title, paragraph, code block, ...). [3, 2026-10-16]
+  - Math: out of scope for now ("we don't talk math right now"). [3, 2026-10-16]
+  - Auto-numbered headings: "the title to automatically use numbers so a
+    heading has 1.title and subtitle has 1.1 etc" (owner, follow-up
+    2026-10-16). Open point: numbers written in the file text or computed
+    when loading.
 
 * Typing comfort for the mark
 # which signs are easy to type on the phone keyboard, and which collide with prose or tags.
+  - Not answered separately on 2026-10-16 (answers covered 1, 2, 3, 5). The
+    names-not-signs line under What is wished for is the nearest fact so far;
+    the exact signs remain open.
 
 * Loading preference
 # a loader heading first, or a language line first; still open.
-
+  - Each page opens with a title; like the owner's Emacs setup with live
+    context, that title carries "the full things I set up in file creation"
+    (their custom package); first the full plan, then the specialties; no
+    engine etc. for notation; no format created unless absolutely necessary.
+    [5, 2026-10-16]
