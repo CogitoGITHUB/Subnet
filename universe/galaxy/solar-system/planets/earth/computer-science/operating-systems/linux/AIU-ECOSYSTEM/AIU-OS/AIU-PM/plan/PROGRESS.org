@@ -15,8 +15,9 @@ Resuming: read the last line, then =plan/MOVE-ORDER.org= for the script.
 | 4 | =backends/run.rkt= split six ways, 62=62 tests | 341abe2 |
 | — | compiled output out of the tree, =PLTCOMPILEDROOTS= in one place | f792eca |
 | 5 | =core/spec-read.rkt= facade already split at abd748c; verified, not redone | — |
-| 6 | =src/build/build-plan.rkt= split: =build-env=, =build-executor=, =build-systems/=, facade kept, 20=20 tests | ea76c3b |
-| 7 | split =backends/activate.rkt= | NOT DONE, see below |
+| 6 | =src/build/build-plan.rkt= split: =build-env=, =build-executor=,
+| =build-systems/=; facade kept, 20=20 tests | ea76c3b |
+| 7 | =src/install/activate.rkt= split four ways, facade keeps all contracts, 48=48 tests | 42e27f6 |
 | 8 | split =cli/main.rkt= | NOT DONE, moved whole, see below |
 | 9 | =jobs.rkt= and =vault.rkt= moved WHOLE, unsplit, as decided | same commit as 10-13 |
 | 10 | =core/*.rkt= into =package-manager/src/<area>/= | same commit as 9-13 |
@@ -46,10 +47,10 @@ running -- the machine was idle and the model was not keeping up.
 =package-manager/src/entry/cli.rkt= rather than split first, because the
 restructure was the thing being waited on and splitting is easier once a
 file is in its final home. It is over the ~400-line rule and that is
-stated rather than hidden. =activate.rkt= (650) is at
-=src/install/activate.rkt=, still unsplit for the same reason.
-=build.rkt= (673) went to =src/build/build-plan.rkt= and was split at
-step 6 (row above).
+stated rather than hidden. =build.rkt= (673) went to
+=src/build/build-plan.rkt= and was split at step 6;
+=activate.rkt= (650) went to =src/install/activate.rkt= and was split
+at step 7 (rows above).
 
 A partial split of =build.rkt= existed briefly -- six files -- and was
 removed rather than committed. It was half a split: the new modules were
@@ -57,9 +58,9 @@ dead code and =build.rkt= had never been rewritten into a facade, so
 nothing required them and the gate would have compiled files no one
 called.
 
-Step 6 was later done directly, in one session, no subagent: seven files,
-the facade kept so dev-link.rkt's require line did not move, 20=20 tests,
-lints 0. Steps 7 and 8 remain manual, next.
+Steps 6 and 7 were later done directly, in one session each, no
+subagent: the facade kept in both cases so no dependent's require line
+moved; 20=20 and 48=48 tests, lints 0. Step 8 remains manual, next.
 
 * What the restructure did
 79 files moved through =git mv=, so history follows each file. 27 files
