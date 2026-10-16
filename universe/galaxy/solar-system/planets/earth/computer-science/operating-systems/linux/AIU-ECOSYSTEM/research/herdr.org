@@ -1,19 +1,49 @@
 #+TITLE: herdr — research notes
-# One job: a new Rust terminal multiplexer built for AI agents; locate it first and ask the owner if it cannot be found
-# Status: skeleton; step 3 fills it from primary sources. Nothing here is checked yet.
+# One job: the Rust terminal multiplexer built for AI agents: agent panes, status, socket API; located 2026-10-16
+# Status: filled 2026-10-16 from primary sources; not yet reviewed.
 
 * What it is
-# one paragraph, no more: the project, its language, its health, and who maintains it. Fill in step 3 from primary sources.
+# the project, its language, its health, and who maintains it.
+  herdr (github.com/herdrdev/herdr, herdr.dev) is a terminal multiplexer in
+  Rust with the tagline "the runtime your coding agents live on". Agents are
+  first-class: Claude Code, Codex, Cursor, OpenCode, Grok and others run
+  unmodified in panes and tabs, each in its own PTY, and every pane is
+  marked working, blocked, or idle. Active: 44k stars on GitHub, last push
+  2026-10-15. One Rust binary, no Electron.
 
 * What transfers
-# one line per mechanism worth borrowing, each with the reason it fits a program here. No code.
+# one line per mechanism worth borrowing, each with the reason it fits a program here.
+  - Detach without stopping work: a background server keeps terminals alive
+    when the client closes, and after a restart it restores the saved layout
+    and resumes supported agent sessions, stating plainly that the original
+    processes do not survive. The honesty is part of the design.
+  - Status per pane: working, blocked, or idle, so an agent that needs an
+    answer is visible without hunting. This is the state model our terminal
+    multiplexer wants for its own agents.
+  - Agent-native control: agents drive herdr through a CLI and socket API —
+    spawn panes, prompt each other, wait until another agent is genuinely
+    blocked. Our programs need the same kind of control seam.
+  - Several machines, one window: local work and saved remote machines in
+    one list, with independent reconnects.
+  - Keyboard and mouse both first-class: tmux-style prefix keys and direct
+    click, drag, split; pick per moment, not per tool.
 
 * What to avoid
 # one line per mechanism we deliberately do not take, with the reason. No code.
+  - The plugin marketplace: another extension runtime and catalog is weight
+    we do not need; our extension surfaces are MCP and skills.
+  - N named agent integrations: we keep one agent-neutral boundary
+    (OpenCode and Hermes behind pinned adapters), not a growing list.
 
 * License
-# name the license and where it was read, before any reuse. NOT CHECKED until then.
+# the license, and where it was read, before any reuse.
+  Apache-2.0 (read at github.com/herdrdev/herdr/LICENSE, 2026-10-16).
+  Permissive, with a patent grant; the repository is not archived.
 
 * Open questions
 # what this file must still answer before synthesis; say plainly when something is unverified.
-
+  - Unverified: how "blocked" is detected; the state exists, the mechanism
+    is not in the README.
+  - Unverified: whether its background server and socket API behave under
+    proot on Android — the thing to test if we borrow the architecture.
+  - Unread: herdr.dev/docs/socket-api/ — the shape of the control protocol.

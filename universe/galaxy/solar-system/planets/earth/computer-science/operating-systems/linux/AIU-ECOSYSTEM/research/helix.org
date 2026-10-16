@@ -1,19 +1,43 @@
 #+TITLE: Helix — research notes
 # One job: what Helix is and what transfers: modal editing, the selection model, key handling
-# Status: skeleton; step 3 fills it from primary sources. Nothing here is checked yet.
+# Status: filled 2026-10-16 from primary sources; not yet reviewed.
 
 * What it is
-# one paragraph, no more: the project, its language, its health, and who maintains it. Fill in step 3 from primary sources.
+# the project, its language, its health, and who maintains it.
+  Helix (github.com/helix-editor/helix) is a modal text editor in Rust,
+  inspired by Kakoune and Neovim; its editing model is, in its own words,
+  "very heavily based on Kakoune". It ships built-ins rather than plugins:
+  Vim-like modal editing, multiple selections, built-in language server
+  support, and incremental syntax highlighting and code editing via
+  tree-sitter. Healthy: 46.6k stars, last push 2026-09-29. Terminal-first;
+  a custom wgpu renderer is stated interest, not a commitment.
 
 * What transfers
-# one line per mechanism worth borrowing, each with the reason it fits a program here. No code.
+# one line per mechanism worth borrowing, each with the reason it fits a program here.
+  - Selection-first editing: select, then act — one verb order for every
+    operation, with multiple selections as a core primitive, not an add-on.
+  - Built-in LSP and tree-sitter: language smarts are subsystems of the
+    editor, treated as first-class rather than plugins bolted on.
+  - A readable keymap: the full keymap is a documentation page, so users
+    can adopt the editor by reading, not by guessing.
+  - Declarative TOML configuration for the basics: data, diffable.
 
 * What to avoid
 # one line per mechanism we deliberately do not take, with the reason. No code.
+  - Everything built-in, no extension point named in the README: we need
+    MCP and skills seams from day one, so we take the built-ins as features
+    and still add our own seams.
+  - Wholesale Kakoune semantics: we take the selection-first principle;
+    exact bindings are decided in our own editor design, not by copying.
 
 * License
-# name the license and where it was read, before any reuse. NOT CHECKED until then.
+# the license, and where it was read, before any reuse.
+  MPL-2.0 (read at github.com/helix-editor/helix/LICENSE, 2026-10-16).
+  File-level copyleft: copying ideas is unaffected; copied files would
+  carry the license.
 
 * Open questions
 # what this file must still answer before synthesis; say plainly when something is unverified.
-
+  - Unread: how it reads keys and times escape sequences — this feeds the
+    key-input-and-escape subject.
+  - Unverified: whether a plugin or scripting system is in development.
