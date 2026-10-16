@@ -8,8 +8,8 @@
 * Files
 # one line per file: its name, then the single job it performs. This index is updated in the same commit as any change here.
 
-  - none yet
+  - plan-only.org — the four far-future areas, one line each: math and physics, graphs, TUI math rendering, the advanced syntax; filled 2026-10-16
 
 * Later
-# Far future, plan only, no work. None exists yet.
+# Far future, plan only, no work; the areas are listed in plan-only.org.
 

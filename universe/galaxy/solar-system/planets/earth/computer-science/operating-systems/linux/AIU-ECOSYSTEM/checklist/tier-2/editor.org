@@ -1,0 +1,16 @@
+#+TITLE: Starting content — AIU EDITOR
+# One job: starting items for the editor's own checklist after the split
+# Status: filled 2026-10-16; seeds only — the editor rewrites these as its own checklist after the done line.
+
+* Items
+# one line per starting item: the item, then its done-when. All TODO.
+  - Engine services, editor side: the trigger chain for notation builds
+    and dev-mode entry — done when the chain runs for a real engine
+    change.
+  - PM integration items after PM is finished: the editor's kit entry,
+    sight files and bundle senders — done when the PM checklist closes
+    and the editor's checks pass against it
+    (pm-integration/pm-change-checklist.org).
+  - Kit entries and conformance for the editor: routing and bundle
+    examples executed — done when the kit checklist runs green with the
+    notation hosted.

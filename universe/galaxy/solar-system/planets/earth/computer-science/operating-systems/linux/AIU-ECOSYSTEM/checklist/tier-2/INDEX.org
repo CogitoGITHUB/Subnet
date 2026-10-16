@@ -8,8 +8,10 @@
 * Files
 # one line per file: its name, then the single job it performs. This index is updated in the same commit as any change here.
 
-  - none yet
+  - editor.org — starting content for the editor's own checklist after the split; filled 2026-10-16
+  - notation.org — starting content for the notation's own checklist after the split; filled 2026-10-16
+  - multiplexer.org — starting content for the multiplexer's own checklist after the split; filled 2026-10-16
 
 * Later
-# Starting content for each program's own checklist after the split. None exists yet.
+# Starting content for each program's own checklist after the split; filled 2026-10-16 — each program rewrites its own after the done line.
 

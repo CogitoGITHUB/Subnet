@@ -1,6 +1,6 @@
 #+TITLE: Done line — end of tier 1
 # One job: the state that ends the shared checklist and splits the programs
-# Status: current; the checklist it closes arrives in step 10.
+# Status: current; the checklist it closes is filled in tier-1/.
 
 * What the done line is
 # the end of tier 1: output working, the full architecture in place and the full basic version working in the multiplexer and the editor, notation core hosted in the editor, the joins proven, and select and send working to both OpenCode and Hermes from both programs.

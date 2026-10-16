@@ -1,0 +1,11 @@
+#+TITLE: Far future — plan only
+# One job: the tier-3 areas, far future, no work
+# Status: filled 2026-10-16; plan only, no work.
+
+* Areas
+# one line per area; no items, no work until the owner opens it.
+  - Math and physics — the LaTeX tradition, simplified a lot (rule 12).
+  - Graphs — tier 3.
+  - TUI math rendering — unproven on this phone; also recorded in
+    WHEN-ON-LAPTOP.org.
+  - The advanced symbolic syntax — far behind the everyday tier.
