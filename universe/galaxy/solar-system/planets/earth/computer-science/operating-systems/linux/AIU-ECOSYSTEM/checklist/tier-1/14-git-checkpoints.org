@@ -1,0 +1,21 @@
+#+TITLE: 14 — Git checkpoints
+# One job: one small checklist item of the shared build up to the done line.
+# Status: TODO; added 2026-10-16, in chronological order.
+
+* What
+# the work, in a line or two.
+  A git checkpoint before agent actions wherever a repo exists; easy
+  rollback; the stop switch.
+
+* Done when
+# the single observable check.
+  Rollback returns the tree to the checkpoint; the stop switch stops the
+  session.
+
+* Dependencies
+# the items that must be DONE first.
+  11 — the first adapter.
+
+* State
+# TODO; DONE records its commit hash; BLOCKED names its blocker.
+  TODO.
