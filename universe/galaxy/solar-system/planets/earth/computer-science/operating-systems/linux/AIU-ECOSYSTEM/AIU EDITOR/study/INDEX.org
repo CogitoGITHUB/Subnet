@@ -12,11 +12,11 @@
   - keyboard-racket-vs-rust.org — what becomes Racket config and what stays in the Rust input engine: the exact seam; filled 2026-10-16
   - keyboard-dev-mode-baking.org — what baking means for the keyboard layer: what is baked, what stays live, what survives; filled 2026-10-16
   - keyboard-rebranding.org — every old name, prefix and term from the neomacs work, mapped to its AIU name; filled 2026-10-16
-  - dashboard-mechanisms.org — every mechanism the dashboard combines, one line each
-  - dashboard-modes-and-layers.org — every dashboard mode and layer, and how they interact
-  - dashboard-emacs-vs-portable.org — which dashboard mechanisms are specific to the old config and which travel
-  - dashboard-racket-vs-rust.org — what becomes Racket config and what stays in Rust for the dashboard
-  - dashboard-dev-mode-baking.org — what baking means for the dashboard: what is baked, what stays live, what survives
+  - dashboard-mechanisms.org — every mechanism the dashboard combines, one line each; filled 2026-10-16
+  - dashboard-modes-and-layers.org — every dashboard mode and layer, and how they interact; filled 2026-10-16
+  - dashboard-emacs-vs-portable.org — which dashboard mechanisms are specific to the old config and which travel; filled 2026-10-16
+  - dashboard-racket-vs-rust.org — what becomes Racket config and what stays in Rust for the dashboard; filled 2026-10-16
+  - dashboard-dev-mode-baking.org — what baking means for the dashboard: what is baked, what stays live, what survives; filled 2026-10-16
   - literate-tangling.org — how the literate config tangles today: what to keep, what to rebuild
 
 * Later
