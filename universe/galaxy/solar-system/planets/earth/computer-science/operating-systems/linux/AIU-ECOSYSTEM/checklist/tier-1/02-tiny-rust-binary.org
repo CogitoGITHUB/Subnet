@@ -1,0 +1,21 @@
+#+TITLE: 02 — Tiny Rust binary
+# One job: one small checklist item of the shared build up to the done line.
+# Status: TODO; added 2026-10-16, in chronological order.
+
+* What
+# the work, in a line or two.
+  The multiplexer route test the synthesis demands before commitment: one
+  tiny Rust binary builds and starts under proot on this phone.
+
+* Done when
+# the single observable check.
+  The measured build and start are written down; the adopt-or-own route
+  decision is updated from the result.
+
+* Dependencies
+# the items that must be DONE first.
+  none — the second probe.
+
+* State
+# TODO; DONE records its commit hash; BLOCKED names its blocker.
+  TODO.
