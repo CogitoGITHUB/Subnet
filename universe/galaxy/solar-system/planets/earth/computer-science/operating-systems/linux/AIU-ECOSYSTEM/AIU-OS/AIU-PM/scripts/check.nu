@@ -881,8 +881,9 @@ def run-runner [files] {
 # (measured ~320s on this phone, nearly all of it per-process library
 # linking, not compiling). One call pays that cost once. A failure still
 # names the file: `make -v` prints which file it was making when it stops,
-# streamed live through ^. Racket's compiled/ output stays in-tree (D-027):
-# PLTCOMPILEDROOTS is deliberately not set here.
+# streamed live through ^. Racket's compiled/ output goes to the single
+# root set by scripts/env.nu (PLTCOMPILEDROOTS, D-027 reversed), so this
+# call never creates a compiled/ directory in the tree.
 # The single STEP-END line is kept exactly as the old gate prints it.
 def compile-all [files] {
     if ($files | is-empty) {

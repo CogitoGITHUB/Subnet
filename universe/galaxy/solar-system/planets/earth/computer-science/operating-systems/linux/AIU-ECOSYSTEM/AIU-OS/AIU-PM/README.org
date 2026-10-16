@@ -34,6 +34,14 @@ it is. Nothing here claims more than it does.
 **Requirements:** Racket (9.3 CS, minimal) and Nushell 0.116.1. On
 this machine they live in =~/opt/racket-full= and =~/opt/nushell/0.116.1/=.
 
+**Compiled output lives outside the tree.** Racket's =compiled/=
+directories and =.zo= files are written to =$PLTCOMPILEDROOTS=, which
+=scripts/env.nu= sets to =~/.local/share/aiu-pm/compiled=, mirroring the
+source path underneath it. Nothing ever creates a =compiled/= directory
+beside a source file, and =raco make= therefore leaves the tree exactly
+as it found it. Delete the root directory to force a clean rebuild: the
+next =raco make= recreates it from scratch.
+
 #+begin_src sh
 opt/nushell/0.116.1/nu scripts/check.nu          # the gate; the only test command
 opt/nushell/0.116.1/nu scripts/check.nu --changed # only what changed
