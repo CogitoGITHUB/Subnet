@@ -32,6 +32,7 @@ Resuming: read the last line, then =plan/MOVE-ORDER.org= for the script.
 | 20 | per-area README.org | TODO |
 | 21 | ENGINE-CHECKLIST entries reconciled | TODO |
 | 22 | full verification, prove =banned-words-lint=/=one-way-dependency-lint= bite, push | TODO |
+| — | gate stages are named, never numbered (D-043); =--list=; sub-stages | e1c9c55 |
 
 * The three splits that were NOT done, and why
 Steps 6, 7 and 8 were each handed to a subagent and each was cancelled.
