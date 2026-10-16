@@ -19,7 +19,7 @@
 | `pm apply SPECS [--lock LOCK] [--confirm]` | Apply. Without `--confirm` it only previews and tells you to re-run with the flag. |
 | `pm lock LOCKFILE` | Pin the world to exact versions. |
 | `pm fetch MANIFEST` | Pull every declared package into the vault (real git clones, per-entry status). |
-| `pm mirror SPECS [--confirm]` (landing with the reorganisation) | Back up declarations and fetched package sources into your own git repo and push it to the cloud. Without `--confirm` it only shows what would be copied. |
+| `pm backup SPECS [--confirm]` (landing with the reorganisation) | Back up declarations and fetched package sources into your own git repo and push it to the cloud. Without `--confirm` it only shows what would be copied. |
 | `pm update VAULT LOCKFILE PROFILE` | Check every locked package; report what is behind, straight from the vault. |
 | `pm verify VAULT LOCKFILE NAME` | Check a pinned artifact is really what it claims. |
 | `pm status PROFILE LOCKFILE` | Installed vs declared at a glance. |
@@ -47,7 +47,7 @@
 1. **It clones.** `fetch` materializes real git clones into the vault. Each entry carries a revision. That revision is what `lock` pins, `verify` re-checks, and `update` compares against the vault.
 2. **Git-tracked, your own repos included.** Clones are ordinary checkouts; the revision is the pin. Vault origins admit `https://`, `ssh://` and scp-like shapes; `file://` is an explicit test-only escape (`current-allow-file-urls` in `git-env.rkt`, never environmental).
 3. **Dev mode.** A package may point at a live working copy instead of a fetched clone. Change sources, load the build, no fetch round-trip.
-4. **Mirrored** (landing with the reorganisation). After `fetch`, the declaration goes to `decl/<name>.spec` and the source snapshot to `vendor/<name>/` in the mirror repo, then pushed. A failed push never fails the fetch; it retries on the next run. Secret-named files are never mirrored, and an oversized source mirrors its declaration only.
+4. **Backed up** (landing with the reorganisation). After `fetch`, the declaration goes to `decl/<name>.spec` and the source snapshot to `vendor/<name>/` in the backup repo, then pushed. A failed push never fails the fetch; it retries on the next run. Secret-named files are never copied, and an oversized source copies its declaration only.
 
 ## Machine surface (current)
 
@@ -93,7 +93,7 @@ Ordered as specified. Each group moves from “Planned” to “Current” in th
 ### 6. `pm export` / `pm import`: portable bundles
 - **`pm export PROFILE [--confirm]`** turns a profile into a portable bundle — declarations, lock, and optional sources.
 - **`pm import BUNDLE [--confirm]`** rebuilds that profile on another machine; import previews unless `--confirm`.
-- Pairs with the mirror: what the mirror backs up continuously, a bundle carries to a new machine in one file.
+- Pairs with the backup: what the backup backs up continuously, a bundle carries to a new machine in one file.
 
 ### 7. Binary cache: build once, reuse by content hash
 - Build once, reuse by content hash — extends the content-addressed overlay.
@@ -111,8 +111,8 @@ Ordered as specified. Each group moves from “Planned” to “Current” in th
 - Builds on dev mode: the same sources you are editing are the ones on PATH.
 
 ### 10. Users and declarations
-- **One declaration per user** (`user.rktd`): the packages that person chose, their profile name, lock path, mirror repo and remote, and size limit. It picks from packages that are already declared; it never redefines one.
-- **One shared store, per-user histories** — a build exists once for everyone; profile, generations, holds, lock and mirror settings are per user, and no user can change another's profile.
+- **One declaration per user** (`user.rktd`): the packages that person chose, their profile name, lock path, backup repo and remote, and size limit. It picks from packages that are already declared; it never redefines one.
+- **One shared store, per-user histories** — a build exists once for everyone; profile, generations, holds, lock and backup settings are per user, and no user can change another's profile.
 - **`pm user list` / `show` / `apply`, `pm add` / `drop`** — reading is free; writing a declaration or activating needs `--confirm`.
 - **Cross-user apply needs more** — `pm user apply` for a different user requires
   `--confirm` and the confirmation token; applying to yourself needs `--confirm`
@@ -146,7 +146,7 @@ Ordered as specified. Each group moves from “Planned” to “Current” in th
 - Vault = real git clones + first-class local origins + dev-mode live working copies.
 - Full narration of every run.
 - MCP surface identical to CLI surface, still gated.
-- Nothing exists only locally: declarations and sources can always be mirrored off the machine.
+- Nothing exists only locally: declarations and sources can always be backed up off the machine.
 - One store, many users; no user can change another's profile.
 
 Reality is a decomposing never-ending joke.  

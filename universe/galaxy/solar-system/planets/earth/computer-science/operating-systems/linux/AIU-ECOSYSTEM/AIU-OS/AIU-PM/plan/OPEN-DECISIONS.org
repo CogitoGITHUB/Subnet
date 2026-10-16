@@ -365,19 +365,19 @@ observed in practice.
   impossible in Racket 9.3 and was removed rather than shipped
   pretending. It is not a live bug and it is not silently dropped.
 
-* The mirror's two open questions, decided
+* The backup's two open questions, decided
 
-** Where the mirror repo lives
+** Where the backup repo lives
 - *Question:* a new XDG config root, or a sibling of the vault?
-- *Options:* (a) new XDG root, =<state>/mirror-repo=; (b) sibling of
+- *Options:* (a) new XDG root, =<state>/backup-repo=; (b) sibling of
   the vault, so it sits next to the thing it backs up; (c) inside the
   vault, as a subdirectory.
 - *Recommendation:* (b). The vault is the one location that is already
   git-owned, already a sibling of the store, and already on the same
   volume as the state it backs up. A second XDG root adds a place to
   configure for no gain.
-- *(DEFAULT: (b), the mirror repo is a sibling of the vault under the
-  state root, overridable by =PM_MIRROR_PATH= exactly as the vault is
+- *(DEFAULT: (b), the backup repo is a sibling of the vault under the
+  state root, overridable by =PM_BACKUP_PATH= exactly as the vault is
   overridable by =PM_VAULT=. Not configurable means SKIP, never error.)*
 - *Rejected:* (c). Putting a git repo inside another git repo is how
   you get a backup that silently never gets pushed, because the outer
@@ -394,9 +394,9 @@ observed in practice.
   to be stuck.
 - *(DEFAULT: (a), the push runs inside =wait-for= with a non-blank why,
   and a push failure warns and leaves the commit local for the next run
-  to retry. A mirror failure NEVER fails the fetch that preceded it.)*
+  to retry. A backup failure NEVER fails the fetch that preceded it.)*
 - *Rejected:* (b) and (c), for the reasons above and because (c)
-  violates the mirror's first invariant.
+  violates the backup's first invariant.
 
 * A fifth module in the plan split, and why
 MOVE-ORDER step 3 named four new modules for =package-manager/src/spec/plan.rkt=. Reality
@@ -476,7 +476,7 @@ designs are =plan/FEATURE-users.org= and
 
 ** No per-user store quota -- DECIDED
 - *Decision:* =(DEFAULT: none today. The size limit in the user file
-  applies to the mirror only.)= Revisit if the shared store grows.
+  applies to the backup only.)= Revisit if the shared store grows.
 
 ** pm config is read-only forever -- DECIDED
 - *Decision:* =(DEFAULT: =pm config= never writes. Every change goes
@@ -491,7 +491,7 @@ designs are =plan/FEATURE-users.org= and
 ** pm never installs its completions -- DECIDED
 - *Decision:* =(DEFAULT: pm prints or copies the completion files and
   never writes outside its state root. README.md documents the one manual
-  placement step.)= Same law as the mirror path decision: pm does not
+  placement step.)= Same law as the backup path decision: pm does not
   write where it does not own.
 
 * Deliberately not planned

@@ -29,7 +29,7 @@ Resuming: read the last line, then =plan/MOVE-ORDER.org= for the script.
 | 16 | identifier renames from NAMING-REGISTER | TODO |
 | 17 | =banned-words-lint= gate stage, banned words, file:line | TODO |
 | 18 | =one-way-dependency-lint= gate stage, one-way dependency, file:line | TODO |
-| 19 | mirror feature in =src/mirror/= | TODO |
+| 19 | backup feature in =src/backup/= | TODO |
 | 20 | per-area README.org | TODO |
 | 21 | ENGINE-CHECKLIST entries reconciled | TODO |
 | 22 | full verification, prove =banned-words-lint=/=one-way-dependency-lint= bite, push | TODO |

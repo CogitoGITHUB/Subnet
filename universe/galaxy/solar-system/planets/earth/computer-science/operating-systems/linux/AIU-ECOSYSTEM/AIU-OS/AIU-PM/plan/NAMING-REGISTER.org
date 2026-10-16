@@ -153,3 +153,38 @@ would double it. Recorded in =plan/OPEN-DECISIONS.org=.
   a staging marker read by a test. Renaming it changes behaviour
 - =FILE_PARKED entries=
   until the underlying design question is answered, not renamed away
+
+* Renamed: the mirror feature is the backup feature
+"mirror" was doing two different jobs under one word. The git machinery
+clones a bare mirror of an upstream repository, and that is a git term
+with a fixed meaning. The feature takes declarations and fetched sources
+and pushes them to a repository of your own, and that is a BACKUP. The
+owner chose backup, so every class-A spelling below changed. None of it
+was code: step 19 has not landed, so this renames the design and the
+plans, never identifiers that already exist.
+
+- =MIRROR-FEATURE.org= -> =BACKUP-FEATURE.org=
+  the design file; git mv, so the history follows the file
+- =pm mirror= -> =pm backup=
+  the verb; operands unchanged, =pm backup SPECDIR [--confirm]=
+- =src/mirror/= -> =src/backup/=
+  the area. Not created yet, so no directory was moved
+- =tests/mirror/= -> =tests/backup/=
+  the area's tests. Likewise not created yet
+- =mirror repo= -> =backup repo=
+  the repository pm pushes declarations and sources to
+- =PM_MIRROR_PATH= -> =PM_BACKUP_PATH=
+  the environment override for that path
+- =(mirror (repo ...) (remote ...))= -> =(backup (repo ...) (remote ...))=
+  the key inside a user declaration
+- =Mirrored.= -> =Backed up.=
+  the README source-model row for after fetch
+- git mirror clone files kept: different concept
+  =git-clone-mirror=, =git-fetch-mirror=, =git-deepen-mirror=,
+  =mirror-fetch-depth=, =mirror-deepen-cap=, =mirror-lock-path=,
+  =with-mirror-lock=, =held-mirror-locks=, =mirror-origin-url=,
+  =vault-mirror-dir=, the =mirror= fetch refspec, and the "commit missing
+  from mirror" refusal all name a bare clone of an UPSTREAM repository.
+  Renaming them would be a lie: git documents this word, and pm really
+  does mirror the upstream. The reader test settles it -- mirror is the
+  accurate name there, backup would say something else entirely.

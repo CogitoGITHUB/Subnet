@@ -13,17 +13,17 @@ The ordering, lowest first:
   3. =machine=     directories, file locks, cancellation
   4. =security=    policy predicates
   5. =spec=        the declaration format and its parser
-  6. =git=         repositories, mirrors, export
+  6. =git=         repositories, bare clones, export
   7. =process=     spawning, pipes, status, kill trees
   8. =store=       packages, manifests, lockfiles, queries
   9. =queue=       jobs, workers, the journal
   10. =build=      build steps and their executors
   11. =install=    apply, activate, generations, profiles
-  12. =mirror=     backup of declarations and sources
+  12. =backup=     cloud backup of declarations and sources
   13. =entry=      CLI parsing, documents, dispatch, MCP
 
 =process= sits below =git= because every git call spawns a process. The
-two known fifo hangs lived in =process=, and =git/= is where the mirror
+two known fifo hangs lived in =process=, and =git/= is where the bare clones
 feature must call for its work.
 
 * Why =process= is low and not lowest
@@ -66,7 +66,7 @@ Depends on: =errors=, =security=, =spec/= internal only. Must not
 depend on =process=, =git=, =store=, =install= or =entry=.
 
 ** =git/=
-Repositories. Env isolation, commit identity, mirror fetch and pin,
+Repositories. Env isolation, commit identity, clone fetch and pin,
 export of a tree, and the vault ref/create/transfer/checks modules.
 Depends on: =errors=, =narration=, =process=, =machine=. Must not
 depend on =store=, =install=, =queue= or =entry=.
@@ -98,7 +98,7 @@ Making it so. The apply operation, activation, generation naming,
 profile flip, reclaim, holds, and the local performer. Depends on:
 everything below it. Must not depend on =entry=.
 
-** =mirror/=
+** =backup/=
 Backup only. Copies declarations and sources into one repo and pushes.
 Depends on: =git=, =spec=, =errors=, =narration=. Must not depend on
 =install=, =queue= or =entry=, and must never be an input to install.

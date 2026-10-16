@@ -7,7 +7,7 @@ Design only. No code lands with this file.
 Let one machine carry a package set per person without letting one person's
 work disturb another's. The store is shared and content-addressed, so a
 build exists once no matter how many users asked for it; everything that
-records intent — profile, generations, holds, lock, mirror settings — is
+records intent — profile, generations, holds, lock, backup settings — is
 per user. Two people on one machine get the same bytes and separate
 histories.
 
@@ -19,7 +19,7 @@ histories.
   every user. Also shared: the vault of git clones, which is history, not
   installation state.
 - PER USER: the profile directory, its generations, its holds, its lockfile,
-  its mirror settings, and its user declaration.
+  its backup settings, and its user declaration.
 - Users NEVER share a profile. One user's rollback, gc or remove touches
   only that user's generations; it cannot repoint another user's link.
 - One user's gc may reclaim shared store paths, but only after proving no
@@ -36,7 +36,7 @@ the two never get confused:
     (uid 1000)
     (profile "shape")
     (lock "pm.lock")
-    (mirror (repo "mirror-repo") (remote "git@host:mirror.git")
+    (backup (repo "backup-repo") (remote "git@host:backup.git")
             (size-limit 52428800))
     (packages lua guile))
 
@@ -65,7 +65,7 @@ name reserved so nothing else takes it.
 
 Conflict rule for the day it is built:
 - A setting a user states in their own declaration WINS over a system
-  default. The user's machine profile, lock path and mirror settings are
+  default. The user's machine profile, lock path and backup settings are
   theirs.
 - A package the system layer FORCES is present in every user's effective
   view and cannot be dropped by a user. =pm drop= refuses by name, citing
@@ -129,14 +129,14 @@ generations (=pm user apply=) — both only under =--confirm=.
 - A system-forced package does not count toward a user's hold budget, so
   forced packages cannot crowd out the user's own pins.
 - There is no per-user store quota. The size limit in the user file applies
-  to the mirror only; revisit if the shared store grows.
+  to the backup only; revisit if the shared store grows.
 
-* Mirror interaction
+* Backup interaction
 Two options, and a recommendation.
-- Option A: one mirror repo per user, each with its own remote. Clean
+- Option A: one backup repo per user, each with its own remote. Clean
   isolation; N remotes to configure, N credentials, and no single backup
   that shows what the machine as a whole looks like.
-- Option B (RECOMMENDED): one shared mirror repo with per-user directories,
+- Option B (RECOMMENDED): one shared backup repo with per-user directories,
   =users/<name>/decl/= and =users/<name>/vendor/=. One remote, one push,
   one credential; the machine's full state is backed up in one place; and a
   user only ever writes their own directory, so isolation is pm's rule, not
@@ -144,8 +144,8 @@ Two options, and a recommendation.
   directories under one account, and a user who pushes must not be trusted
   to stay inside their directory — pm enforces that, and never relies on
   the remote for it.
-Recommendation: Option B. The mirror is a backup and never an input to
-install (see =plan/MIRROR-FEATURE.org=), so sharing the repo costs nothing
+Recommendation: Option B. The backup is a backup and never an input to
+install (see =plan/BACKUP-FEATURE.org=), so sharing the repo costs nothing
 in correctness.
 
 * Area

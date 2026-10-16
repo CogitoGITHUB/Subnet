@@ -19,7 +19,7 @@ being suggested the moment it is gone.
   =--confirm= because nothing here is ever written. Every change to a
   setting goes through the user file or through =pm add= / =pm drop=.
 
-Reads: the user declaration, the per-user lock path, the mirror settings,
+Reads: the user declaration, the per-user lock path, the backup settings,
 and the scope roots — all through the one seam that reads HOME or XDG.
 Writes: nothing.
 
@@ -48,7 +48,7 @@ Anti-drift, which is the whole point:
 - Flag names come from the same source as the operand counts, so =--confirm=
   is completed wherever it is accepted and nowhere else.
 - pm PRINTS OR COPIES the completion files and never writes outside its
-  state root, the same law the mirror path decision follows. =README.md=
+  state root, the same law the backup path decision follows. =README.md=
   documents the one manual placement step.
 
 * Refusals, by name

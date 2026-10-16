@@ -91,7 +91,7 @@ it, so no dependent's require line changes at this stage.
     this one.
 
 * Feature
-19. The mirror, in =src/mirror/= per =MIRROR-FEATURE.org=.
+19. The backup, in =src/backup/= per =BACKUP-FEATURE.org=.
 20. Per-area =README.org=: what the area does, what it may depend on, what
     must never depend on it.
 
@@ -108,9 +108,9 @@ of them is designed in the FEATURE files and lands later; nothing here is
 built yet. Design only until its step comes. The order of the list below is
 the order they LAND in; README.md states the same order for the reader.
 
-19. The mirror, per =MIRROR-FEATURE.org=, built at step 19 and landing
-    FIRST here because the export/import pair pairs with it. All mirror
-    logic in =src/mirror/=, its tests in =tests/mirror/=; every git call
+19. The backup, per =BACKUP-FEATURE.org=, built at step 19 and landing
+    FIRST here because the export/import pair pairs with it. All backup
+    logic in =src/backup/=, its tests in =tests/backup/=; every git call
     goes through =git/= and the area never edits =git/=, =process=,
     =spec= or =apply=.
 23. =pm doctor=, per =FEATURE-doctor.org=. Read-only health check. Area
@@ -118,7 +118,7 @@ the order they LAND in; README.md states the same order for the reader.
     surveys is the reorganised one.
 24. =pm export= / =pm import=, per =FEATURE-export-import.org=. Portable
     bundles. Areas =store/bundle-format.rkt=, =install/export-profile.rkt=,
-    =install/import-profile.rkt=. Pairs with the mirror; import stays
+    =install/import-profile.rkt=. Pairs with the backup; import stays
     gated behind =--confirm=.
 25. Binary cache, per =FEATURE-binary-cache.org=. Build once, reuse by
     content hash. Areas =store/content-address.rkt=, =build/build-cache.rkt=.
@@ -131,7 +131,7 @@ the order they LAND in; README.md states the same order for the reader.
     mode; still gated behind =--confirm=.
 28. Users and declarations, per =FEATURE-users.org=. One declaration per
     user, one shared content-addressed store, per-user profiles,
-    generations, holds, lock and mirror settings. Areas
+    generations, holds, lock and backup settings. Areas
     =spec/user-declaration.rkt=, =spec/user-view.rkt=,
     =security/user-write.rkt=, =install/user-gc.rkt=,
     =entry/user-report.rkt=. The system layer above it is reserved, not

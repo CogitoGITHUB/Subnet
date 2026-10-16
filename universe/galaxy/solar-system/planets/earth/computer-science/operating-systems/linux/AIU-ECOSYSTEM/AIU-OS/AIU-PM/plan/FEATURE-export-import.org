@@ -6,7 +6,7 @@ Design only. No code lands with this file.
 * Goal
 Turn a working profile into one file another machine can rebuild from, and
 rebuild it there. A bundle is declarations plus the lock plus optional
-sources. It is the hand-off twin of the mirror: the mirror backs up
+sources. It is the hand-off twin of the backup: the backup backs up
 continuously, a bundle carries to a new machine in one copy.
 
 * Command shape and operands
