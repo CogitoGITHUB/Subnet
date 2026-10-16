@@ -1,13 +1,37 @@
 #+TITLE: Risks — AIU TERMINAL MULTIPLEXER
 # One job: what can sink this program, the first sign of each, and what shrinks it
-# Status: skeleton; step 8 fills it. Plans stay general; detailed design comes later.
+# Status: filled 2026-10-16; plans stay general, not yet reviewed.
 
 * Risks
 # one line per risk: what it is and how much it can hurt.
+  - Process survival assumptions that Android breaks — the highest-stakes
+    risk; it is exactly what rule 01 exists to prevent.
+  - The proot build test fails or runs too slowly — the adopt-or-own route
+    changes; the schedule follows it, the promise does not.
+  - Tty facade gaps under proot — panes work partly; shells misbehave.
+  - The control surface is blocked under proot — agents and scripts lose
+    their hands.
+  - Key routing conflicts between the layers — keys land in the wrong
+    place; the keyboard layer must own the routes (rule 13).
+  - Scope creep toward a full-featured multiplexer — marketplaces, plugin
+    ecosystems, chat gateways; none of it is our job.
+  - Graphics promises the terminal cannot keep — plans must stay within
+    the proven tier.
 
 * First signs
 # the earliest observable signal that a risk is happening.
+  - Shells gone after a detach; the tiny binary's build time balloons;
+    keys stuck in one layer; the control socket unreachable; the feature
+    list growing past panes, layouts and status.
 
 * Shrinking it
 # what is done about each risk, or why nothing can be.
-
+  - Run the tiny-binary test before any commitment (synthesis demands
+    it).
+  - Record every phone limit in WHEN-ON-LAPTOP.org the moment it appears,
+    in the same commit.
+  - Keep the written contract as the only coupling, so the tool under the
+    panes can be swapped without touching the promise.
+  - Refuse the plugin runtime and the wider surfaces by name.
+  - Pace long builds and long sessions around the phone, with the laptop
+    where the budget breaks.

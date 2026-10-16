@@ -1,13 +1,35 @@
 #+TITLE: Phone-first tests — AIU TERMINAL MULTIPLEXER
 # One job: what must be proven on the phone first, what waits for the laptop, and how each is proven
-# Status: skeleton; step 8 fills it. Plans stay general; detailed design comes later.
+# Status: filled 2026-10-16; plans stay general, not yet reviewed.
 
 * Proven on the phone first
 # one line per thing that must work on the phone before anything is built on it.
+  - One tiny Rust binary builds and starts under proot on this phone — the
+    synthesis route test.
+  - A shell survives client detach as far as Android allows; what dies is
+    recorded.
+  - Pane status is truthful after a kill and a restore.
+  - Key routing works with the editor in a pane, on the phone keyboard.
+  - The control surface (socket or CLI) reaches the holder under proot.
+  - A layout restores from its file.
 
 * Waiting for the laptop
 # what the phone cannot prove; every line here is also appended to WHEN-ON-LAPTOP.org.
+  - Long builds for the multiplexer when the phone budget breaks —
+    appended when measured.
+  - Anything the terminal cannot draw — the graphics tiers stay recorded
+    as unproven.
+  - Multi-hour uninterrupted sessions — the phone is a phone; paced, not
+    fought.
 
 * How each is proven
 # the single check for each phone-first item.
-
+  - The tiny binary — built and started on the phone; the time is measured
+    and written down.
+  - Detach and reattach — the shell, its output and the log are checked
+    after the client comes back.
+  - Truthful status — a kill happens; the pane's state matches reality
+    afterwards.
+  - Key routing — the routing walk with the editor in a pane.
+  - Control surface — a script drives a split and reads the result.
+  - Layout restore — the layout file reopens exactly as saved.

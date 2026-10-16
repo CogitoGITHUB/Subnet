@@ -1,13 +1,31 @@
 #+TITLE: Outputs — AIU TERMINAL MULTIPLEXER
 # One job: what exists at the end, what it is good for, and what is not shipped
-# Status: skeleton; step 8 fills it. Plans stay general; detailed design comes later.
+# Status: filled 2026-10-16; plans stay general, not yet reviewed.
 
 * What exists at the end
 # one line per thing a user can hold or run when this plan is done.
+  - The multiplexer on the phone: panes, layouts from files, the holder
+    with detach and reattach, and the thin client — adopted then owned by
+    contract, whichever route the proot test picks.
+  - The tty facade with this phone's proven limits written down.
+  - Key routing across layers, proven; select and send to both agents
+    from the multiplexer — the done-line half.
+  - Agent panes: either agent beside the work with the context attached;
+    pane status visible and true.
+  - Nushell command records selectable and sendable.
+  - The kit — JSON surface, MCP server, skill with executed examples,
+    read-only plugin — and the log.
+  - The multiplexer's own checklist after the split, from tier-2 content.
 
 * What it is good for
 # the everyday uses, in plain words.
+  Many shells on a phone in one session; leaving and coming back without
+  losing the layout; sending a command's output, a pane's selection or a
+  status line to an agent in one action; running the editor and an agent
+  side by side, keyboard only.
 
 * Not shipped
 # things deliberately left out of this output set.
-
+  Plugin marketplaces; graphics-rich panes beyond the terminal's proven
+  tier; web and desktop clients; chat gateways; editing features; agent
+  implementations.

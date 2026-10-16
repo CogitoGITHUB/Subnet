@@ -1,13 +1,36 @@
 #+TITLE: Goal — AIU TERMINAL MULTIPLEXER
 # One job: what finished looks like for this program, in one paragraph, and how it is known to be met
-# Status: skeleton; step 8 fills it. Plans stay general; detailed design comes later.
+# Status: filled 2026-10-16; plans stay general, not yet reviewed.
 
 * The goal
 # what finished looks like for this program, in one paragraph.
+  Shells, panes, a layout tree and a session holder that survives detach and
+  reattach: the holder owns the shells, the screen is a thin client, and
+  Nushell command records are first-class. Terminals are a facade over tty —
+  what the phone cannot promise is written down, never assumed. Either agent
+  opens in its own pane beside the work, with the context attached, and keys
+  route cleanly between the layers. It starts from what the studies proved —
+  the server and client split, pane status, layouts as files — and it may
+  begin as an adopted multiplexer while our own small Rust program is built
+  behind the same contract; the proot build test decides the route.
 
 * When it is met
 # the observable signs, one per line. No dates.
+  - Panes, layouts and the holder work on the phone: detach, reattach, and
+    shells still there as far as the phone allows — the limit recorded, not
+    assumed.
+  - The holder holds terminals and the log only — no config, no timers;
+    settings live in the client (rule 03).
+  - Nushell command records are first-class: a command and its output can be
+    selected and sent.
+  - Keys route between multiplexer, editor and pane programs; no mouse is
+    needed anywhere (rule 13).
+  - Either agent opens in its own pane with the context attached; select and
+    send works from here to both agents (rules 07 and 08).
+  - Layouts are files; pane status — working, blocked, idle — is visible
+    and true.
 
 * What it rejects
 # directions this program refuses; the reasons live in non-goals.org.
-
+  Config or timers in the holder; plugin runtimes; process survival the
+  phone cannot keep; mouse-required flows; becoming the editor.

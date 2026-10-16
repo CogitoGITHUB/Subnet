@@ -1,13 +1,49 @@
 #+TITLE: Build order — AIU TERMINAL MULTIPLEXER
 # One job: one line per step with the proof that proves it, up to the done line and past it
-# Status: skeleton; step 8 fills it. Plans stay general; detailed design comes later.
+# Status: filled 2026-10-16; plans stay general, not yet reviewed.
 
 * Steps
 # one line per step, in build order, each with the proof that proves it.
+  1. The phone test first: one tiny Rust binary built on this phone inside
+     proot, with the socket or UI-attach seam, measured — proof: the
+     measured build and start on the phone; the adopt-or-own route updates
+     from this result (synthesis demands the test before commitment).
+  2. The holder and the tty facade: a shell is held; the client detaches
+     and reattaches; what cannot survive is recorded, not promised —
+     proof: a shell survives a client detach as far as the phone allows
+     (rule 01; WHEN-ON-LAPTOP).
+  3. Panes and layouts: a layout file opens; panes split; status shows
+     working, blocked or idle — proof: a real work layout restored from
+     its file on the phone.
+  4. The thin client and key routing: first-receiver routing between
+     multiplexer, editor and pane programs — proof: the routing walk with
+     the editor in a pane; no mouse (rule 13).
+  5. Command records: Nushell command records first-class, selectable and
+     sendable — proof: a command record reaches a send with its output.
+  6. Agent panes: either agent in its own pane, context attached; select
+     and send from the multiplexer — proof: both adapters once pinned; the
+     done-line half (rules 07 and 08).
+  7. Dev loop: work mode from source; bake keeps last good; measured
+     start — proof: a bake cycle on the phone plus the printed start
+     (rule 02).
+  8. The control surface: socket and CLI control mirroring keyboard
+     actions — proof: a script drives a split and a send.
+  9. The kit: MCP server, skill with executed examples, read-only plugin
+     — proof: the kit checklist runs green
+     (agents/agent-integration-kit.org).
+  10. The done-line share: the full basic version working in the
+      multiplexer; the joins proven — proof: the done-line sentence holds
+      and the shared checklist closes.
 
 * The done line
 # the step where the shared checklist ends and the programs split.
+  The multiplexer's share of the done-line state
+  (checklist/DONE-LINE.org): the holder with the tty facade proven, the
+  full basic version working in the multiplexer, the joins proven, and
+  select and send working to both OpenCode and Hermes from both programs.
 
 * After the done line
 # what this program continues with on its own.
-
+  The multiplexer's own checklist from checklist/tier-2/ content; the
+  adopt-or-own migration re-visited with the remaster — whichever tool
+  holds the panes, the written contract stays the only coupling.

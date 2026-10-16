@@ -1,13 +1,35 @@
 #+TITLE: Reused vs written — AIU TERMINAL MULTIPLEXER
 # One job: what comes from the package manager, what comes from research, what is written here
-# Status: skeleton; step 8 fills it. Plans stay general; detailed design comes later.
+# Status: filled 2026-10-16; plans stay general, not yet reviewed.
 
 * Reused from the package manager
 # what PM already does, with the PM surface that provides it.
+  - Pinned installs, generations, atomic flip and rollback for the
+    multiplexer and any adopted tool beside it — via install, status and
+    rollback surfaces.
+  - Install, then bake in (rule 02); the kit law for its own surfaces.
+  - Shapes to copy, not code: the journal pattern, event narration with
+    the wait door, the error four answers — learned/ notes.
 
 * Reused from research
 # what a studied project contributes, as a lesson or a reference.
+  - Zellij — the server and client split surviving detach; panes; layouts
+    as files; its plugin runtime stays out.
+  - herdr — the agent-first multiplexer: agent panes, pane status, socket
+    API; the located candidate to test first.
+  - tty, pty, proot and Android — what works, what gets killed, what
+    survives; the facade's honest limits come from here.
+  - The synthesis — Option C: adopt for now, own later behind the same
+    contract; the tiny-binary test decides.
 
 * Written here
 # what must be written for this program fresh.
-
+  - The holder's promise (no config, no timers) proven against the phone,
+    not assumed from the studies.
+  - The tty facade's measured limits, recorded in WHEN-ON-LAPTOP.org the
+    moment they appear.
+  - Pane status semantics — working, blocked, idle — and the log.
+  - The select-and-send path from the multiplexer, command records
+    included.
+  - The layout file shape and the key-routing first-receiver rules, with
+    the contract.

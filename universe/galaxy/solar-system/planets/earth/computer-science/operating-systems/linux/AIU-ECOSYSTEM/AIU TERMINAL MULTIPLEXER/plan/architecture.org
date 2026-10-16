@@ -1,16 +1,51 @@
 #+TITLE: Architecture in the plan — AIU TERMINAL MULTIPLEXER
 # One job: the named pieces, how they fit, the seams, and what is deliberately absent
-# Status: skeleton; step 8 fills it. Plans stay general; detailed design comes later.
+# Status: filled 2026-10-16; plans stay general, not yet reviewed.
 
 * The pieces
 # the named parts, one line each: what it is and its one job.
+  - holder — owns the shells and the log; no config, no timers (rule 03).
+  - tty facade — terminals as a facade over tty; what works under proot is
+    measured, never assumed.
+  - panes — the pane tree; each pane working, blocked or idle, truthfully.
+  - layout files — layouts as data files with one stable shape.
+  - client — the thin screen: attaches, detaches, reattaches; draws; and
+    carries the config, keymaps and settings (rule 03 puts them here).
+  - key routing — the first receiver of keys; routes between multiplexer,
+    editor and pane programs (rule 13; contract step 9).
+  - command records — Nushell command records as first-class: a command
+    and its output, selectable and sendable.
+  - agent panes — either agent opens in its own pane beside the work with
+    the context attached (rule 08; agents/ design).
+  - control surface — socket and CLI control so agents and scripts can do
+    what keys do.
+  - dev loop — work mode from source; bake keeps last good; measured
+    start (rule 02).
 
 * How they fit
 # the direction of dependency between the pieces, one line per arrow.
+  - client → holder: attach and detach; the holder outlives the client.
+  - holder → shells, through the tty facade; the holder writes the log.
+  - key routing sits first: a key reaches the focused pane's program
+    before any layer above; the multiplexer keeps a reserved prefix.
+  - agent panes are ordinary panes running an adapter's session; nothing
+    special-cases them beyond the send path.
+  - layouts are read by the client; the holder stays config-free.
+  - the control surface mirrors keyboard actions; it adds no privileges.
 
 * The seams
 # where another program plugs in, and through which boundary.
+  - The shared contract — key routing and the UI placement model
+    (contract step 9: key-routing.org, ui-placeable-piece-model.org).
+  - The editor — runs in a pane; keys follow the contract.
+  - Agents — panes plus the one AI-link boundary; select and send carries
+    context bundles (rules 07 and 08; agents/ design).
+  - PM — install, then bake in (rule 02).
+  - The kit — as every program: JSON surface, MCP server, skill, read-only
+    plugin.
 
 * Absent on purpose
 # parts similar programs carry that this one will not, with the reason.
-
+  A plugin runtime; config and timers in the holder; process survival
+  promises; desktop and web clients; editing features; agent logic (the
+  adapters' job).
