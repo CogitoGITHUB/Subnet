@@ -1,0 +1,21 @@
+#+TITLE: 01 — Racket in a baked binary
+# One job: one small checklist item of the shared build up to the done line.
+# Status: TODO; added 2026-10-16, in chronological order.
+
+* What
+# the work, in a line or two.
+  The feasibility test rule 09 demands before anything is built on it: the
+  minimal Racket build starts inside a baked binary on this phone.
+
+* Done when
+# the single observable check.
+  The baked binary prints its measured start on the phone; if it fails,
+  the language-split seam decision reopens.
+
+* Dependencies
+# the items that must be DONE first.
+  none — the first probe.
+
+* State
+# TODO; DONE records its commit hash; BLOCKED names its blocker.
+  TODO.
