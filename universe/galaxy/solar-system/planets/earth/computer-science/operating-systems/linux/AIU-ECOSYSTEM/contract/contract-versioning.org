@@ -1,19 +1,40 @@
 #+TITLE: Contract versioning
 # One job: how the contract itself is versioned and what a version bump means
-# Status: skeleton; step 9 freezes it. Until then it is the working draft.
+# Status: filled 2026-10-16; working draft until a program and an adapter both depend on it.
 
 * What this freezes
 # the exact thing every program and adapter must obey; if it is not frozen here, authors guess.
+  The versioning law: the contract is versioned as one whole; each piece
+  inside freezes only when a program and an adapter both depend on it; a
+  bump names what changed and who must refuse (contract INDEX; rules
+  05 and 09).
 
 * Shape
 # names and meanings only: the fields and what they promise. No code, no examples.
+  - Version: one monotonic whole number for the contract; a piece's
+    freeze lands as a D-numbered record in the program that freezes it.
+  - Additive changes keep readers working — readers ignore unknown
+    fields. Breaking changes force refusals by name: a program built
+    against a new version refuses a stale adapter; a rebuilt client
+    refuses an old holder.
+  - Records: PM records which contract version each program and adapter
+    implements (pm-integration/adapter-versioning-and-rollback.org).
+  - Until its freeze, a piece is the working draft; drafts do not bump
+    versions.
 
 * Who obeys it
 # every program and adapter this applies to, named.
+  Every program and adapter; PM's version records carry the evidence.
 
 * How it changes
 # how this can change without breaking a running client; point at a D-number once one exists.
+  A bump is itself a contract change: it lands with a D-number that
+  names the old version. Freeze condition: a program and an adapter
+  both depend on it; none yet.
 
 * Open decisions
 # options with a recommendation, or none yet.
-
+  - Where the version number lives — recommendation: in this file; the
+    contract names itself.
+  - Pre-freeze review dates — recommendation: the fill date stands as
+    the review date until a freeze lands (none yet).

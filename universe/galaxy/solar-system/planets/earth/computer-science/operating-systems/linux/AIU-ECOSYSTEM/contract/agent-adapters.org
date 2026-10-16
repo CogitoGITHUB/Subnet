@@ -1,19 +1,46 @@
 #+TITLE: Agent adapters
 # One job: what every agent adapter must implement and what it may not decide on its own
-# Status: skeleton; step 9 freezes it. Until then it is the working draft.
+# Status: filled 2026-10-16; working draft until a program and an adapter both depend on it.
 
 * What this freezes
 # the exact thing every program and adapter must obey; if it is not frozen here, authors guess.
+  The adapter's duties and limits: translate the one boundary to one agent,
+  natively; nothing agent-specific ever leaks to the programs; a third agent
+  later is an adapter only (rule 08; agents/ design: thin pinned adapters).
 
 * Shape
 # names and meanings only: the fields and what they promise. No code, no examples.
+  - Must implement: open or attach a session; deliver a bundle; stream the
+    session's events marked with the agent identity; surface permission
+    asks in the human's own UI; cancel; end; and report two pins — the
+    boundary version implemented and the agent version verified against.
+  - May not decide: which agent a send goes to (the choosing rule does),
+    read-versus-mutate policy, redaction, retries that could leak
+    secrets, or any program-internal meaning.
+  - No silent downgrade: what the agent cannot do today, the adapter
+    refuses by name.
+  - Identity: its own PM package, versioned, pinned, with a conformance
+    test and rollback (rule 08). The conformance test walks the
+    boundary's calls.
+  - Secrets: the adapter sits on the far side of the redaction seam and
+    should never see credentials by construction (rule 07; the secrets
+    package stands between).
 
 * Who obeys it
 # every program and adapter this applies to, named.
+  Every adapter — OpenCode, Hermes, and any third later. PM packages,
+  pins and rolls them back.
 
 * How it changes
 # how this can change without breaking a running client; point at a D-number once one exists.
+  A boundary version bump forces re-verification against the agent; a
+  refusal names the pin mismatch. Freeze condition: a program and an
+  adapter both depend on it; none yet.
 
 * Open decisions
 # options with a recommendation, or none yet.
-
+  - The start seam per agent — recommendation: OpenCode through its
+    headless loopback server; Hermes through a session pane first, its
+    native seam re-checked at install.
+  - Adapter failure surfacing — recommendation: failures are events on
+    the feed and a named refusal, never silence.

@@ -1,19 +1,39 @@
 #+TITLE: UI placeable-piece model
 # One job: the one model for UI pieces: edge, size, order and content
-# Status: skeleton; step 9 freezes it. Until then it is the working draft.
+# Status: filled 2026-10-16; working draft until a program and an adapter both depend on it.
 
 * What this freezes
 # the exact thing every program and adapter must obey; if it is not frozen here, authors guess.
+  The model every program uses to offer UI pieces — bars, dashes,
+  widgets — to a host (the editor or the multiplexer) without knowing
+  the host's internals, and the host's placement rules. This is the
+  free-UI-placement rule made concrete.
 
 * Shape
 # names and meanings only: the fields and what they promise. No code, no examples.
+  - A piece declares: edge (top, bottom, left, right, centre); size
+    (fixed cells, or a weight); order (its place along the edge);
+    content (a structured record, or a reference to a sight file).
+  - Pieces are offered; the host places. Widgets are externalized only
+    when asked (the UI study's lesson).
+  - Capability negotiation: the active set is announced; the
+    least-capable client wins; a host that cannot place a piece refuses
+    it by name rather than dropping it silently.
 
 * Who obeys it
 # every program and adapter this applies to, named.
+  The editor and the multiplexer as hosts; every program offering
+  pieces; the dashboard's pieces use this model first.
 
 * How it changes
 # how this can change without breaking a running client; point at a D-number once one exists.
+  New edges or fields are additive; a host that does not know one
+  refuses by name. Freeze condition: a program and an adapter both
+  depend on it; none yet.
 
 * Open decisions
 # options with a recommendation, or none yet.
-
+  - Size units — recommendation: cells first, weight for the flexible
+    case.
+  - Where placements persist — recommendation: the host decides, often
+    in its layout file; the offering program only proposes.

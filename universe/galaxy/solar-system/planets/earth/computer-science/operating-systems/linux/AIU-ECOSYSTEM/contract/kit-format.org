@@ -1,19 +1,44 @@
 #+TITLE: Agent integration kit format
 # One job: the kit every package ships and how it is derived from declared capabilities
-# Status: skeleton; step 9 freezes it. Until then it is the working draft.
+# Status: filled 2026-10-16; working draft until a program and an adapter both depend on it.
 
 * What this freezes
 # the exact thing every program and adapter must obey; if it is not frozen here, authors guess.
+  The kit: the four surfaces and the conformance checklist, derived from
+  the declared capability table, so a kit can never drift from what the
+  program actually does (agents/agent-integration-kit.org; ecosystem
+  rule 2).
 
 * Shape
 # names and meanings only: the fields and what they promise. No code, no examples.
+  - Contents: the engine's JSON surface; the MCP server exposing the same
+    commands; the skill file whose examples execute; the read-only
+    watcher plugin; plus the event feed and the sight files.
+  - Derived: the capability declaration — command names, arity, mutating
+    or not — is data; a gate fails when the declaration and the surfaces
+    disagree.
+  - One skill file serves both agents; no forked copy.
+  - Read is free, mutate is gated: the same rule inside the kit as
+    outside it.
+  - The checklist's six proofs: the one envelope honored; frozen exit
+    codes with refusals naming their rule; MCP gating with the engine's
+    own re-check; skill examples executed by the suite; the plugin
+    proven read-only; the feed flushed and the wait door held.
 
 * Who obeys it
 # every program and adapter this applies to, named.
+  Every program this ecosystem ships; PM stands as the first worked
+  example. Adapters are packages but ship no kit of their own.
 
 * How it changes
 # how this can change without breaking a running client; point at a D-number once one exists.
+  The checklist grows by proof, never shrinks by convenience; kit
+  contents ride the contract version. Freeze condition: a program and an
+  adapter both depend on it; none yet.
 
 * Open decisions
 # options with a recommendation, or none yet.
-
+  - The skill's prose budget — recommendation: short and copy-safe;
+    the owner reviews at freeze.
+  - Where conformance reports land — recommendation: with the
+    program's own gate output.

@@ -1,19 +1,44 @@
 #+TITLE: AI-link boundary
 # One job: the agent-neutral boundary every package calls, with adapters behind it
-# Status: skeleton; step 9 freezes it. Until then it is the working draft.
+# Status: filled 2026-10-16; working draft until a program and an adapter both depend on it.
 
 * What this freezes
 # the exact thing every program and adapter must obey; if it is not frozen here, authors guess.
+  The one boundary every program calls to reach an agent, in terms that
+  survive either agent changing its own interface. Programs call this;
+  adapters sit behind it; nothing agent-specific crosses it (agents/,
+  ai-link-boundary.org: one small contract owned here).
 
 * Shape
 # names and meanings only: the fields and what they promise. No code, no examples.
+  - Calls: open or attach a session; send a bundle; subscribe to the
+    session's events; answer a permission ask; cancel; end.
+  - Read and mutate are told apart from the first version; read is free;
+    mutation needs the human token and the engine re-checks it; approval
+    is never inferred.
+  - Events come back as the one event record, enriched with the agent
+    identity and the session; a file change nobody reports is marked
+    external.
+  - The boundary is versioned; an adapter declares the version it
+    implements. ACP may run as a wire under an adapter without changing
+    this face.
 
 * Who obeys it
 # every program and adapter this applies to, named.
+  Every program sends through it — editor, notation, multiplexer, PM —
+  and every adapter implements it. PM packages and versions both the
+  adapters and this boundary's version records.
 
 * How it changes
 # how this can change without breaking a running client; point at a D-number once one exists.
+  A new boundary version forces adapter re-verification; a program built
+  against a new version refuses a stale adapter by name. Freeze
+  condition: a program and an adapter both depend on it; none yet.
 
 * Open decisions
 # options with a recommendation, or none yet.
-
+  - The wire below the boundary — recommendation: a small JSON-lines
+    shape of our own, one object per line; ACP only as an adapter's
+    internal choice once its pages are read.
+  - A session handle's lifetime across detach — recommendation: the
+    handle outlives the caller's screen, like the holder's shells do.

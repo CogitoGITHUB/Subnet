@@ -5,21 +5,21 @@
 * Files
 # one line per file: its name, then the single job it performs. This index is updated in the same commit as any change here.
 
-  - event-log-format.org — the one event record every program writes: who, why, UTC, duration, structured fields
-  - ai-sight-files.org — the on-disk files that let an agent see state without asking: what they hold and who writes them
-  - structured-records.org — the one record shape for machine-readable output, shared by every program
-  - context-bundle-format.org — the one bundle a send carries: selection, file, position, notation address, and why
-  - ai-link-boundary.org — the agent-neutral boundary every package calls, with adapters behind it
-  - agent-adapters.org — what every agent adapter must implement and what it may not decide on its own
-  - kit-format.org — the kit every package ships and how it is derived from declared capabilities
-  - notation-engine-boundary.org — the LSP-like surface through which the editor and the multiplexer reach the notation
-  - node-addressing-and-comments.org — how a send names its notation address and how comments in the text are treated
-  - ui-placeable-piece-model.org — the one model for UI pieces: edge, size, order and content
-  - dev-mode-loop.org — the one dev-mode loop: live from source, bake, keep last good, manual rebuild, measured start
-  - key-routing.org — how a key finds its owner across multiplexer, editor and the programs inside panes
-  - contract-versioning.org — how the contract itself is versioned and what a version bump means
-  - rebuilt-client-vs-running-holder.org — what happens when a rebuilt client meets a holder that still runs the old contract
+  - event-log-format.org — the one event record every program writes: who, why, UTC, duration, structured fields; filled 2026-10-16
+  - ai-sight-files.org — the on-disk files that let an agent see state without asking: what they hold and who writes them; filled 2026-10-16
+  - structured-records.org — the one record shape for machine-readable output, shared by every program; filled 2026-10-16
+  - context-bundle-format.org — the one bundle a send carries: selection, file, position, notation address, and why; filled 2026-10-16
+  - ai-link-boundary.org — the agent-neutral boundary every package calls, with adapters behind it; filled 2026-10-16
+  - agent-adapters.org — what every agent adapter must implement and what it may not decide on its own; filled 2026-10-16
+  - kit-format.org — the kit every package ships and how it is derived from declared capabilities; filled 2026-10-16
+  - notation-engine-boundary.org — the LSP-like surface through which the editor and the multiplexer reach the notation; filled 2026-10-16
+  - node-addressing-and-comments.org — how a send names its notation address and how comments in the text are treated; filled 2026-10-16
+  - ui-placeable-piece-model.org — the one model for UI pieces: edge, size, order and content; filled 2026-10-16
+  - dev-mode-loop.org — the one dev-mode loop: live from source, bake, keep last good, manual rebuild, measured start; filled 2026-10-16
+  - key-routing.org — how a key finds its owner across multiplexer, editor and the programs inside panes; filled 2026-10-16
+  - contract-versioning.org — how the contract itself is versioned and what a version bump means; filled 2026-10-16
+  - rebuilt-client-vs-running-holder.org — what happens when a rebuilt client meets a holder that still runs the old contract; filled 2026-10-16
 
 * Later
-# The one written contract. Frozen only when a program and an adapter both depend on a piece; until then these are the working draft.
+# The one written contract, filled 2026-10-16 as the working draft. Frozen only when a program and an adapter both depend on a piece.
 
