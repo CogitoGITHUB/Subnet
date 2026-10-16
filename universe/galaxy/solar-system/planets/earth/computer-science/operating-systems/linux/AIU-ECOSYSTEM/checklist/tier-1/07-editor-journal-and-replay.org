@@ -1,0 +1,20 @@
+#+TITLE: 07 — Editor journal and replay
+# One job: one small checklist item of the shared build up to the done line.
+# Status: TODO; added 2026-10-16, in chronological order.
+
+* What
+# the work, in a line or two.
+  Every edit is journaled to disk as it happens and is replayable after a
+  crash.
+
+* Done when
+# the single observable check.
+  Kill mid-edit; replay; the buffer returns exactly.
+
+* Dependencies
+# the items that must be DONE first.
+  05 — the editor slice.
+
+* State
+# TODO; DONE records its commit hash; BLOCKED names its blocker.
+  TODO.
