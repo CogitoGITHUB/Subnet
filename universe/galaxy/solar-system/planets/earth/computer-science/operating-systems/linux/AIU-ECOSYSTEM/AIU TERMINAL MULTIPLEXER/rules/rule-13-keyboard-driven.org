@@ -18,6 +18,6 @@
   A workflow that needs a mouse to finish.
 
 * Where it is proven
-# the checklist item that shows this rule holds; todo until step 10 names it.
-  todo — step 10 names the checklist item
+# the checklist item that shows this rule holds; named 2026-10-16.
+  checklist/tier-1 items 06 and 17
 

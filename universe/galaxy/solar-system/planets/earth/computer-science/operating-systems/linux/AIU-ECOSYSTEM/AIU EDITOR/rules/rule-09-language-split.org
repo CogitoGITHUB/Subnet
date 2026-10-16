@@ -23,6 +23,6 @@
   Speed work written in the description layer, or meaning written on the hot path.
 
 * Where it is proven
-# the checklist item that shows this rule holds; todo until step 10 names it.
-  todo — step 10 names the checklist item
+# the checklist item that shows this rule holds; named 2026-10-16.
+  checklist/tier-1 items 01 and 05
 

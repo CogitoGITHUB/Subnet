@@ -15,6 +15,6 @@
   A holder that reads config or ticks, so it cannot be trusted to just hold terminals.
 
 * Where it is proven
-# the checklist item that shows this rule holds; todo until step 10 names it.
-  todo — step 10 names the checklist item
+# the checklist item that shows this rule holds; named 2026-10-16.
+  checklist/tier-1 item 18
 

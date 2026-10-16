@@ -12,5 +12,6 @@
 # the questions this area must answer, listed as questions; options welcome with a recommendation.
 
 * Where it is proven
-# the build step or check that shows this works; todo until step 10 names it.
+# the build step or check that shows this works; named 2026-10-16.
+  checklist/tier-3/plan-only.org — far future, no work yet.
 

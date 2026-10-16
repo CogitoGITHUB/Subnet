@@ -16,6 +16,6 @@
   A record whose shape changes per writer, so feeds stop being mutually readable.
 
 * Where it is proven
-# the checklist item that shows this rule holds; todo until step 10 names it.
-  todo — step 10 names the checklist item
+# the checklist item that shows this rule holds; named 2026-10-16.
+  checklist/tier-1 item 18
 

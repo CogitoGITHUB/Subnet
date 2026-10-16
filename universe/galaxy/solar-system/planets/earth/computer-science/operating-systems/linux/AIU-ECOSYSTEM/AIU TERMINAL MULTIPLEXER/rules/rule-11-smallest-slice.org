@@ -15,6 +15,6 @@
   A big slice that proves nothing and hides which rule broke.
 
 * Where it is proven
-# the checklist item that shows this rule holds; todo until step 10 names it.
-  todo — step 10 names the checklist item
+# the checklist item that shows this rule holds; named 2026-10-16.
+  checklist/tier-1 items 03 and 04
 
