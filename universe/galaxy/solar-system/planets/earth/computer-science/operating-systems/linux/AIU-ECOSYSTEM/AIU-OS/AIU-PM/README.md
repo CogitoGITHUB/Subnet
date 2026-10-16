@@ -76,8 +76,11 @@ Ordered as specified. Each group moves from “Planned” to “Current” in th
 - `pm status` reports held packages explicitly, so nobody has to ask why something is still there.
 
 ### 3. A tighter agent contract around the confirmation token
-- The token becomes single-use or short-lived (time-boxed, run-scoped): a compromised agent must not keep a long-lived mutation capability.
-- Every token request is narrated as a WAIT event, so “agent is asking for mutation rights” is in the feed before the answer can arrive.
+- **Single-use, and never clock-bound** (landed). The token is 32 bytes from the OS random source, spent by the first state-changing call it approves, and dead when its session ends. There is no TTL: a wall-clock expiry is a second thing that can fail silently.
+- **Bound to one plan** (landed). A token is issued against the digest of the call it approves; presenting it against a different call refuses under its own name, so approval of one thing is never approval of another.
+- **Four refusals, each with its own name** (landed): `needs a confirmation token`, `wrong confirmation token`, `confirmation token already used`, `confirmation token is for a different plan`. A caller that cannot tell them apart cannot act on any of them.
+- **Every token request is narrated as a WAIT event** (landed), so “agent is asking for mutation rights” is in the feed before the answer can arrive.
+- **The CLI/MCP asymmetry is deliberate**: a human at a terminal *is* the confirmation, so the CLI acts directly (`--confirm` where a preview earns its keep, on `apply`); an agent is not a human, so MCP requires the token. Both read one shared list of state-changing commands, and neither keeps a second copy of it.
 - Skill and plugin teach the exact protocol: request token → wait for the human → use it once → the token dies.
 
 ### 4. Secondary moves the feed now makes cheap

@@ -30,7 +30,11 @@
   ;; string -> boolean, no password in the URL
   [credential-safe? (-> string? boolean?)]
   ;; any -> boolean, the commands that change the machine
-  [state-changing? (-> any/c boolean?)]))
+  [state-changing? (-> any/c boolean?)]
+
+  ;; the four confirmation refusals, in one total predicate
+  [confirmation-refusal (-> boolean? boolean? boolean? boolean?
+                            (or/c string? #f))]))
 
 ;; ---------------------------------------------------------------------------
 ;; 1. Source trust. A git source is pinned to an exact commit id,
@@ -123,6 +127,32 @@
                           "rollback" "remove" "hold"))
            #t
            #f)))
+
+;; ---------------------------------------------------------------------------
+;; 8. The confirmation itself. There are FOUR ways to be refused and each
+;; one gets its OWN name, because a caller that cannot tell "you sent
+;; nothing" from "you sent the wrong secret" from "that secret already
+;; spent itself" from "that secret approved a different plan" cannot act
+;; on any of them. #f means: the token may be spent NOW.
+;;
+;; Pure, and it stays pure: the caller owns the state and passes the four
+;; facts in, so the CLI and the MCP server ask this one predicate the same
+;; question and cannot drift apart. No clock and no timer (D-015): a
+;; token dies by USE or by session end, never by the wall clock.
+;;
+;; boolean? given?     the caller supplied a token at all
+;; boolean? correct?   it is this session's token
+;; boolean? spent?     it already approved one call
+;; boolean? same-plan? it was issued for THIS plan
+;; -> (or/c string? #f) the refusal name, or #f to allow
+
+(define (confirmation-refusal given? correct? spent? same-plan?)
+  (cond
+    [(not given?)     "needs a confirmation token"]
+    [(not correct?)   "wrong confirmation token"]
+    [spent?           "confirmation token already used"]
+    [(not same-plan?) "confirmation token is for a different plan"]
+    [else             #f]))
 
 ;; ---------------------------------------------------------------------------
 (module+ test

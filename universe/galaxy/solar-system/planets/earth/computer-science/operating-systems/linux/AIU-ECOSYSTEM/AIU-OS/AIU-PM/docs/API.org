@@ -153,3 +153,33 @@ human usage text goes to stdout as plain lines, not JSON.
 command refuses with kind =config= before any object is built. A
 missing operand refuses with the count the command wants; no partial
 object is ever printed.
+
+** The MCP confirmation token
+The CLI confirms with =--confirm=. MCP cannot: the caller is an agent,
+and an agent is not a human, so it needs a secret it cannot invent. That
+asymmetry is deliberate, and it is recorded in =plan/OPEN-DECISIONS.org=.
+
+A token is issued per session by =initialize=, which returns it as
+=confirmationToken=. It is 32 bytes from the OS random source, hex. The
+three rules, none of them a clock:
+
+1. =PLAN-BOUND=. A token is issued against the digest of the call it
+   approves. Presenting it against another call refuses.
+2. =SINGLE-USE=. The first state-changing call it approves SPENDS it.
+3. =NO TIMER=. It dies when spent, or when its session ends. Expiry by
+   use, never by the wall clock (D-015).
+
+Read-only tools never look at it. A state-changing tool is refused
+before anything is touched, with error code =-32001= and one of four
+named messages, each its own refusal:
+
+| refusal | when |
+|---------+------|
+| =needs a confirmation token= | no =confirmation= field at all |
+| =wrong confirmation token= | a token that is not this session's |
+| =confirmation token already used= | it already approved one call |
+| =confirmation token is for a different plan= | it was issued for another call |
+
+Each refusal is narrated as a WAIT event before it goes out, so "an
+agent is asking for mutation rights" is in the feed before the answer
+can arrive.

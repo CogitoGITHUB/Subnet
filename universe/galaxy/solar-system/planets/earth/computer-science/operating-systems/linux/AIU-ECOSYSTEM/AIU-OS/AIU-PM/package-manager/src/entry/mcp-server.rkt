@@ -18,10 +18,12 @@
 
 (require racket/contract/base
          racket/file
+         racket/format
          racket/list
          racket/path
          racket/string
          racket/port
+         openssl/sha1
          json
          "./cli.rkt"
          "../errors/error-type.rkt"
@@ -37,6 +39,19 @@
   [handle-message (-> jsexpr? mcp-session? jsexpr?)]
   ;; session -> string, the token initialize hands out
   [session-token (-> mcp-session? string?)]
+  ;; The token request: bind this session's token to one plan. The human
+  ;; approves outside this process, so this records the binding and
+  ;; returns. A spent token refuses to be rebound.
+  [session-authorise! (-> mcp-session? string? void?)]
+  ;; session -> boolean, has this token already approved one call?
+  [session-token-spent? (-> mcp-session? boolean?)]
+  ;; session -> string or #f, the plan this token was issued for
+  [session-plan-digest (-> mcp-session? (or/c string? #f))]
+  ;; tool name + argv -> string, the digest a token is bound to
+  [plan-digest (-> string? (listof string?) string?)]
+  ;; the four refusals, for the gate and for the suite that checks it
+  [confirmation-refusal-for (-> string? (listof string?) mcp-session?
+                               jsexpr? (or/c string? #f))]
   ;; any -> string, the pm tool table as JSON
   [tool-table-json (-> any/c string?)]
   ;; Parameter, not an argument: the events dir is a seam and a test
@@ -100,18 +115,78 @@
 ;; Session state. Only the token lives here; nothing is cached, so two
 ;; calls in one session see the same tree.
 
-(struct mcp-session (token) #:transparent)
+(struct mcp-session (token [spent #:mutable] [plan-digest #:mutable])
+  #:transparent)
 
 (define (make-session in out)
-  (mcp-session (make-token)))
+  (mcp-session (make-token) #f #f))
 
-;; session -> string. Not a timestamp, not random from the clock at
-;; call time: a per-session opaque string. Kept deterministic so the
-;; scripted client can assert on it.
+;; session -> string. 32 bytes from the OS CSPRNG (/dev/urandom), hex.
+;; NOT a timestamp, NOT a counter, NOT anything reproducible: a token a
+;; reader could guess is not a secret, and the constant it replaces was
+;; published in the source. /dev/urandom is what the kernel already feeds
+;; TLS session keys from, so this adds no dependency.
 (define (make-token)
-  "pm-confirm-0001")
+  (define in (open-input-file "/dev/urandom"))
+  (define got (read-bytes 32 in))
+  (close-input-port in)
+  (cond
+    [(and (bytes? got) (= (bytes-length got) 32))
+     ;; Lowercase: security/commit-pinned? accepts lowercase hex only, and
+     ;; a token spelled two ways is a token people mistype.
+     (string-downcase (bytes->hex-string got))]
+    [else
+     ;; Never hand out a guessable token just to keep the protocol alive.
+     (raise-pm-error 'internal 'make-token
+                     "the system random source is short; no token issued"
+                     #:fields `(("wanted" . 32)
+                               ("got" . ,(if (bytes? got)
+                                           (bytes-length got)
+                                           0))))]))
 
 (define (session-token s) (mcp-session-token s))
+
+;; session -> boolean, true once this token has approved one call
+(define (session-token-spent? s) (mcp-session-spent s))
+
+;; session -> string or #f, the plan this token was issued for
+(define (session-plan-digest s) (mcp-session-plan-digest s))
+
+;; string-stringlist -> string, the plan digest a token is bound to: sha1
+;; over the tool name and its arguments, using openssl/sha1 exactly as
+;; machine/file-lock.rkt already does, so the tree keeps ONE hashing idiom.
+;; This is an IDENTIFIER, not a MAC and not a signature: the safety rests
+;; on the token being a secret and on it being single-use. It exists so a
+;; token approved for one call cannot be presented for a different one.
+(define (plan-digest name argv)
+  (bytes->hex-string
+   (sha1-bytes
+    (open-input-string (string-join (cons name argv) " ")))))
+
+;; session string -> void. THE TOKEN REQUEST: bind this token to the plan
+;; the human approved. It does not block here -- the human approves outside
+;; this process -- so it records the binding and returns. An already-spent
+;; token is NOT re-bindable: one approval is one call, and a second
+;; request must be a new token rather than a reused one.
+(define (session-authorise! s digest)
+  (when (mcp-session-spent s)
+    (raise-pm-error 'config 'session-authorise!
+                    "confirmation token already used"
+                    #:fields `(("digest" . ,digest))))
+  (set-mcp-session-plan-digest! s digest)
+  (void))
+
+;; string-stringlist session jsexpr -> (or/c string? #f). The refusal name
+;; when this state-changing call may NOT proceed, #f when it may. Every
+;; fact goes to the ONE shared predicate in security/, so this server and
+;; the CLI answer the same question the same way.
+(define (confirmation-refusal-for name argv sess args)
+  (define given (hash-ref args 'confirmation #f))
+  (confirmation-refusal (not (eq? given #f))
+                        (equal? given (session-token sess))
+                        (session-token-spent? sess)
+                        (equal? (plan-digest name argv)
+                                (session-plan-digest sess))))
 
 ;; ---------------------------------------------------------------------------
 ;; JSON-RPC envelopes
@@ -199,16 +274,32 @@
        ;; S-01: the policy names the state-changing set; the table
        ;; still carries confirms? for discovery, and the test below
        ;; asserts the two agree on every tool.
-       [(and (state-changing? name)
-             (not (equal? (hash-ref args 'confirmation #f)
-                          (session-token sess))))
-        ;; The refusal the checklist asks for, in the RPC shape.
-        (rpc-error id -32001
-                   (string-append
-                    name
-                    " changes state: pass the confirmationToken"
-                    " from initialize as \"confirmation\""))]
-       [else (run-tool name argv id)])]))
+       [else
+        (define refusal
+          (if (state-changing? name)
+              (confirmation-refusal-for name argv sess args)
+              #f))
+        (if refusal
+            ;; WAIT door: a HUMAN is being asked here, so the feed says so
+            ;; before the refusal goes out. Each of the four refusals keeps
+            ;; its own name, so a caller can tell "nothing sent" from
+            ;; "wrong secret" from "already spent" from "wrong plan".
+            (wait-for (string->symbol name) "confirmation token"
+                      (string-append name " changes state and was refused: "
+                                     refusal)
+                      #:how "the token initialize handed out"
+                      (lambda ()
+                        (rpc-error
+                         id -32001
+                         (string-append
+                          name " changes state: " refusal
+                          "; pass it as the confirmationToken argument"))))
+            ;; Approved: spend the token NOW, before the call runs. One
+            ;; approval, one call; a retry must ask again.
+            (begin
+              (when (state-changing? name)
+                (set-mcp-session-spent! sess #t))
+              (run-tool name argv id)))])]))
 
 ;; --- The event feed (V-4) ---------------------------------------------
 ;; Everything here reads <state>/events/<run-id>.jsonl, the file
@@ -545,6 +636,14 @@
   ;; not "not executable". Asserting the ABSENCE of the old stub refusal
   ;; is deliberate: it is what proves the state-changing tool reached the
   ;; engine instead of stopping at the surface.
+  ;;
+  ;; CHANGED BY THE NEW RULES, and this is why: the token used to be a
+  ;; constant compared for equality, so "right token" was the whole gate.
+  ;; A token is now issued for ONE plan and spent by one call, so a right
+  ;; token that was never bound to this plan must refuse with "a
+  ;; different plan". Binding it here is what the rule forces; the
+  ;; assertions below are untouched and still pass for the same reason.
+  (session-authorise! sess (plan-digest "apply" (list "state")))
   (define right-token
     (rpc 6 "tools/call"
           (hasheq 'name "apply"

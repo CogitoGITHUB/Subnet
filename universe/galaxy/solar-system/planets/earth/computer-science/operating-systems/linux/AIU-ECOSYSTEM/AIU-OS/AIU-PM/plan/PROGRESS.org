@@ -84,3 +84,18 @@ by hand because they are not file-relative.
 One real corruption was caused and found: the blind replacement rewrote
 NAMING-REGISTER.org's OLD-path column as well as its new-path column, so a
 row read =package-package-manager/src/entry/package-info.rkt=. Repaired.
+
+* Audit work landed, between the restructure steps
+- Confirmation token hardened (audit finding 1): per-session secret from the
+  OS random source, =/dev/urandom=, not the published constant
+  "pm-confirm-0001". Plan-bound, single-use, no timer, and four refusals
+  with four names. Policy =confirmation-refusal= lives in =security.rkt= and
+  is pure, so one list and no second copy. Covered by
+  =package-manager/tests/security/confirmation-test.rkt=.
+- CLI/MCP asymmetry (audit finding 2): DELIBERATE and recorded. A human at a
+  terminal IS the confirmation on the CLI; an agent is not a human, so MCP
+  requires the token. No CLI gate was added to =fetch=, =update=, =activate=,
+  =rollback=, =remove= or =hold=, because README.md and =docs/API.org=
+  document those as acting directly. Both surfaces read =state-changing?=.
+- Suite was already red before this work: 73 files, 939 checks, 17 failed,
+  in files this work never touched. Recorded in =plan/OPEN-DECISIONS.org=.

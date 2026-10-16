@@ -515,3 +515,67 @@ from an oversight: the reader must be able to ask why, and get an answer.
   needs an advisory source pm does not have. If one is chosen this is
   revisited; until then there is nothing to report and no way to claim
   safety.
+
+* Confirmation token -- DECIDED (owner, 2026-10-16)
+Audit findings 1 and 2. The token was the compile-time constant
+"pm-confirm-0001", so holding a public string authorised disk mutation. It
+is now a per-session secret, spent by its first use and bound to the plan
+it approved.
+
+** Where the secret comes from
+- *Decision:* =(DEFAULT: 32 bytes from the OS CSPRNG, hex-encoded. Never a
+  timestamp, never a counter, never anything reproducible.)= A token a
+  reader could guess is not a secret.
+
+** Single use
+- *Decision:* =(DEFAULT: the first state-changing call a token approves
+  SPENDS it, and every later call with that same token refuses.)= Refusal
+  name: "confirmation token already used". One approval, one call.
+
+** Bound to a plan
+- *Decision:* =(DEFAULT: a token is issued against a digest of the plan it
+  approves, and a call whose plan digest differs refuses under its own
+  name, "confirmation token is for a different plan".)= Approval of one
+  thing is never approval of another, however similar the two look.
+
+** Expiry is by use and by session end, never by clock
+- *Decision:* =(DEFAULT: no timer and no TTL. A token dies when it is spent
+  or when its session ends.)= D-015 forbids timers outright, and a
+  wall-clock expiry is a second thing that can fail silently.
+
+** The request is narrated
+- *Decision:* =(DEFAULT: asking for a token emits a WAIT event naming the
+  command and the plan digest being authorised.)= README group 3's law: if
+  it can block a human, it says so before it blocks.
+
+** One list, two surfaces
+- *Decision:* =(DEFAULT: state-changing? is the ONLY list of commands
+  needing human confirmation, and BOTH the CLI and MCP consult it.)= The
+  CLI kept a hand-written per-command list, so the two surfaces could drift
+  apart with nothing noticing. One list, one gate, one test that they agree.
+
+** One list, and a deliberate asymmetry
+- *Decision:* =(DEFAULT: the CLI acts directly; MCP requires the token. The
+  asymmetry is DELIBERATE.)= A human at a terminal IS the confirmation on the
+  CLI: there is nobody else to ask, and =--confirm= exists where a preview
+  earns its keep (=pm apply=). MCP cannot assume that, because the caller is an
+  agent and an agent is not a human. So no gate is added to =fetch=, =update=,
+  =activate=, =rollback=, =remove= or =hold=: =README.md= and =docs/API.org=
+  document those verbs as acting directly, and inventing a gate for them would
+  be an authorisation change nobody asked for. What the two surfaces SHARE is
+  the named set =state-changing?= and nothing else: one list, no second
+  hand-written copy, and a test that both surfaces read that one list.
+
+** The suite was already red before this work
+- *Finding:* =(2026-10-16, measured before the token change: 73 files, 939
+  checks, 17 FAILED.)= It was never hung: it ran 566s and its output grew
+  throughout, 73 of 73 files started and finished. The failures sit in files
+  this work never touched and are mostly environmental -- fixtures missing
+  under =/var/tmp=, and cwd-relative paths that do not resolve -- plus ONE
+  real defect: =git-clone-mirror= breaks its own contract at
+  =git-repo.rkt:297=, returning a procedure where =void?= is promised, which
+  is what fails =apply.rkt= and =local-perform.rkt=. So the gate cannot be
+  called green until that is fixed, and this line exists so "the suite was
+  red first" is never later mistaken for damage done here. Caveat, stated
+  rather than hidden: that run overlapped the edits to =security.rkt= and
+  =mcp-server.rkt=, so it is a strong signal rather than a proof.
