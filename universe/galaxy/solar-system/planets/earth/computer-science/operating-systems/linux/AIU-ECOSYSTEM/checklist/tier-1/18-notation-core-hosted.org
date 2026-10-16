@@ -1,0 +1,21 @@
+#+TITLE: 18 — Notation core hosted
+# One job: one small checklist item of the shared build up to the done line.
+# Status: TODO; added 2026-10-16, in chronological order.
+
+* What
+# the work, in a line or two.
+  The notation engine loads through its boundary; the loader works with
+  it absent; triggering the engine build enters dev mode after it
+  finishes.
+
+* Done when
+# the single observable check.
+  Notation on and off both work; the trigger chain runs once end to end.
+
+* Dependencies
+# the items that must be DONE first.
+  01 — the Racket join; 05 — the editor slice.
+
+* State
+# TODO; DONE records its commit hash; BLOCKED names its blocker.
+  TODO.
