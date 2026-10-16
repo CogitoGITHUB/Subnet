@@ -29,13 +29,15 @@ tree. Renaming those seven fixes most of the friction by itself.
 | vault | package-manager/src/git/vault.rkt | git env, refs, creation,
 | clone/fetch/pack, fsck, and a disk-space collision check |
 | dev | package-manager/src/install/dev-link.rkt | the developer-mode link/unlink path |
-| build | package-manager/src/build/build-plan.rkt | env construction AND six separate build-system executors |
+| build | package-manager/src/build/build-plan.rkt | env construction AND six separate |
+| build-system executors |
 
 ** The fake files living in the production tree
-=package-manager/test-doubles/fake-git.rkt= and =package-manager/test-doubles/dry-run-perform.rkt= are test doubles sitting
-beside real code. Anyone reading the tree has to know to skip them. They
-belong under a =test-doubles/= directory so the production tree reads
-as production code.
+=package-manager/test-doubles/fake-git.rkt= and
+=package-manager/test-doubles/dry-run-perform.rkt= are test doubles
+sitting beside real code. Anyone reading the tree has to know to skip
+them. They belong under a =test-doubles/= directory so the production
+tree reads as production code.
 
 * Over-loaded files and where the split lines are
 
@@ -112,9 +114,11 @@ Split: =cli/parse.rkt=, =cli/commands.rkt=, =cli/documents.rkt=,
 
 * Files whose names are honest
 These need no change: =package-manager/src/narration/narration.rkt= (narration),
-=package-manager/src/errors/error-type.rkt=, =package-manager/src/machine/directories.rkt=, =package-manager/src/machine/file-lock.rkt=, =package-manager/src/narration/print-console.rkt=,
-=package-manager/src/security/security.rkt=, =package-manager/src/machine/cancel.rkt=, =package-manager/src/install/local-perform.rkt= (once
-renamed to say it performs), =package-manager/src/store/store.rkt=, =package-manager/src/queue/journal.rkt=,
+=package-manager/src/errors/error-type.rkt=, =package-manager/src/machine/directories.rkt=,
+=package-manager/src/machine/file-lock.rkt=, =package-manager/src/narration/print-console.rkt=,
+=package-manager/src/security/security.rkt=, =package-manager/src/machine/cancel.rkt=,
+=package-manager/src/install/local-perform.rkt= (once renamed to say it performs),
+=package-manager/src/store/store.rkt=, =package-manager/src/queue/journal.rkt=,
 =package-manager/src/store/manifest.rkt=, =package-manager/src/store/query.rkt=.
 
 * Dependency facts that constrain the rename

@@ -1,65 +1,115 @@
 #+TITLE: NAMING-REGISTER — every file, old path, new path, job
 #+AUTHOR: Shape
 
-One row per file. =old path= is where it is now, =new path= is
-where it goes. A name states the one job it does; =core=, =main=,
-=server=, =backends=, =handler=, =manager= and =tmp= are banned
-everywhere, in paths and in definitions.
+One bullet per file: the path it has now, then =->= and the new path
+where that changes, then the job it does. A name states the one job it
+does; =core=, =main=, =server=, =backends=, =handler=, =manager= and
+=tmp= are banned everywhere, in paths and in definitions.
 
-|= old path |= new path |= job |
-|----------|-----------|------|
-| =package-manager/src/install/activate.rkt= | =package-manager/src/install/activate.rkt= | facade over generations and the profile |
-| =package-manager/src/install/apply.rkt= | =package-manager/src/install/apply.rkt= | make it so: journalled, reversible install |
-| =package-manager/src/build/build-plan.rkt= | =package-manager/src/build/build-env.rkt= | the environment a build step runs in |
-| =package-manager/src/install/dev-link.rkt= | =package-manager/src/install/dev-link.rkt= | the developer-mode link and unlink |
-| =package-manager/test-doubles/dry-run-perform.rkt= | =package-manager/test-doubles/dry-run-perform.rkt= | a performer that records instead of touching |
-| =package-manager/test-doubles/fake-git.rkt= | =package-manager/test-doubles/fake-git.rkt= | a fake git for tests; never production |
-| =package-manager/src/git/git-repo.rkt= | =package-manager/src/git/git-repo.rkt= | clone, fetch, pin, export: every repository operation |
-| =package-manager/src/install/install-command.rkt= | =package-manager/src/install/install-command.rkt= | builds a prefix for an already-applied plan |
-| =package-manager/src/queue/jobs.rkt= | =package-manager/src/queue/jobs.rkt= | MOVED WHOLE, UNSPLIT: still parked, no test net |
-| =package-manager/src/queue/journal.rkt= | =package-manager/src/queue/journal.rkt= | what each step did, keyed by input hash |
-| =package-manager/src/install/local-perform.rkt= | =package-manager/src/install/local-perform.rkt= | the performer that actually touches the filesystem |
-| =package-manager/src/store/manifest.rkt= | =package-manager/src/store/manifest.rkt= | what is installed and where |
-| =package-manager/src/store/query.rkt= | =package-manager/src/store/query.rkt= | why a package is present |
-| =package-manager/src/process/run.rkt= | =package-manager/src/process/spawn.rkt= | spawns a child: validates cwd, wraps, narrates the wait |
-| =package-manager/src/store/store.rkt= | =package-manager/src/store/store.rkt= | materialises a pinned version on disk |
-| =package-manager/src/store/update.rkt= | =package-manager/src/store/update.rkt= | re-resolve and diff against the lockfile |
-| =package-manager/src/git/vault.rkt= | =package-manager/src/git/vault.rkt= | MOVED WHOLE, UNSPLIT: still parked, no test net |
-| =package-manager/src/entry/cli.rkt= | =package-manager/src/entry/cli.rkt= | argv -> a command; one parser, one dispatch |
-| =package-manager/src/machine/cancel.rkt= | =package-manager/src/machine/cancel.rkt= | the cancellation door every blocking call passes |
-| =package-manager/src/spec/ecosystem-file.rkt= | =package-manager/src/spec/ecosystem-file.rkt= | the ecosystem declaration file and its merge |
-| =package-manager/src/errors/error-type.rkt= | =package-manager/src/errors/error-type.rkt= | the error type and its kinds |
-| =package-manager/src/spec/flags.rkt= | =package-manager/src/spec/flags.rkt= | parses and validates the flag vocabulary |
-| =package-manager/src/git/git-commit.rkt= | =package-manager/src/git/git-commit.rkt= | what a commit id is and how it is checked |
-| =package-manager/src/git/git-env.rkt= | =package-manager/src/git/git-env.rkt= | builds the isolated git environment |
-| =package-manager/src/machine/file-lock.rkt= | =package-manager/src/machine/file-lock.rkt= | cross-process exclusion with a timeout |
-| =package-manager/src/narration/event-text.rkt= | =package-manager/src/narration/event-text.rkt= | renders one event as text for a terminal |
-| =package-manager/src/spec/plan.rkt= | =package-manager/src/spec/plan.rkt= | facade over hashing, derivation, lowering, conflicts |
-| =package-manager/src/spec/resolve.rkt= | =package-manager/src/spec/resolve.rkt= | chooses the version a range resolves to |
-| =package-manager/src/machine/directories.rkt= | =package-manager/src/machine/directories.rkt= | the ONE seam onto HOME and XDG |
-| =package-manager/src/security/security.rkt= | =package-manager/src/security/security.rkt= | policy as total predicates, no effects |
-| =package-manager/src/spec/spec-build-steps.rkt= | =package-manager/src/spec/spec-build-steps.rkt= | reads build and install forms |
-| =package-manager/src/spec/spec-fields.rkt= | =package-manager/src/spec/spec-fields.rkt= | field plumbing: required keys, arity, unknown keys |
-| =package-manager/src/spec/spec-read.rkt= | =package-manager/src/spec/spec-read.rkt= | facade: reads a declaration file into a spec |
-| =package-manager/src/spec/spec-source.rkt= | =package-manager/src/spec/spec-source.rkt= | reads the source and dependency forms |
-| =package-manager/src/spec/spec-typos.rkt= | =package-manager/src/spec/spec-typos.rkt= | suggests a correction for an unknown key |
-| =package-manager/src/spec/spec.rkt= | =package-manager/src/spec/spec.rkt= | the spec struct every declaration parses into |
-| =package-manager/tests/park.rkt= | =package-manager/tests/park.rkt= | how a test is parked, and why |
-| =package-manager/src/narration/print-console.rkt= | =package-manager/src/narration/print-console.rkt= | the one printer; the only place output is written |
-| =package-manager/src/git/vault-lock.rkt= | =package-manager/src/git/vault-lock.rkt= | the vault lock; refuses re-entry at once, by design |
-| =package-manager/src/narration/narration.rkt= | =package-manager/src/narration/narration.rkt= | opens a run and carries every narrated event |
-| =package-manager/src/entry/version.rkt= | =package-manager/src/entry/version.rkt= | the pinned version the gate enforces |
-| =package-manager/src/entry/package-info.rkt= | =package-manager/src/entry/package-info.rkt= | the package identity the surfaces report |
-| =package-manager/src/entry/mcp-server.rkt= | =package-manager/src/entry/mcp-server.rkt= | the MCP surface over the same JSON |
-| =tools/build-lua.rkt= | =tools/build-lua.rkt= | builds the Lua target |
-| =gate/check.nu= | =gate/check.nu= | the gate: every stage, every refusal |
-| =gate/env.nu= | =gate/env.nu= | the Nushell side of the one scope seam |
-| =tools/hello-fetch.rkt= | =tools/hello-fetch.rkt= | a minimal end-to-end fetch, for a human to watch |
-| =tools/probe-blob.rkt= | =tools/probe-blob.rkt= | measures a large blob through the vault |
-| =gate/read-check.rkt= | =gate/read-check.rkt= | names the unclosed form and the line |
-| =tools/repl.rkt= | =tools/repl.rkt= | a REPL over the engine |
-| =gate/test-runner.rkt= | =gate/test-runner.rkt= | one process runs every test file |
-| =gate/tree.nu= | =gate/tree.nu= | prints the tree for a human to read |
+- =package-manager/src/install/activate.rkt=
+  facade over generations and the profile
+- =package-manager/src/install/apply.rkt=
+  make it so: journalled, reversible install
+- =package-manager/src/build/build-plan.rkt= -> =package-manager/src/build/build-env.rkt=
+  the environment a build step runs in
+- =package-manager/src/install/dev-link.rkt=
+  the developer-mode link and unlink
+- =package-manager/test-doubles/dry-run-perform.rkt=
+  a performer that records instead of touching
+- =package-manager/test-doubles/fake-git.rkt=
+  a fake git for tests; never production
+- =package-manager/src/git/git-repo.rkt=
+  clone, fetch, pin, export: every repository operation
+- =package-manager/src/install/install-command.rkt=
+  builds a prefix for an already-applied plan
+- =package-manager/src/queue/jobs.rkt=
+  MOVED WHOLE, UNSPLIT: still parked, no test net
+- =package-manager/src/queue/journal.rkt=
+  what each step did, keyed by input hash
+- =package-manager/src/install/local-perform.rkt=
+  the performer that actually touches the filesystem
+- =package-manager/src/store/manifest.rkt=
+  what is installed and where
+- =package-manager/src/store/query.rkt=
+  why a package is present
+- =package-manager/src/process/run.rkt= -> =package-manager/src/process/spawn.rkt=
+  spawns a child: validates cwd, wraps, narrates the wait
+- =package-manager/src/store/store.rkt=
+  materialises a pinned version on disk
+- =package-manager/src/store/update.rkt=
+  re-resolve and diff against the lockfile
+- =package-manager/src/git/vault.rkt=
+  MOVED WHOLE, UNSPLIT: still parked, no test net
+- =package-manager/src/entry/cli.rkt=
+  argv -> a command; one parser, one dispatch
+- =package-manager/src/machine/cancel.rkt=
+  the cancellation door every blocking call passes
+- =package-manager/src/spec/ecosystem-file.rkt=
+  the ecosystem declaration file and its merge
+- =package-manager/src/errors/error-type.rkt=
+  the error type and its kinds
+- =package-manager/src/spec/flags.rkt=
+  parses and validates the flag vocabulary
+- =package-manager/src/git/git-commit.rkt=
+  what a commit id is and how it is checked
+- =package-manager/src/git/git-env.rkt=
+  builds the isolated git environment
+- =package-manager/src/machine/file-lock.rkt=
+  cross-process exclusion with a timeout
+- =package-manager/src/narration/event-text.rkt=
+  renders one event as text for a terminal
+- =package-manager/src/spec/plan.rkt=
+  facade over hashing, derivation, lowering, conflicts
+- =package-manager/src/spec/resolve.rkt=
+  chooses the version a range resolves to
+- =package-manager/src/machine/directories.rkt=
+  the ONE seam onto HOME and XDG
+- =package-manager/src/security/security.rkt=
+  policy as total predicates, no effects
+- =package-manager/src/spec/spec-build-steps.rkt=
+  reads build and install forms
+- =package-manager/src/spec/spec-fields.rkt=
+  field plumbing: required keys, arity, unknown keys
+- =package-manager/src/spec/spec-read.rkt=
+  facade: reads a declaration file into a spec
+- =package-manager/src/spec/spec-source.rkt=
+  reads the source and dependency forms
+- =package-manager/src/spec/spec-typos.rkt=
+  suggests a correction for an unknown key
+- =package-manager/src/spec/spec.rkt=
+  the spec struct every declaration parses into
+- =package-manager/tests/park.rkt=
+  how a test is parked, and why
+- =package-manager/src/narration/print-console.rkt=
+  the one printer; the only place output is written
+- =package-manager/src/git/vault-lock.rkt=
+  the vault lock; refuses re-entry at once, by design
+- =package-manager/src/narration/narration.rkt=
+  opens a run and carries every narrated event
+- =package-manager/src/entry/version.rkt=
+  the pinned version the gate enforces
+- =package-manager/src/entry/package-info.rkt=
+  the package identity the surfaces report
+- =package-manager/src/entry/mcp-server.rkt=
+  the MCP surface over the same JSON
+- =tools/build-lua.rkt=
+  builds the Lua target
+- =gate/check.nu=
+  the gate: every stage, every refusal
+- =gate/env.nu=
+  the Nushell side of the one scope seam
+- =tools/hello-fetch.rkt=
+  a minimal end-to-end fetch, for a human to watch
+- =tools/probe-blob.rkt=
+  measures a large blob through the vault
+- =gate/read-check.rkt=
+  names the unclosed form and the line
+- =tools/repl.rkt=
+  a REPL over the engine
+- =gate/test-runner.rkt=
+  one process runs every test file
+- =gate/tree.nu=
+  prints the tree for a human to read
 
 * Files moved whole and unsplit, and why
 
@@ -73,23 +123,33 @@ would double it. Recorded in =plan/OPEN-DECISIONS.org=.
 
 * Identifiers to rename, and why each lies
 
-| old | new | why |
-|-----|-----|-----|
-| =run.rkt -> run-result-exit= | =run.rkt -> result-exit= | the struct carries exit, stdout and stderr; "run" says nothing |
-| =run-command= | =spawn-and-wait= | it spawns, waits and collects; the old name sounds like it only builds a command line |
-| =package-manager/src/entry/mcp-server.rkt= | =entry/mcp-server.rkt= | "server" and "main" are banned and say nothing about the job |
-| =package-manager/src/entry/cli.rkt= | =entry/cli.rkt= | "main" is banned and is a filename convention, not a job |
-| =package-manager/src/narration/print-console.rkt= | =narration/print-console.rkt= | ui claims a surface; it is the single printer |
-| =package-manager/src/machine/directories.rkt= | =machine/directories.rkt= | "scope" is the concept, "directories" is the job |
-| =package-manager/src/machine/file-lock.rkt= | =machine/file-lock.rkt= | "lock" alone could be the vault lock or the store lock |
-| =package-manager/src/git/vault-lock.rkt= | =git/vault-lock.rkt= | sits with git because it locks a git-owned directory |
-| =package-manager/src/install/local-perform.rkt= | =install/local-perform.rkt= | "local" as opposed to what? this is the one that touches disk |
-| =package-manager/src/store/store.rkt= | =store/store.rkt= | kept: it materialises a version, and that is what store means |
+- =run.rkt=: =run-result-exit= -> =result-exit=
+  the struct carries exit, stdout and stderr; "run" says nothing
+- =run-command= -> =spawn-and-wait=
+  it spawns, waits and collects; the old name sounds like it only
+  builds a command line
+- =package-manager/src/entry/mcp-server.rkt= -> =entry/mcp-server.rkt=
+  "server" and "main" are banned and say nothing about the job
+- =package-manager/src/entry/cli.rkt= -> =entry/cli.rkt=
+  "main" is banned and is a filename convention, not a job
+- =package-manager/src/narration/print-console.rkt= -> =narration/print-console.rkt=
+  ui claims a surface; it is the single printer
+- =package-manager/src/machine/directories.rkt= -> =machine/directories.rkt=
+  "scope" is the concept, "directories" is the job
+- =package-manager/src/machine/file-lock.rkt= -> =machine/file-lock.rkt=
+  "lock" alone could be the vault lock or the store lock
+- =package-manager/src/git/vault-lock.rkt= -> =git/vault-lock.rkt=
+  sits with git because it locks a git-owned directory
+- =package-manager/src/install/local-perform.rkt= -> =install/local-perform.rkt=
+  "local" as opposed to what? this is the one that touches disk
+- =package-manager/src/store/store.rkt= -> =store/store.rkt=
+  kept: it materialises a version, and that is what store means
 
 * Left alone on purpose
 
-| name | why |
-|------|-----|
-| =refs/cyberdeck/pinned/= | on-disk state. Renaming orphans every existing pin; a migration, not a rename |
-| =.cyberdeck-commit= | a staging marker read by a test. Renaming it changes behaviour |
-| =FILE_PARKED entries= | until the underlying design question is answered, not renamed away |
+- =refs/cyberdeck/pinned/=
+  on-disk state. Renaming orphans every existing pin; a migration, not a rename
+- =.cyberdeck-commit=
+  a staging marker read by a test. Renaming it changes behaviour
+- =FILE_PARKED entries=
+  until the underlying design question is answered, not renamed away

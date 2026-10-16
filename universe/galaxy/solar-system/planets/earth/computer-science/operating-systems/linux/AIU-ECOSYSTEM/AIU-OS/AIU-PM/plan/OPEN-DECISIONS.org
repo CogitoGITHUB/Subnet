@@ -292,9 +292,10 @@ Engine is ready for all six (package-manager/src/store/update.rkt, activate.rkt,
 query.rkt); the dispatch is not written yet. One command per commit.
   / Done when: each refuses nothing and its JSON example is rendered
   by the suite.
-  / NOT COMMITTED YET: package-manager/src/entry/cli.rkt requires package-manager/src/install/apply.rkt, which
-  is still uncommitted work in another lane. Committing the CLI alone
-  would land a tree that cannot load.
+  / NOT COMMITTED YET: package-manager/src/entry/cli.rkt requires
+  package-manager/src/install/apply.rkt, which is still uncommitted work
+  in another lane. Committing the CLI alone would land a tree that
+  cannot load.
 (The checklist repeated the S2-05 acceptance paragraph under this item;
 the copy is not carried twice.)
 

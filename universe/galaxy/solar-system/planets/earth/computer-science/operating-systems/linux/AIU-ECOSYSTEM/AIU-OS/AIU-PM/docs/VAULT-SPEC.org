@@ -86,7 +86,8 @@ child.lock means an orphan is alive: the vault is "needs verify"
 pm vault verify passes. flock joins the check.nu tool gate.
 Cancel: (make-cancel-source) -> (values evt trigger!); kind
 'cancelled, exit 130; Ctrl-C routes through the same path (implemented
-in package-manager/src/process/run.rkt + package-manager/src/machine/cancel.rkt + package-manager/src/errors/error-type.rkt).
+in package-manager/src/process/run.rkt +
+package-manager/src/machine/cancel.rkt + package-manager/src/errors/error-type.rkt).
 
 * Jobs (no daemon)
 Operations are a closed set of structs: add, fetch-namespace, verify,

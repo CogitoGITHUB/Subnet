@@ -358,10 +358,11 @@ tui/README.md. Unverified on-device: no Rust toolchain on the phone;
 
 ** 2026-10-06 Remaining implementation order after plan docs
 Plan docs landed through Phase 6 (D-003, W-9). Build next, in order:
-package-manager/src/spec/plan.rkt, package-manager/test-doubles/dry-run-perform.rkt plus fake, package-manager/src/spec/resolve.rkt plus
-lock.rkt, package-manager/src/entry/cli.rkt, package-manager/src/install/local-perform.rkt, targets/emacs/ proven on
-racket-mode, git export plus log/diffstat ops, tangle.el, Emacs front
-end, TUI remaster. No code starts ahead of its design. P-1.
+package-manager/src/spec/plan.rkt, package-manager/test-doubles/dry-run-perform.rkt plus
+fake, package-manager/src/spec/resolve.rkt plus lock.rkt, package-manager/src/entry/cli.rkt,
+package-manager/src/install/local-perform.rkt, targets/emacs/ proven on racket-mode,
+git export plus log/diffstat ops, tangle.el, Emacs front end, TUI remaster.
+No code starts ahead of its design. P-1.
 
 ** 2026-10-06 STEP C: export interface (design only) + D-014 decided
 Export is checkout-based from the mirror at the pin into an empty

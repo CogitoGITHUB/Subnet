@@ -42,7 +42,9 @@ use ./env.nu [scope-roots]
 #   11 verdict: ALL GREEN / ALL GREEN (jobs parked) / CHECK FAILED
 #   12 paren check over every .rkt
 #   13 OBS-OK lint over .nu (no ignores, bare try, /dev/null, timers)
-#   14 one-printer lint: no raw print outside package-manager/src/narration/print-console.rkt and package-manager/src/narration/narration.rkt
+#   14 one-printer lint: no raw print outside the two named printers,
+#      package-manager/src/narration/print-console.rkt and
+#      package-manager/src/narration/narration.rkt
 #   15 security gate: every S-01 predicate called, writers audited
 
 # Pinned Nushell (D-020). Change here and nowhere else.
@@ -241,7 +243,10 @@ def print-lint-file [f] {
     let starts = ($ls | enumerate | where {|r|
         ($r.item | str trim) == "(module+ test"
     } | get index)
-    let test_at = (if ($starts | is-empty) { -1 } else { $starts | first })
+    # sentinel is the line count, never -1: with -1 the `>=` guard below
+    # skipped EVERY line of a file with no test block, so the lint
+    # silently passed a whole class of files (measured: 12 files).
+    let test_at = (if ($starts | is-empty) { $ls | length } else { $starts | first })
     for l in ($ls | enumerate) {
         let n = ($l.index + 1)
         let t = ($l.item | str trim)
@@ -303,7 +308,11 @@ def sec-call-count [pred, files] {
         let starts = ($ls | enumerate | where {|r|
             ($r.item | str trim) == "(module+ test"
         } | get index)
-        let test_at = (if ($starts | is-empty) { -1 } else { $starts | first })
+        # sentinel is the line count, never -1: with -1 the `>=` guard
+        # below skips EVERY line of a file that has no test block
+        # (measured: spec-fields.rkt's only source-pinned? call was
+        # counted as zero that way).
+        let test_at = (if ($starts | is-empty) { $ls | length } else { $starts | first })
         for l in ($ls | enumerate) {
             if ($l.index >= $test_at) { continue }
             let t = ($l.item | str trim)
@@ -327,29 +336,33 @@ def run-stage-15-body [] {
             let n = (sec-call-count $pred $nonsec)
             if $n == 0 {
                 $violations = ($violations | append (
-                  $"security-gate: predicate ($pred) uncalled (S-04)"
+                  "security-gate: predicate " + $pred + " uncalled (S-04)"
                 ))
             }
         }
         print $"security-gate: predicates checked, ($violations | length) violations so far"
-        # The audited writers and spawners. scripts/*.rkt are dev tools,
-        # audited by the V-0 inventory decision that they keep their own
-        # printing; they are listed here so that stays visible.
-        # A file outside this list
-        # that opens an output file or spawns a process fails here, so
-        # new effects get written down instead of slipping in.
-        let writers = ["activate.rkt" "apply.rkt" "build.rkt" "dev.rkt"
-            "git.rkt" "install.rkt" "jobs.rkt" "journal.rkt" "local.rkt"
-            "manifest.rkt" "query.rkt" "run.rkt" "store.rkt" "update.rkt"
-            "vault.rkt" "main.rkt" "ecosystem.rkt" "lock.rkt" "log.rkt"
-            "scope.rkt" "spec-read.rkt" "vault-lock.rkt" "verbose.rkt"
-            "server.rkt" "plan.rkt" "skill-examples.rkt"
-            "build-lua.rkt" "hello-fetch.rkt" "probe-blob.rkt" "repl.rkt"
-            "test-runner.rkt" "read-check.rkt"]
+        # The files allowed to contain the two effects. This list is the
+        # MEASURED set: every name below was put back by the lint itself
+        # after the old hand-guessed list (full of pre-split filenames
+        # like build.rkt and verbose.rkt that no longer exist) was
+        # cleared. Comments are skipped in the scan, so a prose mention
+        # of subprocess is not an effect (measured: kill-tree, spawn and
+        # status-fifo tripped on their own explanatory comments).
+        # A file outside this list that opens an output file or spawns a
+        # subprocess fails here, so new effects get written down instead
+        # of slipping in.
+        let writers = ["vault.rkt" "vault-lock.rkt" "directories.rkt"
+            "narration.rkt" "event-text.rkt" "run.rkt" "jobs.rkt"
+            "probe-blob.rkt"]
         for f in $files {
             let base = ($f | path basename)
             if ($base in $writers) { continue }
-            let rawlines = (open --raw $f | lines)
+            # Comments are skipped before the search: a `;` line that
+            # merely mentions subprocess is prose, not an effect
+            # (measured: kill-tree, spawn and status-fifo tripped on
+            # their own explanatory comments while calling process*).
+            let rawlines = (open --raw $f | lines
+                | where {|l| not (($l | str trim) | str starts-with ";") })
             let code = (($rawlines | each {|l|
                 strip-quotes ($l | str trim)
             }) | str join "
@@ -488,19 +501,31 @@ def run-stage-14-body [] {
     let roots = ($spec | split row " ")
     mut violations = []
     for r in $roots {
-        # package-manager/src/narration/narration.rkt and package-manager/src/narration/print-console.rkt ARE the printers; every other
+        # The two printers are package-manager/src/narration/narration.rkt
+        # and package-manager/src/narration/print-console.rkt; every other
         # .rkt must reach the user through them. lint-files already drops
-        # compiled/ and non-files, so the same list the text lint sees.
-        # The printers are package-manager/src/narration/narration.rkt and package-manager/src/narration/print-console.rkt. package-manager/src/narration/event-text.rkt
-        # is exempt for a structural reason, not a convenience: ui.rkt
-        # requires log.rkt for warn!, so log.rkt requiring ui.rkt would
-        # be a cycle. The exemption is NAMED here so a second one has to
-        # be written down too, instead of the list quietly growing.
-        let printers = ["verbose.rkt" "ui.rkt"]
-        let exempt = ["log.rkt"]
+        # compiled/ and non-files, so this is the same list the text lint
+        # sees.
+        # package-manager/src/narration/event-text.rkt is exempt for a
+        # structural reason, not a convenience: narration.rkt and
+        # print-console.rkt both require event-text.rkt, so event-text.rkt
+        # requiring them for its output would be a cycle. The exemption is
+        # NAMED here so a second one has to be written down too, instead of
+        # the list quietly growing.
+        # gate/ and tools/ are exempt as CLASSES, for the same
+        # written-down discipline: gate/read-check.rkt and
+        # gate/test-runner.rkt print the gate's own diagnostics and must
+        # not depend on the product code they gate; tools/*.rkt keep
+        # their own printing by the V-0 inventory decision. D-036
+        # governs the pm user's output, not the dev workbench.
+        let printers = ["narration.rkt" "print-console.rkt"]
+        let exempt = ["event-text.rkt"]
         let scanned = (lint-files $r | where {|f| ($f | str ends-with ".rkt") }
             | where {|f|
                 not (($f | path basename) in ($printers | append $exempt))
+            }
+            | where {|f|
+                not (($f | str contains "/gate/") or ($f | str contains "/tools/"))
             })
         let hits = ($scanned | each {|f| print-lint-file $f } | flatten)
         for v in $hits { print $v }

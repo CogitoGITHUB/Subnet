@@ -3,7 +3,8 @@
 
 * Status
 Final design. Nothing here is implemented yet: =plan/= and =lock/= exist
-only as =package-manager/src/spec/plan.rkt= and =package-manager/test-doubles/dry-run-perform.rkt=. The work order is
+only as =package-manager/src/spec/plan.rkt= and
+=package-manager/test-doubles/dry-run-perform.rkt=. The work order is
 plan/OPEN-DECISIONS.org, which is the file a resuming session reads
 first. No item in this file is open; anything still unconfirmed became an
 item in that file to inspect, not a question parked here.
@@ -419,6 +420,7 @@ here instead of hidden.
 4. =package-manager/src/store/store.rkt=, the marker and =current= link.
 5. =package-manager/src/build/build-plan.rkt=, one vocabulary word at a time.
 6. =package-manager/src/install/install-command.rkt=, reusing =local-perform!=.
-7. =package-manager/src/queue/journal.rkt= and =package-manager/src/install/apply.rkt=, then the CLI flags.
+7. =package-manager/src/queue/journal.rkt= and
+   =package-manager/src/install/apply.rkt=, then the CLI flags.
 8. =activate.rkt=, then =query.rkt= and =update.rkt= last: dev mode
    waits on a working =apply=.

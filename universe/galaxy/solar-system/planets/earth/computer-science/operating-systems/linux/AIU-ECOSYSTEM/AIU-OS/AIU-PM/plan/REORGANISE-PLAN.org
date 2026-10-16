@@ -163,16 +163,22 @@ Total: ~62 files, each under ~400 lines except =spawn.rkt= and
 Each is one commit. Each is verified by read-check, =raco make=, the
 file's own tests, and the dependent set, before the next begins.
 
-| # | from | to | why this order |
-|---|------|-----|----------------|
-| 1 | =package-manager/src/spec/plan.rkt= (974) | 4 files | =activate= and =apply= both need the lowering vocabulary |
-| 2 | =package-manager/src/spec/spec-read.rkt= (748) | facade | four modules already exist and work; finish the job |
-| 3 | =package-manager/src/queue/jobs.rkt= (1043) | 3 files | **parked, no test net — see the warning** |
-| 4 | =package-manager/src/git/vault.rkt= (1653) | 5 files | **parked, no test net — see the warning** |
-| 5 | =package-manager/src/process/run.rkt= (1063) | 6 files | the substrate; split once its hangs are closed |
-| 6 | =package-manager/src/build/build-plan.rkt= (673) | 3 + 5 files | self-contained executors |
-| 7 | =package-manager/src/install/activate.rkt= (650) | 4 files | depends on plan lowering, hence #1 |
-| 8 | =package-manager/src/entry/cli.rkt= (1525) | 4 files | requires nine files today; should require two |
+1. =package-manager/src/spec/plan.rkt= (974) -> 4 files
+   =activate= and =apply= both need the lowering vocabulary
+2. =package-manager/src/spec/spec-read.rkt= (748) -> facade
+   four modules already exist and work; finish the job
+3. =package-manager/src/queue/jobs.rkt= (1043) -> 3 files
+   **parked, no test net — see the warning**
+4. =package-manager/src/git/vault.rkt= (1653) -> 5 files
+   **parked, no test net — see the warning**
+5. =package-manager/src/process/run.rkt= (1063) -> 6 files
+   the substrate; split once its hangs are closed
+6. =package-manager/src/build/build-plan.rkt= (673) -> 3 + 5 files
+   self-contained executors
+7. =package-manager/src/install/activate.rkt= (650) -> 4 files
+   depends on plan lowering, hence #1
+8. =package-manager/src/entry/cli.rkt= (1525) -> 4 files
+   requires nine files today; should require two
 
 * The two warnings that decide whether this plan is safe
 
@@ -207,7 +213,8 @@ means moving a file that still has a known open defect in it.
 
 Safe, mechanical, and independently verifiable:
 - =core/*.rkt= → =src/<area>/= per the table above
-- =package-manager/test-doubles/fake-git.rkt=, =package-manager/test-doubles/dry-run-perform.rkt= → =test-doubles/=
+- =package-manager/test-doubles/fake-git.rkt=,
+  =package-manager/test-doubles/dry-run-perform.rkt= → =test-doubles/=
 - =scripts/= → split into =gate/= (=check.nu=, =read-check.rkt=,
   =test-runner.rkt=, =env.nu=, =tree.nu=) and =tools/= (the rest)
 - =package-manager/src/entry/cli.rkt= → =src/entry/cli.rkt=

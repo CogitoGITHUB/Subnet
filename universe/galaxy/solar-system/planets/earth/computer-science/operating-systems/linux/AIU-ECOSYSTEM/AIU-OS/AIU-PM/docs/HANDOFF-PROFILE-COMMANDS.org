@@ -30,8 +30,10 @@ Files that matter:
 | contracts; do not change them |
 | =package-manager/src/entry/cli.rkt= |
 |  command structs, the discovery table, the parser, the documents, the dispatch. YOU EDIT THIS |
-| =package-manager/src/machine/file-lock.rkt= | =read-lockfile=, =lockfile-entries=, =lock-entry= accessors |
-| =package-manager/src/spec/spec-read.rkt= | =read-spec-file=, =read-install= — where relative install paths come from |
+| =package-manager/src/machine/file-lock.rkt= |
+|  =read-lockfile=, =lockfile-entries=, =lock-entry= accessors |
+| =package-manager/src/spec/spec-read.rkt= |
+|  =read-spec-file=, =read-install= — where relative install paths come from |
 | =package-manager/src/narration/narration.rkt= | narration verbs. READ ONLY |
 | =docs/API.org= | the surface, and a TEST (see §7) |
 
@@ -84,7 +86,8 @@ each package is installed, and collect its relative paths. Build it
 once, in one place, and have all three commands use it.
 
 Where the data comes from:
-- name + version: =package-manager/src/machine/file-lock.rkt=, =lock-entry-name= / =lock-entry-version=
+- name + version: =package-manager/src/machine/file-lock.rkt=,
+  =lock-entry-name= / =lock-entry-version=
 - installed-at path: the store dir. See =package-manager/src/spec/plan.rkt=,
   =package-plan-store-dir= (it is =<state>/store/<name>/<slot>/<version>-<hash12>/=)
 - rels: the =install= form of each spec, read by =read-install= in
