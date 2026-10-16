@@ -1,13 +1,42 @@
 #+TITLE: Risks — AIU NOTATION
 # One job: what can sink this program, the first sign of each, and what shrinks it
-# Status: skeleton; step 8 fills it. Plans stay general; detailed design comes later.
+# Status: filled 2026-10-16; plans stay general, not yet reviewed.
 
 * Risks
 # one line per risk: what it is and how much it can hurt.
+  - A mark that collides with prose or tags — rule 12 names this as the
+    failure the design exists to avoid; it would sink everyday use.
+  - Syntax creep: symbols for ordinary things returning — the goal dies
+    with the rule (rule 12).
+  - Reparse latency on the phone — typing feels heavy; incremental
+    reparse is table stakes (research).
+  - Literate tangling complexity — targets and dependency scanning grow
+    edge cases; Org Babel's history is the warning.
+  - The mark choice stalls (typing comfort still open, Q4) — the first
+    build step cannot start.
+  - Wording drift: "no engine" and "no format unless necessary" read
+    against the engine surface the contract needs — decisions block
+    before architecture.
+  - Tier-3 pressure — math and graphs pulling effort early, against
+    rule 12's far-future stance.
+  - The phone cannot prove the graphics tier — rendering ambitions may
+    wait for the laptop.
 
 * First signs
 # the earliest observable signal that a risk is happening.
+  - A mark typed as a collision by accident; a symbol sneaks back into an
+    ordinary element; typing lag; target and scanning cases multiply; the
+    mark choice stalls; the engine/format wording blocks a decision.
 
 * Shrinking it
 # what is done about each risk, or why nothing can be.
-
+  - Choose the mark with the owner on the phone and test it against real
+    prose and tags before anything is built (rule 12).
+  - Keep the smallest slice — everyday tier first; refuse tier-3 work
+    until the owner opens it.
+  - Treat incremental reparse and error recovery as the first slice's
+    work, not later polish.
+  - Settle the engine/format wording in open decisions before
+    architecture begins.
+  - Record every phone limit in WHEN-ON-LAPTOP.org the moment it
+    appears.

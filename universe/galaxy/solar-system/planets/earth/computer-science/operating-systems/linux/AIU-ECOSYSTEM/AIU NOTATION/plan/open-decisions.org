@@ -1,13 +1,46 @@
 #+TITLE: Open decisions — AIU NOTATION
 # One job: the decisions this program still owes, options with a recommendation each, and where they land
-# Status: skeleton; step 8 fills it. Plans stay general; detailed design comes later.
+# Status: filled 2026-10-16; plans stay general, not yet reviewed.
 
 * Open decisions
 # one line per decision this program still owes.
+  - The exact mark for opening and closing named elements (rule 12: the
+    owner picks from options, on a phone keyboard).
+  - Typing comfort for the mark — still open from the questionnaire.
+  - Auto-numbered headings: numbers written in the file text, or
+    computed when loading.
+  - The engine wording: what "no engine" and "no format unless necessary"
+    refuse, read against the engine surface the contract needs.
+  - The first element set for the smallest slice.
+  - Where the title's creation-time context comes from — the owner's
+    custom file-creation package; its source is read only when the
+    format step needs it.
 
 * Options
 # two or three options per decision, each with a recommendation marked.
+  - The mark — (a) one tiny consistent mark wrapping every name, chosen
+    so it never collides with prose or tags — recommended, pending the
+    owner's phone test; (b) a different mark per kind of element —
+    refused: more to remember, more collisions; (c) indentation instead
+    of marks — refused: fragile in plain text and for agent reads.
+  - Numbering — (a) computed when loading; the file text stays clean —
+    recommended; (b) numbers written in the file — stable outside our
+    tools but noisy and drifts; (c) computed, with one explicit element
+    to pin a number when needed.
+  - Engine wording — (a) read "no engine" as no heavyweight machinery
+    beyond the language's need, keeping the boundary to the editor —
+    recommended reading; (b) read it as no separate process at all until
+    forced — heavier consequences, kept as the fallback reading;
+    (c) settle it only when architecture begins — refused: architecture
+    must not begin with it open.
+  - First element set — (a) title, paragraph and code block first —
+    recommended: the smallest slice that proves the mark and the
+    literate goal; (b) add outlines and links immediately; (c) the full
+    Org feature list before anything is proven — refused (rule 11).
 
 * Where it lands
 # once decided it becomes a D-numbered file in decisions/, newest first.
-
+  Each decision becomes a D-numbered file in decisions/, newest first; the
+  mark lands with the owner's phone test; the numbering choice with the
+  first numbered outline slice; the engine wording before architecture
+  begins.

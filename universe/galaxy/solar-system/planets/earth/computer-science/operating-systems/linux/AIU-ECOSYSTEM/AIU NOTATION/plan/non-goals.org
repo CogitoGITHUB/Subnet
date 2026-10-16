@@ -1,10 +1,27 @@
 #+TITLE: Non-goals — AIU NOTATION
 # One job: what this program will never do, and which tempting things are refused anyway
-# Status: skeleton; step 8 fills it. Plans stay general; detailed design comes later.
+# Status: filled 2026-10-16; plans stay general, not yet reviewed.
 
 * Deliberately not done
 # one line per thing this program will never do, with the reason.
+  - Symbols for ordinary things — rule 12; names carry the meaning.
+  - A mark that collides with prose or tags — rule 12 names this as the
+    failure the design exists to avoid.
+  - A format created beyond absolute need — the owner's direction: no
+    format unless it is necessary.
+  - Math, graphs and the advanced symbolic syntax before the everyday
+    tier is proven — tier 3, far future (rule 12).
+  - Inheriting Org, Markdown or LaTeX syntax wholesale — the research
+    stance is compare and rebuild, not copy.
+  - Making agents need a manual to read the text — instant understanding
+    by the owner and by agents is the point (rule 12).
 
 * Tempting but out
 # things that look useful and are still refused, with the reason.
-
+  - LaTeX fidelity — the advanced syntax is "the LaTeX tradition,
+    simplified a lot", never parity.
+  - Hiding meaning in tools instead of the text — the text is the source
+    of truth; the session only owns it while editing.
+  - Treating the title as decoration — it carries the creation-time
+    context; it is meaning.
+  - A second syntax just for agents — one notation, both audiences.
