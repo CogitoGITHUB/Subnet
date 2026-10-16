@@ -14,25 +14,24 @@
 - Mistakes are expected. Follow P-10: fix, add a test, record it in =docs/LESSONS.org=.
 
 * 1. Environment (pinned)
-- Racket 9.3 (CS), minimal distribution, aarch64 Linux, inside Termux proot Ubuntu.
+- Racket 9.3 (CS), FULL distribution, in =~/opt/racket-full=; aarch64 Linux, inside
+  Termux proot Ubuntu. Installed 2026-10-15; the minimal tree it replaced is gone
+  (DECISIONS.org D-042).
 - Upgrades are deliberate: record them in DECISIONS.org.
-- Install (tarball, no installer prompts):
+- Install (full distribution; on Linux it ships as a .sh installer, not a .tgz):
 #+begin_src sh
 mkdir -p ~/opt && cd ~/opt
-curl -fLO https://download.racket-lang.org/releases/9.3/installers/racket-minimal-9.3-aarch64-linux-buster-cs.tgz
-echo "221a1f77ba11ab090ec5ff77c5a95abfe1f72d3b8b879d694fc5d807567015be  racket-minimal-9.3-aarch64-linux-buster-cs.tgz" | sha256sum -c -
-tar xzf racket-minimal-9.3-aarch64-linux-buster-cs.tgz
-ls    # see which directory appeared; do not assume its name
-# then append (do not overwrite) to the shell rc:  export PATH="$HOME/opt/<dir>/bin:$PATH"
+curl -fLO https://download.racket-lang.org/releases/9.3/installers/racket-9.3-aarch64-linux-buster-cs.sh
+echo "26e4d1c3bf8954c4413fb6737af5d211d44c1e158e34e4c90e0af1cde6353c9a  racket-9.3-aarch64-linux-buster-cs.sh" | sha256sum -c -
+sh racket-9.3-aarch64-linux-buster-cs.sh --unix-style --dest "$HOME/opt/racket-full" --create-dir
+# then append (do not overwrite) to the shell rc:  export PATH="$HOME/opt/racket-full/bin:$PATH"
 racket --version    # expect 9.3
 raco pkg install --auto rackunit-lib
 #+end_src
-- Alternative installer script has SHA256 =ae2c5eeb04f6c19045c49da985de3bf189d17efb2a7ee80a0bdf2d11d2875c05=
-  (file =racket-minimal-9.3-aarch64-linux-buster-cs.sh=). Always verify the hash before running.
-- Do not use apt's racket (older). Do not install the full distribution (huge) or docs
-  unless the user asks.
-- [VERIFY] Which package provides =raco test= in minimal Racket. Check, install what is
-  needed, and record the result in DECISIONS.org.
+- The file is 264306763 bytes (252 MiB); the installer's own note requires 728M of
+  disk. =--help= lists its flags. Always verify the hash before running.
+- Do not use apt's racket (older).
+- =raco test= ships with Racket itself (D-010 closed); it is already here.
 
 * 2. Prime directives
 - *P-1* Small steps. Every step ends with a green =gate/check.nu= and a commit.

@@ -2,9 +2,9 @@
 #+AUTHOR: Shape
 
 * What is installed
-Racket 9.3 CS FULL lives in =~/opt/racket-full=. It is the tarball
-distribution, chosen on purpose (DECISIONS.org, 2026-10-06 "Racket 9.3
-minimal via tarball"). =rackunit-lib= is the only package added on top.
+Racket 9.3 CS FULL lives in =~/opt/racket-full=, installed 2026-10-15 with
+the official .sh installer; DECISIONS.org D-042 records the version and the
+installer SHA. =rackunit-lib= is the only package added on top.
 
 | package | status | why |
 |---------+--------+-----|
@@ -31,11 +31,21 @@ Measured on this phone, not assumed:
   =current-exit-handler= is NOT exported by the =racket/base= language.
 - =racket/contract= and =racket/cmdline= are both present.
 
-* What is NOT available and why
-Minimal has no =racket/glob=, no =racket/environment=, and no
-=directory-list-recursively= in =racket/file=. Do not write code that
-assumes them. Let =gate/check.nu= list the files (it already globs
-them) and pass the list as arguments.
+* What the full distribution changed
+This section said minimal lacked =racket/glob=, =racket/environment= and
+=directory-list-recursively=, and warned code not to assume them. The full
+distribution is installed now (2026-10-15, D-042); verified on it
+2026-10-16:
+- Globbing: =file/glob= loads and =glob= works (the old note's
+  =racket/glob= is not a module in 9.3; =file/glob= is the real name).
+- Environment variables: =environment-variables-ref= and
+  =environment-variables-set!= are in =racket/base=; there is no
+  =racket/environment= module in 9.3.
+- Directory walks: =directory-list= and =in-directory= work in
+  =racket/file=; =directory-list-recursively= and =directory-list*= do
+  not exist in 9.3.
+Passing file lists to programs as arguments is still fine; it is no longer
+a necessity.
 
 Packages tried and NOT in the catalog (network was up, HTTP 200, so this
 is genuinely "not published there"): =lsp=, =raco-test=, =typed-json=,
@@ -74,13 +84,14 @@ program on this phone. That spread is filesystem variance under proot,
 not compute, and every separate process pays it. That is the reason
 =test-runner.rkt= runs files in one shared process.
 
-* Not installed, and why
-- Full Racket distribution, ~200MB or more. Everything the project uses
-  is already present, so it would add size and slow every launch.
-  Revisit only if the engine hits something that truly requires it, and
-  record the version and SHA then.
-- =PLTCOMPILEDROOTS= redirection: measured 401s make and 216s test versus
-  18s unset, REJECTED in D-027. =compiled/= stays in-tree.
+* Rejected or deferred before, and the state now
+- Full Racket distribution: INSTALLED 2026-10-15 in =~/opt/racket-full=.
+  The old note here kept it out for size and promised to "record the
+  version and SHA" if it ever came in; D-042 is that record.
+- =PLTCOMPILEDROOTS= redirection: first rejected in D-027, then D-027 was
+  REVERSED (commit f792eca): =gate/env.nu= points it at
+  =~/.local/share/aiu-pm/compiled=, and compiled output stays out of the
+  tree (README.org, "Compiled output lives outside the tree").
 
 * How packages get installed here
 =#~/opt/racket-full/bin/raco pkg install NAME=, always with

@@ -4,6 +4,25 @@
 * Log
 Append-only. Newest first. Every entry names the rule IDs it touches.
 
+** 2026-10-16 D-042: the environment is the FULL Racket distribution
+   Touches section 1, D-010; supersedes "Racket 9.3 minimal via tarball".
+1. WHAT: Racket 9.3 (CS), full distribution, installed 2026-10-15 at
+   =~/opt/racket-full=; the minimal install it replaced is gone. Section 1
+   and docs/RACKET-TOOLING.org now describe this, not minimal.
+2. WHY: the user installed it and asked section 1 to say so. The old
+   "do not install the full distribution ... unless the user asks" line is
+   exactly that ask, answered; "No full distribution (P-8)" is superseded.
+3. VERIFIED 2026-10-16, pasted: =racket --version= -> "Welcome to Racket
+   v9.3 [cs]."; =raco pkg show= -> installation-wide =main-distribution=
+   and =racket-lib=, user-specific =rackunit-lib= (plus 4 auto-installed).
+4. PROVENANCE (the "record the version and SHA" note): official installer
+   =racket-9.3-aarch64-linux-buster-cs.sh=, SHA256
+   =26e4d1c3bf8954c4413fb6737af5d211d44c1e158e34e4c90e0af1cde6353c9a=,
+   264306763 bytes; section 1's recipe uses the installer's own
+   =--unix-style --dest ... --create-dir= flags.
+5. KEPT: hash-verify before running; no apt racket; =raco test= ships with
+   Racket itself (D-010 stays closed).
+
 ** 2026-10-14 D-041: if it can block, it says so first
    Touches D-036 (narration), E-27 (AI surfaces), stage 14.
 1. NEW VERB: WAIT is emitted BEFORE a blocking operation and WAIT-DONE
