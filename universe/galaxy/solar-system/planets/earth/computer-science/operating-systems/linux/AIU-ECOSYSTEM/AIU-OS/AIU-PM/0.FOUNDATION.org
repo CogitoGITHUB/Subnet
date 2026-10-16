@@ -390,7 +390,7 @@ build: step failed;
 
 * 12. Git and process
 - *G-1* A branch per phase, a commit per step. Message: =area: change (rule IDs)=.
-- *G-2* Before any destructive step (stage 2, big moves): clean tree, push to the remote,
+- *G-2* Before any destructive step (the big moves): clean tree, push to the remote,
   tag.
 - *G-3* =reference/= is read-only (=chmod -R a-w=). Extraction scripts read from it and
   write elsewhere.

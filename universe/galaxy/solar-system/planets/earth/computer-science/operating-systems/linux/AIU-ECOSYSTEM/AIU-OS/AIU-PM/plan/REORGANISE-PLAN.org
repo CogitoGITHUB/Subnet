@@ -261,12 +261,12 @@ Every step, without exception:
 2. =$RACO make= on every touched file
 3. the file's own tests
 4. the dependent set, run through =gate/test-runner.rkt=
-5. =gate/check.nu= — 0 violations, **including stage 6 text lint**
+5. =gate/check.nu= — 0 violations, **including =text-lint=**
 
 Point 5 is there because of a miss this session: =abd748c= was pushed
 after read-check, =raco make= and the dependent tests all passed, and
-five of its files had no final newline, which stage 6 rejects. A subset
-that passes is not a gate.
+five of its files had no final newline, which =text-lint= rejects. A
+subset that passes is not a gate.
 
 One item, one commit, explicit paths, DONE and the hash together.
 #+BEGIN_EXAMPLE

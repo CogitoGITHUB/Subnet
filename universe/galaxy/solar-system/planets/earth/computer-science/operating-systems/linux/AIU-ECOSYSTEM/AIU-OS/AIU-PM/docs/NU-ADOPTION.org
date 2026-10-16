@@ -83,18 +83,18 @@ Resumable from this file. Each stage is committed on its own. check.sh
 was proven equivalent and deleted; check.nu is the only gate.
 | stage | what | commit |
 |-------+------+--------|
-| 1 | cli/ must not reference current-allow-file-urls | 03b7df4 |
-| 2 | git present | 942f370 |
-| 3 | helper tools present (env setsid pkill flock mkfifo tar) | 0fe527e |
-| 4 | D-011 monorepo rules (.gitignore, vault untracked) | fd17758 |
-| 6 | text lint, also covers .nu | 81a88c3 |
-| 7 | GIT_ALLOW_PROTOCOL=file + informational nu report | 4d7d005 |
-| 8 | FAST_RKTS set and --fast selection | 52be29a |
-| 9 | raco make -v per file, sorted (compile-all) | 813229c |
-| 10 | per-file raco test, TEST-START/END, SLOWEST (run-all) | 24a8fb4 |
-| 11 | verdict lines + exit code (verdict) | 6bc4da6 |
+| cli-no-file-url-flag | cli/ must not reference current-allow-file-urls | 03b7df4 |
+| git-present | git present | 942f370 |
+| helper-tools-present | helper tools present (env setsid pkill flock mkfifo tar) | 0fe527e |
+| monorepo-rules | D-011 monorepo rules (.gitignore, vault untracked) | fd17758 |
+| text-lint | text lint, also covers .nu | 81a88c3 |
+| pinned-nu-report | GIT_ALLOW_PROTOCOL=file + informational nu report | 4d7d005 |
+| file-set | FAST_RKTS set and --fast selection (retired; now the .rkt list) | 52be29a |
+| compile | raco make -v per file, sorted (compile-all) | 813229c |
+| run-tests | per-file raco test, TEST-START/END, SLOWEST (run-all) | 24a8fb4 |
+| verdict | verdict lines + exit code (verdict) | 6bc4da6 |
 | -- | --fast as a real CLI flag (def main [--fast]) | 38eb801 |
-| -- | stages 9-11 wired into main | fb5d902 |
+| -- | compile, run-tests and verdict wired into main | fb5d902 |
 | -- | check.nu replaces check.sh, --fast proven equal | d9adaf6 |
 
 

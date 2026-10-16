@@ -71,9 +71,10 @@ naming the packages and versions, then pushed.
 5. MCP entries last; update the stale MCP tests.
 
 * Gate
-Stage 19 (naming law is 17, one-way dependency 18) carries a named,
-justified allowlist for the mirror files only. Entries name a file and
-say why, never a bare count.
+The mirror work (the naming law is =banned-words-lint=, the one-way
+dependency is =one-way-dependency-lint=) carries a named, justified
+allowlist for the mirror files only. Entries name a file and say why,
+never a bare count.
 
 * Open questions
 - Where exactly does the mirror path come from: a new XDG config root,

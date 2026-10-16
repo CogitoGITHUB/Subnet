@@ -189,9 +189,10 @@ is mapped to that sentence in the last column of the first table.
   move the digest there and leave the tools alone.)=
 
 ** V-3 / V-3a -- DONE
-- =display-result= is the only printer; gate stage 14 enforces it and
-  is proven to bite. =package-manager/src/narration/event-text.rkt= is exempt for a require cycle, and
-  the exemption is a named list in the gate.
+- =display-result= is the only printer; =one-printer-lint= enforces it
+  and is proven to bite.
+  =package-manager/src/narration/event-text.rkt= is exempt for a require
+  cycle, and the exemption is a named list in the gate.
 
 * Phase G: the structural spine
 All twelve are declared in D-038. The ones that genuinely need an
@@ -274,7 +275,7 @@ verbatim. Recover the full checklist (DONE history included) with
 New lint stage over non-test sources: every blocking primitive
 (sync/timeout, sync, thread-wait, semaphore-wait, channel-get/put,
 read-line, subprocess-wait) must sit inside a wait-for, or appear in a
-named allowlist. Same shape as stage 15's audited-writers check: narrow
+named allowlist. Same shape as the =security-gate-lint= audited-writers check: narrow
 until every hit is real, prove it bites, then switch on by default.
 
 ** TODO S2-05 E2E suite green with narration on
@@ -283,7 +284,7 @@ instead of nothing, which is the acceptance condition even if a rare
 ordering issue survives.
 
 ** TODO S2-11 close the lint blind spot on test submodules
-Stage 6 (one-printer) and stage 15 (audited effects) do not scan
+=one-printer-lint= and =security-gate-lint= do not scan
 (module+ test ...) bodies, so a test can break either rule silently.
 S2-10 was one instance found by reading; there may be more.
 

@@ -4,6 +4,22 @@
 * Log
 Append-only. Newest first. Every entry names the rule IDs it touches.
 
+** 2026-10-16 D-043: stages are named, never numbered
+   Touches HARD-RULES 3.7/3.8 (ecosystem); =gate/check.nu=.
+1. WHAT: every gate stage is named by what it checks (=text-lint=,
+   =security-gate-lint=), and sub-stages carry the full parent name
+   (=text-lint/line-length=). Numbers are banned as stage identifiers.
+   =gate/check.nu= holds one STAGES table; the dispatcher validates
+   =CYBERDECK_STAGES= against it and =--list= prints it.
+2. WHY: sixteen numbered stages made "what is stage 6?" cost a read of
+   the gate source, and every doc reference carried the same guess. A
+   wrong or retired name now fails loudly (exit 2) instead of silently
+   running nothing; retired =tui-checks= prints its reason.
+3. ECOSYSTEM: written into =AIU-ECOSYSTEM/HARD-RULES.org= (3.7, 3.8)
+   and its AGENTS.md shortlist, so every project obeys it. The two gate
+   stages still to be written are =banned-words-lint= and
+   =one-way-dependency-lint=.
+
 ** 2026-10-16 D-042: the environment is the FULL Racket distribution
    Touches section 1, D-010; supersedes "Racket 9.3 minimal via tarball".
 1. WHAT: Racket 9.3 (CS), full distribution, installed 2026-10-15 at
@@ -24,7 +40,7 @@ Append-only. Newest first. Every entry names the rule IDs it touches.
    Racket itself (D-010 stays closed).
 
 ** 2026-10-14 D-041: if it can block, it says so first
-   Touches D-036 (narration), E-27 (AI surfaces), stage 14.
+   Touches D-036 (narration), E-27 (AI surfaces), one-printer-lint.
 1. NEW VERB: WAIT is emitted BEFORE a blocking operation and WAIT-DONE
    after it returns. Same fields, same one seq counter, same screen
    line as every other event, so it nests and orders for free. A WAIT
@@ -141,7 +157,7 @@ and consumes the same JSON. D-035.
 
 ** 2026-10-12 D-034: run.rkt ignores the retired check.sh
 package-manager/src/process/run.rkt never referenced check.sh (zero matches; it shells
-to git, flock, setsid, pkill and tar, pinned by gate stage 3), so
+to git, flock, setsid, pkill and tar, pinned by the helper-tools-present stage), so
 there is nothing to rewire. gate/check.nu keeps its "check.sh
 lines N-M" provenance comments (comments only, check.sh itself is
 deleted): they trace the conversion and cost nothing. D-034.

@@ -6,10 +6,11 @@
 # as the map back to the shell original, not as a live dependency.
 #
 # ONE shared-process runner tests EVERY .rkt. gate/test-runner.rkt is
-# the whole test gate (stage 10); there are no fast/slow tiers and no
+# the whole run-tests stage; there are no fast/slow tiers and no
 # --fast flag. A slow file is an error to investigate, never a reason to
 # give it its own process. Between checklist items run
 # `nu gate/check.nu --changed`; the full gate runs once per phase.
+# `nu gate/check.nu --list` prints every stage name and what it checks.
 #
 # Scope roots come from the seam (E-00, D-029): gate/env.nu is the
 # single Nu counterpart, imported with the member-list form (bare `use`
@@ -20,7 +21,7 @@
 # mkdir, one informational print).
 use ./env.nu [scope-roots]
 #
-# Stage 6 rules, unchanged from check.sh lines 65-79:
+# text-lint rules, unchanged from check.sh lines 65-79:
 #   - no tabs
 #   - no trailing spaces
 #   - no line over 102 characters (0.FOUNDATION.org is exempt: user contract)
@@ -28,30 +29,40 @@ use ./env.nu [scope-roots]
 # Now covering .nu files as well as .org, .rkt and .sh, because this file
 # is one of the things being linted.
 #
-# Stage map:
-#   1  cli/ never references the test-only file-URL flag
-#   2  git is present
-#   3  run.rkt's helper tools are present
-#   4  D-011 monorepo rules
-#   5  removed with the TUI (D-035)
-#   6  text lint over .org, .rkt, .sh, .nu
-#   7  pinned-Nu report (informational)
-#   8  the file set: every .rkt, minus the parked list
-#   9  compile every .rkt
-#   10 test every file in ONE shared-process runner
-#   11 verdict: ALL GREEN / ALL GREEN (jobs parked) / CHECK FAILED
-#   12 paren check over every .rkt
-#   13 OBS-OK lint over .nu (no ignores, bare try, /dev/null, timers)
-#   14 one-printer lint: no raw print outside the two named printers,
-#      package-manager/src/narration/print-console.rkt and
-#      package-manager/src/narration/narration.rkt
-#   15 security gate: every S-01 predicate called, writers audited
+# Stage map. Stages are NAMED by what they check, never numbered: with
+# sixteen numbered stages "what is stage 6?" cost a read of this file,
+# and every doc reference carried the same guess. Sub-stages are the
+# parent name plus the rule (text-lint/line-length). `--list` prints
+# this map live and the dispatcher validates against it, so the record
+# and the runner cannot drift apart.
+#
+#   cli-no-file-url-flag  cli/ never references the test-only file-URL flag
+#   git-present           git is present
+#   helper-tools-present  run.rkt's helper tools are present
+#   monorepo-rules        D-011 monorepo rules
+#   text-lint             no tabs/space-ends/long lines/missing newline
+#   pinned-nu-report      which nushell would run (informational)
+#   file-set              every .rkt the rest of the gate will use
+#   compile               compile every .rkt, one raco make
+#   run-tests             every file in ONE shared-process runner
+#   verdict               ALL GREEN / CHECK FAILED from the records
+#   read-check            first malformed form in every .rkt, file:line
+#   obs-ok-lint           no silent discards in .nu (O-9)
+#   one-printer-lint      no raw print outside the two named printers
+#   security-gate-lint    S-04: predicates called, writers audited
+#   test-body-print-lint  bare prints inside test bodies
+#   changed-files         between-items gate: changed files only
+#
+# tui-checks is retired (removed with the TUI, D-035) and stays in the
+# map as a record, not a gap.
 
 # Pinned Nushell (D-020). Change here and nowhere else.
 const PINNED = "0.116.1"
 
-# Exit codes: 0 clean, 1 violations found, 3 the running Nu is not pinned.
+# Exit codes: 0 clean, 1 violations found, 2 unknown stage name
+# (usage), 3 the running Nu is not pinned.
 const EXIT_VIOLATIONS = 1
+const EXIT_USAGE = 2
 const EXIT_VERSION = 3
 
 # The one file exempt from the line-length check.
@@ -87,6 +98,53 @@ const FILE_PARKED = [
    "large-blob test fails, 851 git processes, 470s, see P-01"]
   ["package-manager/src/queue/jobs.rkt"
    "e2e: worker race and file:// allowance cannot cross processes; needs production design (P-03)"]
+]
+
+# Every stage: [name, sub-stages, what it checks]. The dispatcher
+# validates CYBERDECK_STAGES against col 0 and --list prints the table,
+# so this is the one place a stage gets its name. Rows, read with
+# `get`, same as FILE_PARKED above.
+const STAGES = [
+  ["cli-no-file-url-flag" []
+   "cli/ never references the test-only file-URL flag"]
+  ["git-present" []
+   "git exists; the gate reads history and pm drives git everywhere"]
+  ["helper-tools-present" []
+   "run.rkt's helper tools (env, setsid, pkill, flock, mkfifo, tar) exist"]
+  ["monorepo-rules" []
+   "D-011: vault.git ignored not tracked, no gitlinks, no blanket sources/"]
+  ["text-lint" ["tabs" "trailing-space" "line-length" "final-newline"]
+   "no tabs, no trailing spaces, no line over 102 chars, final newline"]
+  ["pinned-nu-report" []
+   "informational: export GIT_ALLOW_PROTOCOL=file, report the nushell used"]
+  ["file-set" []
+   "list every .rkt the later stages will run over"]
+  ["compile" []
+   "one raco make over every .rkt; failure names the file being made"]
+  ["run-tests" []
+   "every unparked file through ONE shared-process runner"]
+  ["verdict" []
+   "ALL GREEN / ALL GREEN (parked: N) / CHECK FAILED from the records"]
+  ["read-check" []
+   "first malformed form in every .rkt, reported file:line"]
+  ["obs-ok-lint" ["ignore-without-complete" "bare-try" "do-i-hides-errors"
+                  "dev-null" "timer-wait"]
+   "no silent discards in .nu: bare ignore, try, do -i, /dev/null, timers"]
+  ["one-printer-lint" ["raw-printf" "raw-eprintf" "raw-write-string"
+                       "bare-displayln"]
+   "no raw print outside the two printers, D-036"]
+  ["security-gate-lint" ["uncalled-predicates" "audited-writers"]
+   "S-04: every security predicate is called; effects are the measured set"]
+  ["test-body-print-lint" []
+   "inside (module+ test, a print naming no port is a violation"]
+  ["changed-files" []
+   "between-items gate: compile and test only what git says changed"]
+]
+
+# Retired stages stay reachable by name so asking for one prints the
+# reason and runs nothing, instead of a silent no-op.
+const RETIRED_STAGES = [
+  ["tui-checks" "removed with the TUI (D-035)"]
 ]
 
 # -> string, current UTC instant, second precision
@@ -135,43 +193,44 @@ def long-lines [ls] {
     $ls | enumerate | where {|r| ($r.item | str length) > $MAX_LINE} | get index | each {|i| $i + 1}
 }
 
-# path -> list, one string per violation, "path:line:reason".
-# Line 0 marks a whole-file property.
-def lint-file [f] {
+# path, rules -> list, one string per violation, "path:line:reason".
+# Line 0 marks a whole-file property. `rules` is the enabled subset of
+# the STAGES text-lint sub-names; the full list runs all four rules.
+def lint-file [f rules] {
     let body = (open --raw $f)
     let ls = ($body | lines)
     let has_tab = ($body | str contains (char tab))
-    let tabnums = (if $has_tab { tab-lines $ls } else { [] })
-    let spacenums = (space-lines $ls)
-    let longnums = (if (($f | path basename) != $LENGTH_EXEMPT) { long-lines $ls } else { [] })
+    let tabnums = (if (("tabs" in $rules) and $has_tab) { tab-lines $ls } else { [] })
+    let spacenums = (if ("trailing-space" in $rules) { space-lines $ls } else { [] })
+    let longnums = (if ("line-length" in $rules) {
+        if (($f | path basename) != $LENGTH_EXEMPT) { long-lines $ls } else { [] }
+    } else { [] })
     let has_nl = ($body | str ends-with (char newline))
-    let nl = (if $has_nl { [] } else { [ $"($f):0:no final newline" ] })
+    let nl = (if (("final-newline" in $rules) and (not $has_nl)) {
+        [ $"($f):0:no final newline" ]
+    } else { [] })
     $tabnums | each {|n| $"($f):($n):tab"}
     | append ($spacenums | each {|n| $"($f):($n):trailing space"})
     | append ($longnums | each {|n| $"($f):($n):line over ($MAX_LINE) chars"})
     | append $nl
 }
 
-# path -> list, every violation under root, nothing printed
-def lint-collect [root] {
+# path, rules -> list, every violation under root, nothing printed
+def lint-collect [root rules] {
     let files = (lint-files $root)
-    $files | each {|f| lint-file $f} | flatten
+    $files | each {|f| lint-file $f $rules} | flatten
 }
 
-# path -> nothing. Prints the violations and the summary for one root.
-def lint-root [root] {
+# path, rules -> nothing. Prints the violations and the summary for one root.
+def lint-root [root rules] {
     let files = (lint-files $root)
-    let all = ($files | each {|f| lint-file $f} | flatten)
+    let all = ($files | each {|f| lint-file $f $rules} | flatten)
     for v in $all {
         print $v
     }
-    print $"lint: ($files | length) files, ($all | length) violations"
+    print $"text-lint: ($files | length) files, ($all | length) violations"
 }
 
-# path -> list, one string per OBS-OK violation, "path:line:reason".
-# O-9 hidden-discard gate for Nu: a streaming pipe that drops its exit
-# code silently looks green while failing. Allowed: `| complete`
-# beside the discard (startup.nu precedent); the shapes below refuse.
 # string -> string, code outside double quotes. No backslash-quotes
 # exist in scripts (verified), so parity toggling is exact, and it
 # resets per line by construction (callers pass one line).
@@ -179,7 +238,12 @@ def strip-quotes [s] {
     $s | split row '"' | enumerate | where {|r| ($r.index mod 2) == 0 } | get item | str join ""
 }
 
-def obs-lint-file [f] {
+# path, rules -> list, one string per OBS-OK violation, "path:line:reason".
+# O-9 hidden-discard gate for Nu: a streaming pipe that drops its exit
+# code silently looks green while failing. Allowed: `| complete`
+# beside the discard (startup.nu precedent); the shapes below refuse.
+# `rules` is the enabled subset of the STAGES obs-ok-lint sub-names.
+def obs-lint-file [f rules] {
     let ls = (open --raw $f | lines)
     mut out = []
     for l in ($ls | enumerate) {
@@ -187,54 +251,60 @@ def obs-lint-file [f] {
         let t = ($l.item | str trim)
         if ($t | str starts-with "#") { continue }
         let code = (strip-quotes $t)
-        if (($code | str contains "| ignore") and not ($code | str contains "complete")) {
+        if (("ignore-without-complete" in $rules)
+            and ($code | str contains "| ignore")
+            and not ($code | str contains "complete")) {
             $out = ($out | append $"($f):($n):| ignore without complete")
         }
-        if (($code | str starts-with "try")
+        if (("bare-try" in $rules)
+            and ($code | str starts-with "try")
             and ($code | str contains "{")
             and not ($code | str contains "catch")) {
             $out = ($out | append $"($f):($n):bare try without catch")
         }
-        if (($code | str contains "do -i") or ($code | str contains "do --ignore-errors")) {
+        if (("do-i-hides-errors" in $rules)
+            and (($code | str contains "do -i") or ($code | str contains "do --ignore-errors"))) {
             $out = ($out | append $"($f):($n):do -i hides errors")
         }
-        if ($code | str contains "/dev/null") {
+        if (("dev-null" in $rules) and ($code | str contains "/dev/null")) {
             $out = ($out | append $"($f):($n):/dev/null discard")
         }
-        if (($code | str contains "sleep") or ($code | str contains "timeout")) {
+        if (("timer-wait" in $rules)
+            and (($code | str contains "sleep") or ($code | str contains "timeout"))) {
             $out = ($out | append $"($f):($n):timer wait D-015")
         }
     }
     $out
 }
 
-# path -> list, every OBS-OK violation under root, nothing printed
-def obs-lint-collect [root] {
+# path, rules -> list, every OBS-OK violation under root, nothing printed
+def obs-lint-collect [root rules] {
     let files = (lint-files $root | where {|f| ($f | str ends-with ".nu") })
-    $files | each {|f| obs-lint-file $f} | flatten
+    $files | each {|f| obs-lint-file $f $rules} | flatten
 }
 
-def run-stage-13-body [] {
-    print "[check] stage 13 OBS-OK lint"
+def run-obs-ok-lint [rules] {
+    print $"[check] obs-ok-lint rules=($rules | str join ',')"
     let spec = ($env | get -o CYBERDECK_LINT_ROOTS? | default ".")
     let roots = ($spec | split row " ")
     for r in $roots {
         let files = (lint-files $r | where {|f| ($f | str ends-with ".nu") })
-        let all = ($files | each {|f| obs-lint-file $f} | flatten)
+        let all = ($files | each {|f| obs-lint-file $f $rules} | flatten)
         for v in $all {
             print $v
         }
-        print $"obs-lint: ($files | length) files, ($all | length) violations"
+        print $"obs-ok-lint: ($files | length) files, ($all | length) violations"
     }
-    let violations = ($roots | each {|r| obs-lint-collect $r } | flatten | length)
+    let violations = ($roots | each {|r| obs-lint-collect $r $rules } | flatten | length)
     if $violations > 0 { exit $EXIT_VIOLATIONS }
 }
 
 # V-3: one printer for the user. A raw print outside package-manager/src/narration/narration.rkt
 # and package-manager/src/narration/print-console.rkt means some command is talking to the terminal by
 # itself, which is exactly what D-036 removed. Quoted text is stripped
-# first so the lint does not match its own vocabulary.
-def print-lint-file [f] {
+# first so the lint does not match its own vocabulary. `rules` is the
+# enabled subset of the STAGES one-printer-lint sub-names.
+def print-lint-file [f rules] {
     let ls = (open --raw $f | lines)
     mut out = []
     # Non-test code only: everything from (module+ test onwards is a test
@@ -273,10 +343,10 @@ def print-lint-file [f] {
             and ($code | str ends-with ")")
             and (($toks | length) == 1))
         let bad = (
-            ($code | str contains "(printf")
-            or ($code | str contains "(eprintf")
-            or ($code | str contains "(write-string")
-            or $bare_displayln
+            (("raw-printf" in $rules) and ($code | str contains "(printf"))
+            or (("raw-eprintf" in $rules) and ($code | str contains "(eprintf"))
+            or (("raw-write-string" in $rules) and ($code | str contains "(write-string"))
+            or (("bare-displayln" in $rules) and $bare_displayln)
         )
         if $bad {
             $out = ($out | append $"($f):($n):raw print outside the two printers, D-036")
@@ -324,69 +394,76 @@ def sec-call-count [pred, files] {
     $n
 }
 
-def run-stage-15-body [] {
-    print "[check] stage 15 security-gate lint"
+def run-security-gate-lint [rules] {
+    print $"[check] security-gate-lint rules=($rules | str join ',')"
     let spec = ($env | get -o CYBERDECK_LINT_ROOTS? | default ".")
     let roots = ($spec | split row " ")
     mut violations = []
     for r in $roots {
         let files = (lint-files $r | where {|f| ($f | str ends-with ".rkt") })
-        let nonsec = ($files | where {|f| ($f | path basename) != "security.rkt" })
-        for pred in (sec-predicates) {
-            let n = (sec-call-count $pred $nonsec)
-            if $n == 0 {
-                $violations = ($violations | append (
-                  "security-gate: predicate " + $pred + " uncalled (S-04)"
-                ))
+        if ("uncalled-predicates" in $rules) {
+            let nonsec = ($files | where {|f| ($f | path basename) != "security.rkt" })
+            for pred in (sec-predicates) {
+                let n = (sec-call-count $pred $nonsec)
+                if $n == 0 {
+                    $violations = ($violations | append (
+                      "security-gate-lint: predicate " + $pred + " uncalled (S-04)"
+                    ))
+                }
             }
+            print $"security-gate-lint: predicates checked, ($violations | length) violations so far"
         }
-        print $"security-gate: predicates checked, ($violations | length) violations so far"
-        # The files allowed to contain the two effects. This list is the
-        # MEASURED set: every name below was put back by the lint itself
-        # after the old hand-guessed list (full of pre-split filenames
-        # like build.rkt and verbose.rkt that no longer exist) was
-        # cleared. Comments are skipped in the scan, so a prose mention
-        # of subprocess is not an effect (measured: kill-tree, spawn and
-        # status-fifo tripped on their own explanatory comments).
-        # A file outside this list that opens an output file or spawns a
-        # subprocess fails here, so new effects get written down instead
-        # of slipping in.
-        let writers = ["vault.rkt" "vault-lock.rkt" "directories.rkt"
-            "narration.rkt" "event-text.rkt" "run.rkt" "jobs.rkt"
-            "probe-blob.rkt"]
-        for f in $files {
-            let base = ($f | path basename)
-            if ($base in $writers) { continue }
-            # Comments are skipped before the search: a `;` line that
-            # merely mentions subprocess is prose, not an effect
-            # (measured: kill-tree, spawn and status-fifo tripped on
-            # their own explanatory comments while calling process*).
-            let rawlines = (open --raw $f | lines
-                | where {|l| not (($l | str trim) | str starts-with ";") })
-            let code = (($rawlines | each {|l|
-                strip-quotes ($l | str trim)
-            }) | str join "
+        if ("audited-writers" in $rules) {
+            # The files allowed to contain the two effects. This list is the
+            # MEASURED set: every name below was put back by the lint itself
+            # after the old hand-guessed list (full of pre-split filenames
+            # like build.rkt and verbose.rkt that no longer exist) was
+            # cleared. Comments are skipped in the scan, so a prose mention
+            # of subprocess is not an effect (measured: kill-tree, spawn and
+            # status-fifo tripped on their own explanatory comments).
+            # A file outside this list that opens an output file or spawns a
+            # subprocess fails here, so new effects get written down instead
+            # of slipping in.
+            let writers = ["vault.rkt" "vault-lock.rkt" "directories.rkt"
+                "narration.rkt" "event-text.rkt" "run.rkt" "jobs.rkt"
+                "probe-blob.rkt"]
+            for f in $files {
+                let base = ($f | path basename)
+                if ($base in $writers) { continue }
+                # Comments are skipped before the search: a `;` line that
+                # merely mentions subprocess is prose, not an effect
+                # (measured: kill-tree, spawn and status-fifo tripped on
+                # their own explanatory comments while calling process*).
+                let rawlines = (open --raw $f | lines
+                    | where {|l| not (($l | str trim) | str starts-with ";") })
+                let code = (($rawlines | each {|l|
+                    strip-quotes ($l | str trim)
+                }) | str join "
 ")
-            if (($code | str contains "open-output-file") or ($code | str contains "subprocess")) {
-                $violations = ($violations | append (
-                  "security-gate: " + $f + " writes outside audit (S-04)"
-                ))
+                let writer = (($code | str contains "open-output-file")
+                    or ($code | str contains "subprocess"))
+                if $writer {
+                    $violations = ($violations | append (
+                      "security-gate-lint: " + $f + " writes outside audit (S-04)"
+                    ))
+                }
             }
         }
         for v in $violations { print $v }
-        print $"security-gate: ($files | length) files, ($violations | length) violations"
+        print $"security-gate-lint: ($files | length) files, ($violations | length) violations"
     }
     if (($violations | length) > 0) { exit $EXIT_VIOLATIONS }
 }
 
 # ---------------------------------------------------------------------------
-# stage 16: the one-printer rule INSIDE test bodies.
+# test-body-print-lint: the one-printer rule INSIDE test bodies.
 #
-# WHY THIS STAGE EXISTS. Stages 14 and 15 both stop at `(module+ test`.
-# That was deliberate -- a test may print whatever it needs to assert on --
-# but the skip was total and only ever stated in a code comment. So a
-# `displayln` in a test block printed straight to the console and the gate
-# stayed green: a real violation, invisible, found by reading.
+# WHY THIS STAGE EXISTS. one-printer-lint and security-gate-lint both stop
+# at `(module+ test`. That was deliberate -- a test may print whatever it
+# needs to assert on -- but the skip was total and only ever stated in a
+# code comment. So a `displayln` in a test block printed straight to the
+# console and the gate stayed green: a real violation, invisible, found by
+# reading.
 #
 # THE POLICY, stated rather than skipped:
 #
@@ -400,8 +477,9 @@ def run-stage-15-body [] {
 #     the rule rather than breaking it.
 #   * EFFECTS IN TESTS ARE ALLOWED, and that is a decision, not a gap. A
 #     test exists to write fixtures and to spawn real tools; forbidding
-#     that would forbid testing. Stage 15's audited-writers rule exists so
-#     an effect cannot slip in undeclared in PRODUCTION code. Here the
+#     that would forbid testing. security-gate-lint's audited-writers rule
+#     exists so an effect cannot slip in undeclared in PRODUCTION code.
+#     Here the
 #     declaration is the file itself: everything past `(module+ test` is
 #     test code by construction, reviewed as such. This paragraph is the
 #     record of that decision, so it cannot quietly become a gap.
@@ -468,7 +546,7 @@ def test-print-hits [f] {
                     let keyword = ($t | str contains "#:port")
                     if ((not $keyword) and (not (test-print-names-port $t))) {
                         $hits = ($hits | append (
-                          "test-print: " + $f + ":" + ($i + 1 | into string)
+                          "test-body-print-lint: " + $f + ":" + ($i + 1 | into string)
                           + " prints with no port named (S-14)"
                         ))
                     }
@@ -480,8 +558,8 @@ def test-print-hits [f] {
     $hits
 }
 
-def run-stage-16-body [] {
-    print "[check] stage 16 test-body printer lint"
+def run-test-body-print-lint [] {
+    print "[check] test-body-print-lint"
     let spec = ($env | get -o CYBERDECK_LINT_ROOTS? | default ".")
     let roots = ($spec | split row " ")
     mut violations = []
@@ -489,14 +567,14 @@ def run-stage-16-body [] {
         let files = (lint-files $r | where {|f| ($f | str ends-with ".rkt") })
         let hits = ($files | each {|f| test-print-hits $f } | flatten)
         for v in $hits { print $v }
-        print $"test-print: ($files | length) files, ($hits | length) violations"
+        print $"test-body-print-lint: ($files | length) files, ($hits | length) violations"
         $violations = ($violations | append $hits)
     }
     if (($violations | length) > 0) { exit $EXIT_VIOLATIONS }
 }
 
-def run-stage-14-body [] {
-    print "[check] stage 14 one-printer lint"
+def run-one-printer-lint [rules] {
+    print $"[check] one-printer-lint rules=($rules | str join ',')"
     let spec = ($env | get -o CYBERDECK_LINT_ROOTS? | default ".")
     let roots = ($spec | split row " ")
     mut violations = []
@@ -527,16 +605,16 @@ def run-stage-14-body [] {
             | where {|f|
                 not (($f | str contains "/gate/") or ($f | str contains "/tools/"))
             })
-        let hits = ($scanned | each {|f| print-lint-file $f } | flatten)
+        let hits = ($scanned | each {|f| print-lint-file $f $rules } | flatten)
         for v in $hits { print $v }
-        print $"print-lint: ($scanned | length) files, ($hits | length) violations"
+        print $"one-printer-lint: ($scanned | length) files, ($hits | length) violations"
         $violations = ($violations | append $hits)
     }
     if (($violations | length) > 0) { exit $EXIT_VIOLATIONS }
 }
 
-def run-stage-6-body [] {
-    print $"[check] stage 6 text lint"
+def run-text-lint [rules] {
+    print $"[check] text-lint rules=($rules | str join ',')"
     # Roots come from $env, not from arguments: this Nu build exposes no
     # args column on $nu or $env, so a positional path is silently dropped
     # (verified 0.116.1). CYBERDECK_LINT_ROOTS is colon-separated and
@@ -551,20 +629,21 @@ def run-stage-6-body [] {
     let total = (timeit {
         require-pinned-version
         for r in $roots {
-            lint-root $r
+            lint-root $r $rules
         }
     })
     # timeit discards the closure value, so the exit code is derived by a
     # second collect pass. It costs a few ms and keeps the timed block to
     # the real work: one lint-and-report pass.
-    let violations = ($roots | each {|r| lint-collect $r} | flatten | length)
+    let violations = ($roots | each {|r| lint-collect $r $rules} | flatten | length)
     if $violations > 0 { exit $EXIT_VIOLATIONS }
 }
 
-# Stage 1 (check.sh lines 8-11): cli/ must never reference the test-only
-# file-URL flag. The old stage used `grep -rq` over cli/; here the files
-# are read directly and searched with str contains, no external grep.
-def stage-1 [] {
+# cli-no-file-url-flag (check.sh lines 8-11): cli/ must never reference
+# the test-only file-URL flag. The old stage used `grep -rq` over cli/;
+# here the files are read directly and searched with str contains, no
+# external grep.
+def check-cli-file-url-flag [] {
     if not ("cli" | path exists) {
         return 0
     }
@@ -579,9 +658,9 @@ def stage-1 [] {
     1
 }
 
-# Stage 2 (check.sh lines 12-15): git must exist. `command -v` becomes
-# `which`, a Nu built-in; only the exit status matters, as in the old gate.
-def stage-2 [] {
+# git-present (check.sh lines 12-15): git must exist. `command -v`
+# becomes `which`, a Nu built-in; only the exit status matters.
+def check-git-present [] {
     let w = (do { ^which git } | complete)
     if $w.exit_code != 0 {
         print "GATE: git executable not found"
@@ -590,10 +669,10 @@ def stage-2 [] {
     0
 }
 
-# Stage 3 (check.sh lines 16-22): the helper tools run.rkt shells out to.
-# Existence only, as in the old gate. which is a Nu built-in; nothing is
+# helper-tools-present (check.sh lines 16-22): the tools run.rkt shells
+# out to must exist. Existence only. which is a Nu built-in; nothing is
 # executed, nothing is installed.
-def stage-3 [] {
+def check-helper-tools [] {
     let tools = ["env" "setsid" "pkill" "flock" "mkfifo" "tar"]
     let missing = ($tools | where {|t| (do { ^which $t } | complete).exit_code != 0 })
     if ($missing | is-empty) {
@@ -605,7 +684,7 @@ def stage-3 [] {
     1
 }
 
-# Stage 4 (check.sh lines 23-37): the D-011 monorepo rules.
+# monorepo-rules (check.sh lines 23-37): the D-011 monorepo rules.
 # `grep -qx` is a whole-line exact match, so the Nu side compares the
 # stripped line to the exact string rather than using str contains.
 # git ls-files has no Nu built-in equivalent; it is run as an external
@@ -618,7 +697,7 @@ def git-lines [args] {
     $r.stdout | lines | where {|l| (($l | str trim) | is-not-empty)}
 }
 
-def stage-4 [] {
+def check-monorepo-rules [] {
     # local to this function, never captured by a closure
     mut bad = 0
     let gi = (if (".gitignore" | path exists) {
@@ -647,33 +726,34 @@ def stage-4 [] {
     $bad
 }
 
-# Stage 7 (check.sh lines 80-84): export GIT_ALLOW_PROTOCOL=file for every
-# spawn below, then report which Nushell the scripts would use. The report
-# is informational only: `|| true` in the old gate, so a non-zero exit here
-# is recorded and swallowed rather than failing the gate.
-def stage-7 [] {
+# pinned-nu-report (check.sh lines 80-84): export
+# GIT_ALLOW_PROTOCOL=file for every spawn below, then report which
+# Nushell the scripts would use. The report is informational only:
+# `|| true` in the old gate, so a non-zero exit here is recorded and
+# swallowed rather than failing the gate.
+def report-pinned-nu [] {
     $env.GIT_ALLOW_PROTOCOL = "file"
     let nu_bin = ($env | get -o CYBERDECK_NU? | default ($nu.current-exe))
     let r = (do { run-external $nu_bin "--no-config-file" "gate/need-nu.nu" } | complete)
-    print $"[stage7] GIT_ALLOW_PROTOCOL=(($env | get GIT_ALLOW_PROTOCOL))"
-    print $"[stage7] nu report exit=($r.exit_code)"
+    print $"[pinned-nu-report] GIT_ALLOW_PROTOCOL=(($env | get GIT_ALLOW_PROTOCOL))"
+    print $"[pinned-nu-report] nu report exit=($r.exit_code)"
     for l in ($r.stdout | lines) {
-        print $"[stage7] ($l)"
+        print $"[pinned-nu-report] ($l)"
     }
     for l in ($r.stderr | lines) {
-        print $"[stage7] stderr: ($l)"
+        print $"[pinned-nu-report] stderr: ($l)"
     }
     0
 }
 
-# Stage 8: the file set. There are no tiers any more. Every .rkt in the
+# file-set: the .rkt list. There are no tiers any more. Every .rkt in the
 # tree goes through ONE shared-process runner, so the list is simply every
 # .rkt, derived and never hand-listed.
 #
 # CYBERDECK_TEST_FILES (space separated) replaces the glob. It exists so a
 # failing synthetic fixture outside the repo can drive the gate to
 # CHECK FAILED; nothing else reads it.
-def stage-8-files [] {
+def rkt-files [] {
     let given = ($env | get -o CYBERDECK_TEST_FILES?)
     if $given == null {
         glob "**/*.rkt" | where {|f| not ($f | str contains "/compiled/")} | sort
@@ -688,7 +768,7 @@ def stage-8-files [] {
 # All readers are pipelines over the const, which is safe.
 
 # -> bool, true when the file is on the parked list, relative or absolute.
-# Both stage 10 and --changed compare against this: the runner file list
+# Both run-tests and --changed compare against this: the runner file list
 # mixes relative and absolute forms of the same file, so exact membership
 # silently fails to exclude (measured: vault.rkt ran 470s while parked).
 def file-parked? [f] {
@@ -705,137 +785,232 @@ def parked-total [] {
     $FILE_PARKED | length
 }
 
-# Stage 12: the paren check. gate/read-check.rkt reads every named .rkt
-# and names the exact file and line of the first malformed form, so an
-# unbalanced paren is reported, not guessed at. It exits 1 when anything is
-# bad, which is this stage's verdict. The file list is the same glob stage 9
-# compiles, so a file that cannot even be read is caught before raco.
-def stage-12 [] {
-    print "[check] stage 12 paren check"
+# read-check: gate/read-check.rkt reads every named .rkt and names the
+# exact file and line of the first malformed form, so an unbalanced paren
+# is reported, not guessed at. It exits 1 when anything is bad, which is
+# this stage's verdict. The file list is the same set compile uses, so a
+# file that cannot even be read is caught before raco.
+def run-read-check [] {
+    print "[check] read-check"
     let racketx = ($nu.home-dir | path join "opt" "racket-full" "bin" "racket")
-    let fs = (stage-8-files)
+    let fs = (rkt-files)
     let code = (try {
         ^$racketx "gate/read-check.rkt" ...$fs
         0
     } catch { |e|
-        print $"[check] paren check failed: ($e.msg)"
+        print $"[check] read-check failed: ($e.msg)"
         1 })
-    print $"[check] stage 12 exit=($code)"
     $code
 }
 
-# Named main, so the CLI matches check.sh (`nu gate/check.nu --changed`).
-# Verified 0.116.1: nu auto-invokes a command called main and passes the flag
-# through; it must therefore NOT also be called explicitly, or the whole
-# gate runs twice.
+# -> bool, is the stage (or one of its sub-stages) requested?
+def stage-on? [todo name] {
+    ($name in $todo) or ($todo | any {|t| ($t | str starts-with ($name + "/")) })
+}
+
+# -> list of sub-rules to run for a lint stage: all of them when the
+# bare stage name was asked for, else exactly the named sub-stages.
+# Names were validated before any stage runs.
+def stage-rules [todo name] {
+    let all = (stage-subs $name)
+    if ($name in $todo) { $all } else {
+        $todo | where {|t| ($t | str starts-with ($name + "/")) }
+        | each {|t| ($t | split row "/" | last) }
+    }
+}
+
+# -> list, the sub-stage names of one stage, from the one STAGES table
+def stage-subs [name] {
+    ($STAGES | where {|r| ($r | get 0) == $name } | first | get 1)
+}
+
+# A wrong name must fail loudly: silence is how a renamed stage turns
+# into a stage that never ran. A retired stage prints its reason and
+# runs nothing.
+def validate-todo [todo] {
+    let names = ($STAGES | each {|r| $r | get 0})
+    let retired = ($RETIRED_STAGES | each {|r| $r | get 0})
+    for t in $todo {
+        let parts = ($t | split row "/")
+        let name = ($parts | first)
+        if ($name in $retired) {
+            let rec = ($RETIRED_STAGES | where {|r| ($r | get 0) == $name } | first)
+            print $"[check] retired: ($name) - ($rec | get 1)"
+            continue
+        }
+        if not ($name in $names) {
+            print $"[check] ($t): no such stage name; stages say what they check"
+            print "[check] run nu gate/check.nu --list for every name and sub-name"
+            exit $EXIT_USAGE
+        }
+        if (($parts | length) > 1) {
+            let sub = ($parts | last)
+            let subs = (stage-subs $name)
+            if not ($sub in $subs) {
+                print $"[check] ($sub): no such sub-stage of ($name)"
+                print $"[check] ($name) sub-stages: ($subs | str join ', ')"
+                exit $EXIT_USAGE
+            }
+        }
+    }
+}
+
+# --list: print the one table the dispatcher validates against, so the
+# record and the runner cannot drift apart.
+def print-stage-list [] {
+    print "stages are named by what they check; sub-stages read"
+    print "parent-name/rule. CYBERDECK_STAGES takes a comma list of"
+    print "names and name/sub tokens."
+    print ""
+    for r in $STAGES {
+        let name = ($r | get 0)
+        let subs = ($r | get 1)
+        let what = ($r | get 2)
+        if ($subs | is-empty) {
+            print $"- ($name)"
+        } else {
+            print $"- ($name)   sub: ($subs | str join ', ')"
+        }
+        print $"    ($what)"
+    }
+    for r in $RETIRED_STAGES {
+        print $"- ($r | get 0)   RETIRED: ($r | get 1)"
+    }
+}
+
+# Named main, so the CLI matches check.sh (`nu gate/check.nu --changed`);
+# --list prints the stage table and runs nothing. Verified 0.116.1: nu
+# auto-invokes a command called main and passes flags through; it must
+# therefore NOT also be called explicitly, or the whole gate runs twice.
 #
 # The verdict leaves through a `mut` in THIS scope, not through $env: in
 # 0.116.1 an `$env.X = ...` assignment inside a `timeit { }` closure does not
 # persist (measured), so the old shape printed CHECK FAILED and still exited
 # 0. There is no closure here at all, which is why the mut is allowed.
-def main [--changed] {
+def main [--changed, --list] {
+    if $list {
+        print-stage-list
+        return
+    }
     print $"[check] run start utc=(utc)"
     let changed_mode = ($changed or (($env | get -o CYBERDECK_CHANGED?) == "1"))
+    let full_default = ([
+        "cli-no-file-url-flag" "git-present" "helper-tools-present"
+        "monorepo-rules" "text-lint" "pinned-nu-report" "file-set"
+        "compile" "run-tests" "verdict" "read-check" "obs-ok-lint"
+        "one-printer-lint" "security-gate-lint" "test-body-print-lint"
+    ] | str join ",")
+    let changed_default = ([
+        "cli-no-file-url-flag" "git-present" "helper-tools-present"
+        "monorepo-rules" "pinned-nu-report" "obs-ok-lint"
+        "one-printer-lint" "security-gate-lint" "test-body-print-lint"
+        "changed-files"
+    ] | str join ",")
     let want = (if $changed_mode {
-        $env | get -o CYBERDECK_STAGES? | default "1,2,3,4,7,13,14,15,16,changed" } else {
-        $env | get -o CYBERDECK_STAGES? | default "1,2,3,4,6,7,8,9,10,11,12,13,14,15,16" })
-    let todo = ($want | split row ",")
+        $env | get -o CYBERDECK_STAGES? | default $changed_default
+    } else {
+        $env | get -o CYBERDECK_STAGES? | default $full_default
+    })
+    let todo = ($want | split row "," | each {|t| $t | str trim }
+        | where {|t| ($t | is-not-empty) })
+    validate-todo $todo
     # `date now` is read twice and subtracted: measurement only, printed for
     # the record. Nothing waits on it (D-015).
     let started = (date now | into int)
     mut verdict_code = 0
     require-pinned-version
-    if "1" in $todo {
-            print $"[check] stage 1 cli file-url flag"
-            let rc = (stage-1)
-            print $"[check] stage 1 exit=($rc)"
+    if (stage-on? $todo "cli-no-file-url-flag") {
+        print "[check] cli-no-file-url-flag"
+        let rc = (check-cli-file-url-flag)
+        print $"[check] cli-no-file-url-flag exit=($rc)"
+    }
+    if (stage-on? $todo "git-present") {
+        print "[check] git-present"
+        let rc = (check-git-present)
+        print $"[check] git-present exit=($rc)"
+    }
+    if (stage-on? $todo "helper-tools-present") {
+        print "[check] helper-tools-present"
+        let rc = (check-helper-tools)
+        print $"[check] helper-tools-present exit=($rc)"
+    }
+    if (stage-on? $todo "monorepo-rules") {
+        print "[check] monorepo-rules"
+        let rc = (check-monorepo-rules)
+        print $"[check] monorepo-rules exit=($rc)"
+    }
+    if (stage-on? $todo "pinned-nu-report") {
+        let rc = (report-pinned-nu)
+        print $"[check] pinned-nu-report exit=($rc)"
+    }
+    if (stage-on? $todo "file-set") {
+        let fs = (rkt-files)
+        print $"[check] file-set ($fs | length) files"
+        for f in $fs { print $"[check] file-set ($f)" }
+    }
+    if (stage-on? $todo "text-lint") {
+        run-text-lint (stage-rules $todo "text-lint")
+    }
+    # compile, run-tests and verdict. Every .rkt is compiled, then every
+    # test file is run through ONE shared-process runner. The runner's
+    # records and one record per compiled file are handed to verdict, so
+    # a compile failure fails the gate exactly as `raco make` used to.
+    let full = (rkt-files)
+    let parked = ((rkt-files) | where {|f| (file-parked? $f) })
+    mut ccodes = []
+    mut recs = []
+    if (stage-on? $todo "changed-files") {
+        let chrc = (run-changed-files)
+        print $"[check] changed-files exit=($chrc)"
+    }
+    if (stage-on? $todo "compile") {
+        print $"[check] compile ($full | length) files"
+        $ccodes = (compile-all $full)
+        let cbad = ($ccodes | any {|c| $c != 0})
+        print $"[check] compile exit=(if $cbad { 1 } else { 0 })"
+    }
+    if (stage-on? $todo "run-tests") {
+        for l in (parked-lines) {
+            print $l
         }
-        if "2" in $todo {
-            print $"[check] stage 2 git present"
-            let rc = (stage-2)
-            print $"[check] stage 2 exit=($rc)"
+        let testfiles = ($full | where {|f| not (file-parked? $f) })
+        print $"[check] run-tests ($testfiles | length) files one process"
+        $recs = (if ($testfiles | is-empty) { [] } else { run-runner $testfiles })
+        let bad10 = ($recs | any {|r| $r.exit != 0})
+        print $"[check] run-tests records=($recs | length) failed=($bad10)"
+    }
+    if (stage-on? $todo "verdict") {
+        let crecs = ($ccodes | each {|c| {file: "(compile)", exit: $c, ms: 0} })
+        $verdict_code = (verdict ($recs | append $crecs) (parked-total))
+        print $"[check] verdict exit=($verdict_code)"
+    }
+    if (stage-on? $todo "read-check") {
+        let rc12 = (run-read-check)
+        print $"[check] read-check exit=($rc12)"
+        if $rc12 != 0 {
+            $verdict_code = 1
         }
-        if "3" in $todo {
-            print $"[check] stage 3 helper tools present"
-            let rc = (stage-3)
-            print $"[check] stage 3 exit=($rc)"
-        }
-        if "4" in $todo {
-            print $"[check] stage 4 D-011 monorepo rules"
-            let rc = (stage-4)
-            print $"[check] stage 4 exit=($rc)"
-        }
-        if "7" in $todo {
-            let rc = (stage-7)
-            print $"[check] stage 7 exit=($rc)"
-        }
-        if "8" in $todo {
-            let fs = (stage-8-files)
-            print $"[check] stage 8 file set ($fs | length) files"
-            for f in $fs { print $"[check] stage 8 file ($f)" }
-        }
-        if "6" in $todo {
-            run-stage-6-body
-        }
-        # Stages 9-11. Every .rkt is compiled, then every test file is run
-        # through ONE shared-process runner. The runner's records and one
-        # record per compiled file are handed to verdict, so a compile
-        # failure fails the gate exactly as `raco make` used to.
-        let full = (stage-8-files)
-        let parked = ((stage-8-files) | where {|f| (file-parked? $f) })
-        mut ccodes = []
-        mut recs = []
-        if "changed" in $todo {
-            let chrc = (stage-changed)
-            print $"[check] stage changed exit=($chrc)"
-        }
-        if "9" in $todo {
-            print $"[check] stage 9 compile ($full | length) files"
-            $ccodes = (compile-all $full)
-            let cbad = ($ccodes | any {|c| $c != 0})
-            print $"[check] stage 9 exit=(if $cbad { 1 } else { 0 })"
-        }
-        if "10" in $todo {
-            for l in (parked-lines) {
-                print $l
-            }
-            let testfiles = ($full | where {|f| not (file-parked? $f) })
-            print $"[check] stage 10 tests ($testfiles | length) files one process"
-            $recs = (if ($testfiles | is-empty) { [] } else { run-runner $testfiles })
-            let bad10 = ($recs | any {|r| $r.exit != 0})
-            print $"[check] stage 10 records=($recs | length) failed=($bad10)"
-        }
-        if "11" in $todo {
-            let crecs = ($ccodes | each {|c| {file: "(compile)", exit: $c, ms: 0} })
-            $verdict_code = (verdict ($recs | append $crecs) (parked-total))
-            print $"[check] stage 11 exit=($verdict_code)"
-        }
-        if "12" in $todo {
-            let rc12 = (stage-12)
-            print $"[check] stage 12 exit=($rc12)"
-            if $rc12 != 0 {
-                $verdict_code = 1
-            }
-        }
-        if "13" in $todo {
-            run-stage-13-body
-        }
-        if "14" in $todo {
-            run-stage-14-body
-        }
-        if "15" in $todo {
-            run-stage-15-body
-        }
-        if "16" in $todo {
-            run-stage-16-body
-        }
+    }
+    if (stage-on? $todo "obs-ok-lint") {
+        run-obs-ok-lint (stage-rules $todo "obs-ok-lint")
+    }
+    if (stage-on? $todo "one-printer-lint") {
+        run-one-printer-lint (stage-rules $todo "one-printer-lint")
+    }
+    if (stage-on? $todo "security-gate-lint") {
+        run-security-gate-lint (stage-rules $todo "security-gate-lint")
+    }
+    if (stage-on? $todo "test-body-print-lint") {
+        run-test-body-print-lint
+    }
     let elapsed = (((date now | into int) - $started) / 1000000)
     print $"[check] end utc=(utc) after=($elapsed)ms"
     exit $verdict_code
 }
 
-# Stage 9-11 helpers (check.sh lines 97-130). Stages 1-8 stay above; these
-# are the compile, test and verdict halves, proved on fixtures first.
+# compile/run-tests/verdict helpers (check.sh lines 97-130). The cheap
+# gates stay above; these are the compile, test and verdict halves,
+# proved on fixtures first.
 #
 # -> string, the raco check.sh uses (line 6), overridable for fixtures.
 def raco-exe [] {
@@ -916,7 +1091,7 @@ def compile-all [files] {
         return []
     }
     let sorted = ($files | sort)
-    print $"[check] stage 9 compiling ($sorted | length) files in one raco make"
+    print $"[check] compile ($sorted | length) files in one raco make"
     let raco = (raco-exe)
     let started = (date now | into int)
     let code = (try {
@@ -985,7 +1160,7 @@ def direct-dependents [changed] {
     if ($changed | is-empty) {
         return []
     }
-    let allr = (stage-8-files)
+    let allr = (rkt-files)
     $allr | where {|f|
         let body = (open --raw $f)
         if not ($body | str contains "(require") {
@@ -995,18 +1170,18 @@ def direct-dependents [changed] {
         } }
 }
 
-# The --changed gate: stages 1-5 and 7 still run (they are cheap and
-# gate the tree), then only what changed is compiled and tested, through
-# the same one-process shared runner the full gate uses.
-def stage-changed [] {
+# The --changed between-items gate: the caller's cheap stages still run,
+# then only what changed is compiled and tested, through the same
+# one-process shared runner the full gate uses.
+def run-changed-files [] {
     let changed = (changed-rkt)
     if ($changed | is-empty) {
-        print "[changed] nothing changed; nothing to do"
+        print "[changed-files] nothing changed; nothing to do"
         return 0
     }
-    print $"[changed] ($changed | length) changed rkt files"
+    print $"[changed-files] ($changed | length) changed rkt files"
     for c in $changed {
-        print $"[changed] ($c)"
+        print $"[changed-files] ($c)"
     }
     let deps = (direct-dependents $changed)
     let parked = ($changed | where {|c| (file-parked? $c) })
@@ -1018,7 +1193,7 @@ def stage-changed [] {
     let unparked_deps = ($deps | where {|d| not (file-parked? $d) })
     let runset = ($changed | where {|c| not (file-parked? $c) } | append $unparked_deps)
     if ($runset | is-empty) {
-        print "[changed] nothing to run"
+        print "[changed-files] nothing to run"
         return 0
     }
     let ccodes = (compile-all $runset)

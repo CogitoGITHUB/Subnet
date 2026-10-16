@@ -134,11 +134,11 @@ Also available and already exported: =profile-gc=,
   MUST update API.org or the suite fails. It caught four wrong examples
   in one session, all hand-written, all wrong.
 - **Every command text is emitted through one printer.** Never
-  =printf=/=display=/=eprintf= to console; stage 14 of the gate fails the
-  build. Use =display-result=.
-- **Effects are allowlisted.** =gate/check.nu= stage 15 has a named
-  list of file writers and process spawners. Adding a new one fails the
-  gate. You should not need to add any.
+  =printf=/=display=/=eprintf= to console; the =one-printer-lint= stage
+  fails the build. Use =display-result=.
+- **Effects are allowlisted.** The =security-gate-lint= stage of
+  =gate/check.nu= has a named list of file writers and process spawners.
+  Adding a new one fails the gate. You should not need to add any.
 - **Narration is mandatory.** Use the verbs in =package-manager/src/narration/narration.rkt=:
     (with-op who what why [thunk])      ; START/END, FAIL on error
     (step who what why #:how h)         ; a step
@@ -153,7 +153,7 @@ Also available and already exported: =profile-gc=,
 - **Refusals name their rule** and exit non-zero. A refusal is not an
   error envelope — errors are exit codes, because only the exit code
   honestly distinguishes "no results" from "refused".
-- **Doc line limit 102** or stage 6 fails.
+- **Doc line limit 102** or =text-lint= fails.
 
 * 8. Traps that have already cost real time here
 
@@ -181,7 +181,7 @@ Also available and already exported: =profile-gc=,
 2. =$RACO make package-manager/src/entry/cli.rkt= → exit 0
 3. =$RACKET gate/test-runner.rkt package-manager/src/entry/cli.rkt= → =failed=0=, and the
    total goes UP by the number of tests you added
-4. The gate: =CYBERDECK_STAGES=6 ... gate/check.nu --changed= → 0 violations
+4. The gate: =CYBERDECK_STAGES=text-lint ... gate/check.nu --changed= → 0 violations
 5. =docs/API.org= has an example for each new command, matching the real
    output exactly
 6. One commit with explicit paths, its message naming the command.

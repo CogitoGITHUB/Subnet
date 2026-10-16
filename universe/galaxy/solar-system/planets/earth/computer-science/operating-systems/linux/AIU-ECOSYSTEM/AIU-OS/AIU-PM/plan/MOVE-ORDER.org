@@ -85,8 +85,8 @@ it, so no dependent's require line changes at this stage.
     lie or say nothing.
 
 * Gate
-17. Stage 17: banned words, reporting file:line.
-18. Stage 18: one-way dependencies, reporting file:line.
+17. Gate stage =banned-words-lint=: banned words, reporting file:line.
+18. Gate stage =one-way-dependency-lint=: one-way dependencies, file:line.
     Both are written and wired here; proving they bite is step 22, not
     this one.
 
@@ -97,6 +97,6 @@ it, so no dependent's require line changes at this stage.
 
 * Close
 21. ENGINE-CHECKLIST entries reconciled into =plan/OPEN-DECISIONS.org=.
-22. Full gate. 0 violations including stage 6. Stages 17 and 18 proven to
-    BITE: add one violation, see red with file:line, remove it, see green.
-    Then push.
+22. Full gate. 0 violations including =text-lint=. =banned-words-lint= and
+    =one-way-dependency-lint= proven to BITE: add one violation, see red
+    with file:line, remove it, see green. Then push.
