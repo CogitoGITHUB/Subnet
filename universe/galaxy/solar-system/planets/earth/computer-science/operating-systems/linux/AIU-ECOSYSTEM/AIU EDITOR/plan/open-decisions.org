@@ -1,13 +1,42 @@
 #+TITLE: Open decisions — AIU EDITOR
 # One job: the decisions this program still owes, options with a recommendation each, and where they land
-# Status: skeleton; step 8 fills it. Plans stay general; detailed design comes later.
+# Status: filled 2026-10-16; plans stay general, not yet reviewed.
 
 * Open decisions
 # one line per decision this program still owes.
+  - The exact Racket–Rust seam for the editor.
+  - How Racket joins a baked binary that loads nothing at startup.
+  - Which agent adapter is pinned first.
+  - Where the multiplexer's key routing hands a key over.
+  - The stop switch's exact reach: the editor, the session, or every
+    running agent.
 
 * Options
 # two or three options per decision, each with a recommendation marked.
+  - Racket–Rust seam — (a) the study's proposed split: Rust for input,
+    drawing, layout and parsing; Racket for keymaps, commands, rules and
+    semantic models — recommended; (b) all hot path in Rust, Racket only
+    outside it; (c) Racket for more of the editor, accepting slower keys.
+  - Racket join — (a) Racket baked into the binary at build time as the
+    meaning layer, loading nothing at startup — recommended, pending the
+    phone test; (b) an external Racket process behind a boundary —
+    simpler but slower to start; (c) Racket in work mode only — refused:
+    the release would lose the meaning layer.
+  - First adapter — (a) OpenCode, because its headless server seam is
+    verified — recommended if the proot test passes; (b) Hermes first,
+    from its Termux packaging; (c) both at once — refused (the compared
+    study says one first).
+  - Key routing handover — (a) the focused program sees the key first;
+    the multiplexer keeps a reserved prefix — recommended; (b) a mode key
+    switches ownership; (c) the multiplexer translates every key —
+    refused, it would need config it must not have.
+  - Stop switch — (a) stops every running agent session for this project
+    — recommended; (b) stops only the session in view; (c) per-agent
+    toggles.
 
 * Where it lands
 # once decided it becomes a D-numbered file in decisions/, newest first.
-
+  Each decision becomes a D-numbered file in decisions/, newest first; the
+  seam and join decisions land with the first build step's proofs; the
+  adapter pin follows the proot test; the key-routing handover freezes
+  with the contract in step 9.

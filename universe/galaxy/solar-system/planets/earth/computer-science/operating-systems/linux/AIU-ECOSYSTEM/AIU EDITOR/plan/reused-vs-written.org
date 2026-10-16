@@ -1,13 +1,43 @@
 #+TITLE: Reused vs written — AIU EDITOR
 # One job: what comes from the package manager, what comes from research, what is written here
-# Status: skeleton; step 8 fills it. Plans stay general; detailed design comes later.
+# Status: filled 2026-10-16; plans stay general, not yet reviewed.
 
 * Reused from the package manager
 # what PM already does, with the PM surface that provides it.
+  - Pinned installs, numbered generations, atomic flip and rollback for
+    the editor and its adapters — via install, status and rollback
+    surfaces (pm-integration/adapter-versioning-and-rollback.org).
+  - Install, then bake in (rule 02) — via the install-completion record
+    and the bake action (pm-integration/install-then-bake.org).
+  - Shapes to copy, not code: the journal pattern (content-hash steps,
+    SKIP with reason), event narration with the wait door, the error four
+    answers and frozen exit codes, the gate anatomy — learned/ notes.
 
 * Reused from research
 # what a studied project contributes, as a lesson or a reference.
+  - Helix — the modal selection model.
+  - Neovim UI model — core/UI split, attach, capability negotiation,
+    least-capable client wins, batched redraw.
+  - Neovim AI tools — one ACP/MCP boundary for AI, chat as a buffer,
+    fast apply for token thrift.
+  - kitty keyboard protocol — opt-in flags, adopted instead of invented
+    key encoding.
+  - inotify — event-driven watching; coalescing means re-read, overflow
+    means rescan, nothing missed silently.
+  - The neomacs study (study/) — the keyboard and dashboard mechanisms
+    that travel, the Racket–Rust seam notes, the literate-config
+    discipline, the rebranding map.
+  - herdr and zellij — pane status and layouts as files; mostly the
+    multiplexer's material, the editor's dashboard draws from it.
 
 * Written here
 # what must be written for this program fresh.
-
+  - The input, drawing and keyboard-route split and the exact Racket–Rust
+    seam, proved by the first build step.
+  - The journal policy for editor edits and its replay.
+  - The send action and the audit marking rules — agent or external —
+    with accept and undo semantics, conflict-safe.
+  - The dashboard and placement pieces, rebuilt from the study's
+    mechanisms.
+  - The editor's half of the notation hosting chain: trigger the engine
+    build, then enter dev mode.

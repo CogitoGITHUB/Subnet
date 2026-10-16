@@ -1,13 +1,56 @@
 #+TITLE: Build order — AIU EDITOR
 # One job: one line per step with the proof that proves it, up to the done line and past it
-# Status: skeleton; step 8 fills it. Plans stay general; detailed design comes later.
+# Status: filled 2026-10-16; plans stay general, not yet reviewed.
 
 * Steps
 # one line per step, in build order, each with the proof that proves it.
+  1. Racket joins a baked binary: the minimal Racket build starts inside
+     the binary on this phone — proof: the measured start printed on the
+     phone (rule 09's demanded test; if it fails, the seam decision
+     reopens).
+  2. Plain-text slice: open, type, save, keys working — proof: an editing
+     session on the phone; the JSON surface answers with the one envelope
+     from this step (rule 2.1: the machine surface exists in the first
+     working version).
+  3. Journal and replay — proof: kill mid-edit, replay, the buffer
+     returns (rule 01).
+  4. Keyboard routes and commands: keymaps live from source; routes
+     across multiplexer, editor and panes — proof: the key-routing walk;
+     no mouse needed anywhere (rule 13).
+  5. Dashboard and free UI placement — proof: placement exercised in the
+     multiplexer; the dashboard renders on the phone.
+  6. Dev mode in full: work mode live from source; bake keeps last good;
+     the baked binary opens instantly with no config — proof: a bake
+     cycle on the phone plus the measured start (rule 02).
+  7. The AI link: send with full bundles; live audit with agent and
+     external marks, accept and undo, conflict-safe; git checkpoint
+     before agent actions; stop switch; the secrets package stands
+     between agents and tokens (rule 07) — proof: an agent edit appears
+     as it lands and is undone; the conflict test passes both ways; no
+     secret reaches the agent.
+  8. Notation core hosted: the engine loads through the boundary; the
+     loader works with it absent; trigger the engine build and enter dev
+     mode after — proof: notation on and off both work; the trigger chain
+     runs (rule 14).
+  9. The kit: MCP server, skill with executed examples, read-only plugin
+     — proof: the kit checklist runs green
+     (agents/agent-integration-kit.org).
+  10. Select and send to both agents from both programs, with the
+      multiplexer's version — proof: the done-line sentence holds and the
+      shared checklist closes.
 
 * The done line
 # the step where the shared checklist ends and the programs split.
+  The editor's half of the done-line state (checklist/DONE-LINE.org):
+  output working, the full architecture in place, the full basic version
+  working in the editor and the multiplexer, the notation core hosted in
+  the editor, the joins proven, and select and send working to both
+  OpenCode and Hermes from both programs.
 
 * After the done line
 # what this program continues with on its own.
-
+  The editor's own checklist, starting from checklist/tier-2/ content:
+  literate code and targets, references and numbering, tables and data,
+  variants and versioning, engine services, the kit entries and
+  conformance, and the PM integration items once PM is finished. The
+  rules keep binding; detailed design comes later.

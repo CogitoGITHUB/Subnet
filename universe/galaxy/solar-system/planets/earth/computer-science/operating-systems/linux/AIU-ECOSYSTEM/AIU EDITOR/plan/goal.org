@@ -1,13 +1,37 @@
 #+TITLE: Goal — AIU EDITOR
 # One job: what finished looks like for this program, in one paragraph, and how it is known to be met
-# Status: skeleton; step 8 fills it. Plans stay general; detailed design comes later.
+# Status: filled 2026-10-16; plans stay general, not yet reviewed.
 
 * The goal
 # what finished looks like for this program, in one paragraph.
+  A general editor first: useful on plain text with CLI tools, keyboard for
+  everything, with no daemon and no legacy baggage. It grows out of the
+  neomacs work — the keyboard and dashboard studies, the literate-config
+  discipline — with the machinery rebuilt and the old names dropped. It
+  hosts AIU-NOTATION as one pluggable engine behind the contract boundary,
+  never a dependency, and it treats agents as first-class: one action sends
+  anything visible with its full context, agent writes appear live, and a
+  crash, a kill or an agent write never costs work.
 
 * When it is met
 # the observable signs, one per line. No dates.
+  - Plain-text editing with keys works on the phone; the baked binary
+    opens with no config and prints its measured start.
+  - Every edit is journaled as it happens and replays after a kill.
+  - One key sends buffer text, a notation node, a picker entry, a file or
+    a selection to either agent, the full bundle attached.
+  - An agent write is visible live, marked with its agent — or external
+    when unattributed — and is acceptable and undoable; unsaved typing and
+    an agent write both survive a conflict.
+  - A git checkpoint exists before agent actions wherever a repo exists,
+    with easy rollback and a stop switch.
+  - The notation engine loads through its boundary in work mode and bakes
+    in; the loader works with the notation absent.
+  - The dashboard shows what is happening where; keys route correctly
+    across multiplexer, editor and panes.
 
 * What it rejects
 # directions this program refuses; the reasons live in non-goals.org.
-
+  A daemon; a config that must load to start; notation in the loader; a
+  mouse-required workflow; a plugin runtime; the old config ported
+  wholesale.

@@ -1,13 +1,40 @@
 #+TITLE: Risks — AIU EDITOR
 # One job: what can sink this program, the first sign of each, and what shrinks it
-# Status: skeleton; step 8 fills it. Plans stay general; detailed design comes later.
+# Status: filled 2026-10-16; plans stay general, not yet reviewed.
 
 * Risks
 # one line per risk: what it is and how much it can hurt.
+  - Racket cannot join a no-config baked binary on this phone — it
+    reopens the language-split decision; the highest-stakes unknown.
+  - The Racket build on the phone is too slow for the dev loop — work
+    mode turns painful (WHEN-ON-LAPTOP: heavy builds).
+  - Android kills break the journal and holder promises — work loss, the
+    thing rule 01 exists to prevent.
+  - Neither agent adapter lands cleanly first (ACP unverified; Hermes
+    untested under proot) — the done line slips.
+  - inotify under proot misbehaves — the live audit stops being live.
+  - Scope creep from porting the old config — months without a working
+    slice (rule 11; the map's verdicts point the other way).
+  - The graphics rendering tier is unproven — rendering ambitions may
+    need the laptop.
+  - Long test runs and multi-hour work do not fit the phone — pacing, not
+    feasibility.
 
 * First signs
 # the earliest observable signal that a risk is happening.
+  - The measured start fails or balloons; bake cycles grow to laptop
+    scale; the replay test fails after a kill; adapter conformance
+    cannot pass on the phone; watch events miss or lag; the first slice
+    grows beyond the plan's steps.
 
 * Shrinking it
 # what is done about each risk, or why nothing can be.
-
+  - The Racket-in-binary test runs first and is allowed to reopen the
+    seam decision (rule 09 demands it).
+  - Keep the smallest slice order; every phone limit is appended to
+    WHEN-ON-LAPTOP.org the moment it appears, in the same commit.
+  - Pin one adapter first; the second stays behind the same contract
+    (agents/ design).
+  - Accept that the graphics tier may wait; it is recorded, not promised.
+  - Nothing shrinks the phone being a phone — plan around it, never fight
+    it (standing WHEN-ON-LAPTOP line).
