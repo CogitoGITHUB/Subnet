@@ -1,10 +1,54 @@
 #+TITLE: Keyboard modes and layers
 # One job: every mode and layer the keyboard defines, and which one sees a key or event first
-# Status: skeleton; step 4 fills it, read-only, names and sizes only.
+# Status: filled 2026-10-16 from Cyberdeck-Emacs, read-only; not yet reviewed.
 
 * Modes and layers
 # every mode and layer the keyboard layer defines, one line each: what it captures and what it passes on.
+  - Input filters (before any state) — the chord engine and the ESC/Meta
+    disambiguation sit at the terminal input layer; they capture key pairs and
+    ESC timing, everything else passes to the keymaps.
+  - normal [NOR] — the default state; manual activation, box cursor; only the
+    state-specific keys live in its file, the rest shared.
+  - insert [INS] — typing passes through (sparse keymap, no suppression); ESC
+    returns to the buffer-appropriate state.
+  - visual [VIS] — the selection state; mark active; ESC deactivates and
+    returns to normal.
+  - motion [MOT] — auto-activates in read-only buffers; scrolling and button
+    movement.
+  - org [ORG] — auto-activates in org buffers; outline, todo and insert
+    helpers.
+  - dired [DIR] — auto-activates in dired; file operations and key-selection
+    opening.
+  - ibuffer [IBF] — auto-activates in ibuffer; list movement and visit.
+  - magit [GIT] — manual; magit buffers themselves default to no state.
+  - presentation [PRE] — tree-slide hooks enter it; presentation keys; its
+    quit returns to org.
+  - AIU Subnet [MAP] — manual; vault topology traversal; ESC and q leave.
+  - org-aiu-subnet [OMAP] — enters with the editable map region mode;
+    lowercase moves inside the map, uppercase restructures it; exits
+    explicitly.
+  - cyberdeck-pick [PCK] — sparse; picker sessions; mirrors the picker control
+    keys and adds selection letters when the picker loop is unarmed.
+  - No-state surfaces — treemacs, vundo and git-timemachine keep their package
+    keymaps; vundo and git-timemachine clear the state on entry.
+  - Shared bindings (not a state) — one file merges common keys into many
+    states at once.
+  - Menus — the leader hub and its submenus are bound from states; sticky
+    entries stay open; menus hold no keys of their own.
 
 * How they interact
 # the rules that decide which layer sees a key or event first.
-
+  - One state per buffer; the state's keymap rides the emulation level, so it
+    sees keys before ordinary minor modes and the global map.
+  - Activation: a state auto-activates when its predicate fires; the explicit
+    precedence list wins collisions (a read-only org buffer is org, not
+    motion); the rest resolves newest-first; the fallback is normal.
+  - Routing gives no state to minibuffer, magit and vundo buffers.
+  - Shared bindings are merged at load into each participating state's keymap,
+    so one declaration serves several states.
+  - Substates — a second keymap level in the core, switched by a variable
+    watcher when the state changes.
+  - Input filters run before states, and quoting bypasses the state keymaps
+    for a single key; both are deliberate holes in the layering.
+  - On entry to a no-state surface the state is cleared, so the package's own
+    keys win outright.

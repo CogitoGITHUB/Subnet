@@ -1,13 +1,38 @@
 #+TITLE: Keyboard: dev-mode baking
 # One job: what baking means for the keyboard layer: what is baked, what stays live, what survives
-# Status: skeleton; step 4 fills it, read-only, names and sizes only.
+# Status: filled 2026-10-16 from Cyberdeck-Emacs, read-only; not yet reviewed.
 
 * What baking means here
 # what of the keyboard layer is baked into the binary as a first-class default.
+  - Today the keyboard files load early: their units carry the stage-zero tag
+    that runs before the default stage; only the future-plans file is deferred
+    and not read at boot.
+  - Baking freezes the compiled form of the same declarations: the state
+    registry, predicates, key tables, shared sets, leader tree and menu
+    metadata become binary defaults.
+  - A baked binary loads no keyboard config at startup; its measured start
+    time is printed, so the keyboard's share of open time is visible.
+  - A bake changes load time, not meaning: baked tables and work-mode tables
+    are built from the same source.
 
 * What stays live in work mode
 # what is still loaded from source while working.
+  - Editing a state file, key table or menu declaration and reloading changes
+    behavior immediately; menus and validation re-derive on reload.
+  - Predicates and command wiring stay live; a new state is created by writing
+    a skeleton file and is picked up at reload.
+  - The validator runs on reload and writes its report: duplicates, unbound
+    commands, dead states, order problems.
+  - Temporary overrides (set one key, bypass the layer with quoting) are
+    expected to live only until reload.
 
 * What survives a rebuild
 # the guarantees this layer keeps across a bake.
-
+  - The declarations are the single source: both modes produce the same states
+    and the same bindings; a rebuild cannot silently change the keyboard.
+  - The last good build is kept, and rebuild is manual and announced (rule
+    02); the keyboard layer adds no startup config dependency to the baked
+    binary.
+  - Open questions carried to the plan step: what a clean validator report
+    means for a bake, and what replaces the stage tags (:S0:, :S1:, :S2:) in
+    the new format.

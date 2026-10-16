@@ -6,12 +6,12 @@
 # one line per file: its name, then the single job it performs. This index is updated in the same commit as any change here.
 
   - neomacs-map.org — names and sizes only: one line per custom project with purpose, keep, rebuild or skip; filled 2026-10-16
-  - keyboard-mechanisms.org — every mechanism the keyboard layer combines, one line each
-  - keyboard-modes-and-layers.org — every mode and layer the keyboard defines, and which one sees a key or event first
-  - keyboard-emacs-vs-portable.org — which keyboard mechanisms are specific to the old config and which travel
-  - keyboard-racket-vs-rust.org — what becomes Racket config and what stays in the Rust input engine: the exact seam
-  - keyboard-dev-mode-baking.org — what baking means for the keyboard layer: what is baked, what stays live, what survives
-  - keyboard-rebranding.org — every old name, prefix and term from the neomacs work, mapped to its AIU name
+  - keyboard-mechanisms.org — every mechanism the keyboard layer combines, one line each; filled 2026-10-16
+  - keyboard-modes-and-layers.org — every mode and layer the keyboard defines, and which one sees a key or event first; filled 2026-10-16
+  - keyboard-emacs-vs-portable.org — which keyboard mechanisms are specific to the old config and which travel; filled 2026-10-16
+  - keyboard-racket-vs-rust.org — what becomes Racket config and what stays in the Rust input engine: the exact seam; filled 2026-10-16
+  - keyboard-dev-mode-baking.org — what baking means for the keyboard layer: what is baked, what stays live, what survives; filled 2026-10-16
+  - keyboard-rebranding.org — every old name, prefix and term from the neomacs work, mapped to its AIU name; filled 2026-10-16
   - dashboard-mechanisms.org — every mechanism the dashboard combines, one line each
   - dashboard-modes-and-layers.org — every dashboard mode and layer, and how they interact
   - dashboard-emacs-vs-portable.org — which dashboard mechanisms are specific to the old config and which travel
