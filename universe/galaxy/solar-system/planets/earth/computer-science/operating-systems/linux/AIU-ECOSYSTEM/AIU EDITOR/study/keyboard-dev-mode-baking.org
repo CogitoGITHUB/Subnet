@@ -1,0 +1,13 @@
+#+TITLE: Keyboard: dev-mode baking
+# One job: what baking means for the keyboard layer: what is baked, what stays live, what survives
+# Status: skeleton; step 4 fills it, read-only, names and sizes only.
+
+* What baking means here
+# what of the keyboard layer is baked into the binary as a first-class default.
+
+* What stays live in work mode
+# what is still loaded from source while working.
+
+* What survives a rebuild
+# the guarantees this layer keeps across a bake.
+

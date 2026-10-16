@@ -1,0 +1,13 @@
+#+TITLE: Risks — AIU EDITOR
+# One job: what can sink this program, the first sign of each, and what shrinks it
+# Status: skeleton; step 8 fills it. Plans stay general; detailed design comes later.
+
+* Risks
+# one line per risk: what it is and how much it can hurt.
+
+* First signs
+# the earliest observable signal that a risk is happening.
+
+* Shrinking it
+# what is done about each risk, or why nothing can be.
+

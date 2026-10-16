@@ -1,0 +1,24 @@
+#+TITLE: INDEX — AIU EDITOR/study/
+# One job: list every file in this directory and the single job of each.
+# Status: current; updated in the same commit as any change in this directory.
+
+* Files
+# one line per file: its name, then the single job it performs. This index is updated in the same commit as any change here.
+
+  - neomacs-map.org — names and sizes only: one line per custom project with purpose, keep, rebuild or skip
+  - keyboard-mechanisms.org — every mechanism the keyboard layer combines, one line each
+  - keyboard-modes-and-layers.org — every mode and layer the keyboard defines, and which one sees a key or event first
+  - keyboard-emacs-vs-portable.org — which keyboard mechanisms are specific to the old config and which travel
+  - keyboard-racket-vs-rust.org — what becomes Racket config and what stays in the Rust input engine: the exact seam
+  - keyboard-dev-mode-baking.org — what baking means for the keyboard layer: what is baked, what stays live, what survives
+  - keyboard-rebranding.org — every old name, prefix and term from the neomacs work, mapped to its AIU name
+  - dashboard-mechanisms.org — every mechanism the dashboard combines, one line each
+  - dashboard-modes-and-layers.org — every dashboard mode and layer, and how they interact
+  - dashboard-emacs-vs-portable.org — which dashboard mechanisms are specific to the old config and which travel
+  - dashboard-racket-vs-rust.org — what becomes Racket config and what stays in Rust for the dashboard
+  - dashboard-dev-mode-baking.org — what baking means for the dashboard: what is baked, what stays live, what survives
+  - literate-tangling.org — how the literate config tangles today: what to keep, what to rebuild
+
+* Later
+# Read-only, names and sizes only; nothing from the neomacs config is modified or copied. Step 4 fills this, keyboard first.
+

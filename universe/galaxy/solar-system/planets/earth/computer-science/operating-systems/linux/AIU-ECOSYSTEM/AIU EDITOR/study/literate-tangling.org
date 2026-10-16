@@ -1,0 +1,13 @@
+#+TITLE: Literate tangling today
+# One job: how the literate config tangles today: what to keep, what to rebuild
+# Status: skeleton; step 4 fills it, read-only, names and sizes only.
+
+* How the config tangles today
+# the mechanisms that weave literate blocks into files, described plainly.
+
+* What to keep
+# the parts worth carrying into the editor.
+
+* What to rebuild
+# the parts that do not survive, and why.
+

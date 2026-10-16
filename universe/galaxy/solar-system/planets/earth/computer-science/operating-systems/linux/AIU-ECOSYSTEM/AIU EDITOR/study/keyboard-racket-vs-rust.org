@@ -1,0 +1,13 @@
+#+TITLE: Keyboard: Racket vs Rust
+# One job: what becomes Racket config and what stays in the Rust input engine: the exact seam
+# Status: skeleton; step 4 fills it, read-only, names and sizes only.
+
+* What becomes Racket config
+# the keyboard layer parts that are description and meaning: what exists, what it shows, keymaps, commands, rules.
+
+* What stays in Rust
+# the parts on the hot path: input, drawing, layout.
+
+* The exact seam
+# where the two meet, named precisely; this is the seam rule 09 demands.
+

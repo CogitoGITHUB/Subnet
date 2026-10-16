@@ -1,0 +1,13 @@
+#+TITLE: Neomacs map
+# One job: names and sizes only: one line per custom project with purpose, keep, rebuild or skip
+# Status: skeleton; step 4 fills it, read-only, names and sizes only.
+
+* The map
+# one line per custom project: name and size, purpose, and one of keep, rebuild or skip. Names and sizes only; no deep reading.
+
+* How the projects relate
+# which project holds which, in one or two lines.
+
+* What the map is for
+# it decides where the study looks next; nothing is built from the map alone.
+

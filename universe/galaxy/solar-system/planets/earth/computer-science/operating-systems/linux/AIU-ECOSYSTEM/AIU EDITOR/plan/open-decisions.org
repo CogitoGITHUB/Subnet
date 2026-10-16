@@ -1,0 +1,13 @@
+#+TITLE: Open decisions — AIU EDITOR
+# One job: the decisions this program still owes, options with a recommendation each, and where they land
+# Status: skeleton; step 8 fills it. Plans stay general; detailed design comes later.
+
+* Open decisions
+# one line per decision this program still owes.
+
+* Options
+# two or three options per decision, each with a recommendation marked.
+
+* Where it lands
+# once decided it becomes a D-numbered file in decisions/, newest first.
+

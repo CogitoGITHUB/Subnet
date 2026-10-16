@@ -1,0 +1,13 @@
+#+TITLE: Build order — AIU EDITOR
+# One job: one line per step with the proof that proves it, up to the done line and past it
+# Status: skeleton; step 8 fills it. Plans stay general; detailed design comes later.
+
+* Steps
+# one line per step, in build order, each with the proof that proves it.
+
+* The done line
+# the step where the shared checklist ends and the programs split.
+
+* After the done line
+# what this program continues with on its own.
+

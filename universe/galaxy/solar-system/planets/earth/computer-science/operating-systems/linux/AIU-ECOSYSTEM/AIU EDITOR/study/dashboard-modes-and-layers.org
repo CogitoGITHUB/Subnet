@@ -1,0 +1,10 @@
+#+TITLE: Dashboard modes and layers
+# One job: every dashboard mode and layer, and how they interact
+# Status: skeleton; step 4 fills it, read-only, names and sizes only.
+
+* Modes and layers
+# every mode and layer the dashboard defines, one line each: what it captures and what it passes on.
+
+* How they interact
+# the rules that decide which layer sees a key or event first.
+

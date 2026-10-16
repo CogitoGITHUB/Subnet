@@ -1,0 +1,21 @@
+#+TITLE: Rule 05 — Every action is logged with who and why
+# One job: the hard rule and what it demands in this program
+# Status: current; the rule text is the owner's and changes only with the owner.
+
+* The rule
+# the owner's words, repeated unchanged. Do not soften or reinterpret them here.
+  Every action is logged with who (me, OpenCode or Hermes) and why, at intent level (not per
+  keystroke). Journal and logs rotate.
+
+* What it demands here
+# how this rule bites in this program. No examples; the plan carries the detail.
+  Every edit, send, accept and undo is logged with who and why, at intent level.
+
+* What breaks it
+# the failure this rule exists to prevent.
+  An action with no who and no why, so it cannot be explained later.
+
+* Where it is proven
+# the checklist item that shows this rule holds; todo until step 10 names it.
+  todo — step 10 names the checklist item
+

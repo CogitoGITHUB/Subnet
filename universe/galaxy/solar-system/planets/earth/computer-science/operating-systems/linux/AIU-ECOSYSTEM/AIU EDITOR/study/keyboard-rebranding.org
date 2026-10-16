@@ -1,0 +1,13 @@
+#+TITLE: Rebranding list
+# One job: every old name, prefix and term from the neomacs work, mapped to its AIU name
+# Status: skeleton; step 4 fills it, read-only, names and sizes only.
+
+* Old names
+# every old name, prefix or term from the neomacs work, one line each.
+
+* New names
+# the AIU name that replaces it, with the reason.
+
+* Where each appears
+# which file or surface carries each old name, so nothing is missed.
+

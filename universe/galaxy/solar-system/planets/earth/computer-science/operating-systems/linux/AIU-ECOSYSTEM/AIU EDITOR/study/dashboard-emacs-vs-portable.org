@@ -1,0 +1,13 @@
+#+TITLE: Dashboard: specific vs portable
+# One job: which dashboard mechanisms are specific to the old config and which travel
+# Status: skeleton; step 4 fills it, read-only, names and sizes only.
+
+* Specific to the old config
+# which dashboard mechanisms only make sense inside it, one line each with why.
+
+* Portable
+# which mechanisms survive a move to a fresh program.
+
+* The cut line
+# where the split is drawn, in one or two lines.
+

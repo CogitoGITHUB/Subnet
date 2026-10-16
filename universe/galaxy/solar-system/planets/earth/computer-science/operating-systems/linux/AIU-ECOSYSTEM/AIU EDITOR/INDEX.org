@@ -1,0 +1,25 @@
+#+TITLE: INDEX — AIU EDITOR/
+# One job: list every file in this directory and the single job of each.
+# Status: current; updated in the same commit as any change in this directory.
+
+* Files
+# one line per file: its name, then the single job it performs. This index is updated in the same commit as any change here.
+
+  - HANDOFF.org — everything a fresh conversation needs to start on this program
+
+* Subdirectories
+# one line per subdirectory and what it holds; each has its own index.
+
+  - ai/ — how this program speaks through the agent boundary
+  - architecture/ — the program's shape, detailed later
+  - decisions/ — choices already made, newest first
+  - dev-mode/ — what work mode loads live and what a bake bakes in
+  - plan/ — one topic per file, the general build plan
+  - research/ — program-specific findings only
+  - rules/ — the hard rules, one file each
+  - study/ — the neomacs study, read-only, names and sizes only
+  - ui/ — placeable-piece list and layouts
+
+* Later
+# Start at HANDOFF.org. The rules are binding; the contract it points to is shared with the other programs.
+

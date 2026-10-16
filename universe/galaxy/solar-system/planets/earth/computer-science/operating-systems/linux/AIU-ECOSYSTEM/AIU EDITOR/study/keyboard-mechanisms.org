@@ -1,0 +1,13 @@
+#+TITLE: Keyboard mechanisms
+# One job: every mechanism the keyboard layer combines, one line each
+# Status: skeleton; step 4 fills it, read-only, names and sizes only.
+
+* The mechanisms
+# every mechanism the keyboard layer combines, one line each, described plainly.
+
+* How they combine
+# the order input passes through them.
+
+* What is portable
+# which mechanisms are not specific to the old config and can travel.
+

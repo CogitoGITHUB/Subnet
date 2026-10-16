@@ -1,0 +1,25 @@
+#+TITLE: Rule 01 — Never lose work
+# One job: the hard rule and what it demands in this program
+# Status: current; the rule text is the owner's and changes only with the owner.
+
+* The rule
+# the owner's words, repeated unchanged. Do not soften or reinterpret them here.
+  Never lose work, stated honestly. Terminals are a facade over tty; a built-in session holder
+  owns the shells and the screen is a thin client, detach and reattach. The editor journals
+  every edit to disk as it happens, replayable after a crash. The plan says exactly what is
+  protected on the phone (Termux + proot, where Android may kill background processes) and
+  what needs a laptop, recorded in WHEN-ON-LAPTOP.org.
+
+* What it demands here
+# how this rule bites in this program. No examples; the plan carries the detail.
+  Every edit is journaled to disk as it happens and replayable after a crash; an agent write
+  and unsaved typing never destroy each other.
+
+* What breaks it
+# the failure this rule exists to prevent.
+  A crash, a killed background process or an agent write that costs work with no way back.
+
+* Where it is proven
+# the checklist item that shows this rule holds; todo until step 10 names it.
+  todo — step 10 names the checklist item
+

@@ -1,0 +1,10 @@
+#+TITLE: Keyboard modes and layers
+# One job: every mode and layer the keyboard defines, and which one sees a key or event first
+# Status: skeleton; step 4 fills it, read-only, names and sizes only.
+
+* Modes and layers
+# every mode and layer the keyboard layer defines, one line each: what it captures and what it passes on.
+
+* How they interact
+# the rules that decide which layer sees a key or event first.
+
