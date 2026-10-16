@@ -493,3 +493,25 @@ designs are =plan/FEATURE-users.org= and
   never writes outside its state root. README.md documents the one manual
   placement step.)= Same law as the mirror path decision: pm does not
   write where it does not own.
+
+* Deliberately not planned
+Three things README.md lists under "Deliberately not planned". They are
+recorded here because a refusal without a recorded reason is indistinguishable
+from an oversight: the reader must be able to ask why, and get an answer.
+
+** Install hooks -- NOT PLANNED
+- *Decision:* =(DEFAULT: pm never runs unapproved code at install time.)=
+  Arbitrary code run at install time would break the fail-closed rule: a
+  hook could change the machine after the plan was approved. pm will not
+  grow a place to run unapproved code.
+
+** Services -- NOT PLANNED
+- *Decision:* =(DEFAULT: pm does not run or supervise daemons.)= Running
+  and supervising services is a different job with a different failure
+  model, and out of scope for what pm does.
+
+** Vulnerability audit -- NOT PLANNED
+- *Decision:* =(DEFAULT: pm will not claim a package is safe.)= An audit
+  needs an advisory source pm does not have. If one is chosen this is
+  revisited; until then there is nothing to report and no way to claim
+  safety.

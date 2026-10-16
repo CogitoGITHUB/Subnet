@@ -114,6 +114,9 @@ Ordered as specified. Each group moves from “Planned” to “Current” in th
 - **One declaration per user** (`user.rktd`): the packages that person chose, their profile name, lock path, mirror repo and remote, and size limit. It picks from packages that are already declared; it never redefines one.
 - **One shared store, per-user histories** — a build exists once for everyone; profile, generations, holds, lock and mirror settings are per user, and no user can change another's profile.
 - **`pm user list` / `show` / `apply`, `pm add` / `drop`** — reading is free; writing a declaration or activating needs `--confirm`.
+- **Cross-user apply needs more** — `pm user apply` for a different user requires
+  `--confirm` and the confirmation token; applying to yourself needs `--confirm`
+  only. User identity is name and uid, and a mismatch is a named refusal.
 - **Layering under a future system declaration** (reserved, not built): user values win over system defaults, and a system-forced package cannot be dropped by a user. The system layer's name is reserved now so nothing else takes it.
 - **gc across users** — a shared store path is freed only after every user's live and held generations have been counted; a user whose declaration cannot be read makes gc refuse for everyone.
 

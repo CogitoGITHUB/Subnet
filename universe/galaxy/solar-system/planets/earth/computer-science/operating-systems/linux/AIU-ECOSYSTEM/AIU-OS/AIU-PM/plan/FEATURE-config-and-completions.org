@@ -73,6 +73,11 @@ Anti-drift, which is the whole point:
 =name=, =format=, =operands=, =settings=, =layers=, =user=. Each setting is
 {name, value, layer, source} in that order; =source= is empty when the value
 is a default with no file behind it.
+With =--detail= each setting gains two keys, and the document says it did:
+=source-line=, the file and line the winning value was written at, and
+=lost=, the candidates that lost, each {value, layer, reason}. Without
+=--detail= neither key appears at all: the plain document answers what each
+setting is, the detail document answers where each value came from.
 
 * Area
 =entry/config-report.rkt= — the result documents for =pm config=, beside

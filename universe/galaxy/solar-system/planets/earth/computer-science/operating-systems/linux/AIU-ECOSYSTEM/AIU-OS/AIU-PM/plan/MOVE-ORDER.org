@@ -102,12 +102,17 @@ it, so no dependent's require line changes at this stage.
     with file:line, remove it, see green. Then push.
 
 * After reorganisation, in this order
-The mirror (step 19) lands first; it is what the pairs below pair with.
 Each feature gets its own =plan/FEATURE-*.org= design, its own commit, and
 its README row flips from Planned to Current in the same commit. Every one
 of them is designed in the FEATURE files and lands later; nothing here is
-built yet. Design only until its step comes.
+built yet. Design only until its step comes. The order of the list below is
+the order they LAND in; README.md states the same order for the reader.
 
+19. The mirror, per =MIRROR-FEATURE.org=, built at step 19 and landing
+    FIRST here because the export/import pair pairs with it. All mirror
+    logic in =src/mirror/=, its tests in =tests/mirror/=; every git call
+    goes through =git/= and the area never edits =git/=, =process=,
+    =spec= or =apply=.
 23. =pm doctor=, per =FEATURE-doctor.org=. Read-only health check. Area
     =entry/doctor-report.rkt=. Lands after the close so the tree it
     surveys is the reorganised one.
