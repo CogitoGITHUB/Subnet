@@ -1,0 +1,20 @@
+#+TITLE: 08 — Editor keyboard
+# One job: one small checklist item of the shared build up to the done line.
+# Status: TODO; added 2026-10-16, in chronological order.
+
+* What
+# the work, in a line or two.
+  The keyboard layer: keymaps and commands live from source in work mode;
+  the editor's inner routes; selection and send keys exist.
+
+* Done when
+# the single observable check.
+  The editor's routing walk passes; selection and send have keys.
+
+* Dependencies
+# the items that must be DONE first.
+  05 — the editor slice; 06 — routing across layers.
+
+* State
+# TODO; DONE records its commit hash; BLOCKED names its blocker.
+  TODO.
