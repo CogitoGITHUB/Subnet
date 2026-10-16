@@ -1,13 +1,95 @@
 #+TITLE: Literate tangling today
 # One job: how the literate config tangles today: what to keep, what to rebuild
-# Status: skeleton; step 4 fills it, read-only, names and sizes only.
+# Status: filled 2026-10-16 from Cyberdeck-Emacs, read-only; not yet reviewed.
 
 * How the config tangles today
 # the mechanisms that weave literate blocks into files, described plainly.
+  - Two systems, one idea: source lives in Org files; every other file is a
+    build artifact, and generated files say so where they can.
+  - Auto-tangle on save — the foundation file carries an auto-tangle flag;
+    the editing package regenerates its two targets on every save, aiming at
+    fixed paths under the config directory; the flag is what arms the hook,
+    so ordinary Org files are never touched.
+  - Belt and suspenders — the static seed loads the foundation source again
+    at startup, then the freshly generated payload; the early-win target may
+    be one save stale, which is safe because it only paints.
+  - The loader itself is literate — the package manager is Org too, tangling
+    to the loader artifact with a lexical-binding cookie; its sections were
+    converted verbatim from the retired script files and follow the old
+    require chain, later split into nineteen modules whose concatenation
+    must still read exactly as the original single loader.
+  - Loader split, single artifact — boot tangles each module to its own temp
+    file with an explicit target (no file header can redirect a block),
+    concatenates in listed order under the tangle tool's own join rule, and
+    replaces the artifact by rename — a reader never sees a half artifact.
+  - Freshness before rebuild — the artifact is rebuilt only when missing or
+    older than any module; the source block count is compared against the
+    produced artifact and a drop is warned, never ignored.
+  - Refuse stale boot — if any module is newer than the artifact, the boot
+    stops loudly: a failed or skipped re-tangle must not run stale code.
+  - Editor modules are not written into the tree — each unit is extracted
+    and compiled or evaluated; artifacts live under the config directory's
+    cache, so the source tree stays text and the vault never churns.
+  - Unit extraction — one tagged heading is one unit; its source blocks
+    become either loose top-level forms or package bodies, in document
+    order; packages are built and evaluated one at a time, never as one
+    concatenated blob, which is what makes per-package isolation possible.
+  - Per-unit cache — artifacts are keyed by the unit's drawer id plus a
+    salt; an exact parts-hash match loads the compiled artifact with no
+    re-evaluation, a mismatch re-extracts and compiles fresh, and a failed
+    compile falls back to interpreted evaluation.
+  - Pre-flight gates — a paren scan and an Org block-nesting check run on
+    every unit every boot, cheap enough to never cache-gate; they catch
+    structural damage with exact line positions instead of backtraces.
+  - Loudness set — extraction that yields nothing, a definition left void
+    by nesting, and scans that regress all fail loudly; the boot refuses to
+    come up empty.
+  - Error persistence — boot errors land in one readable form (data, not
+    prose) that the next session reads back; the doctor surfaces it.
+  - Staged loading — stage tags split units into loads-early, normal boot,
+    and deferred; deferred units register lazy stubs from index records only
+    (no reads at boot) and their first use loads just that unit.
+  - Preview — a command shows exactly what the current file would expand to,
+    without evaluating it.
+  - Measured, never guessed — boot marks, per-stage and per-unit times are
+    recorded and reported; slow steps announce themselves as they run.
 
 * What to keep
 # the parts worth carrying into the editor.
+  - Sources are the single truth; generated files say so, are never edited,
+    and regeneration is automatic on save.
+  - Rebuild only when stale, refuse to run stale, count what went in and
+    what came out, and warn when a rebuild dropped blocks.
+  - Atomic artifacts: temp file plus rename; nothing half-written is ever
+    visible.
+  - Trust content, not timestamps: an exact hash match means loading the
+    artifact is provably identical to running the source; stat checks are
+    acceleration only.
+  - Unit granularity with stable ids, so renames and moves keep caches.
+  - Pre-flight structural gates with exact positions, every time.
+  - The loudness set: refuse to start on a broken scan, flag zero extraction
+    and void definitions, keep errors as data that is read back.
+  - Artifacts live outside the source tree; the vault stays text.
+  - Staged loading: load what boot needs, defer the rest behind lazy stubs
+    registered without touching the files.
+  - Preview before evaluation.
 
 * What to rebuild
 # the parts that do not survive, and why.
-
+  - The tangle libraries themselves (babel tangle, Org element parsing, the
+    auto-tangle package) are the old editor's; the new program compiles its
+    own source with its own extractor — the pipeline shape survives, the
+    libraries do not.
+  - Two rebuild triggers (save-time regeneration and boot-time build) become
+    one compile path with one freshness rule; both triggers stay.
+  - Timestamp trust is exactly what broke before (a stored-format mismatch
+    made every boot rescan); the new pipeline treats time and size as hints
+    and hashes as the only trust.
+  - Concatenation-order fidelity (an artifact that must read exactly as the
+    old single file did) is a migration constraint, not a design.
+  - Compiled artifacts with an interpreted fallback are old-engine concepts;
+    the new engine wants one artifact kind and one load path.
+  - The stage vocabulary and mechanism tags get new names with the new
+    format; the loads-early / boot / deferred partition is the part that
+    carries.
+  - The old single loader file and the retired script tree stay history.

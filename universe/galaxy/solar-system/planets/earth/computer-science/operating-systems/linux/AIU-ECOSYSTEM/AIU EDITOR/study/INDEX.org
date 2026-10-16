@@ -17,8 +17,8 @@
   - dashboard-emacs-vs-portable.org — which dashboard mechanisms are specific to the old config and which travel; filled 2026-10-16
   - dashboard-racket-vs-rust.org — what becomes Racket config and what stays in Rust for the dashboard; filled 2026-10-16
   - dashboard-dev-mode-baking.org — what baking means for the dashboard: what is baked, what stays live, what survives; filled 2026-10-16
-  - literate-tangling.org — how the literate config tangles today: what to keep, what to rebuild
+  - literate-tangling.org — how the literate config tangles today: what to keep, what to rebuild; filled 2026-10-16
 
 * Later
-# Read-only, names and sizes only; nothing from the neomacs config is modified or copied. Step 4 fills this, keyboard first.
+# Read-only, names and sizes only; nothing from the neomacs config is modified or copied. Step 4 filled this, keyboard first.
 
