@@ -5,7 +5,7 @@
 * Files
 # one line per file: its name, then the single job it performs. This index is updated in the same commit as any change here.
 
-  - neomacs-map.org — names and sizes only: one line per custom project with purpose, keep, rebuild or skip
+  - neomacs-map.org — names and sizes only: one line per custom project with purpose, keep, rebuild or skip; filled 2026-10-16
   - keyboard-mechanisms.org — every mechanism the keyboard layer combines, one line each
   - keyboard-modes-and-layers.org — every mode and layer the keyboard defines, and which one sees a key or event first
   - keyboard-emacs-vs-portable.org — which keyboard mechanisms are specific to the old config and which travel

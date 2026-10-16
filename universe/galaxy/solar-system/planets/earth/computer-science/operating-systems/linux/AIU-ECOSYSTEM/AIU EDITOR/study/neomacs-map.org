@@ -1,13 +1,64 @@
 #+TITLE: Neomacs map
 # One job: names and sizes only: one line per custom project with purpose, keep, rebuild or skip
-# Status: skeleton; step 4 fills it, read-only, names and sizes only.
+# Status: filled 2026-10-16 from Cyberdeck-Emacs, read-only; not yet reviewed.
 
 * The map
 # one line per custom project: name and size, purpose, and one of keep, rebuild or skip. Names and sizes only; no deep reading.
+  - AIU-Frame — 21K, 1 file — boot source of truth: the early-init and foundation-init
+    targets, boot order, starts the loader. rebuild — the staged-boot idea travels.
+  - cyberdeck — 205K, 1 file — the loader and package manager as one Org file, tangled
+    to cyberdeck-emacs.el; straight and leaf integration, loud failures. rebuild.
+  - loader/ — 267K, 19 files — the loader split into modules: core, discovery, staging,
+    packages, compiler, splash, doctor, entry. rebuild — the tangling study reads it.
+  - biomechanical-input-interface — 370K, 46 files — the keyboard layer: leaders,
+    states, engine, cores. rebuild — the keyboard study reads it.
+  - aiu-frame — 1.3M, 45 files — the Subnet system: database, tags, search, sidebar,
+    transactions, sync. skip — application layer, not editor machinery.
+  - aiu-context — 348K, 77 files — context system: bodies with states, drawer
+    mechanics, prompt sets (dictionary, contacts, recipes, rules). skip — app layer.
+  - aiu-run — 316K, 6 files — the runs system: routines as tagged contexts, dual-written
+    to org drawers and a SQLite index; alarm and speed-type. skip — app layer.
+  - aiu-cyber-desk — 162K, 9 files — the desk: banner, widget registry, upstream
+    dashboard cores, faces, setup. rebuild — the dashboard study reads it.
+  - entering-the-machine — 321K, 14 files — the entry and exit path: introduction,
+    entering, quitting, emergency escape, restart; holds the desk. rebuild — feeds the
+    dashboard study.
+  - the-screen — 1.7M, 53 files — buffers and windows, frames, display chapters; a
+    modeline engine with widgets (130K, 17 files). rebuild — the screen layer.
+  - daily-editing — 695K, 22 files — editing: kill and region, search and replace,
+    multiple cursors, spell and typo fixes, indentation, undo. rebuild.
+  - building-things — 292K, 13 files — programming: magit and git-gutter, project and
+    projectile, comment tags, emacs-opencode, launcher. rebuild.
+  - talking-to-emacs — 184K, 13 files — completion (corfu, cape, consult), keys,
+    keyboard macros, hydra. rebuild.
+  - reaching-outward — 1.3M, 20 files — shell and eshell, fzf, web navigation and
+    request, password generator; calculator/ is an archived Calc manual. rebuild.
+  - shaping-the-tool — 171K, 3 files — customization, leaf, straight bootstrap.
+    rebuild — superseded by PM and dev-mode later.
+  - theme-system — 404K, 21 files — palettes (dark, light), per-package faces, engine,
+    declare, apply, preview. keep — the palette is data and carries over.
+  - files/ — 3.5M, 214 files — file handling and backups, org extras (modern, download,
+    ref, remark, super-agenda), documents; holds the custom cluster. rebuild.
+  - under-the-hood — 1.7M, 26 files — Emacs internals and elisp manual chapters plus
+    notes (flycheck, esup, processes, ...), converted from manuals.org. skip.
+  - other archives — org-manual (672K, 6 files), dired manual (56K), time (88K, 1 file).
+    skip — converted reading matter.
 
 * How the projects relate
 # which project holds which, in one or two lines.
+  - AIU-Frame is the boot source of truth (early-init and foundation-init targets); it
+    starts the loader; the loader is the cyberdeck file plus its modules under loader/.
+  - Discovery under emacs-cyberdeck/ runs by stage: S0 before S1 at boot; S2 units are
+    left for first use.
+  - The custom cluster sits under files/aiu-registration/cyberdeck/ (aiu-frame,
+    aiu-context, aiu-run, biomechanical-input-interface), its own subsystem, not file
+    handling; the desk lives under entering-the-machine/.
+  - Archive chapters carry #+cyberdeck-source lines: split from one manuals.org, not
+    written as config.
 
 * What the map is for
 # it decides where the study looks next; nothing is built from the map alone.
-
+  - Next: the keyboard (biomechanical-input-interface) and the dashboard (aiu-cyber-desk,
+    entering-the-machine, modeline) in depth, plus the tangling pipeline (AIU-Frame,
+    cyberdeck, loader/) for the dev-mode and bake notes.
+  - Every other line waits for later steps; nothing is built from the map alone.
