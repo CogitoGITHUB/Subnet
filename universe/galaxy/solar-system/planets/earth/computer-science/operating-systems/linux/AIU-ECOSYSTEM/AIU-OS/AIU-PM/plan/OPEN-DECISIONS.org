@@ -443,3 +443,53 @@ besides.
   way every other fixture in this repo does. Not a new mechanism and not
   a timer; the path already comes from one place and one place can delete
   it.)=
+
+* Multi-user declarations and config -- DECIDED
+Eight questions answered by the owner in one pass. Each is now stated in
+the design it belongs to, and removed from that design's open list. The
+designs are =plan/FEATURE-users.org= and
+=plan/FEATURE-config-and-completions.org=.
+
+** User identity -- DECIDED
+- *Decision:* =(DEFAULT: a user is a name AND a uid. The name is the key
+  the file is found by; the uid is recorded in the user file and checked
+  at apply. A mismatch is a named refusal, not a warning.)=
+  Two halves of one identity: the name says which declaration, the uid
+  says whose hands are on the machine.
+
+** user.rktd names packages, the lockfile pins them -- DECIDED
+- *Decision:* =(DEFAULT: the user declaration lists package NAMES only; the
+  lockfile is the only thing that pins a version.)= The split in one
+  sentence: the user file says WHICH packages this person wants, and the
+  lockfile says WHICH version of each.
+
+** Applying another user takes both gates -- DECIDED
+- *Decision:* =(DEFAULT: =pm user apply= for a different user requires
+  =--confirm= AND the confirmation token; applying to yourself requires
+  =--confirm= only.)= Touching your own machine is one gate; touching
+  someone else's is two.
+
+** System-forced packages and the hold budget -- DECIDED
+- *Decision:* =(DEFAULT: a system-forced package does NOT count toward a
+  user's hold budget.)= It is forced, so counting it would let forced
+  packages crowd out the user's own pins.
+
+** No per-user store quota -- DECIDED
+- *Decision:* =(DEFAULT: none today. The size limit in the user file
+  applies to the mirror only.)= Revisit if the shared store grows.
+
+** pm config is read-only forever -- DECIDED
+- *Decision:* =(DEFAULT: =pm config= never writes. Every change goes
+  through the user file or through =pm add= / =pm drop=, both gated by
+  =--confirm=.)= One place to edit a setting, and it is a file a human
+  can read.
+
+** Completions cover three things -- DECIDED
+- *Decision:* =(DEFAULT: verbs, flags, and directory operands. Nothing
+  else.)= No package names and no values, so completion never guesses.
+
+** pm never installs its completions -- DECIDED
+- *Decision:* =(DEFAULT: pm prints or copies the completion files and
+  never writes outside its state root. README.md documents the one manual
+  placement step.)= Same law as the mirror path decision: pm does not
+  write where it does not own.

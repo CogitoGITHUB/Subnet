@@ -121,6 +121,7 @@ Ordered as specified. Each group moves from “Planned” to “Current” in th
 - **`pm config`** — a read-only view of the effective settings and which layer each came from; `--detail` adds the file each value was written in.
 - **Completions generated from the command table** — Nushell first, then bash, then zsh, so a verb that exists is a verb you can complete.
 - **The generated files are a test** — a check regenerates them and fails when a committed file differs, exactly as the `docs/API.org` goldens do.
+- **pm never installs them** — it prints or copies the files and never writes outside its state root; the one manual step is copying `pm.nu`, `pm.bash` or `pm.zsh` into your shell's completion directory.
 
 ### Later, from the earlier nine
 - **Content-addressed overlay** — git clones remain the history; every build product is also stored by pure content hash. `verify` can re-hash without trusting the tree. GC becomes pure reachability over hashes.

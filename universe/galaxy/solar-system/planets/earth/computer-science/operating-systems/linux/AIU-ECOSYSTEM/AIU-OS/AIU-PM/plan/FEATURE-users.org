@@ -12,6 +12,9 @@ per user. Two people on one machine get the same bytes and separate
 histories.
 
 * Model
+- IDENTITY: a user is a name AND a uid. The name is the key the file is
+  found by; the uid is recorded in the user file and checked at apply.
+  A mismatch is a named refusal, not a warning.
 - SHARED: the store. Content-addressed, so one copy of each build serves
   every user. Also shared: the vault of git clones, which is history, not
   installation state.
@@ -30,14 +33,17 @@ the two never get confused:
   (user-declaration
     (format-version 1)
     (name "shape")
+    (uid 1000)
     (profile "shape")
     (lock "pm.lock")
     (mirror (repo "mirror-repo") (remote "git@host:mirror.git")
             (size-limit 52428800))
-    (packages (lua "5.5.1") (guile "3.0")))
+    (packages lua guile))
 
 It lives at =<state>/users/<name>/user.rktd=, beside that user's profile,
-holds and lock, so one user's whole world is one directory.
+holds and lock, so one user's whole world is one directory. The split is
+one sentence: the user file says WHICH packages this person wants, and the
+lockfile says WHICH version of each.
 
 Relation to the spec directory: the =.rktd= package specs stay exactly what
 they are — the definition of a package, its source, its build and its
@@ -74,7 +80,8 @@ Conflict rule for the day it is built:
   from. Read-only.
 - =pm user apply NAME [--confirm]= — one operand. Activates that user's
   declaration into their profile. Without =--confirm= it plans and changes
-  nothing.
+  nothing. For a user other than the caller it needs =--confirm= AND the
+  confirmation token; applying to yourself needs =--confirm= only.
 - =pm add NAME= / =pm drop NAME= — one operand, the package name. Rewrite
   the USER DECLARATION. Without =--confirm= the rewrite is printed as a
   diff and nothing is written.
@@ -91,6 +98,8 @@ generations (=pm user apply=) — both only under =--confirm=.
   They print the exact command to re-run and exit.
 - "unknown user": no =user.rktd= for that name. The refusal names the
   directory searched.
+- "uid mismatch": the uid recorded in the user file is not the uid the
+  command runs as. It names both uids. A named refusal, never a warning.
 - "unknown package": =pm add= names a package no spec declares.
 - "system-forced package": =pm drop= against a forced package. Names the
   package and the system layer. =--confirm= does not override it.
@@ -117,6 +126,10 @@ generations (=pm user apply=) — both only under =--confirm=.
   and only pm writes to them, never a person directly.
 - Holds are per user, so a user holding a package protects it from EVERY
   user's gc, not only their own. That is the point of counting first.
+- A system-forced package does not count toward a user's hold budget, so
+  forced packages cannot crowd out the user's own pins.
+- There is no per-user store quota. The size limit in the user file applies
+  to the mirror only; revisit if the shared store grows.
 
 * Mirror interaction
 Two options, and a recommendation.
@@ -150,14 +163,6 @@ Following the one-way law in =plan/ARCHITECTURE.org=:
 Nothing below entry/ ever requires it; =errors/= requires nothing.
 
 * Open questions
-1. Is a user identified by name, uid, or both? Name is what the file says;
-   uid is what the filesystem enforces. Probably both, checked.
-2. Does a user declaration pin versions, or only name packages? Pinning
-   makes the file a lockfile by another name; naming keeps the lock
-   separate. This document pins, and that may be the wrong call.
-3. Should =pm user apply= for a user other than the caller need the
-   confirmation token as well as =--confirm=?
-4. When the system layer lands, does a forced package count toward a user's
-   hold budget, or is it exempt?
-5. Does the shared store need a per-user quota, or is the size limit in the
-   user file enough?
+None. All five were answered by the owner and are recorded, with their
+reasoning, in =plan/OPEN-DECISIONS.org= under "Multi-user declarations and
+config -- DECIDED".

@@ -15,8 +15,9 @@ being suggested the moment it is gone.
 - =pm config= — zero operands. The effective settings and, for each, the
   layer it came from.
 - =pm config --detail= — the same, plus where each value was written (file
-  and line) and the candidates that lost. Read-only either way; there is no
-  =--confirm= because nothing here is written.
+  and line) and the candidates that lost. Read-only forever: there is no
+  =--confirm= because nothing here is ever written. Every change to a
+  setting goes through the user file or through =pm add= / =pm drop=.
 
 Reads: the user declaration, the per-user lock path, the mirror settings,
 and the scope roots — all through the one seam that reads HOME or XDG.
@@ -24,7 +25,10 @@ Writes: nothing.
 
 * Completions
 Generated from the command table, which is already the single list that
-drives parsing, the =--help= text and =docs/API.org=. Order of delivery:
+drives parsing, the =--help= text and =docs/API.org=. Completions cover
+three things and nothing else: verbs, flags, and directory operands. No
+package names, no setting values, so completion never guesses. Order of
+delivery:
 1. Nushell first, because it is the shell this project runs its gate in:
    an =extern "pm"= declaration with one record per command and one per
    operand.
@@ -43,6 +47,9 @@ Anti-drift, which is the whole point:
   lives under: a stale completion is a red gate, not a quiet wrong answer.
 - Flag names come from the same source as the operand counts, so =--confirm=
   is completed wherever it is accepted and nowhere else.
+- pm PRINTS OR COPIES the completion files and never writes outside its
+  state root, the same law the mirror path decision follows. =README.md=
+  documents the one manual placement step.
 
 * Refusals, by name
 - "unknown setting": =pm config= asked for a setting that does not exist.
@@ -75,10 +82,6 @@ dispatch, so it lives in entry/ with the surface it describes. The generated
 files are data, not modules, and sit outside =src/=.
 
 * Open questions
-1. Should =pm config= write a value when given one (=pm config KEY VALUE=),
-   or stay read-only forever and push every edit into the declaration file?
-   Read-only is safer; editing is what people expect.
-2. Completions for operands that are paths: do they offer existing
-   directories, or only the verb and its flags?
-3. Should the generated files be installed by pm, or copied by the user?
-   Installing writes outside the state root, so copying may be the rule.
+None. All three were answered by the owner and are recorded, with their
+reasoning, in =plan/OPEN-DECISIONS.org= under "Multi-user declarations and
+config -- DECIDED".
