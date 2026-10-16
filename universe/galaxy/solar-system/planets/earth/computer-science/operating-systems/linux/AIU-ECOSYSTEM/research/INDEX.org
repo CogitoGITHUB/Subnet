@@ -5,9 +5,9 @@
 * Files
 # one line per file: its name, then the single job it performs. This index is updated in the same commit as any change here.
 
-  - zellij.org — what Zellij is and what transfers: panes, layouts, sessions, plugins, server and client split
-  - herdr.org — located 2026-10-16: herdrdev/herdr, the Rust agent-first terminal multiplexer; agent panes, status, socket API
-  - helix.org — what Helix is and what transfers: modal editing, the selection model, key handling
+  - zellij.org — what Zellij is and what transfers: panes, layouts, sessions, plugins, server and client split; filled 2026-10-16
+  - herdr.org — located 2026-10-16: herdrdev/herdr, the Rust agent-first terminal multiplexer; agent panes, status, socket API; filled 2026-10-16
+  - helix.org — what Helix is and what transfers: modal editing, the selection model, key handling; filled 2026-10-16
   - neovim-ui-model.org — how Neovim separates its UI from its core and what an external UI contract looks like; filled 2026-10-16
   - neovim-ai-tools.org — how AI plugins integrate into Neovim today and what is worth copying; filled 2026-10-16
   - opencode.org — what the current OpenCode offers: sessions and sharing, skills, plugins, hooks, memory, API server, approvals, TUI; filled 2026-10-16
@@ -21,7 +21,7 @@
   - org-outline-and-literate.org — what Org does well for outlines, tags, properties and literate code; filled 2026-10-16
   - incremental-parsing.org — incremental reparse approaches for a live editor, lessons only; filled 2026-10-16
   - language-server-design.org — how editors and language engines talk, as input for the notation surface; filled 2026-10-16
-  - synthesis.org — what we take, what we avoid, options for the Rust projects with a recommendation, and what this phone can build
+  - synthesis.org — what we take, what we avoid, options for the Rust projects with a recommendation, and what this phone can build; filled 2026-10-16
 
 * Later
 # One file per studied subject, lessons only; no code is copied and each license is named before any reuse. Synthesis is written last.
