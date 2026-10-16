@@ -18,7 +18,7 @@ Resuming: read the last line, then =plan/MOVE-ORDER.org= for the script.
 | 6 | =src/build/build-plan.rkt= split: =build-env=, =build-executor=,
 | =build-systems/=; facade kept, 20=20 tests | ea76c3b |
 | 7 | =src/install/activate.rkt= split four ways, facade keeps all contracts, 48=48 tests | 42e27f6 |
-| 8 | split =cli/main.rkt= | NOT DONE, moved whole, see below |
+| 8 | =src/entry/cli.rkt= split: =documents.rkt=, =dispatch.rkt=, suite to =tests/entry/ | 13f475e |
 | 9 | =jobs.rkt= and =vault.rkt= moved WHOLE, unsplit, as decided | same commit as 10-13 |
 | 10 | =core/*.rkt= into =package-manager/src/<area>/= | same commit as 9-13 |
 | 11 | =backends/*.rkt= into src areas; fake/dry-run into test-doubles | same commit as 9-13 |
@@ -35,7 +35,7 @@ Resuming: read the last line, then =plan/MOVE-ORDER.org= for the script.
 | 22 | full verification, prove =banned-words-lint=/=one-way-dependency-lint= bite, push | TODO |
 | — | gate stages are named, never numbered (D-043); =--list=; sub-stages | e1c9c55 |
 
-* The three splits that were NOT done, and why
+* The three splits that were not done by subagent, and why
 Steps 6, 7 and 8 were each handed to a subagent and each was cancelled.
 The reason is the same and it is not the code: the account can only run
 the free subagent model, and each split asked it to read a 650+ line file,
@@ -43,24 +43,22 @@ emit five to eight new files, redistribute every test, and run the suite
 twice. Hours passed with a load average of 0.12 and no racket process
 running -- the machine was idle and the model was not keeping up.
 
-=cli/main.rkt= (1525 lines) was moved WHOLE to
-=package-manager/src/entry/cli.rkt= rather than split first, because the
-restructure was the thing being waited on and splitting is easier once a
-file is in its final home. It is over the ~400-line rule and that is
-stated rather than hidden. =build.rkt= (673) went to
-=src/build/build-plan.rkt= and was split at step 6;
-=activate.rkt= (650) went to =src/install/activate.rkt= and was split
-at step 7 (rows above).
+All three were then done directly, one session each, no subagent. The
+facade was kept in every case, so no dependent's require line moved.
+=build.rkt= (673) went to =src/build/build-plan.rkt= and was split at
+step 6; =activate.rkt= (650) went to =src/install/activate.rkt= and was
+split at step 7; =cli/main.rkt= (1525 lines) went to
+=package-manager/src/entry/cli.rkt= and was split at step 8 into
+=documents.rkt= and =dispatch.rkt= with the suite moved to
+=package-manager/tests/entry/cli-test.rkt= (rows above). Counts: 20=20,
+48=48, and the CLI suite plus the MCP suite at 167 checks, 0 failed, lints
+0.
 
 A partial split of =build.rkt= existed briefly -- six files -- and was
 removed rather than committed. It was half a split: the new modules were
 dead code and =build.rkt= had never been rewritten into a facade, so
 nothing required them and the gate would have compiled files no one
 called.
-
-Steps 6 and 7 were later done directly, in one session each, no
-subagent: the facade kept in both cases so no dependent's require line
-moved; 20=20 and 48=48 tests, lints 0. Step 8 remains manual, next.
 
 * What the restructure did
 79 files moved through =git mv=, so history follows each file. 27 files
