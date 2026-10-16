@@ -1,0 +1,20 @@
+#+TITLE: 16 — Select and send, editor
+# One job: one small checklist item of the shared build up to the done line.
+# Status: TODO; added 2026-10-16, in chronological order.
+
+* What
+# the work, in a line or two.
+  One key sends buffer text, a notation node, a picker entry or a file —
+  with its full bundle — to either agent.
+
+* Done when
+# the single observable check.
+  Sends land from the editor to both agents with the context attached.
+
+* Dependencies
+# the items that must be DONE first.
+  12 — the second adapter; 13 — the audit; 15 — the secrets package.
+
+* State
+# TODO; DONE records its commit hash; BLOCKED names its blocker.
+  TODO.
