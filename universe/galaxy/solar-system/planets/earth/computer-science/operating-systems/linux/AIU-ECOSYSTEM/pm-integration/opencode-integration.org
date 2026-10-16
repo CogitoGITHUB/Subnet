@@ -1,16 +1,32 @@
 #+TITLE: OpenCode integration
 # One job: PM from OpenCode: skill or plugin, and what each action looks like
-# Status: skeleton; step 7 plans it. PM itself is not touched here.
+# Status: filled 2026-10-16; planned only, PM itself is not touched here.
 
 * What PM must gain
 # the capability in words; the exact PM files are named only after PM is read, until then say where to look later.
+  - The skill PM owes, with one example per action that executes in the
+    test suite; discovered by OpenCode from project and home like any
+    skill file.
+  - The plugin PM already ships stays what it is: read-only visibility
+    over the feed, watcher-driven, never polling, never a mutating tool.
+  - PM's own instructions file for agents entering its repo (the
+    AGENTS.md family), kept true.
 
 * Shape
 # how the entry, surface or file looks from the outside. No code.
+  - One action table the skill examples follow: search and status read;
+    install, build, bake mutate with the token; each action shows what
+    the human sees (the plan first, for mutating actions) and what each
+    exit code means.
+  - The plugin shows live events from the feed only; it can run nothing.
 
 * Proof that it works
 # the one check that shows this is done when the PM prompt runs.
+  - Skill examples executed by the suite — a stale example fails the
+    build; the plugin proved read-only by its own test; a mutating action
+    from OpenCode without the token changes nothing.
 
 * Owed to the PM checklist
 # one line per PM change, added to pm-change-checklist.org.
-
+  - Ship the skill with executed examples; run the plugin read-only
+    proof; keep the action table in the kit entry.

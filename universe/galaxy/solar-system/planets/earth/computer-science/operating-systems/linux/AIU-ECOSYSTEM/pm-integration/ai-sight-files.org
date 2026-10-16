@@ -1,16 +1,33 @@
 #+TITLE: AI-sight files
 # One job: the files PM writes so an agent can read PM state directly
-# Status: skeleton; step 7 plans it. PM itself is not touched here.
+# Status: filled 2026-10-16; planned only, PM itself is not touched here.
 
 * What PM must gain
 # the capability in words; the exact PM files are named only after PM is read, until then say where to look later.
+  - A small set of stable, machine-readable files describing state an
+    agent would otherwise have to ask for: installed packages with
+    versions, the current generation per profile, the last build and bake
+    results, and where the event feed lives.
+  - Written outside the source tree — generated state has exactly one
+    home, from the one scope seam — flushed per record, and living beside
+    the event feed, never instead of it.
 
 * Shape
 # how the entry, surface or file looks from the outside. No code.
+  - One file per subject; fixed key order; one object per line; the same
+    envelope keys the surfaces use.
+  - Written on the event that changes them (install, rollback, bake),
+    never on a timer; a file that does not exist yet simply does not
+    exist — no stale placeholder.
+  - Agents read them directly; reading costs nothing (read is free).
 
 * Proof that it works
 # the one check that shows this is done when the PM prompt runs.
+  - After any install, rollback or bake, a check compares the files
+    against the real state; a mismatch fails. Remove a file and the check
+    reports it missing — it never invents a default.
 
 * Owed to the PM checklist
 # one line per PM change, added to pm-change-checklist.org.
-
+  - Define the sight-file set and write it on state changes; add the
+    files-versus-state comparison to the gate.

@@ -1,16 +1,34 @@
 #+TITLE: Hermes integration
 # One job: PM from Hermes: skill or plugin, and what each action looks like
-# Status: skeleton; step 7 plans it. PM itself is not touched here.
+# Status: filled 2026-10-16; planned only, PM itself is not touched here.
 
 * What PM must gain
 # the capability in words; the exact PM files are named only after PM is read, until then say where to look later.
+  - The same skill file serves Hermes: skills are files in an open
+    standard Hermes reads, so one skill serves both agents with no
+    forked copy to keep true.
+  - MCP covers Hermes too: it speaks MCP, so the same server answers;
+    nothing Hermes-specific exists inside PM.
+  - A context-file entry for places Hermes works (the AGENTS.md family),
+    so instructions travel with the project, not with the agent.
 
 * Shape
 # how the entry, surface or file looks from the outside. No code.
+  - Actions and gating identical to the OpenCode table
+    (opencode-integration.org); the difference is discovery only — where
+    each agent looks for skills and context files.
+  - No plugin: Hermes needs none here; skill plus MCP is the whole
+    integration.
 
 * Proof that it works
 # the one check that shows this is done when the PM prompt runs.
+  - When Hermes runs on this phone (the proot test is pending): it
+    discovers the skill, calls search and status free, and is refused
+    install, build and bake without the token — recorded as the
+    integration's done proof.
+  - Until then, the same checks run against the shared skill shape.
 
 * Owed to the PM checklist
 # one line per PM change, added to pm-change-checklist.org.
-
+  - Keep one cross-agent skill shape, no fork; schedule the
+    Hermes-on-phone proof after the proot test.
