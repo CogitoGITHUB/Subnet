@@ -16,11 +16,11 @@
   - secrets-for-ai.org — the existing secrets package; not located 2026-10-16, owner asked, skipped for now
   - key-input-and-escape.org — how existing terminal programs read keys and handle escape sequences, so we adopt instead of reinventing; filled 2026-10-16
   - file-change-events.org — event-driven file watching: how editors learn a file changed with no polling; filled 2026-10-16
-  - tty-pty-proot-android.org — tty and pty behaviour under proot on Android: what works, what gets killed, what survives
-  - named-element-markups.org — markup languages whose elements have literal names, and what each does right or wrong
-  - org-outline-and-literate.org — what Org does well for outlines, tags, properties and literate code
-  - incremental-parsing.org — incremental reparse approaches for a live editor, lessons only
-  - language-server-design.org — how editors and language engines talk, as input for the notation surface
+  - tty-pty-proot-android.org — tty and pty behaviour under proot on Android: what works, what gets killed, what survives; filled 2026-10-16
+  - named-element-markups.org — markup languages whose elements have literal names, and what each does right or wrong; filled 2026-10-16
+  - org-outline-and-literate.org — what Org does well for outlines, tags, properties and literate code; filled 2026-10-16
+  - incremental-parsing.org — incremental reparse approaches for a live editor, lessons only; filled 2026-10-16
+  - language-server-design.org — how editors and language engines talk, as input for the notation surface; filled 2026-10-16
   - synthesis.org — what we take, what we avoid, options for the Rust projects with a recommendation, and what this phone can build
 
 * Later

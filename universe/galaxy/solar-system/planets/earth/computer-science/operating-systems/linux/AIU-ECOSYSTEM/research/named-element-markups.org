@@ -1,19 +1,48 @@
 #+TITLE: Markup with named elements — research notes
 # One job: markup languages whose elements have literal names, and what each does right or wrong
-# Status: skeleton; step 3 fills it from primary sources. Nothing here is checked yet.
+# Status: filled 2026-10-16 from primary sources; not yet reviewed.
 
 * What it is
-# one paragraph, no more: the project, its language, its health, and who maintains it. Fill in step 3 from primary sources.
+# the project, its language, its health, and who maintains it.
+  The studied case is Org syntax, documented by worg's org-syntax v2
+  (Goaziou, Chapman; source fetched 2026-10-16). Its opening stance: "while
+  Markdown refers to a collection of similar syntaxes, Org is a single
+  syntax." Org splits into objects (smaller than a paragraph) and elements
+  (paragraph scope or larger), stratified from headings and sections down to
+  greater and lesser elements; only headings, sections, property drawers and
+  planning lines are context-free. Named containers are literal: blocks open
+  and close with a NAME (which decides center, quote, or special), drawers
+  carry a NAME, and node properties are NAME-VALUE pairs inside property
+  drawers. Paragraphs are the default element — anything unrecognized is
+  still valid text.
 
 * What transfers
-# one line per mechanism worth borrowing, each with the reason it fits a program here. No code.
+# one line per mechanism worth borrowing, each with the reason it fits a program here.
+  - One syntax, one normative parser description (org-element.el): no
+    dialects to guess — the same single-source-of-truth our docs demand.
+  - Literal, dispatchable names: tooling decides on the NAME, not position.
+  - The scope invariant (an object cannot exist outside a paragraph; an
+    element cannot be contained by one) — a cheap structural check.
+  - Context-free core, then context-sensitive rest: a layered parsing
+    contract that keeps the common case simple.
+  - Default element is the paragraph: unrecognized text degrades gracefully
+    instead of erroring.
 
 * What to avoid
 # one line per mechanism we deliberately do not take, with the reason. No code.
+  - An unbounded NAME space (any begin-NAME block is legal): without a
+    registry it becomes vocabulary drift; our notation keeps names closed or
+    namespaced.
+  - Comment syntax that looks like structure: token ambiguity we will not
+    copy.
 
 * License
-# name the license and where it was read, before any reuse. NOT CHECKED until then.
+# the license, and where it was read, before any reuse.
+  GNU FDL 1.3+ for the text, GPLv3+ for code examples (read in the
+  document's header comment at orgmode.org/worg/org-syntax.org, 2026-10-16).
 
 * Open questions
 # what this file must still answer before synthesis; say plainly when something is unverified.
-
+  - Other named-element markups (AsciiDoc, Texinfo, MyST) not read — this
+    file currently rests on Org alone.
+  - Cost of parsing Org syntax at very large outline sizes — not studied.

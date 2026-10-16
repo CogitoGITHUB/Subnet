@@ -1,19 +1,45 @@
 #+TITLE: Org outlines and literate code — research notes
 # One job: what Org does well for outlines, tags, properties and literate code
-# Status: skeleton; step 3 fills it from primary sources. Nothing here is checked yet.
+# Status: filled 2026-10-16 from primary sources; not yet reviewed.
 
 * What it is
-# one paragraph, no more: the project, its language, its health, and who maintains it. Fill in step 3 from primary sources.
+# the project, its language, its health, and who maintains it.
+  Two Org facts studied: the outline model (org-syntax: headings, sections,
+  property drawers and planning lines as the context-free core; tags and
+  per-node metadata) and Babel, Org's literate-code layer (worg "Introducing
+  Babel", fetched 2026-10-16): code blocks inside the document, executed
+  interactively or programmatically; blocks as parameterized functions that
+  can reference each other; export to files ("tangle") that extracts pure
+  code, with expanded bodies able to include results of other blocks, values
+  from headline properties, or tables. The document also records Babel's
+  content-addressed caching: results are cached under a hash (sha1) of the
+  block body plus header arguments, to avoid rerunning unchanged work.
 
 * What transfers
-# one line per mechanism worth borrowing, each with the reason it fits a program here. No code.
+# one line per mechanism worth borrowing, each with the reason it fits a program here.
+  - Outline first: structure (headings and sections) is the skeleton, and
+    metadata (property drawers) travels with the node it describes.
+  - Literate model: prose and executable code in one file, extracted on
+    demand — the shape our own plan documents already follow.
+  - Content-addressed reuse: a hash of code plus arguments decides
+    re-execution; the same idea as our journal-resume keyed by input hash.
+  - Results as data in the document: computed artifacts have a home next to
+    their source.
+  - Named blocks: a block can be referenced, like a function.
 
 * What to avoid
 # one line per mechanism we deliberately do not take, with the reason. No code.
+  - The wide header-argument surface: keep a minimal set, not a dialect.
+  - Execute-on-open or execute-on-save defaults: mutation stays explicit,
+    per our rules.
 
 * License
-# name the license and where it was read, before any reuse. NOT CHECKED until then.
+# the license, and where it was read, before any reuse.
+  GNU FDL 1.3+ for the text, GPLv3+ for code examples (read in the header
+  of orgmode.org/worg/org-contrib/babel/intro.org, 2026-10-16).
 
 * Open questions
 # what this file must still answer before synthesis; say plainly when something is unverified.
-
+  - Outline performance at large sizes — not studied.
+  - The minimal header-argument set worth keeping for our literate flow —
+    open.

@@ -1,19 +1,43 @@
 #+TITLE: Language server design — research notes
 # One job: how editors and language engines talk, as input for the notation surface
-# Status: skeleton; step 3 fills it from primary sources. Nothing here is checked yet.
+# Status: filled 2026-10-16 from primary sources; not yet reviewed.
 
 * What it is
-# one paragraph, no more: the project, its language, its health, and who maintains it. Fill in step 3 from primary sources.
+# the project, its language, its health, and who maintains it.
+  LSP (microsoft.github.io/language-server-protocol; repo CC-BY-4.0, 13k
+  stars, last push 2026-10-01 — read 2026-10-16): language smarts live in a
+  server process that any development tool can talk to over JSON-RPC, so one
+  server serves many editors. The overview's session walkthrough: the tool
+  notifies the server that a document opened, and from that moment "the truth
+  about the contents of the document is no longer on the file system but
+  kept by the tool in memory"; the server tracks changes and answers feature
+  requests (completion, goto definition, hover), with the protocol
+  standardizing each exchange.
 
 * What transfers
-# one line per mechanism worth borrowing, each with the reason it fits a program here. No code.
+# one line per mechanism worth borrowing, each with the reason it fits a program here.
+  - The engine/editor process split: engines outlive editors, and a crash
+    in one does not take the other down — our crash-isolation requirement.
+  - Truth moves into the editing session; the filesystem is storage — the
+    exact model our notation surface needs (editor authoritative, engines
+    follow).
+  - One documented protocol, many clients: the same one-boundary discipline
+    we chose for agents.
+  - Requests versus notifications (JSON-RPC): hot-path updates fire and
+    forget, answers only where needed — cheap flow control.
 
 * What to avoid
 # one line per mechanism we deliberately do not take, with the reason. No code.
+  - Implementing LSP for our notation: the spec is large; adopt it only if a
+    concrete need (an existing server) appears.
+  - Freezing our boundary to JSON-RPC now: ours to choose later.
 
 * License
-# name the license and where it was read, before any reuse. NOT CHECKED until then.
+# the license, and where it was read, before any reuse.
+  CC-BY-4.0 (read at github.com/microsoft/language-server-protocol repo
+  metadata, 2026-10-16).
 
 * Open questions
 # what this file must still answer before synthesis; say plainly when something is unverified.
-
+  - The minimal LSP subset worth knowing if we ever bridge editors — open.
+  - Performance characteristics on phone-class hardware — unmeasured.
