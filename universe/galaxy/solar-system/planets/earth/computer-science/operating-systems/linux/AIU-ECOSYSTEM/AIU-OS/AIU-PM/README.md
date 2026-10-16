@@ -19,6 +19,7 @@
 | `pm apply SPECS [--lock LOCK] [--confirm]` | Apply. Without `--confirm` it only previews and tells you to re-run with the flag. |
 | `pm lock LOCKFILE` | Pin the world to exact versions. |
 | `pm fetch MANIFEST` | Pull every declared package into the vault (real git clones, per-entry status). |
+| `pm mirror SPECS [--confirm]` (landing with the reorganisation) | Back up declarations and fetched package sources into your own git repo and push it to the cloud. Without `--confirm` it only shows what would be copied. |
 | `pm update VAULT LOCKFILE PROFILE` | Check every locked package; report what is behind, straight from the vault. |
 | `pm verify VAULT LOCKFILE NAME` | Check a pinned artifact is really what it claims. |
 | `pm status PROFILE LOCKFILE` | Installed vs declared at a glance. |
@@ -46,6 +47,7 @@
 1. **It clones.** `fetch` materializes real git clones into the vault. Each entry carries a revision. That revision is what `lock` pins, `verify` re-checks, and `update` compares against the vault.
 2. **Git-tracked, your own repos included.** Clones are ordinary checkouts; the revision is the pin. Vault origins admit `https://`, `ssh://` and scp-like shapes; `file://` is an explicit test-only escape (`current-allow-file-urls` in `git-env.rkt`, never environmental).
 3. **Dev mode.** A package may point at a live working copy instead of a fetched clone. Change sources, load the build, no fetch round-trip.
+4. **Mirrored** (landing with the reorganisation). After `fetch`, the declaration goes to `decl/<name>.spec` and the source snapshot to `vendor/<name>/` in the mirror repo, then pushed. A failed push never fails the fetch; it retries on the next run. Secret-named files are never mirrored, and an oversized source mirrors its declaration only.
 
 ## Machine surface (current)
 
@@ -83,6 +85,31 @@ Ordered as specified. Each group moves from “Planned” to “Current” in th
 - Desired-state documents are stored as ordinary events; the planner diffs the current generation against that desired-state event.
 - The content-addressed overlay, when it lands, attaches content hashes to artifacts from the feed alone — provenance for free.
 
+### 5. `pm doctor`: one read-only health check
+- **`pm doctor`** — one survey of the install: broken profile symlinks, orphaned store directories, stale locks, and vault clones that disagree with the lock.
+- Read-free: it repairs nothing and has no `--confirm`, because there is nothing here for it to change.
+- Exits non-zero with every finding named, so a red answer says exactly what is wrong rather than “something is”.
+
+### 6. `pm export` / `pm import`: portable bundles
+- **`pm export PROFILE [--confirm]`** turns a profile into a portable bundle — declarations, lock, and optional sources.
+- **`pm import BUNDLE [--confirm]`** rebuilds that profile on another machine; import previews unless `--confirm`.
+- Pairs with the mirror: what the mirror backs up continuously, a bundle carries to a new machine in one file.
+
+### 7. Binary cache: build once, reuse by content hash
+- Build once, reuse by content hash — extends the content-addressed overlay.
+- `verify` re-hashes a cached artifact before trusting it; a cache is never a source of truth.
+- A hash miss is an ordinary rebuild, narrated as such, never a failure.
+
+### 8. `pm search` / `pm info NAME`
+- **`pm search PATTERN`** — browse declared packages by name and summary.
+- **`pm info NAME`** — one package’s version, source, dependencies, which profile owns it, and its holds.
+- Both read-only.
+
+### 9. `pm shell SPECS`
+- **`pm shell SPECS`** — a temporary environment with the packages on PATH.
+- No new generation and nothing persisted: change sources, run a command, and the machine is exactly as it was.
+- Builds on dev mode: the same sources you are editing are the ones on PATH.
+
 ### Later, from the earlier nine
 - **Content-addressed overlay** — git clones remain the history; every build product is also stored by pure content hash. `verify` can re-hash without trusting the tree. GC becomes pure reachability over hashes.
 - **Signed revisions & provenance** — every vault entry carries a signature (or chain). Local `file://` origins are marked untrusted until signed.
@@ -92,12 +119,18 @@ Ordered as specified. Each group moves from “Planned” to “Current” in th
 - **Reproducible build sandbox** — `pm build SPECS --sandbox` forces network-off, fixed UID, fixed filesystem view, and records the environment in the narration. The artifact is eligible for the content-addressed overlay.
 - **Lockfile update as pure proposal** — `pm update` default mode emits a proposed lockfile + generation plan that can be reviewed and signed before it is applied. Agents propose; only the human (or a signed automation policy) accepts.
 
+## Deliberately not planned
+- **Install hooks** — arbitrary code run at install time would break fail-closed: a hook could change the machine after the plan was approved. pm will not grow a place to run unapproved code.
+- **Services** — running and supervising daemons is a different job with a different failure model, and out of scope for what pm does.
+- **Vulnerability audit** — it needs an advisory source pm does not have. If one is chosen this is revisited; until then pm will not claim a package is safe.
+
 ## Design invariants that will never move
 - Read free, mutation gated, refusal loud.
 - Activation atomic and fail-closed.
 - Vault = real git clones + first-class local origins + dev-mode live working copies.
 - Full narration of every run.
 - MCP surface identical to CLI surface, still gated.
+- Nothing exists only locally: declarations and sources can always be mirrored off the machine.
 
 Reality is a decomposing never-ending joke.  
 `pm` simply refuses to laugh with it.

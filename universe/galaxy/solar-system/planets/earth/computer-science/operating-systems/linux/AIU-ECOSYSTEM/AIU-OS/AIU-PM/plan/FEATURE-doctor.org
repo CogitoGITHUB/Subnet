@@ -1,0 +1,47 @@
+#+TITLE: FEATURE doctor — one read-only health check
+#+AUTHOR: Shape
+
+Design only. No code lands with this file.
+
+* Goal
+One command that answers "is this pm install coherent right now?" without
+changing anything. It looks at the parts of a real install that go stale on
+their own — profile links, store directories, file locks, vault clones — and
+names every problem it finds in one pass. It never repairs; a repair is a
+separate command with its own gate.
+
+* Command shape and operands
+=pm doctor= — zero operands. Global =--format sexp|json= only. Read-only: no
+=--confirm=, because there is nothing here to write.
+Reads: the profile link and its generations, the store directory and the
+manifest, the vault clones named by the lockfile, and the machine lock
+directory.
+Writes: nothing. Not the store, not the profile, nothing but the narration
+a read produces.
+
+* Area
+=entry/doctor-report.rkt=. doctor reads store, install and git at once, and
+entry is the only area the one-way law lets see all of them. It is a report
+document, like status and why. No new area; =plan/ARCHITECTURE.org= is not
+edited for a first report.
+
+* Refusals
+- kind =config= when the state root cannot be read, naming the root.
+- An unknown or malformed profile link is a finding, not a refusal: doctor
+  reports it and keeps going.
+- There is no repair mode and no flag that could become one. Repair is a
+  separate, confirmed command.
+
+* Narration
+- one STEP per category: profile links, store, locks, vault agreement.
+- one INFO per finding, naming the path and the rule broken.
+- END with the finding count; a FAIL-level finding exits non-zero.
+
+* JSON output keys (fixed order)
+=name=, =format=, =operands=, =findings=, =count=, =clean=. Each finding is
+{name, kind, path, detail} in that order.
+
+* Open questions
+- Which findings are FAIL (non-zero) and which are WARN only? A broken
+  profile link is clearly FAIL; a lock file older than a day may be WARN.
+- Should doctor read the event feed to tell "stale lock" from "lock in use"?

@@ -100,3 +100,27 @@ it, so no dependent's require line changes at this stage.
 22. Full gate. 0 violations including =text-lint=. =banned-words-lint= and
     =one-way-dependency-lint= proven to BITE: add one violation, see red
     with file:line, remove it, see green. Then push.
+
+* After reorganisation, in this order
+The mirror (step 19) lands first; it is what the pairs below pair with.
+Each feature gets its own =plan/FEATURE-*.org= design, its own commit, and
+its README row flips from Planned to Current in the same commit. Every one
+of them is designed in the FEATURE files and lands later; nothing here is
+built yet. Design only until its step comes.
+
+23. =pm doctor=, per =FEATURE-doctor.org=. Read-only health check. Area
+    =entry/doctor-report.rkt=. Lands after the close so the tree it
+    surveys is the reorganised one.
+24. =pm export= / =pm import=, per =FEATURE-export-import.org=. Portable
+    bundles. Areas =store/bundle-format.rkt=, =install/export-profile.rkt=,
+    =install/import-profile.rkt=. Pairs with the mirror; import stays
+    gated behind =--confirm=.
+25. Binary cache, per =FEATURE-binary-cache.org=. Build once, reuse by
+    content hash. Areas =store/content-address.rkt=, =build/build-cache.rkt=.
+    Extends the content-addressed overlay; verify re-hashes before trust.
+26. =pm search= / =pm info=, per =FEATURE-search-info.org=. Browse declared
+    packages and show one. Areas =entry/search-report.rkt=,
+    =entry/info-report.rkt=. Read-only.
+27. =pm shell SPECS=, per =FEATURE-shell.org=. Temporary environment on
+    PATH, nothing persisted. Area =install/shell-env.rkt=. Builds on dev
+    mode; still gated behind =--confirm=.

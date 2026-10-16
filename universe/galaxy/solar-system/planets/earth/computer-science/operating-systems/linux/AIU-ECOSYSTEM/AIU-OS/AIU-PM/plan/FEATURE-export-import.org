@@ -1,0 +1,54 @@
+#+TITLE: FEATURE export-import — portable bundles
+#+AUTHOR: Shape
+
+Design only. No code lands with this file.
+
+* Goal
+Turn a working profile into one file another machine can rebuild from, and
+rebuild it there. A bundle is declarations plus the lock plus optional
+sources. It is the hand-off twin of the mirror: the mirror backs up
+continuously, a bundle carries to a new machine in one copy.
+
+* Command shape and operands
+=pm export PROFILE [--confirm]= — bundle a profile. =PROFILE= is the profile
+directory; the bundle path comes from a flag or defaults beside the profile.
+Without =--confirm= it prints exactly what would go in and changes nothing.
+=pm import BUNDLE [--confirm]= — rebuild a profile from a bundle. Without
+=--confirm= it previews the plan and installs nothing.
+Reads: the profile's generations and the store, the lockfile, and the vault
+clones for any source included in the bundle.
+Writes: the bundle file (export) or a new profile generation (import), both
+only under =--confirm=.
+
+* Area
+=store/bundle-format.rkt= — the pure container: write a bundle, read a
+bundle, verify its declared hash. Depends on spec and git only.
+=install/export-profile.rkt= — gathers a profile into a bundle.
+=install/import-profile.rkt= — turns a bundle into an apply plan and applies
+it. Both live in install because both read the profile, and install may
+reach down to store.
+
+* Refusals
+- export without =--confirm= previews and exits 0.
+- import refuses a bundle whose lock disagrees with its declarations, naming
+  both, before writing anything.
+- import refuses a bundle whose source origins are not allowed by policy; the
+  refusal names the origin and the rule.
+- Any failure mid-export removes the partial bundle and says so.
+
+* Narration
+- STEP "collect" per package gathered into the bundle.
+- STEP "seal" when the bundle hash is computed.
+- DECIDE whether sources are included, naming the flag that chose.
+- import reuses the ordinary apply narration; there is no second story.
+
+* JSON output keys (fixed order)
+Export: =name=, =format=, =operands=, =bundle=, =path=, =packages=, =bytes=,
+=hash=, =confirmed=, =applied=.
+Import: =name=, =format=, =operands=, =packages=, =confirmed=, =applied=,
+=hash=.
+
+* Open questions
+- Bundle path default: beside the profile, or under the state root? The vault
+  answer (a state-root sibling) is the consistent default.
+- What does export do when a source in the lock is no longer in the vault?
