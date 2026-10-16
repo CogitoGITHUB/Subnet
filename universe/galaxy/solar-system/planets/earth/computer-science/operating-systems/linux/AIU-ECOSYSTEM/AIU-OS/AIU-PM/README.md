@@ -110,6 +110,18 @@ Ordered as specified. Each group moves from “Planned” to “Current” in th
 - No new generation and nothing persisted: change sources, run a command, and the machine is exactly as it was.
 - Builds on dev mode: the same sources you are editing are the ones on PATH.
 
+### 10. Users and declarations
+- **One declaration per user** (`user.rktd`): the packages that person chose, their profile name, lock path, mirror repo and remote, and size limit. It picks from packages that are already declared; it never redefines one.
+- **One shared store, per-user histories** — a build exists once for everyone; profile, generations, holds, lock and mirror settings are per user, and no user can change another's profile.
+- **`pm user list` / `show` / `apply`, `pm add` / `drop`** — reading is free; writing a declaration or activating needs `--confirm`.
+- **Layering under a future system declaration** (reserved, not built): user values win over system defaults, and a system-forced package cannot be dropped by a user. The system layer's name is reserved now so nothing else takes it.
+- **gc across users** — a shared store path is freed only after every user's live and held generations have been counted; a user whose declaration cannot be read makes gc refuse for everyone.
+
+### 11. Config and completions
+- **`pm config`** — a read-only view of the effective settings and which layer each came from; `--detail` adds the file each value was written in.
+- **Completions generated from the command table** — Nushell first, then bash, then zsh, so a verb that exists is a verb you can complete.
+- **The generated files are a test** — a check regenerates them and fails when a committed file differs, exactly as the `docs/API.org` goldens do.
+
 ### Later, from the earlier nine
 - **Content-addressed overlay** — git clones remain the history; every build product is also stored by pure content hash. `verify` can re-hash without trusting the tree. GC becomes pure reachability over hashes.
 - **Signed revisions & provenance** — every vault entry carries a signature (or chain). Local `file://` origins are marked untrusted until signed.
@@ -131,6 +143,7 @@ Ordered as specified. Each group moves from “Planned” to “Current” in th
 - Full narration of every run.
 - MCP surface identical to CLI surface, still gated.
 - Nothing exists only locally: declarations and sources can always be mirrored off the machine.
+- One store, many users; no user can change another's profile.
 
 Reality is a decomposing never-ending joke.  
 `pm` simply refuses to laugh with it.

@@ -1,0 +1,84 @@
+#+TITLE: FEATURE config-and-completions — see the settings, complete them fast
+#+AUTHOR: Shape
+
+Design only. No code lands with this file.
+
+* Goal
+Two small surfaces that keep themselves honest. =pm config= answers "what
+settings is pm actually using, and where did each one come from" without a
+reader guessing. Shell completions make the command list typeable, and they
+are generated from the same command table that drives parsing, so a verb
+that exists is a verb you can complete and a verb that was removed stops
+being suggested the moment it is gone.
+
+* Commands
+- =pm config= — zero operands. The effective settings and, for each, the
+  layer it came from.
+- =pm config --detail= — the same, plus where each value was written (file
+  and line) and the candidates that lost. Read-only either way; there is no
+  =--confirm= because nothing here is written.
+
+Reads: the user declaration, the per-user lock path, the mirror settings,
+and the scope roots — all through the one seam that reads HOME or XDG.
+Writes: nothing.
+
+* Completions
+Generated from the command table, which is already the single list that
+drives parsing, the =--help= text and =docs/API.org=. Order of delivery:
+1. Nushell first, because it is the shell this project runs its gate in:
+   an =extern "pm"= declaration with one record per command and one per
+   operand.
+2. Then bash: a =complete= registration with =compgen= word lists built
+   from the same table.
+3. Then zsh: a =#compdef pm= file with =_arguments= per command.
+
+Anti-drift, which is the whole point:
+- The generator reads the table; it never carries its own copy of the verb
+  list. A verb added to the table is completed the next run with no edit
+  here.
+- The generated files are committed under =package-manager/completions/=
+  (=pm.nu=, =pm.bash=, =pm.zsh=) so a user can copy one in.
+- A check regenerates all three and FAILS if any committed file differs.
+  That is the same "the document is the test" rule =docs/API.org= already
+  lives under: a stale completion is a red gate, not a quiet wrong answer.
+- Flag names come from the same source as the operand counts, so =--confirm=
+  is completed wherever it is accepted and nowhere else.
+
+* Refusals, by name
+- "unknown setting": =pm config= asked for a setting that does not exist.
+  Names what was asked and lists the ones that do.
+- "no user declaration": =pm config= for a user with no =user.rktd=. It
+  still prints the defaults, with the layer marked =default=, rather than
+  failing; only an unreadable file is an error.
+- "system layer not built": if pm is pointed at =system.rktd= (see
+  =FEATURE-users.org=). Refuses rather than ignoring it.
+- "completion file stale": the gate check only. It names the file and the
+  first differing line, so the fix is a regenerate, not a guess.
+
+* Narration
+- STEP "roots" naming the scope roots pm resolved, so the reader can see
+  which tree it read.
+- STEP "layers" naming, per setting, the layer it came from.
+- END with the setting count. A read that changed nothing narrates no
+  decision and no wait.
+
+* JSON output keys (fixed order)
+=name=, =format=, =operands=, =settings=, =layers=, =user=. Each setting is
+{name, value, layer, source} in that order; =source= is empty when the value
+is a default with no file behind it.
+
+* Area
+=entry/config-report.rkt= — the result documents for =pm config=, beside
+the other read-only reports.
+=entry/completion.rkt= — the generator; it requires the command table from
+dispatch, so it lives in entry/ with the surface it describes. The generated
+files are data, not modules, and sit outside =src/=.
+
+* Open questions
+1. Should =pm config= write a value when given one (=pm config KEY VALUE=),
+   or stay read-only forever and push every edit into the declaration file?
+   Read-only is safer; editing is what people expect.
+2. Completions for operands that are paths: do they offer existing
+   directories, or only the verb and its flags?
+3. Should the generated files be installed by pm, or copied by the user?
+   Installing writes outside the state root, so copying may be the rule.

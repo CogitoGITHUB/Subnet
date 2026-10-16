@@ -124,3 +124,17 @@ built yet. Design only until its step comes.
 27. =pm shell SPECS=, per =FEATURE-shell.org=. Temporary environment on
     PATH, nothing persisted. Area =install/shell-env.rkt=. Builds on dev
     mode; still gated behind =--confirm=.
+28. Users and declarations, per =FEATURE-users.org=. One declaration per
+    user, one shared content-addressed store, per-user profiles,
+    generations, holds, lock and mirror settings. Areas
+    =spec/user-declaration.rkt=, =spec/user-view.rkt=,
+    =security/user-write.rkt=, =install/user-gc.rkt=,
+    =entry/user-report.rkt=. The system layer above it is reserved, not
+    built; its name is reserved now. gc counts every user before it frees a
+    shared store path, and refuses if any user's declaration is unreadable.
+29. =pm config= and completions, per =FEATURE-config-and-completions.org=.
+    Read-only effective settings with the layer each came from, and
+    completions generated from the command table (nushell first, then bash,
+    then zsh) with a check that fails when a committed file drifts. Areas
+    =entry/config-report.rkt=, =entry/completion.rkt=; the generated files
+    are data under =package-manager/completions/=, not modules.
