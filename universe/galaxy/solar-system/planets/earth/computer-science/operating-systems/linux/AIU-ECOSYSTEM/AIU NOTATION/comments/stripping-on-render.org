@@ -1,0 +1,16 @@
+#+TITLE: Stripping on render
+# One job: what is removed when rendering, and the rule that the text on disk is never touched
+# Status: skeleton; concept only. The exact design is decided in a later conversation.
+
+* What it is for
+# why this exists, in the owner's terms. Concept level only.
+
+* The shape
+# how it reads or behaves, in words. No examples and no code; the exact design is decided later.
+
+* Decisions it needs
+# the questions this area must answer, listed as questions; options welcome with a recommendation.
+
+* Where it is proven
+# the build step or check that shows this works; todo until step 10 names it.
+

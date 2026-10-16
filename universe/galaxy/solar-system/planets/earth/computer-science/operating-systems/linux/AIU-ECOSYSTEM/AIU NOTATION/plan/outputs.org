@@ -1,0 +1,13 @@
+#+TITLE: Outputs — AIU NOTATION
+# One job: what exists at the end, what it is good for, and what is not shipped
+# Status: skeleton; step 8 fills it. Plans stay general; detailed design comes later.
+
+* What exists at the end
+# one line per thing a user can hold or run when this plan is done.
+
+* What it is good for
+# the everyday uses, in plain words.
+
+* Not shipped
+# things deliberately left out of this output set.
+

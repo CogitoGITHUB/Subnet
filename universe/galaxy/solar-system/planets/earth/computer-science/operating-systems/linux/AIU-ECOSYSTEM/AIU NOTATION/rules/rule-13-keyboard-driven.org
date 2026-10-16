@@ -1,0 +1,22 @@
+#+TITLE: Rule 13 — Everything is keyboard driven
+# One job: the hard rule and what it demands in this program
+# Status: current; the rule text is the owner's and changes only with the owner.
+
+* The rule
+# the owner's words, repeated unchanged. Do not soften or reinterpret them here.
+  Everything is keyboard driven, including selection and send. Mouse is never required. The
+  plan defines how keys are routed between layers: multiplexer, editor, and programs running
+  inside panes.
+
+* What it demands here
+# how this rule bites in this program. No examples; the plan carries the detail.
+  Completion and live rendering serve typing; they never demand the mouse.
+
+* What breaks it
+# the failure this rule exists to prevent.
+  A workflow that needs a mouse to finish.
+
+* Where it is proven
+# the checklist item that shows this rule holds; todo until step 10 names it.
+  todo — step 10 names the checklist item
+

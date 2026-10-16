@@ -1,0 +1,30 @@
+#+TITLE: Rule 12 — Notation syntax: literal names
+# One job: the hard rule and what it demands in this program
+# Status: current; the rule text is the owner's and changes only with the owner.
+
+* The rule
+# the owner's words, repeated unchanged. Do not soften or reinterpret them here.
+  Notation syntax rule. Ordinary things use literal names, not symbols: a title is called
+  title, a paragraph is called paragraph, and so on for every kind of element. A named element
+  is opened and closed with a tiny, consistent mark, chosen so it never collides with ordinary
+  prose or tags; the exact sign is worked out later, with options and a recommendation. Plain
+  lines with no name are a paragraph by default, so everyday writing needs almost no syntax.
+  Links and other inline things use the same small enclosing mark. Goal: insanely easy to
+  read, insanely easy to type, instantly understandable by me and by agents. Only the hardcore
+  parts (math, graphs) use a more advanced symbolic syntax in the LaTeX tradition, simplified
+  a lot, backed by the meaning layer, tier 3, far future. The editor helps typing: completion,
+  the keyboard layer inserts names, live rendering hides the marks.
+
+* What it demands here
+# how this rule bites in this program. No examples; the plan carries the detail.
+  Ordinary things use literal names; plain lines are a paragraph; the mark is chosen by the
+  owner from options, on a phone keyboard.
+
+* What breaks it
+# the failure this rule exists to prevent.
+  Symbols for ordinary things, or a mark that collides with prose or tags.
+
+* Where it is proven
+# the checklist item that shows this rule holds; todo until step 10 names it.
+  todo — step 10 names the checklist item
+

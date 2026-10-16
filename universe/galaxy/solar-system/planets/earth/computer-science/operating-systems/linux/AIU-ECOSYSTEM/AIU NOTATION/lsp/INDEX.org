@@ -1,0 +1,12 @@
+#+TITLE: INDEX — AIU NOTATION/lsp/
+# One job: list every file in this directory and the single job of each.
+# Status: current; updated in the same commit as any change in this directory.
+
+* Files
+# one line per file: its name, then the single job it performs. This index is updated in the same commit as any change here.
+
+  - surface.org — the editor-facing surface of the engine: how host and notation talk
+
+* Later
+# The notation side of the engine surface; the contract freezes it in AIU-ECOSYSTEM/contract/.
+

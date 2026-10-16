@@ -1,0 +1,17 @@
+#+TITLE: INDEX — AIU NOTATION/engine/
+# One job: list every file in this directory and the single job of each.
+# Status: current; updated in the same commit as any change in this directory.
+
+* Files
+# one line per file: its name, then the single job it performs. This index is updated in the same commit as any change here.
+
+  - layered-parser.org — the layered parser and its incremental reparse
+  - semantic-model.org — math and structure held as meaning, not appearance
+  - reference-resolver.org — resolving references and automatic numbers across the text
+  - code-chunk-graph.org — the graph of named chunks, targets and dependencies, scanned without executing anything
+  - diagnostics.org — errors that point at the exact spot
+  - file-generation.org — producing files from named chunks and targets
+
+* Later
+# Described before it is built; the machine behind the language.
+

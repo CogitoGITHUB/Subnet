@@ -1,0 +1,16 @@
+#+TITLE: Architecture in the plan — AIU NOTATION
+# One job: the named pieces, how they fit, the seams, and what is deliberately absent
+# Status: skeleton; step 8 fills it. Plans stay general; detailed design comes later.
+
+* The pieces
+# the named parts, one line each: what it is and its one job.
+
+* How they fit
+# the direction of dependency between the pieces, one line per arrow.
+
+* The seams
+# where another program plugs in, and through which boundary.
+
+* Absent on purpose
+# parts similar programs carry that this one will not, with the reason.
+

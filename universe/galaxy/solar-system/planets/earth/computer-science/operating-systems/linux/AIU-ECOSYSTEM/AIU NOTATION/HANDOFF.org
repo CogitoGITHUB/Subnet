@@ -1,0 +1,34 @@
+#+TITLE: HANDOFF — AIU NOTATION
+# One job: everything a fresh conversation needs to start on the notation.
+# Status: current at the base commit; skeleton only, nothing built yet.
+
+* What this project is
+# One plain-text notation replacing Org, Markdown and LaTeX; product name AIU-NOTATION.
+# Ordinary things use literal names; the text is the source of truth; a rendering engine shows it live.
+# From Org: outlines, tags, properties, tables, planning states, links, literate code.
+# From LaTeX (tier 3, the most important): math and physics, units, figures, numbering, citations.
+
+* What binds it
+# The rules are binding, not guidance; read them before designing anything.
+  - rules/ — all fourteen hard rules, including rule 12, which lives only here.
+  - ../contract/ — the engine boundary and node addressing; read before designing the surface.
+  - ../agents/ — how a send names a notation address; comments in the text are first class.
+
+* The owner's answers are owed
+# The one thing this project waits for that only the owner can give.
+  - questions/usage-inventory.org — what is used from Org and Markdown, what is missed, and typing comfort for the mark.
+
+* Current state
+# What is true right now.
+  - Skeleton only: directories, planned files, indexes; no implementation.
+  - Plans fill in step 8; the contract is frozen in step 9; the checklist in step 10.
+
+* Next step
+# One line, so a fresh conversation starts in the right place.
+  - No build work yet. Continue the planning steps from ../HANDOFF.org, stopping at questions/ when step 5 arrives.
+
+* How to work here
+# House rules.
+  - Docs only while planning: no code, no examples inside plans.
+  - Small commits, explicit paths, never a blanket add, no pushes.
+  - Phone limits are recorded in ../WHEN-ON-LAPTOP.org the moment they appear.

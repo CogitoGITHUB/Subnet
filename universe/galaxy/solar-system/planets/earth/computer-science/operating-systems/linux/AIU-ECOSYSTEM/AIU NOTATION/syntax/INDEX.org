@@ -1,0 +1,22 @@
+#+TITLE: INDEX — AIU NOTATION/syntax/
+# One job: list every file in this directory and the single job of each.
+# Status: current; updated in the same commit as any change in this directory.
+
+* Files
+# one line per file: its name, then the single job it performs. This index is updated in the same commit as any change here.
+
+  - element-names.org — ordinary things use literal names, not symbols: a title is called title, a paragraph is called paragraph
+  - open-close-mark.org — the tiny consistent mark around a named element; which sign is an open decision for the owner
+  - file-identity.org — the first heading carries title and tags so a file identifies itself alone and cheaply
+  - structure.org — how named elements nest, and what plain reading of the outline looks like
+  - properties-and-tags.org — properties and tags from Org, kept only while they stay comfortable to type
+  - prose.org — everyday writing with almost no syntax: plain lines are a paragraph by default
+  - references-and-links.org — cross references with automatic numbering, links using the same small enclosing mark
+  - tables-and-figures.org — tables, data and figures: what survives from Org and LaTeX, and where ordinary ends
+  - multi-file-documents.org — documents that span files and still read as one whole
+  - variants.org — variants built in from the start: one text, several intents
+  - versioning.org — versioning built in from the start: what changed, when and by whom
+
+* Later
+# The element language: concept level now; the exact design is decided in this project's own later conversation.
+

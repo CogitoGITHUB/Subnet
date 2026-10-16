@@ -1,0 +1,19 @@
+#+TITLE: Usage inventory
+# One job: the owner questionnaire: what is used from Org and Markdown, what is missed, and typing comfort for the sign
+# Status: waiting for the owner; answered on a phone in step 5.
+
+* What is used from Org
+# the owner answers on a phone, short lines. Do not guess any of it.
+
+* What is used from Markdown
+# the same, however small.
+
+* What is wished for
+# what Org and Markdown do not do well enough, in the owner's words.
+
+* Typing comfort for the mark
+# which signs are easy to type on the phone keyboard, and which collide with prose or tags.
+
+* Loading preference
+# a loader heading first, or a language line first; still open.
+
