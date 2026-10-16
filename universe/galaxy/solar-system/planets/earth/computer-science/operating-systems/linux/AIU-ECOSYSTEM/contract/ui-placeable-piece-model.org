@@ -1,0 +1,19 @@
+#+TITLE: UI placeable-piece model
+# One job: the one model for UI pieces: edge, size, order and content
+# Status: skeleton; step 9 freezes it. Until then it is the working draft.
+
+* What this freezes
+# the exact thing every program and adapter must obey; if it is not frozen here, authors guess.
+
+* Shape
+# names and meanings only: the fields and what they promise. No code, no examples.
+
+* Who obeys it
+# every program and adapter this applies to, named.
+
+* How it changes
+# how this can change without breaking a running client; point at a D-number once one exists.
+
+* Open decisions
+# options with a recommendation, or none yet.
+

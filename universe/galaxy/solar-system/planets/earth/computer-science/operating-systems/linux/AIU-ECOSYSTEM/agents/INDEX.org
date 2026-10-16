@@ -1,0 +1,29 @@
+#+TITLE: INDEX — agents/
+# One job: list every file in this directory and the single job of each.
+# Status: current; updated in the same commit as any change in this directory.
+
+* Files
+# one line per file: its name, then the single job it performs. This index is updated in the same commit as any change here.
+
+  - ai-link-boundary.org — the design of the agent-neutral boundary, options with a recommendation
+  - opencode-adapter.org — the OpenCode adapter: what it uses and what it must not know
+  - hermes-adapter.org — the Hermes adapter: what it uses and what it must not know
+  - agent-integration-kit.org — the standard kit every package ships and the template its own checklist follows
+  - choosing-an-agent.org — how a send chooses OpenCode or Hermes, options with a recommendation
+  - session-sharing.org — sharing a session with an agent screen that is already open, options with a recommendation
+  - both-agents-together.org — whether the two agents can work together on one thing, and at what cost
+  - memory-ownership.org — who owns memory: the agent, the program or the text, with a recommendation
+  - live-agent-audit-and-checkpoints.org — seeing agent changes as they happen, and the git checkpoint before agent actions
+  - secrets-handling.org — how the secrets package stands between the agents and any token or password
+  - naming.md — existing build instruction: naming rules
+  - narration.md — existing build instruction: narration and the event schema
+  - nushell.md — existing build instruction: Nushell usage
+  - policy.md — existing build instruction: policy as predicates
+  - reversibility.md — existing build instruction: journals and rollback
+  - surfaces.md — existing build instruction: one JSON surface for every operator
+  - verbosity.md — existing build instruction: the verbose ten, blocking announced first
+  - workflow.md — existing build instruction: decision log and workflow
+
+* Later
+# The first files were already here: ecosystem build instructions. The design files beside them describe the agent integration. Keep the two families apart.
+

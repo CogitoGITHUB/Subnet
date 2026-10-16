@@ -1,0 +1,18 @@
+#+TITLE: INDEX — checklist/tier-1/
+# One job: list every file in this directory and the single job of each.
+# Status: current; updated in the same commit as any change in this directory.
+
+* What this tier is
+# the shared checklist up to the done line: contract and shared pieces; the holder with a tty facade; editor basics with KEYBOARD and DASHBOARD; dev mode in both; free UI placement; the AI link to both agents with live agent audit, git checkpoints and the secrets package; notation core hosted in the editor.
+
+* How items are shaped
+# one small item per commit, one file per item, each with done-when and its dependencies, in chronological build order. No items exist yet; step 10 creates them.
+
+* Files
+# one line per file: its name, then the single job it performs. This index is updated in the same commit as any change here.
+
+  - none yet
+
+* Later
+# Items arrive in step 10, one small file per commit. None exist yet.
+

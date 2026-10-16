@@ -1,0 +1,28 @@
+#+TITLE: INDEX — research/
+# One job: list every file in this directory and the single job of each.
+# Status: current; updated in the same commit as any change in this directory.
+
+* Files
+# one line per file: its name, then the single job it performs. This index is updated in the same commit as any change here.
+
+  - zellij.org — what Zellij is and what transfers: panes, layouts, sessions, plugins, server and client split
+  - herdr.org — a new Rust terminal multiplexer built for AI agents; locate it first and ask the owner if it cannot be found
+  - helix.org — what Helix is and what transfers: modal editing, the selection model, key handling
+  - neovim-ui-model.org — how Neovim separates its UI from its core and what an external UI contract looks like
+  - neovim-ai-tools.org — how AI plugins integrate into Neovim today and what is worth copying
+  - opencode.org — what the current OpenCode offers: sessions and sharing, skills, plugins, hooks, memory, API server, approvals, TUI
+  - hermes-agent.org — Hermes Agent by Nous Research: what it offers beyond ACP and MCP
+  - opencode-and-hermes-compared.org — the two agents side by side: what each has, where they differ, where they meet
+  - secrets-for-ai.org — the existing secrets package: identify it first, and ask the owner if it cannot be found
+  - key-input-and-escape.org — how existing terminal programs read keys and handle escape sequences, so we adopt instead of reinventing
+  - file-change-events.org — event-driven file watching: how editors learn a file changed with no polling
+  - tty-pty-proot-android.org — tty and pty behaviour under proot on Android: what works, what gets killed, what survives
+  - named-element-markups.org — markup languages whose elements have literal names, and what each does right or wrong
+  - org-outline-and-literate.org — what Org does well for outlines, tags, properties and literate code
+  - incremental-parsing.org — incremental reparse approaches for a live editor, lessons only
+  - language-server-design.org — how editors and language engines talk, as input for the notation surface
+  - synthesis.org — what we take, what we avoid, options for the Rust projects with a recommendation, and what this phone can build
+
+* Later
+# One file per studied subject, lessons only; no code is copied and each license is named before any reuse. Synthesis is written last.
+

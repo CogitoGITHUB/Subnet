@@ -1,0 +1,16 @@
+#+TITLE: Racket, Nu and JSON patterns
+# One job: the patterns that worked in PM, one verdict each: reuse, adapt or do not repeat
+# Status: skeleton; step 2 fills it by reading the package manager, read-only.
+
+* What the package manager does
+# the mechanism in plain words, taken from PM as it really is. No code.
+
+* The rule it teaches
+# the transferable rule, one sentence per line.
+
+* Verdict
+# exactly one of REUSE, ADAPT or DO NOT REPEAT, with the reason on the same line.
+
+* Where this was read
+# the PM path this came from, read-only. Nothing is restated from memory.
+

@@ -1,0 +1,54 @@
+#+TITLE: HANDOFF — AIU-ECOSYSTEM
+# One job: everything a fresh conversation needs to start working in this ecosystem.
+# Status: current at the base commit; keep it true when the base changes.
+
+* What this ecosystem is
+# Four separate programs that share one written contract and nothing else.
+  - PM, the package manager, exists already and is in progress on the owner's side.
+  - AIU TERMINAL MULTIPLEXER, AIU EDITOR and AIU NOTATION are planned here and built later.
+# Each works alone; none knows another's internals; if one crashes the others survive.
+
+* Start here, in this order
+# One line per step, so a fresh conversation knows where to begin.
+  1. Read AGENTS.md in this directory, then HARD-RULES.org.
+  2. Read the INDEX.org of this level for the map, then the program's own HANDOFF.org.
+  3. Read the program's rules/ before designing anything binding.
+  4. Read contract/ before designing anything that crosses programs.
+  5. Read WHEN-ON-LAPTOP.org before promising phone behaviour.
+  6. Read checklist/ for the build order and what is already proven.
+
+* Where everything lives
+# One line per place, each with its single job.
+  - research/ — one file per studied subject; lessons only.
+  - contract/ — the one written contract between the programs.
+  - learned/ — what the package manager already proved, read-only.
+  - agents/ — build instructions, plus the agent integration design.
+  - pm-integration/ — what PM must gain; listed here, never done here.
+  - checklist/ — the shared build up to the done line.
+  - WHEN-ON-LAPTOP.org — the living list of phone limits.
+  - ../text-editors/neomacs/ — the owner's literate config, read-only, for the editor study.
+  - AIU-OS/AIU-PM — the package manager itself; read-only during planning.
+
+* The rule sources, in the order they win
+# When two sources disagree, the earlier one wins.
+  - HARD-RULES.org — ecosystem-wide and checkable.
+  - Each program's rules/ — the owner's hard rules, one file each.
+  - Each program's decisions/ — choices already made, newest first.
+
+* Current state
+# What is true right now, and the commit that proves it.
+  - The base skeletons exist: every directory, every planned file, an index per directory.
+  - No implementation exists anywhere yet; everything here is planning.
+  - PM is still in progress; its integration is planned only, in pm-integration/.
+
+* Next step
+# The build order of this base; each step stops for review.
+  - Step 2: write learned/ by reading the package manager, read-only.
+  - Step 3: research. Step 4: the neomacs study. Step 5: the owner questionnaire in AIU NOTATION/questions/.
+  - Step 6: agent design. Step 7: PM integration. Step 8: plans. Step 9: contract. Step 10: checklist.
+
+* How to work here
+# House rules for every conversation that touches this base.
+  - Docs only while planning: no code and no examples inside plans.
+  - Small commits, explicit relative paths, never a blanket add, no pushes.
+  - Report what was not found or not run; never guess quietly.

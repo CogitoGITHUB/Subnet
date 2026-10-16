@@ -1,0 +1,17 @@
+#+TITLE: INDEX — learned/
+# One job: list every file in this directory and the single job of each.
+# Status: current; updated in the same commit as any change in this directory.
+
+* Files
+# one line per file: its name, then the single job it performs. This index is updated in the same commit as any change here.
+
+  - general-rules.org — the rules PM proved in practice, each ready to reuse, adapt or refuse
+  - racket-nu-json-patterns.org — the patterns that worked in PM, one verdict each: reuse, adapt or do not repeat
+  - television-integration.org — how PM or its tooling uses Television and what the editor should copy
+  - versioning-and-rollback.org — how PM versions and rolls back, because adapters and the contract must reuse it
+  - phone-problems.org — every wall the phone hit: Termux and proot limits, Racket build gaps, measured costs
+  - parts-worth-sharing.org — what of PM can be shared with the new programs: surfaces, shapes and rules
+
+* Later
+# Read-only from the package manager, one verdict per item: reuse, adapt or do not repeat.
+

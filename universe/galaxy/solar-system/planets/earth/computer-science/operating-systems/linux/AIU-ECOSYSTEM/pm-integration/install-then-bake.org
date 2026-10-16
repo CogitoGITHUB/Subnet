@@ -1,0 +1,16 @@
+#+TITLE: Install then bake
+# One job: how PM's install feeds a program's dev-mode bake
+# Status: skeleton; step 7 plans it. PM itself is not touched here.
+
+* What PM must gain
+# the capability in words; the exact PM files are named only after PM is read, until then say where to look later.
+
+* Shape
+# how the entry, surface or file looks from the outside. No code.
+
+* Proof that it works
+# the one check that shows this is done when the PM prompt runs.
+
+* Owed to the PM checklist
+# one line per PM change, added to pm-change-checklist.org.
+

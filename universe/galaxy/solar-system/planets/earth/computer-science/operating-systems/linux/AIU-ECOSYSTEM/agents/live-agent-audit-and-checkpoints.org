@@ -1,0 +1,19 @@
+#+TITLE: Live agent audit and checkpoints
+# One job: seeing agent changes as they happen, and the git checkpoint before agent actions
+# Status: skeleton; step 6 decides it, options with a recommendation.
+
+* The questions
+# the questions this file must answer, listed before any option is weighed.
+
+* Options
+# two or three real options, each with what it costs and what it gives.
+
+* Recommendation
+# one recommendation, named plainly, with its reason.
+
+* What it needs from the package manager
+# anything this design needs from PM, marked for the later PM prompt.
+
+* Open decisions
+# what remains undecided and who decides it.
+

@@ -1,0 +1,15 @@
+#+TITLE: INDEX — checklist/tier-2/
+# One job: list every file in this directory and the single job of each.
+# Status: current; updated in the same commit as any change in this directory.
+
+* What this tier is
+# after the split, each program's own checklist: literate code and targets, references and numbering, tables and data, variants and versioning, engine services, PM integration items after PM is finished, agent kit entries, conformance.
+
+* Files
+# one line per file: its name, then the single job it performs. This index is updated in the same commit as any change here.
+
+  - none yet
+
+* Later
+# Starting content for each program's own checklist after the split. None exists yet.
+

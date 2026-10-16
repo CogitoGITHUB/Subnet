@@ -1,0 +1,20 @@
+#+TITLE: INDEX — pm-integration/
+# One job: list every file in this directory and the single job of each.
+# Status: current; updated in the same commit as any change in this directory.
+
+* Files
+# one line per file: its name, then the single job it performs. This index is updated in the same commit as any change here.
+
+  - kit-entry.org — the kit entry PM ships: what it declares about PM's own capabilities
+  - mcp-surface.org — PM's MCP surface: search, install, status, build, bake
+  - opencode-integration.org — PM from OpenCode: skill or plugin, and what each action looks like
+  - hermes-integration.org — PM from Hermes: skill or plugin, and what each action looks like
+  - ai-sight-files.org — the files PM writes so an agent can read PM state directly
+  - context-bundle-senders.org — how PM sends a package, a plan or a failure to an agent as a context bundle
+  - install-then-bake.org — how PM's install feeds a program's dev-mode bake
+  - adapter-versioning-and-rollback.org — how PM versions and rolls back the agent adapters and the contract itself
+  - pm-change-checklist.org — one checklist item per PM change, run later by a separate prompt after PM is finished
+
+* Later
+# PM is not touched here. Every PM change is one line in pm-change-checklist.org, run later by a separate prompt after PM is finished.
+

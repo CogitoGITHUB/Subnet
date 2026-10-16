@@ -1,0 +1,30 @@
+#+TITLE: INDEX — AIU-ECOSYSTEM/
+# One job: list every file in this directory and the single job of each.
+# Status: current; updated in the same commit as any change in this directory.
+
+* Files
+# one line per file: its name, then the single job it performs. This index is updated in the same commit as any change here.
+
+  - HANDOFF.org — everything a fresh conversation needs to start working in this ecosystem
+  - WHEN-ON-LAPTOP.org — the living list of everything the phone cannot do or can only partly do
+  - AGENTS.md — ecosystem build rules already here; the starting point for any build work
+  - HARD-RULES.org — the binding ecosystem rules, each written so a gate can check it
+  - ReadMe.md — the public face: what the ecosystem is and its four components
+  - AIU-OS/ — home of the package manager; PM lives at AIU-OS/AIU-PM, read-only for this planning work
+
+* Subdirectories
+# one line per subdirectory and what it holds; each has its own index.
+
+  - AIU EDITOR/ — the general editor; planned, not built
+  - AIU NOTATION/ — the file format and syntax; planned, not built
+  - AIU TERMINAL MULTIPLEXER/ — shells, panes and the session holder; planned, not built
+  - agents/ — build instructions, plus the agent integration design
+  - checklist/ — the shared build, ending at the done line
+  - contract/ — the one written contract between the programs
+  - learned/ — what the package manager already proved, read-only
+  - pm-integration/ — what PM must gain, listed, never done here
+  - research/ — one file per studied subject, shared lessons
+
+* Later
+# Read HANDOFF.org first; it says what a fresh conversation needs. WHEN-ON-LAPTOP.org is living: append to it the moment a phone limit appears.
+

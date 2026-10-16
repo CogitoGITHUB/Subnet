@@ -1,0 +1,19 @@
+#+TITLE: Hermes Agent — research notes
+# One job: Hermes Agent by Nous Research: what it offers beyond ACP and MCP
+# Status: skeleton; step 3 fills it from primary sources. Nothing here is checked yet.
+
+* What it is
+# one paragraph, no more: the project, its language, its health, and who maintains it. Fill in step 3 from primary sources.
+
+* What transfers
+# one line per mechanism worth borrowing, each with the reason it fits a program here. No code.
+
+* What to avoid
+# one line per mechanism we deliberately do not take, with the reason. No code.
+
+* License
+# name the license and where it was read, before any reuse. NOT CHECKED until then.
+
+* Open questions
+# what this file must still answer before synthesis; say plainly when something is unverified.
+

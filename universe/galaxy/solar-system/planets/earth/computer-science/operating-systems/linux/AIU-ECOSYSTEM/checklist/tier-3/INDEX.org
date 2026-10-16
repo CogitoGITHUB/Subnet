@@ -1,0 +1,15 @@
+#+TITLE: INDEX — checklist/tier-3/
+# One job: list every file in this directory and the single job of each.
+# Status: current; updated in the same commit as any change in this directory.
+
+* What this tier is
+# far future, plan only, no work: math and physics, graphs, TUI math rendering, the advanced syntax.
+
+* Files
+# one line per file: its name, then the single job it performs. This index is updated in the same commit as any change here.
+
+  - none yet
+
+* Later
+# Far future, plan only, no work. None exists yet.
+
