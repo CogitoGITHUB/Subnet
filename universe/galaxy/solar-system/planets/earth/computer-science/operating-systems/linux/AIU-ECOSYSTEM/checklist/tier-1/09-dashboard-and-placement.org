@@ -1,0 +1,22 @@
+#+TITLE: 09 — Dashboard and placement
+# One job: one small checklist item of the shared build up to the done line.
+# Status: TODO; added 2026-10-16, in chronological order.
+
+* What
+# the work, in a line or two.
+  The dashboard display and free UI placement: pieces are offered with
+  edge, size, order and content; the host places them or refuses them by
+  name.
+
+* Done when
+# the single observable check.
+  The dashboard renders on the phone; a piece is placed, and a piece the
+  host cannot place is refused by name.
+
+* Dependencies
+# the items that must be DONE first.
+  08 — the keyboard layer; 04 — the panes.
+
+* State
+# TODO; DONE records its commit hash; BLOCKED names its blocker.
+  TODO.
