@@ -1,0 +1,21 @@
+#+TITLE: 17 — Select and send, multiplexer
+# One job: one small checklist item of the shared build up to the done line.
+# Status: TODO; added 2026-10-16, in chronological order.
+
+* What
+# the work, in a line or two.
+  The same from the multiplexer: pane selections and Nushell command
+  records, the command and its output together.
+
+* Done when
+# the single observable check.
+  A command record and a pane selection send from the multiplexer to both
+  agents.
+
+* Dependencies
+# the items that must be DONE first.
+  16 — the editor's send; 06 — routing across layers.
+
+* State
+# TODO; DONE records its commit hash; BLOCKED names its blocker.
+  TODO.
