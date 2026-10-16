@@ -1,0 +1,20 @@
+#+TITLE: 04 — Panes and layouts
+# One job: one small checklist item of the shared build up to the done line.
+# Status: TODO; added 2026-10-16, in chronological order.
+
+* What
+# the work, in a line or two.
+  Panes split; a layout opens from its file; pane status shows working,
+  blocked or idle, truthfully.
+
+* Done when
+# the single observable check.
+  A real work layout is restored from its file on the phone.
+
+* Dependencies
+# the items that must be DONE first.
+  03 — the holder.
+
+* State
+# TODO; DONE records its commit hash; BLOCKED names its blocker.
+  TODO.
