@@ -1,9 +1,10 @@
 #lang racket/base
-;; run.rkt -- one place that spawns subprocesses (F-2): argv lists only,
-;; explicit cwd, allowlisted env, whole-tree kill on cancel. Every wait ends
-;; on an EVENT (child status line, EOF, or cancel); there are no timeouts,
-;; no polls, no sleeps anywhere here (D-015). A hung operation is visible
-;; (last progress event) and ended by explicit cancel, never by a clock.
+;; run.rkt -- the public face of the process substrate (F-2): argv lists
+;; only, explicit cwd, allowlisted env, whole-tree kill on cancel. Every
+;; wait ends on an EVENT (child status line, EOF, or cancel); there are
+;; no timeouts, no polls, no sleeps anywhere here (D-015). A hung
+;; operation is visible (last progress event) and ended by explicit
+;; cancel, never by a clock.
 ;;
 ;; The completion signal is a status line the wrapper writes to a fifo as
 ;; its last act (EXIT:<code>), never the process waiter: under this proot,
@@ -14,6 +15,27 @@
 ;; reaps through the custodian. Exit codes come from the parsed line
 ;; (setsid itself exits 0). Pipe EOF starvation is handled by redirect
 ;; mode, whose files always reach EOF.
+;;
+;; This file is the ENTRY POINT and the facade. It did seven jobs at once;
+;; each job now lives in one file of its own, and the split runs strictly
+;; downward so nothing can cycle:
+;;
+;;   progress.rkt    the captured-line bound and the tail it leaves
+;;   drain.rkt       reading a child's pipes: redaction, log, bounded tail
+;;   kill-tree.rkt   killing a process group and reaping the killer
+;;   status-fifo.rkt the fifo: create it, open it, what a line may say
+;;   cancel-wait.rkt the outcome: exit code, cancellation, the wait door
+;;   spawn.rkt       the child: the prelude, the wrapper, the spawn
+;;
+;; What stays here is the composition and nothing else: the two modes
+;; (pipes and files) differ only in where the output comes from, so both
+;; read the same prelude, the same wait door and the same refusal. The
+;; START/END records stay here because they narrate the run as a whole.
+;;
+;; The provide below is the public promise and has not changed: the
+;; require calls of build.rkt, git.rkt and the rest are untouched. The
+;; contracts stay HERE, on the facade, so blame still lands on the caller
+;; of run-command and not on a piece of the substrate.
 
 (require racket/contract/base
          racket/system
@@ -22,7 +44,13 @@
          "../core/errors.rkt"
          "../core/ui.rkt"
          "../core/log.rkt"
-         "../core/verbose.rkt")
+         "../core/verbose.rkt"
+         "progress.rkt"
+         "drain.rkt"
+         "kill-tree.rkt"
+         "status-fifo.rkt"
+         "cancel-wait.rkt"
+         "spawn.rkt")
 
 (provide (struct-out run-result)
  (contract-out
@@ -57,253 +85,6 @@
 ;; exit         : exact-integer?    process exit code
 ;; stdout-lines : (listof string?)  last N lines, oldest first
 ;; stderr-lines : (listof string?)  last N lines, oldest first
-
-(define current-captured-lines (make-parameter 20))
-(define current-run-log-port (make-parameter #f))
-
-;; ---------------------------------------------------------------------------
-;; Environment (S-6): fixed allowlist, everything else dropped.
-
-;; Fixed variable names passed to every child.
-(define fixed-env-names
-  '("PATH" "HOME" "LANG" "SSH_AUTH_SOCK"
-    "http_proxy" "https_proxy" "HTTP_PROXY" "HTTPS_PROXY"
-    "no_proxy" "NO_PROXY"))
-
-;; (listof (cons string string)) -> void, bad names are our bug (internal)
-(define (check-env-names extras)
-  (for ([p (in-list extras)])
-    (unless (regexp-match? #rx"^[A-Za-z_][A-Za-z0-9_]*$" (car p))
-      (raise-pm-error 'internal 'run-command "invalid environment variable name"
-                      #:fields `(("name" . ,(car p)))))))
-
-;; (listof (cons string string)) -> (listof string), NAME=value assignments
-(define (env-assignments extras)
-  (define table (make-hash))
-  (for ([n (in-list fixed-env-names)])
-    (define v (getenv n))
-    (when v (hash-set! table n v)))
-  (for ([p (in-list extras)])
-    (hash-set! table (car p) (cdr p)))
-  (hash-map table (lambda (n v) (string-append n "=" v))))
-
-;; ---------------------------------------------------------------------------
-;; Redaction (S-8): URL passwords and secret assignments never reach logs.
-
-;; string -> string
-(define (redact-credentials s)
-  (define no-url-pass
-    (regexp-replace* #rx"://[^/@]+:[^/@]*@" s "://<redacted>@"))
-  (regexp-replace* #rx"(?i:((token|passwd|password|secret)[\"']?[ \t]*[:=][ \t]*))[^ \t\n]+"
-                   no-url-pass
-                   "\\1<redacted>"))
-
-;; ---------------------------------------------------------------------------
-;; Output collection: bounded tail buffer, full text to the log port, one
-;; on-progress call per line when given. Drain threads end on EOF, which is
-;; an event, never a clock.
-
-;; input-port (or #f output-port) box exact-int (or #f (-> string any)) -> thread
-(define (drain-thread in log-port lines-box limit on-progress)
-  (thread
-   (lambda ()
-     (let loop ()
-       (define line (read-line in 'any))
-       (unless (eof-object? line)
-         (define clean (redact-credentials line))
-         (when log-port
-           (displayln clean log-port))
-         (when on-progress
-           (on-progress clean))
-         (set-box! lines-box
-                   (let ((b (cons clean (unbox lines-box))))
-                     (if (> (length b) limit)
-                         (reverse (cdr (reverse b)))
-                         b)))
-         (loop))))))
-
-;; input-port (or #f output-port) exact-int (or #f (-> string any))
-;; -> (listof string), oldest-first bounded tail plus log forwarding
-(define (collect-lines in log-port limit on-progress)
-  (let loop ([grown '()])
-    (define line (read-line in 'any))
-    (if (eof-object? line)
-        (reverse grown)
-        (let ((clean (redact-credentials line)))
-          (when log-port (displayln clean log-port))
-          (when on-progress (on-progress clean))
-          (define next (cons clean grown))
-          (loop (if (> (length next) limit)
-                    (reverse (cdr (reverse next)))
-                    next))))))
-
-;; ---------------------------------------------------------------------------
-;; Spawning with whole-tree kill on cancel.
-;; Racket process groups are unavailable under proot
-;; (subprocess-group-enabled -> #f, probed 2026-10-06), so children launch
-;; via setsid (own process group) and die via pkill -g on cancel.
-;; make-environment-variables also segfaults under this proot (probed
-;; 2026-10-06), so the allowlist is enforced with env -i instead. Values
-;; passed here are visible in ps output; never pass secrets via #:env.
-;; The wrapper opens the status fifo FIRST (as its first act), traps
-;; TERM/INT into a KILLED line, runs the command, and always ends with an
-;; EXIT line carrying the command's own code. Spawn failure raises
-;; synchronously with the cause attached.
-
-;; -> path, helper binary or kind 'config when missing
-(define (find-helper name)
-  (or (find-executable-path name)
-      (raise-pm-error 'config 'run-command "helper executable missing"
-                      #:fields `(("helper" . ,name)))))
-
-;; string, the wrapper all children run under. Argv carries the fifo path,
-;; the executable and its arguments, so no shell quoting is ever needed.
-;; The single write end is opened first and closed last: a reader can
-;; neither strand in open (a writer is guaranteed) nor see early EOF (the
-;; writer outlives every read). Racket fifo reads with zero writers return
-;; EOF at once, so this ordering is load-bearing, not incidental.
-(define status-script
-  (string-append
-   "fifo=\"$1\"; shift; exe=\"$1\"; shift; "
-   "exec 3>\"$fifo\" || exit 99; "
-   "trap 'echo \"KILLED:$?\" >&3' TERM INT; "
-   "\"$exe\" \"$@\"; st=$?; echo \"EXIT:$st\" >&3"))
-
-;; path-string string -> void, mkfifo or kind 'config when missing/failed
-;; The three ports process* hands back MUST be closed, exactly as
-;; make-killer below does. This runs once per subprocess call, so
-;; leaving them open leaks three file descriptors on EVERY call, for
-;; ever: measured at exactly 3.0 per call, and collect-garbage reclaims
-;; none of them. A long apply makes hundreds of calls, the descriptor
-;; table fills, and the process then fails in ways that have nothing to
-;; do with the code being debugged. That was the real shape of the
-;; 41-minute hang: the 100+ leaked fds in the evidence.
-(define (make-status-fifo! fifo-path operation)
-  (define mkfifo-exe (find-helper "mkfifo"))
-  (define maker (process* (path->string mkfifo-exe) fifo-path))
-  ((list-ref maker 4) 'wait)
-  (close-input-port (list-ref maker 0))
-  (close-output-port (list-ref maker 1))
-  (close-input-port (list-ref maker 3))
-  (unless (file-exists? fifo-path)
-    (raise-pm-error 'config 'run-command "could not create status fifo"
-                    #:fields `(("operation" . ,operation))))
-  (void))
-
-;; path-string -> string, argv text with paths rendered
-(define (command-text exe argv)
-  (string-join
-   (map (lambda (a) (if (path? a) (path->string a) a))
-        (cons (if (path? exe) (path->string exe) exe) argv))
-   " "))
-
-;; string (listof string) (listof string) -> never returns, kind 'cancelled
-;; operation completed remaining-state
-(define (raise-cancelled operation completed remaining)
-  (raise-pm-error 'cancelled 'run-command "cancelled"
-                  #:fields `(("operation" . ,operation)
-                             ("completed" . ,completed)
-                             ("remaining-state" . ,remaining))))
-
-;; channel evt (-> any) -> string or 'cancelled or 'died, the single
-;; decision point. A ready status line wins (even with cancel: finished
-;; work counts; channel-try-get is a state check, not a wait). Cancel
-;; kills the tree through kill-thunk. EOF or a KILLED line without cancel
-;; is 'died (caller raises with its kind). No clocks.
-(define (wait-command line-ch cancel kill-thunk)
-  (define (decide value)
-    (cond [(eof-object? value) 'died]
-          [(regexp-match? #rx"^EXIT:([0-9]+)$" value) value]
-          [(regexp-match? #rx"^KILLED:" value) 'killed]
-          [else 'died]))
-  (define outcome
-    (sync (handle-evt line-ch (lambda (v) (list 'line v)))
-          (handle-evt cancel (lambda (_) (list 'cancelled)))))
-  (define ruling
-    (if (eq? (car outcome) 'line)
-        (decide (cadr outcome))
-        'cancelled))
-  (cond [(string? ruling) ruling]
-        [(eq? ruling 'cancelled)
-         (define pending (channel-try-get line-ch))
-         (if (and pending (string? pending))
-             (let ((r (decide pending)))
-               (if (string? r) r (begin (kill-thunk) 'cancelled)))
-             (begin (kill-thunk) 'cancelled))]
-        [else (kill-thunk) 'cancelled]))
-
-;; path-string (listof string) string string pm-kind string
-;; (listof (cons string string)) -> (values setsid pkill env sh exe-string
-;; temp-dir status-path)
-(define (spawn-prelude exe argv cwd kind operation extras)
-  (check-env-names extras)
-  (define setsid-exe (find-helper "setsid"))
-  (define pkill-exe (find-helper "pkill"))
-  (define env-exe (find-helper "env"))
-  (define sh-exe (find-helper "sh"))
-  (unless (file-exists? exe)
-    (raise-pm-error 'config 'run-command "executable not found"
-                    #:fields `(("exe" . ,exe))))
-  ;; A cwd that is not an existing directory is refused HERE, before the
-  ;; temp dir and the fifo are created and before anything is spawned.
-  ;;
-  ;; It used to reach process*, which chdirs the CHILD. The child died in
-  ;; chdir before the wrapper's first act, so the wrapper never ran
-  ;; `exec 3>"$fifo"` and never became a writer. The reader -- the only
-  ;; thing that ever wakes wait-command -- then blocked inside open() on
-  ;; the fifo's read end, for ever, silently: opening a fifo read end
-  ;; waits for a writer that is not coming, and that is a BLOCK, not a
-  ;; raise, so no handler could ever have caught it. process* hands back a
-  ;; valid pid for that child, so the claim that a spawn failure raises
-  ;; synchronously was false in this case.
-  (unless (directory-exists? cwd)
-    (raise-pm-error 'config 'run-command "cwd is not an existing directory"
-                    #:fields `(("cwd" . ,(if (path? cwd)
-                                            (path->string cwd)
-                                            cwd))
-                               ("operation" . ,operation))
-                    #:hint (string-append
-                            "the child is chdir'd there before it runs, so "
-                            "create the directory first, or pass one that "
-                            "already exists")))
-  (define exe-string (if (path? exe) (path->string exe) exe))
-  ;; Atomic exclusive create (mkdtemp): uniqueness never comes from a clock.
-  (define temp-dir (make-temporary-directory "pm-run~a"))
-  (define status-path (build-path temp-dir "status.fifo"))
-  (make-status-fifo! (path->string status-path) operation)
-  (values setsid-exe pkill-exe env-exe sh-exe exe-string temp-dir status-path))
-
-;; path setsid env sh exe-string (listof string) (listof pairs) string
-;; string -> (list any), spawn or raise kind 'config synchronously
-(define (spawn-wrapped status-path setsid-exe env-exe sh-exe exe-string argv
-                       extras cwd operation)
-  (with-handlers ([exn:fail?
-                   (lambda (e)
-                     (raise-pm-error 'config 'run-command "spawn failed"
-                                     #:fields `(("operation" . ,operation)
-                                                ("command" . ,(command-text
-                                                               exe-string argv)))
-                                     #:cause e))])
-    (parameterize ([current-directory cwd])
-      (apply process* (path->string setsid-exe)
-             (append (list (path->string env-exe) "-i")
-                     (env-assignments extras)
-                     (list (path->string sh-exe) "-c" status-script "sh"
-                           (path->string status-path)
-                           exe-string)
-                     (map (lambda (a) (if (path? a) (path->string a) a))
-                          argv))))))
-
-;; path -> (-> exact-int void), tree killer closing its own ports
-(define (make-killer pkill-exe)
-  (lambda (pgid)
-    (define killer
-      (process* (path->string pkill-exe) "-KILL" "-g"
-                (number->string pgid)))
-    ((list-ref killer 4) 'wait)
-    (close-input-port (list-ref killer 0))
-    (close-output-port (list-ref killer 1))
-    (close-input-port (list-ref killer 3))))
 
 ;; ---------------------------------------------------------------------------
 ;; Pipe mode (default): concurrent drain threads. PRECONDITION: the child
@@ -359,59 +140,11 @@
           (drain-thread out-port log-port out-box limit on-progress))
         (define err-drainer
           (drain-thread err-port log-port err-box limit on-progress))
-        ;; The read end opens in its own thread: opening blocks until the
-        ;; wrapper's first act, and the wrapper is guaranteed to act (it
-        ;; opens before anything else can fail).
-        ;; The opener is the ONLY thing that ever puts on line-ch, and the
-        ;; only other wake source in wait-command is cancel. So when there
-        ;; is no cancel, this thread is the entire wake path: if it
-        ;; raises -- the status file was never created, or cannot be
-        ;; opened -- nothing wakes the sync and the process parks
-        ;; forever, silently, which from the outside is indistinguishable
-        ;; from a slow program. That is the silent block the law forbids.
-        ;;
-        ;; So every exit goes on the channel. decide() maps anything that
-        ;; is not EXIT:n to 'died, and the caller raises, so an opener
-        ;; failure becomes a reported error instead of an eternal wait.
-        ;; The comment above used to claim the wrapper is guaranteed to
-        ;; open the file before anything can fail; that assumption is
-        ;; exactly what let this park.
-        (define opener
-          (thread
-           (lambda ()
-             (with-handlers
-                 ([exn?
-                   (lambda (e)
-                     (channel-put line-ch
-                                  (string-append "OPENER-FAILED: "
-                                                 (exn-message e))))])
-               (define in (open-input-file status-path))
-               (define line (read-line in 'any))
-               (close-input-port in)
-               (channel-put line-ch line)))))
+        (open-status-line status-path line-ch)
         (define outcome
-          (with-handlers ([exn:break?
-                           (lambda (e)
-                             (kill-tree pgid)
-                             (custodian-shutdown-all cust)
-                             (raise e))])
-            (wait-for 'run "child process exits"
-                      (string-append
-                       "the wrapper writes EXIT:<code> to the status fifo as "
-                       "its last act, so nothing about this result is "
-                       "knowable until that process is gone")
-                      #:how (string-append
-                               "exe=" (if (path? exe) (path->string exe) exe))
-                      (lambda ()
-                        (if cancel
-                            (wait-command line-ch cancel
-                                          (lambda () (kill-tree pgid)))
-                            (wait-command line-ch never-evt
-                                          (lambda () (kill-tree pgid))))))))
+          (await-status-line exe line-ch cancel kill-tree pgid cust))
         (cond [(string? outcome)
-               (define code (string->number
-                             (cadr (regexp-match #rx"^EXIT:([0-9]+)$"
-                                                 outcome))))
+               (define code (status-line-exit-code outcome))
                (thread-wait out-drainer)
                (thread-wait err-drainer)
                (close-input-port out-port)
@@ -546,56 +279,11 @@
                            '("spawned" "tree killed")
                            '("no result" "temp files removed"))))
       (parameterize ([current-custodian cust])
-        ;; The opener is the ONLY thing that ever puts on line-ch, and the
-        ;; only other wake source in wait-command is cancel. So when there
-        ;; is no cancel, this thread is the entire wake path: if it
-        ;; raises -- the status file was never created, or cannot be
-        ;; opened -- nothing wakes the sync and the process parks
-        ;; forever, silently, which from the outside is indistinguishable
-        ;; from a slow program. That is the silent block the law forbids.
-        ;;
-        ;; So every exit goes on the channel. decide() maps anything that
-        ;; is not EXIT:n to 'died, and the caller raises, so an opener
-        ;; failure becomes a reported error instead of an eternal wait.
-        ;; The comment above used to claim the wrapper is guaranteed to
-        ;; open the file before anything can fail; that assumption is
-        ;; exactly what let this park.
-        (define opener
-          (thread
-           (lambda ()
-             (with-handlers
-                 ([exn?
-                   (lambda (e)
-                     (channel-put line-ch
-                                  (string-append "OPENER-FAILED: "
-                                                 (exn-message e))))])
-               (define in (open-input-file status-path))
-               (define line (read-line in 'any))
-               (close-input-port in)
-               (channel-put line-ch line)))))
+        (open-status-line status-path line-ch)
         (define outcome
-          (with-handlers ([exn:break?
-                           (lambda (e)
-                             (kill-tree pgid)
-                             (custodian-shutdown-all cust)
-                             (raise e))])
-            (wait-for 'run "child process exits"
-                      (string-append
-                       "the wrapper writes EXIT:<code> to the status fifo as "
-                       "its last act, so nothing about this result is "
-                       "knowable until that process is gone")
-                      #:how (string-append
-                               "exe=" (if (path? exe) (path->string exe) exe))
-                      (lambda ()
-                        (if cancel
-                            (wait-command line-ch cancel
-                                          (lambda () (kill-tree pgid)))
-                            (wait-command line-ch never-evt
-                                          (lambda () (kill-tree pgid))))))))
+          (await-status-line exe line-ch cancel kill-tree pgid cust))
         (cond [(string? outcome)
-               (define code (string->number
-                             (cadr (regexp-match #rx"^EXIT:([0-9]+)$"
-                                                 outcome))))
+               (define code (status-line-exit-code outcome))
                (close-output-port out-file)
                (close-output-port err-file)
                (print-run-end exe (format "exit:~a" code) start-ms)
@@ -648,6 +336,10 @@
   ;; failure raises synchronously is false for this case -- so nothing was
   ;; reported. Measured: 7+ minutes with a pm-run-start and no pm-run-end.
   ;;
+  ;; The fix is in spawn.rkt, where spawn-prelude refuses the cwd before a
+  ;; temp dir, a fifo or a process exists; the test is here because what
+  ;; must never come back is a parked run-command, not a helper.
+  ;;
   ;; The test bounds ITSELF. A hang in the code under test must not become
   ;; a hang in the suite, or the suite cannot report the very thing it
   ;; exists to catch.
@@ -696,7 +388,8 @@
   ;; apply makes hundreds of calls; the descriptor table fills and the
   ;; process starts failing in ways unrelated to the code being
   ;; debugged. Those leaked descriptors ARE the 100+ fds in the
-  ;; original evidence.
+  ;; original evidence. The closing lives in status-fifo.rkt now; the
+  ;; leak is only visible through the public surface, so the test does too.
   ;;
   ;; The assertion is the shape that matters: the count must not grow
   ;; with the number of calls. Asserting an exact number would be
@@ -982,16 +675,6 @@
   (check-true (regexp-match? #rx"<redacted>" logged))
   (delete-file redact-log)
 
-  ;; Direct unit pins for redact-credentials (the redaction check).
-  (check-equal? (redact-credentials "https://user:s3cret@example.com/x")
-                "https://<redacted>@example.com/x")
-  (check-equal? (redact-credentials "token=abc123")
-                "token=<redacted>")
-  (check-equal? (redact-credentials "https://example.com/x")
-                "https://example.com/x")
-  (check-equal? (redact-credentials "https://<redacted>@example.com/x")
-                "https://<redacted>@example.com/x")
-
   ;; Stress: >1MB on each stream, no hang, bounded tails, full log.
   (define big-log (make-temporary-file "pm-big~a.log"))
   (define big-log-port (open-output-file big-log #:exists 'truncate/replace))
@@ -1037,27 +720,5 @@
     (string-split (string-trim (file->string uniq-out)) "\n"))
   (check-equal? (length uniq-lines) 2)
   (check-false (string=? (car uniq-lines) (cadr uniq-lines)))
-
-  ;; wait-command decision matrix, no children: line wins, EOF without a
-  ;; line is died, cancel kills through the given thunk exactly once.
-  (define matrix-line (make-channel))
-  (void (thread (lambda () (channel-put matrix-line "EXIT:0"))))
-  (check-equal? (wait-command matrix-line never-evt
-                              (lambda () (error "must not kill")))
-                "EXIT:0")
-  (define matrix-cancelled (make-channel))
-  (define killed-box (box #f))
-  (define-values (matrix-cancel matrix-fire!) (make-cancel-source))
-  (matrix-fire!)
-  (check-equal? (wait-command matrix-cancelled matrix-cancel
-                              (lambda () (set-box! killed-box #t)))
-                'cancelled)
-  (check-true (unbox killed-box))
-  ;; A line that arrived with cancel still counts as completion.
-  (define matrix-both (make-channel))
-  (void (thread (lambda () (channel-put matrix-both "EXIT:5"))))
-  (check-equal? (wait-command matrix-both matrix-cancel
-                              (lambda () (error "must not kill")))
-                "EXIT:5")
 
   (delete-directory/files barrier-dir))

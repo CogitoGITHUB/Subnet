@@ -11,8 +11,8 @@ Resuming: read the last line, then =plan/MOVE-ORDER.org= for the script.
 |------+------+------+------|
 | 1 | =plan/= and =agent/= created, 28 references updated, symlink untracked | 9fe48f8 | 2 |
 | 2 | ARCHITECTURE, NAMING-REGISTER, MOVE-ORDER written before any move | 896d82c | 3 |
-| 3 | split =core/plan.rkt= into actions/hash/derive/lower/conflicts + facade | pending | 4 |
-| 4 | split =backends/run.rkt= into spawn, fifo, drain, kill, wait, progress | pending | 5 |
+| 3 | split =core/plan.rkt= into actions/hash/derive/lower/conflicts + facade | e8ddabc | 4 |
+| 4 | split =backends/run.rkt= into spawn, fifo, drain, kill, wait, progress | this | 5 |
 | 5 | =core/spec-read.rkt= facade already split; verify and record | pending | 6 |
 | 6 | split =backends/build.rkt= | pending | 7 |
 | 7 | split =backends/activate.rkt= | pending | 8 |
