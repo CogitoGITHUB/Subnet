@@ -1,19 +1,53 @@
 #+TITLE: Key input and escape handling — research notes
 # One job: how existing terminal programs read keys and handle escape sequences, so we adopt instead of reinventing
-# Status: skeleton; step 3 fills it from primary sources. Nothing here is checked yet.
+# Status: filled 2026-10-16 from primary sources; not yet reviewed.
 
 * What it is
-# one paragraph, no more: the project, its language, its health, and who maintains it. Fill in step 3 from primary sources.
+# the project, its language, its health, and who maintains it.
+  The kitty keyboard protocol (docs/keyboard-protocol.rst in
+  kovidgoyal/kitty, fetched 2026-10-16) is a documented answer to legacy
+  terminal input: no modifiers beyond ctrl and alt, ambiguous escape codes,
+  no press/release/repeat events, and no reliable way to tell a lone Esc from
+  the start of a sequence without fragile timing hacks (the doc cites a real
+  neovim bug). Kitty adds opt-in progressive enhancements, backward
+  compatible: flag 1 disambiguates escape codes, 2 reports event types,
+  4 reports alternate keys, 8 reports all keys as escape codes, 16 reports
+  associated text. An application pushes flags or pops them on a
+  terminal-side stack — depth-bounded to prevent denial of service — and
+  emits the disambiguate flag at startup. Implemented by many terminals
+  (alacritty, foot, ghostty, iTerm2, WezTerm, Microsoft Terminal, xterm.js
+  and more) and libraries.
 
 * What transfers
-# one line per mechanism worth borrowing, each with the reason it fits a program here. No code.
+# one line per mechanism worth borrowing, each with the reason it fits a program here.
+  - Adopt a documented protocol instead of inventing key encoding; opt-in
+    flags mean old peers keep working — the compatibility posture we want.
+  - Keys as events (press/release/repeat; later, all keys as escape codes) —
+    a modern editor wants the full event, not raw bytes.
+  - No timing heuristics, ever: the protocol calls the Esc heuristic
+    fragile; a design lesson, not just a fact.
+  - The push/pop flag stack with a bounded depth: per-application input
+    modes without global state, with the denial-of-service bound stated up
+    front.
+  - Disambiguating ctrl+c as an event rather than a signal simplifies an
+    application event loop — worth knowing when we design ours.
 
 * What to avoid
 # one line per mechanism we deliberately do not take, with the reason. No code.
+  - Legacy heuristics for Esc-versus-sequence (timeouts): a known source of
+    bugs; we do not build that path.
+  - Assuming enhancements are present: negotiation must degrade to legacy
+    encoding wherever support cannot be proven.
 
 * License
-# name the license and where it was read, before any reuse. NOT CHECKED until then.
+# the license, and where it was read, before any reuse.
+  kitty itself is GPL-3.0 (read at github.com/kovidgoyal/kitty/LICENSE,
+  2026-10-16); the protocol page is part of kitty's documentation. Any
+  implementation by us would follow the published wire protocol — no kitty
+  code copied; stated here before reuse, per the rules.
 
 * Open questions
 # what this file must still answer before synthesis; say plainly when something is unverified.
-
+  - What the terminal we actually use (Termux) supports today — needs a test.
+  - Whether to query the flags (detection section) or set-and-probe at
+    startup.

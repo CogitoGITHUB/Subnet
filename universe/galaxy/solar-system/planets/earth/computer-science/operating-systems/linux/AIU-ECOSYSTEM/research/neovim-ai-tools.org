@@ -1,19 +1,48 @@
 #+TITLE: Neovim AI tools — research notes
 # One job: how AI plugins integrate into Neovim today and what is worth copying
-# Status: skeleton; step 3 fills it from primary sources. Nothing here is checked yet.
+# Status: filled 2026-10-16 from primary sources; not yet reviewed.
 
 * What it is
-# one paragraph, no more: the project, its language, its health, and who maintains it. Fill in step 3 from primary sources.
+# the project, its language, its health, and who maintains it.
+  Two leading plugins. codecompanion.nvim (olimorris, Lua, Apache-2.0, 6.9k
+  stars): a chat-style coding assistant across many providers, "Copilot Chat
+  meets Zed AI", with built-in support for ACP (Agent Client Protocol) and
+  MCP, and support for external agents like Claude Code and Codex.
+  avante.nvim (avante-corp, Lua + Rust, Apache-2.0, 18k stars): Cursor-style
+  editing — suggestions applied to files via a Fast Apply path, an ACP
+  support section, a RAG service, tools with web search, and AVANTE.md
+  project instructions.
 
 * What transfers
-# one line per mechanism worth borrowing, each with the reason it fits a program here. No code.
+# one line per mechanism worth borrowing, each with the reason it fits a program here.
+  - ACP as the plug point: both plugins adopt a standard protocol to embed
+    external agents instead of inventing an agent loop. This validates our
+    pinned-adapters plan — the boundary can be a standard, not bespoke.
+  - Project instruction files: AVANTE.md, like AGENTS.md, is picked up by
+    the tool; the convention (one committed file per project) travels.
+  - Chat buffer plus slash commands: the conversation is a keyboard-first
+    buffer, not a separate app — the right shape for a terminal UI.
+  - Fast Apply: applying edits as small targeted patches instead of full
+    rewrites — token-thrifty, which matters on this phone.
+  - Features configured per project (ACP/MCP servers), so default startup
+    stays light.
 
 * What to avoid
 # one line per mechanism we deliberately do not take, with the reason. No code.
+  - The provider matrix inside the editor (many APIs at once): our editor
+    talks to one boundary; providers stay behind adapters.
+  - A RAG service living inside the editor: memory belongs outside a buffer.
+  - Plugin-specific instruction formats: we use one convention, not one per
+    tool.
 
 * License
-# name the license and where it was read, before any reuse. NOT CHECKED until then.
+# the license, and where it was read, before any reuse.
+  Apache-2.0 for both (read at their LICENSE files, 2026-10-16:
+  github.com/olimorris/codecompanion.nvim and
+  github.com/avante-corp/avante.nvim).
 
 * Open questions
 # what this file must still answer before synthesis; say plainly when something is unverified.
-
+  - How ACP and MCP divide the work in practice — deeper docs unread.
+  - avante's RAG service internals and cost — unread.
+  - Whether either plugin runs acceptably under proot on this phone — untested.

@@ -1,19 +1,52 @@
 #+TITLE: File-change events — research notes
 # One job: event-driven file watching: how editors learn a file changed with no polling
-# Status: skeleton; step 3 fills it from primary sources. Nothing here is checked yet.
+# Status: filled 2026-10-16 from primary sources; not yet reviewed.
 
 * What it is
-# one paragraph, no more: the project, its language, its health, and who maintains it. Fill in step 3 from primary sources.
+# the project, its language, its health, and who maintains it.
+  inotify(7), the Linux man page (man7.org; source at mkerrisk/man-pages,
+  fetched 2026-10-16): one file descriptor delivers a queue of filesystem
+  events for watched paths (inotify_init1, inotify_add_watch,
+  inotify_rm_watch). The descriptor is readable when events are available and
+  works with select/poll/epoll. Identical unread events are coalesced, so an
+  application cannot count events reliably. The queue is ordered (a rename's
+  events arrive in order). Limits live under /proc/sys/fs/inotify/:
+  max_queued_events (excess is dropped, but an IN_Q_OVERFLOW event is always
+  generated), max_user_instances, max_user_watches. Watch removal — explicit
+  or because the file vanished or the filesystem unmounted — yields
+  IN_IGNORED. The API cannot say which process caused an event, and network
+  filesystems deliver nothing.
 
 * What transfers
-# one line per mechanism worth borrowing, each with the reason it fits a program here. No code.
+# one line per mechanism worth borrowing, each with the reason it fits a program here.
+  - Event-driven watching, never polling: battery and latency, on a phone
+    especially.
+  - One descriptor, many watches, select/poll-ready: fits a single event
+    loop without a thread farm.
+  - Coalescing is a design constraint, not an accident: re-read state rather
+    than counting notifications — our journaling already thinks in
+    "re-check, not replay" terms.
+  - Overflow is a first-class signal (IN_Q_OVERFLOW): on overflow, rescan;
+    nothing is missed silently.
+  - Watch teardown is observable (IN_IGNORED, IN_UNMOUNT): state stays
+    honest when a file disappears.
+  - Limits are explicit and configurable: watch budgets are a fact of the
+    kernel; respect them.
 
 * What to avoid
 # one line per mechanism we deliberately do not take, with the reason. No code.
+  - Distinguishing our own writes from others' via the API: impossible here;
+    design around it with own bookkeeping or idempotent handling.
+  - Assuming remote/network filesystems participate: they do not; local
+    paths only.
 
 * License
-# name the license and where it was read, before any reuse. NOT CHECKED until then.
+# the license, and where it was read, before any reuse.
+  Linux man-pages project; inotify.7 carries the VERBATIM license notice
+  (read in the source header at github.com/mkerrisk/man-pages, 2026-10-16).
 
 * Open questions
 # what this file must still answer before synthesis; say plainly when something is unverified.
-
+  - inotify under proot on Android: syscall translation may affect watches —
+    needs a device test.
+  - Whether any part of our tooling needs fanotify — not studied.

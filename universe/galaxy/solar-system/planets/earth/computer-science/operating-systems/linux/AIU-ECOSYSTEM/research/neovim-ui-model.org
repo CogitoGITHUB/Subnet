@@ -1,19 +1,48 @@
 #+TITLE: Neovim UI model — research notes
 # One job: how Neovim separates its UI from its core and what an external UI contract looks like
-# Status: skeleton; step 3 fills it from primary sources. Nothing here is checked yet.
+# Status: filled 2026-10-16 from primary sources; not yet reviewed.
 
 * What it is
-# one paragraph, no more: the project, its language, its health, and who maintains it. Fill in step 3 from primary sources.
+# the project, its language, its health, and who maintains it.
+  Neovim (github.com/neovim/neovim, 103k stars) describes its UI as separate
+  client processes talking to the core over the RPC API. The protocol
+  document is runtime/doc/api-ui-events.txt (the old ui.txt name is gone;
+  fetched 2026-10-16). A UI attaches with a size and an options map and can
+  opt into extensions: line-based grid events (ext_linegrid), per-window
+  grids (ext_multigrid), and externalized widgets — cmdline, messages,
+  popupmenu, tabline. Connected UIs must share capabilities by default: the
+  active set is the intersection of what was requested, announced by the
+  option_set event; only an explicit override inverts this. Updates arrive as
+  one redraw notification carrying a batch of events, and contiguous
+  same-kind events share the name.
 
 * What transfers
-# one line per mechanism worth borrowing, each with the reason it fits a program here. No code.
+# one line per mechanism worth borrowing, each with the reason it fits a program here.
+  - Core/UI split as an external contract: the TUI is just one client; any
+    other UI attaches the same way. Our terminal wants exactly this seam.
+  - Conservative capability resolution: the least-capable attached client
+    wins unless overridden — a default that keeps everyone honest.
+  - Announce what is active (option_set): no guessing about negotiated
+    state; nothing important is silent.
+  - Unknown option is an error, and supported options are queryable — a
+    contract that fails loudly instead of drifting.
+  - Batched redraw events under one method name: cheap streaming without a
+    chatty protocol.
+  - Widget externalization as opt-in: simple by default, richer on request.
 
 * What to avoid
 # one line per mechanism we deliberately do not take, with the reason. No code.
+  - The concrete wire format (msgpack, the event schema): ours to choose
+    later; copying it wholesale would freeze decisions we have not made.
+  - Multigrid complexity until a real surface needs per-window grids.
 
 * License
-# name the license and where it was read, before any reuse. NOT CHECKED until then.
+# the license, and where it was read, before any reuse.
+  Apache-2.0, except parts contributed under the Vim license (read at
+  github.com/neovim/neovim/LICENSE.txt, 2026-10-16; GitHub reports the
+  dual license as NOASSERTION).
 
 * Open questions
 # what this file must still answer before synthesis; say plainly when something is unverified.
-
+  - Startup embedding handshake (the ui-startup sections) — read only in part.
+  - Cost of the redraw event stream on a phone-class client — unmeasured.
