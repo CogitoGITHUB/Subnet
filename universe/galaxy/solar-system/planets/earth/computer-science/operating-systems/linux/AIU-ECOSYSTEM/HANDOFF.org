@@ -37,15 +37,15 @@
 
 * Current state
 # What is true right now, and the commit that proves it.
-  - The base skeletons exist: every directory, every planned file, an index per directory.
-  - No implementation exists anywhere yet; everything here is planning.
-  - PM is still in progress; its integration is planned only, in pm-integration/.
+  - The base is filled through step 10: research, the neomacs study, the agent design, the PM integration plan, the three program plans, the contract working draft and the checklist tiers.
+  - No implementation exists anywhere yet; everything here is planning, committed and not pushed.
+  - PM is still in progress; its integration is planned only, in pm-integration/, run later by the separate PM prompt.
 
 * Next step
-# The build order of this base; each step stops for review.
-  - Step 2: write learned/ by reading the package manager, read-only.
-  - Step 3: research. Step 4: the neomacs study. Step 5: the owner questionnaire in AIU NOTATION/questions/.
-  - Step 6: agent design. Step 7: PM integration. Step 8: plans. Step 9: contract. Step 10: checklist.
+# Where the work stands and where it goes next; no dates.
+  - The planning base is finished: steps 1 through 10, every stop point taken, all committed.
+  - Next: the owner reviews and remasters; then the build starts at checklist/tier-1/, one item per commit, stopping at the done line.
+  - PM's changes wait for their own prompt: pm-integration/pm-change-checklist.org.
 
 * How to work here
 # House rules for every conversation that touches this base.

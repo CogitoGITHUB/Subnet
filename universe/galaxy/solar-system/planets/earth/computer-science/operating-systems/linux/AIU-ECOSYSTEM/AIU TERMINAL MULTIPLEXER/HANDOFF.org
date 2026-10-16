@@ -1,6 +1,6 @@
 #+TITLE: HANDOFF — AIU TERMINAL MULTIPLEXER
 # One job: everything a fresh conversation needs to start on the multiplexer.
-# Status: current at the base commit; skeleton only, nothing built yet.
+# Status: current at the base commit; plan, contract and checklist filled; nothing built yet.
 
 * What this program is
 # Shells, panes, a layout tree, and a session holder with detach and reattach.
@@ -15,12 +15,12 @@
 
 * Current state
 # What is true right now.
-  - Skeleton only: directories, planned files, indexes; no implementation.
-  - The plan fills in step 8; the contract it obeys is frozen in step 9.
+  - Base complete: the plan (step 8), the contract working draft (step 9) and the checklist tiers (step 10) are filled; no implementation.
+  - The contract it obeys sits in ../contract/; the adopt-or-own route waits for the proot test, checklist/tier-1 item 02.
 
 * Next step
 # One line, so a fresh conversation starts in the right place.
-  - No build work yet. Continue the planning steps from ../HANDOFF.org.
+  - No build work yet. The owner reviews and remasters; then the build starts from ../checklist/tier-1/, item 02 first for the route.
 
 * How to work here
 # House rules.

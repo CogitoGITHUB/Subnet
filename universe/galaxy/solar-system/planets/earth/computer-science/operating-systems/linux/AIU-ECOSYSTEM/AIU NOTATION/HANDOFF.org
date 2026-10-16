@@ -1,6 +1,6 @@
 #+TITLE: HANDOFF — AIU NOTATION
 # One job: everything a fresh conversation needs to start on the notation.
-# Status: current at the base commit; skeleton only, nothing built yet.
+# Status: current at the base commit; plan, contract and checklist filled; nothing built yet.
 
 * What this project is
 # One plain-text notation replacing Org, Markdown and LaTeX; product name AIU-NOTATION.
@@ -14,18 +14,18 @@
   - ../contract/ — the engine boundary and node addressing; read before designing the surface.
   - ../agents/ — how a send names a notation address; comments in the text are first class.
 
-* The owner's answers are owed
-# The one thing this project waits for that only the owner can give.
-  - questions/usage-inventory.org — what is used from Org and Markdown, what is missed, and typing comfort for the mark.
+* The owner's answers
+# What the owner has given; the one thing still open.
+  - questions/usage-inventory.org — answered 2026-10-16 in the owner's words; typing comfort for the mark is still open.
 
 * Current state
 # What is true right now.
-  - Skeleton only: directories, planned files, indexes; no implementation.
-  - Plans fill in step 8; the contract is frozen in step 9; the checklist in step 10.
+  - Base complete: the questionnaire answered, the plan (step 8), the contract working draft (step 9) and the checklist tiers (step 10) are filled; no implementation.
+  - The open decisions — the mark, numbering, the engine wording — sit in plan/open-decisions.org.
 
 * Next step
 # One line, so a fresh conversation starts in the right place.
-  - No build work yet. Continue the planning steps from ../HANDOFF.org, stopping at questions/ when step 5 arrives.
+  - No build work yet. The owner reviews and remasters; the open decisions are in plan/open-decisions.org; then the build starts from ../checklist/tier-1/.
 
 * How to work here
 # House rules.
