@@ -1,0 +1,21 @@
+#+TITLE: 11 — AI link, first adapter
+# One job: one small checklist item of the shared build up to the done line.
+# Status: TODO; added 2026-10-16, in chronological order.
+
+* What
+# the work, in a line or two.
+  The AI-link boundary and the first adapter (the OpenCode candidate):
+  bundles out, events back, read free and mutate gated.
+
+* Done when
+# the single observable check.
+  A bundle reaches the agent; events and permission asks come back; a
+  mutating action without the token changes nothing.
+
+* Dependencies
+# the items that must be DONE first.
+  10 — dev mode.
+
+* State
+# TODO; DONE records its commit hash; BLOCKED names its blocker.
+  TODO.
