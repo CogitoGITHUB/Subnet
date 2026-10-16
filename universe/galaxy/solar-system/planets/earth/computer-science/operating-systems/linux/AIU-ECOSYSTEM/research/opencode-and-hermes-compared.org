@@ -1,19 +1,44 @@
 #+TITLE: OpenCode and Hermes compared — research notes
 # One job: the two agents side by side: what each has, where they differ, where they meet
-# Status: skeleton; step 3 fills it from primary sources. Nothing here is checked yet.
+# Status: filled 2026-10-16 from primary sources; not yet reviewed.
 
 * What it is
-# one paragraph, no more: the project, its language, its health, and who maintains it. Fill in step 3 from primary sources.
+# the project, its language, its health, and who maintains it.
+  Both are MIT-licensed, terminal-first agent CLIs, extremely active (last
+  pushes 2026-10-16) and large: OpenCode in TypeScript (214k stars,
+  coding-agent focus), Hermes Agent in Python (254k stars, long-running
+  personal-agent focus). Both speak MCP, both run a tool loop with subagent
+  delegation, both ship install scripts and package managers.
 
 * What transfers
-# one line per mechanism worth borrowing, each with the reason it fits a program here. No code.
+# one line per mechanism worth borrowing, each with the reason it fits a program here.
+  - One agent-neutral boundary: the shared shape (tools + loop + subagents)
+    means a single internal contract with pinned adapters can front both.
+    The adapters stay thin.
+  - Take each one's distinguishing seam: approval rules and a headless
+    loopback server from OpenCode; skills/memory/backend abstraction and
+    Termux packaging from Hermes.
+  - Both keep instructions in files (AGENTS.md rules; context files) — the
+    cross-agent convention we already rely on.
+  - Keep the difference visible: OpenCode is a coding session on a repo;
+    Hermes is a persistent personal agent. One surface, two modes, not a
+    feature union.
 
 * What to avoid
 # one line per mechanism we deliberately do not take, with the reason. No code.
+  - Running both as first-class from day one: one adapter pinned, the second
+    validated behind the same contract, else the boundary doubles.
+  - Any consolidation by feature union: the overlap is the loop; the value is
+    in the distinct edges.
 
 * License
-# name the license and where it was read, before any reuse. NOT CHECKED until then.
+# the license, and where it was read, before any reuse.
+  MIT for both (read at their LICENSE files, 2026-10-16:
+  github.com/anomalyco/opencode and github.com/NousResearch/hermes-agent).
 
 * Open questions
 # what this file must still answer before synthesis; say plainly when something is unverified.
-
+  - ACP posture: OpenCode documents an ACP page; for Hermes it is unverified.
+    The boundary design may hinge on this.
+  - Which one gets pinned first on this phone — decide after a proot test,
+    not here.

@@ -1,19 +1,57 @@
 #+TITLE: Hermes Agent — research notes
 # One job: Hermes Agent by Nous Research: what it offers beyond ACP and MCP
-# Status: skeleton; step 3 fills it from primary sources. Nothing here is checked yet.
+# Status: filled 2026-10-16 from primary sources; not yet reviewed.
 
 * What it is
-# one paragraph, no more: the project, its language, its health, and who maintains it. Fill in step 3 from primary sources.
+# the project, its language, its health, and who maintains it.
+  Hermes Agent (hermes-agent.nousresearch.com, github.com/NousResearch/
+  hermes-agent) is Nous Research's self-improving agent in Python, MIT, and
+  very active: 254k stars, last push 2026-10-16. It pitches a closed learning
+  loop — skills created from experience and improved during use, agent-curated
+  memory with periodic nudges, session recall via FTS5 search with
+  summarization, user modeling via Honcho, agentskills.io compatibility — plus
+  a full TUI, a messaging gateway (Telegram, Discord, Slack, WhatsApp, Signal,
+  email), built-in cron, subagent delegation, and seven terminal backends
+  (local, Docker, SSH, Singularity, Modal, Daytona, Vercel Sandbox) with
+  serverless persistence on two. It ships a Termux guide: a signed APT repo
+  for aarch64 with stable and canary channels, Python/Node/TUI included — this
+  phone class is a supported target.
 
 * What transfers
-# one line per mechanism worth borrowing, each with the reason it fits a program here. No code.
+# one line per mechanism worth borrowing, each with the reason it fits a program here.
+  - Skills as procedural memory: created after complex tasks, improved during
+    use, stored as files in an open standard. Same species as our skills
+    decision, with a growth story attached.
+  - Cross-session recall: searches its own past conversations and summarizes
+    them — the honest version of "memory" to study when we get there.
+  - Consent first: the security docs name command approval, DM pairing, and
+    container isolation. Approval before execution is our rule too.
+  - Context files: project instructions that shape every conversation — the
+    same AGENTS.md family as OpenCode's rules.
+  - Backend as a choice: where commands run is a configured backend, not an
+    assumption; serverless ones hibernate when idle. Keep the seam; the phone
+    sets the policy.
+  - Termux-first packaging: an APT repo with release channels for aarch64 —
+    proof that this phone can be a first-class install target.
 
 * What to avoid
 # one line per mechanism we deliberately do not take, with the reason. No code.
+  - The chat-gateway sprawl (six platforms): weight and network surface we do
+    not want now.
+  - User modeling via Honcho: an external dependency with a privacy cost; not
+    our first memory step.
+  - Seven backends at once: local-first on the phone; add backends when a
+    need appears.
+  - Batch trajectory generation for model training: not our job.
 
 * License
-# name the license and where it was read, before any reuse. NOT CHECKED until then.
+# the license, and where it was read, before any reuse.
+  MIT (read at github.com/NousResearch/hermes-agent/LICENSE, 2026-10-16).
 
 * Open questions
 # what this file must still answer before synthesis; say plainly when something is unverified.
-
+  - ACP: nothing read mentions it (unlike OpenCode, which documents an ACP
+    page); the "beyond ACP and MCP" framing from our index needs a source.
+  - Cost of the learning loop (search + summarization) on a phone — not
+    measured.
+  - How much of it runs under our proot setup — untested.

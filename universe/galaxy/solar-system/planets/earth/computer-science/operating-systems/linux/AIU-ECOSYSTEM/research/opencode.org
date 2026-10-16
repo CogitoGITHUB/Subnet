@@ -1,19 +1,56 @@
 #+TITLE: OpenCode — research notes
 # One job: what the current OpenCode offers: sessions and sharing, skills, plugins, hooks, memory, API server, approvals, TUI
-# Status: skeleton; step 3 fills it from primary sources. Nothing here is checked yet.
+# Status: filled 2026-10-16 from primary sources; not yet reviewed.
 
 * What it is
-# one paragraph, no more: the project, its language, its health, and who maintains it. Fill in step 3 from primary sources.
+# the project, its language, its health, and who maintains it.
+  OpenCode (opencode.ai, github.com/anomalyco/opencode) is an open-source AI
+  coding agent in TypeScript, MIT-licensed and very active: 214k stars, last
+  push 2026-10-16. Terminal-first (full TUI), with a desktop app in beta.
+  Ships two built-in primary agents — build (all tools) and plan (read-only,
+  denies edits, asks before bash) — switched with Tab, plus subagents invoked
+  with @name. Docs are one small page per feature: agents, permissions,
+  policies, skills, plugins, rules, server, TUI, CLI, ACP, MCP servers, LSP,
+  SDK, custom tools.
 
 * What transfers
-# one line per mechanism worth borrowing, each with the reason it fits a program here. No code.
+# one line per mechanism worth borrowing, each with the reason it fits a program here.
+  - Approval model as configuration: every action resolves to allow, ask, or
+    deny, with an explicit auto mode that still honors denies. This is our
+    "read is free; mutate needs a human" rule, already thought through.
+  - build/plan as primary agents: an exploration agent that cannot edit and
+    asks before commands is a cheap safety seam for our own agent use.
+  - Skills as files: SKILL.md folders discovered from project and home
+    (including .claude/ and .agents/ compatibility), loaded on demand by a
+    native skill tool — cheap context, no registry.
+  - Plugins as hooks: plain JS/TS files, local or from npm, that hook into
+    events — the "hooks are just files" idea stays on our list even though
+    the runtime itself does not.
+  - Rules via AGENTS.md plus an init command that generates and updates it —
+    the same committed-instructions convention this vault already uses.
+  - Headless server: a serve command exposes HTTP + OpenAPI bound to
+    127.0.0.1 by default; a client can drive the agent with no TUI. Our
+    control seam wants exactly this shape.
+  - Documentation: 50 small single-topic pages, one per mechanism — evidence
+    that this style scales.
 
 * What to avoid
 # one line per mechanism we deliberately do not take, with the reason. No code.
+  - The plugin system itself as a second extension runtime: our extension
+    surfaces are MCP and skills; plugins stay out.
+  - Twenty-plus README translations, a desktop app, mDNS discovery:
+    packaging and network surface this phone does not need.
 
 * License
-# name the license and where it was read, before any reuse. NOT CHECKED until then.
+# the license, and where it was read, before any reuse.
+  MIT (read at github.com/anomalyco/opencode/LICENSE, 2026-10-16).
 
 * Open questions
 # what this file must still answer before synthesis; say plainly when something is unverified.
-
+  - Sessions and sharing: no share page exists in the current docs (fetched
+    404); the docs header points at a v2 docs tree — check there before
+    citing sharing as a feature.
+  - Memory: rules (AGENTS.md) is the instructions mechanism; whether a
+    separate memory store exists is unverified.
+  - Unread: the ACP, MCP servers, policies, and SDK pages — read before
+    borrowing any of those seams.

@@ -10,9 +10,9 @@
   - helix.org — what Helix is and what transfers: modal editing, the selection model, key handling
   - neovim-ui-model.org — how Neovim separates its UI from its core and what an external UI contract looks like
   - neovim-ai-tools.org — how AI plugins integrate into Neovim today and what is worth copying
-  - opencode.org — what the current OpenCode offers: sessions and sharing, skills, plugins, hooks, memory, API server, approvals, TUI
-  - hermes-agent.org — Hermes Agent by Nous Research: what it offers beyond ACP and MCP
-  - opencode-and-hermes-compared.org — the two agents side by side: what each has, where they differ, where they meet
+  - opencode.org — what the current OpenCode offers: sessions and sharing, skills, plugins, hooks, memory, API server, approvals, TUI; filled 2026-10-16
+  - hermes-agent.org — Hermes Agent by Nous Research: what it offers beyond ACP and MCP; filled 2026-10-16
+  - opencode-and-hermes-compared.org — the two agents side by side: what each has, where they differ, where they meet; filled 2026-10-16
   - secrets-for-ai.org — the existing secrets package; not located 2026-10-16, owner asked, skipped for now
   - key-input-and-escape.org — how existing terminal programs read keys and handle escape sequences, so we adopt instead of reinventing
   - file-change-events.org — event-driven file watching: how editors learn a file changed with no polling
