@@ -1,19 +1,53 @@
 #+TITLE: OpenCode adapter
 # One job: the OpenCode adapter: what it uses and what it must not know
-# Status: skeleton; step 6 decides it, options with a recommendation.
+# Status: filled 2026-10-16; recommendations await owner review.
 
 * The questions
 # the questions this file must answer, listed before any option is weighed.
+  - Which seam into OpenCode does the adapter use: its headless server, its
+    TUI as a screen, or its SDK?
+  - What does the adapter convert between the AI link and OpenCode's own
+    vocabulary — sessions, prompts, permission asks, events?
+  - What must it never see or decide: program internals, the notation,
+    secrets (rule 07), or the choice of agent itself?
 
 * Options
 # two or three real options, each with what it costs and what it gives.
+  - Option A — the headless server. OpenCode's serve command exposes HTTP
+    plus OpenAPI bound to 127.0.0.1 by default; the adapter drives
+    sessions over that seam while the human sees the work in a TUI. Cost:
+    one more process per session on a phone, so supervision and the wait
+    door matter. Gain: structured control, no screen scraping — the shape
+    our control seam already wanted.
+  - Option B — the TUI in a pane, driven as a screen. Cost: state read by
+    scraping text; approval asks read as text; brittle across releases.
+    Gain: works even when no server mode runs; a fallback worth keeping
+    named.
+  - Option C — the SDK. Cost: the SDK page is unread; one more dependency;
+    the plugin runtime is on the avoid list. Gain: a typed client, if it
+    ever earns its keep.
 
 * Recommendation
 # one recommendation, named plainly, with its reason.
+  A — drive the headless server on loopback; the TUI stays the human's
+  view. B is the documented fallback if the server misbehaves under proot.
+  C is refused until its page is read and a need exists. The adapter is a
+  separate package; programs never import it — the boundary is the only
+  coupling. It translates every OpenCode-specific thing; nothing leaks
+  upward, and no program ever learns which agent answered.
 
 * What it needs from the package manager
 # anything this design needs from PM, marked for the later PM prompt.
+  - Package the adapter with pinned version and rollback, like any
+    program; record the OpenCode version it was verified against — drift
+    is a refusal that names it, not a silent attempt.
 
 * Open decisions
 # what remains undecided and who decides it.
-
+  - The unread pages: ACP, MCP servers, policies, SDK — read before the
+    contract freezes; SDK first, because Option C hangs on it — contract
+    step 9.
+  - How the human's view attaches to a served session — check at install —
+    owner.
+  - Sharing in current OpenCode: the docs 404'd to a v2 tree; read before
+    session-sharing.org cites sharing as a feature — contract step 9.

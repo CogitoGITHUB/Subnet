@@ -1,19 +1,47 @@
 #+TITLE: Choosing an agent
 # One job: how a send chooses OpenCode or Hermes, options with a recommendation
-# Status: skeleton; step 6 decides it, options with a recommendation.
+# Status: filled 2026-10-16; recommendations await owner review.
 
 * The questions
 # the questions this file must answer, listed before any option is weighed.
+  - When a send leaves a program, what decides which agent receives it?
+  - Where does that choice live, so it is visible before the send, not
+    after?
+  - What happens when the chosen agent is not installed, or a session for
+    it is already open?
 
 * Options
 # two or three real options, each with what it costs and what it gives.
+  - Option A — a declared default per project, with a one-key override at
+    send time. Cost: a project file to keep true. Gain: the common case is
+    one send with no ceremony, and the target is always shown before the
+    send lands.
+  - Option B — explicit choice on every send. Cost: a decision at every
+    send, on a phone keyboard. Gain: nothing is ever assumed.
+  - Option C — route by kind of work: coding to OpenCode, long-running to
+    Hermes, decided by the program. Cost: the program infers intent, which
+    approval rules forbid elsewhere; a wrong guess is invisible. Gain: no
+    file to maintain.
 
 * Recommendation
 # one recommendation, named plainly, with its reason.
+  A — the project declares its agent once; every send shows the target and
+  carries the bundle; one key at send time overrides, visibly, for that
+  send. No inference, ever: the choice is named or defaulted, never
+  guessed — the same stance as approval. The two agents stay visibly
+  different: two modes, not one feature set, so the default means
+  something.
 
 * What it needs from the package manager
 # anything this design needs from PM, marked for the later PM prompt.
+  - A refusal that names its rule: sending to an agent that is not
+    installed refuses and says what installs it; the adapter packages
+    carry that vocabulary.
 
 * Open decisions
 # what remains undecided and who decides it.
-
+  - Which agent becomes the first pinned adapter, and therefore the first
+    default: after the proot test — owner.
+  - Where the project's declared choice lives: a project file named in
+    contract step 9 (context-bundle-format.org or its neighbour) — owner
+    at the freeze.

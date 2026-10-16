@@ -1,19 +1,47 @@
 #+TITLE: Session sharing
 # One job: sharing a session with an agent screen that is already open, options with a recommendation
-# Status: skeleton; step 6 decides it, options with a recommendation.
+# Status: filled 2026-10-16; recommendations await owner review.
 
 * The questions
 # the questions this file must answer, listed before any option is weighed.
+  - When a send arrives while an agent session is open on screen, where
+    does the send go?
+  - May two things write to one session at once — a human typing and a
+    bundle landing?
+  - What does the human see: the same transcript everywhere, or a copy?
 
 * Options
 # two or three real options, each with what it costs and what it gives.
+  - Option A — the open session receives. One session is the live one; a
+    send queues into it and lands visibly; if none is open, the send
+    opens one, on screen, never hidden. Cost: the holder must expose
+    attach and append, which is multiplexer work (its plan, step 8).
+    Gain: one transcript, one writer at a time, nothing hidden.
+  - Option B — every send starts its own headless session; open screens
+    only mirror it. Cost: many sessions on a phone; the human watches a
+    screen that is not the one being asked. Gain: no interference between
+    sends.
+  - Option C — both write freely into one session. Cost: interleaved
+    input mid-stream; approval asks race each other; the transcript stops
+    explaining what happened. Gain: none worth its cost.
 
 * Recommendation
 # one recommendation, named plainly, with its reason.
+  A — the session that is open is the session that receives; an append
+  lands as one unit, never mid-stream, and a second writer waits its turn
+  or is refused by name. C is refused outright: one live writer per
+  session, because the transcript is the record. B stays as the mechanism
+  when the agent is genuinely headless — the screen then attaches to that
+  same served session, not to a copy.
 
 * What it needs from the package manager
 # anything this design needs from PM, marked for the later PM prompt.
+  - Nothing new from PM directly; attach and append are a multiplexer
+    promise, collected at its plan.
 
 * Open decisions
 # what remains undecided and who decides it.
-
+  - Attach and append semantics in the holder: multiplexer plan, step 8 —
+    owner reads it there.
+  - Whether a send may name a specific existing session among several:
+    contract step 9, after the holder's shape is known.

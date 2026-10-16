@@ -1,19 +1,46 @@
 #+TITLE: Both agents together
 # One job: whether the two agents can work together on one thing, and at what cost
-# Status: skeleton; step 6 decides it, options with a recommendation.
+# Status: filled 2026-10-16; recommendations await owner review.
 
 * The questions
 # the questions this file must answer, listed before any option is weighed.
+  - Can OpenCode and Hermes work the same task at once, and should they?
+  - If they hand off, what carries the work from one to the other?
+  - Who is accountable when both touched a tree?
 
 * Options
 # two or three real options, each with what it costs and what it gives.
+  - Option A — never on one task at once. One agent per session; work
+    moves by files and git alone, when the human moves it. Cost: no
+    combined strengths. Gain: nothing shared to corrupt; the cheapest
+    honest stance, and the floor this design keeps.
+  - Option B — sequential handoff, formalized: the first agent ends with a
+    checkpoint (live-agent-audit-and-checkpoints.org) and a context bundle
+    naming what it did; the second starts from that bundle and that
+    checkpoint. Cost: a handoff shape to keep; each agent re-reads state.
+    Gain: the two modes cover one task in steps without a shared runtime.
+  - Option C — live co-work on one tree. Cost: two writers, two approval
+    streams, and attribution that inotify cannot answer; two agents'
+    budget at once, on a phone. Gain: speed, if it ever mattered — it
+    does not yet.
 
 * Recommendation
 # one recommendation, named plainly, with its reason.
+  B, with A as its floor. One writer at a time, always; handoffs pass
+  through the checkpoint plus a bundle; no shared session, no shared
+  memory (memory-ownership.org keeps memory in text), and C refused by
+  name. Reason: the compared study's own lesson — one adapter pinned
+  first, the second behind the same contract — extends to the work: two
+  agents together is a handoff, not a duet.
 
 * What it needs from the package manager
 # anything this design needs from PM, marked for the later PM prompt.
+  - Nothing new; the handoff reuses the checkpoint promise (git) and the
+    bundle shape (contract).
 
 * Open decisions
 # what remains undecided and who decides it.
-
+  - Whether a handoff bundle gets a section of its own or rides the one
+    bundle shape: contract step 9.
+  - The stance itself is small by design; owner may revisit when both
+    adapters exist.

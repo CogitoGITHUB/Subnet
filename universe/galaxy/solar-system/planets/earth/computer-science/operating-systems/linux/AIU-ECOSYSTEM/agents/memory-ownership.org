@@ -1,19 +1,52 @@
 #+TITLE: Memory ownership
 # One job: who owns memory: the agent, the program or the text, with a recommendation
-# Status: skeleton; step 6 decides it, options with a recommendation.
+# Status: filled 2026-10-16; recommendations await owner review.
 
 * The questions
 # the questions this file must answer, listed before any option is weighed.
+  - When an agent "remembers" something, whose store is it, and is it
+    versioned?
+  - What is a session, where does a transcript live, and who may delete
+    it?
+  - Does instruction live in files — the AGENTS.md family — or in a store
+    only one agent can read?
 
 * Options
 # two or three real options, each with what it costs and what it gives.
+  - Option A — the agent owns memory. Cost: two agents, two memories,
+    neither visible nor versioned; recall dies with the install. Gain:
+    nothing to build.
+  - Option B — the program owns a memory store. Cost: a memory system
+    designed and kept before any need proved it; duplication of what the
+    agents already do internally. Gain: one store, if we were sure it
+    survives contact.
+  - Option C — the text owns memory: committed files are authoritative —
+    instructions, decisions, skills; agent recall is a labeled cache;
+    sessions are transcripts, append-only files kept for the record, never
+    the source of truth. Cost: the discipline to write facts down where
+    they belong. Gain: versioned, visible, agent-neutral, and already the
+    working convention both agents share (AGENTS.md rules; context
+    files).
 
 * Recommendation
 # one recommendation, named plainly, with its reason.
+  C. The vault is the memory; everything else is a cache with a short
+  life. Sessions get transcripts because the record must exist — nothing
+  important is silent — not because transcripts are memory. Hermes'
+  recall, skills improved by use, and any future store are caches too:
+  useful, named as caches, never authoritative, never the only copy of
+  anything. Cross-session recall is worth studying later, per its research
+  note — not building now.
 
 * What it needs from the package manager
 # anything this design needs from PM, marked for the later PM prompt.
+  - Nothing new; PM's decision and lesson logs are the working example
+    (append-only, text-owned) whose shape the design copies.
 
 * Open decisions
 # what remains undecided and who decides it.
-
+  - Where transcripts live and their retention: a scope-seam question —
+    generated state outside the tree — resolved in contract step 9 —
+    owner.
+  - Whether any recall feature is adopted later: owner, when a real need
+    shows itself.

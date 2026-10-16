@@ -1,19 +1,51 @@
 #+TITLE: Hermes adapter
 # One job: the Hermes adapter: what it uses and what it must not know
-# Status: skeleton; step 6 decides it, options with a recommendation.
+# Status: filled 2026-10-16; recommendations await owner review.
 
 * The questions
 # the questions this file must answer, listed before any option is weighed.
+  - Which seam into Hermes does the adapter use, now that no verified
+    headless mode or ACP page exists in what we read?
+  - What does it reuse from Hermes: Termux packaging, skills as files,
+    context files, backend choice?
+  - What must it keep out: program internals, secrets (rule 07), the
+    memory store (see memory-ownership.org), and OpenCode specifics?
 
 * Options
 # two or three real options, each with what it costs and what it gives.
+  - Option A — the session pane. Hermes runs in its own multiplexer pane;
+    the adapter sends the context bundle into that session and learns
+    state from Hermes' own files and the tree watch
+    (live-agent-audit-and-checkpoints.org). Cost: less structured than a
+    server seam; terminal semantics carry more of the weight. Gain: built
+    from what the study verified, and it matches the existing promise
+    that either agent opens in its own pane beside the work.
+  - Option B — a native control seam, if one exists. Cost: unverified —
+    nothing read names a headless server; designing on it would guess.
+    Gain: structured control, if the check finds one.
+  - Option C — ACP. Cost: for Hermes it is unverified; the compared study
+    names this as the thing the boundary design may hinge on. Gain: one
+    wire with the other adapter, if it holds.
 
 * Recommendation
 # one recommendation, named plainly, with its reason.
+  A for the first version, with B investigated the day Hermes is actually
+  installed and C re-checked at the same time. Reason: the adapter must be
+  designed from read facts, and the verified facts are packaging, files
+  and the pane; the contract keeps the seam swappable, so finding a better
+  seam later costs one adapter, not the boundary. Like the other adapter,
+  it stays a separate package: the boundary is the only coupling.
 
 * What it needs from the package manager
 # anything this design needs from PM, marked for the later PM prompt.
+  - The same packaging promise as the other adapter: pinned, versioned,
+    rollback; verified-against version recorded.
+  - Hermes installs from its signed APT repo for aarch64; PM should treat
+    it like any external tool it may need — per the later PM prompt.
 
 * Open decisions
 # what remains undecided and who decides it.
-
+  - Hermes' ACP posture and any headless mode: check on install — owner,
+    then contract step 9.
+  - Whether this phone (proot) runs Hermes at all: untested; the proot
+    test from synthesis decides it — owner.
