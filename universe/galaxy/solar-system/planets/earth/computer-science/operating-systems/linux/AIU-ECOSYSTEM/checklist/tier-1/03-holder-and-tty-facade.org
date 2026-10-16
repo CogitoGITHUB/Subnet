@@ -1,0 +1,21 @@
+#+TITLE: 03 — Holder and tty facade
+# One job: one small checklist item of the shared build up to the done line.
+# Status: TODO; added 2026-10-16, in chronological order.
+
+* What
+# the work, in a line or two.
+  The holder holds a shell and the log; the client detaches and
+  reattaches; terminals stay a facade over tty.
+
+* Done when
+# the single observable check.
+  A shell survives a client detach as far as the phone allows, and every
+  limit is recorded in WHEN-ON-LAPTOP.org the moment it appears.
+
+* Dependencies
+# the items that must be DONE first.
+  02 — the route test result.
+
+* State
+# TODO; DONE records its commit hash; BLOCKED names its blocker.
+  TODO.
