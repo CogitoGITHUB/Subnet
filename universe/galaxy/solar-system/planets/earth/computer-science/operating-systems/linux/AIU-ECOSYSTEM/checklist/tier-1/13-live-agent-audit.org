@@ -1,0 +1,22 @@
+#+TITLE: 13 — Live agent audit
+# One job: one small checklist item of the shared build up to the done line.
+# Status: TODO; added 2026-10-16, in chronological order.
+
+* What
+# the work, in a line or two.
+  File-change events reach the editor; changes are marked agent or
+  external; accept and undo; a conflict between unsaved typing and an
+  agent write loses neither side.
+
+* Done when
+# the single observable check.
+  An agent edit appears as it lands and is undone; the conflict test
+  passes both ways.
+
+* Dependencies
+# the items that must be DONE first.
+  11 — the first adapter; 07 — journal and replay.
+
+* State
+# TODO; DONE records its commit hash; BLOCKED names its blocker.
+  TODO.
