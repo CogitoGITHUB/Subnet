@@ -1,0 +1,22 @@
+#+TITLE: 19 — Kits conformance
+# One job: one small checklist item of the shared build up to the done line.
+# Status: TODO; added 2026-10-16, in chronological order.
+
+* What
+# the work, in a line or two.
+  The kit checklist green for the editor and the multiplexer: envelope,
+  exit codes, MCP gating, skill examples executed, read-only plugin, feed
+  flushed.
+
+* Done when
+# the single observable check.
+  The checklist runs green for both; the notation's kit follows with its
+  own program.
+
+* Dependencies
+# the items that must be DONE first.
+  16 — the editor's send; 17 — the multiplexer's send.
+
+* State
+# TODO; DONE records its commit hash; BLOCKED names its blocker.
+  TODO.
