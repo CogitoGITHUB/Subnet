@@ -1,16 +1,109 @@
 #+TITLE: General rules from the package manager
 # One job: the rules PM proved in practice, each ready to reuse, adapt or refuse
-# Status: skeleton; step 2 fills it by reading the package manager, read-only.
+# Status: filled 2026-10-16 from =AIU-OS/AIU-PM=, read-only; every item names the PM path it was read from.
 
-* What the package manager does
-# the mechanism in plain words, taken from PM as it really is. No code.
+* How to read this file
+# The verdict key, stated once, so every item below stays one small block.
 
-* The rule it teaches
-# the transferable rule, one sentence per line.
+  - REUSE — carry the rule into the new programs as it stands.
+  - ADAPT — keep the shape, change the details for a separate program.
+  - DO NOT REPEAT — PM paid for this; do not bring it back.
+  - Each item: what PM does, the rule, the verdict, where it was read.
 
-* Verdict
-# exactly one of REUSE, ADAPT or DO NOT REPEAT, with the reason on the same line.
+** Numbered rules, cited everywhere
+# Rules with stable IDs, so a commit or a refusal can name one.
+- What PM does: every binding rule carries an ID (P-, A-, M-, D-, E-, F-, S-, T-, X-, G-, W-), commit messages cite them, and a conflict between an instruction and a rule is named, asked once, then resolved into the decision log — never by silent drift.
+- The rule: a rule nobody can cite cannot be enforced, and an amendment that is not recorded cannot be trusted.
+- Verdict: REUSE.
+- Read at: 0.FOUNDATION.org sections 0 and 14; plan/DECISIONS.org (append-only, newest first, each entry names the rules it touches).
 
-* Where this was read
-# the PM path this came from, read-only. Nothing is restated from memory.
+** Small steps behind one green gate
+# Every step ends green and committed; the gate is the only definition of green.
+- What PM does: one step equals one green gate run plus one commit (P-1, T-7); between checklist items a changed-files-only gate runs, the full gate once per phase; the gate is one Nushell script covering lint, compile, tests and domain checks.
+- The rule: a step that does not end green does not exist, and green is decided by the gate, never by a claim about the code.
+- Verdict: REUSE.
+- Read at: 0.FOUNDATION.org P-1 and T-7; gate/check.nu header.
 
+** One pipeline: read, validate, resolve, plan, execute, record
+# Data flows one way through named stages; the default effect changes nothing.
+- What PM does: the pipeline is read then validate then resolve then plan then (dry-run prints, or execute through a backend) then record into the lockfile (A-2); a plan is a list of immutable action values; the executor is a dumb interpreter; the default backend performs nothing, a fake backend records actions for tests, the real one lands last (A-3, A-4, P-2).
+- The rule: anything that changes the machine is first a value that can be printed and reviewed; effects live only at the edge.
+- Verdict: REUSE.
+- Read at: 0.FOUNDATION.org section 3.
+
+** Errors are a feature, not an accident
+# Every failure answers four questions, through one error type.
+- What PM does: every user-facing error says WHAT failed, WHERE (package, step, file:line:col), WHY (cause, exit code, last lines) and NEXT (a hint or command) (E-2); one struct holds all kinds, one module defines them (E-3); raise only through one helper (E-4); catch narrowly, never a catch-all (E-5); user errors print clean, internal errors print a bug banner (E-7); exit codes are frozen in a table (E-15).
+- The rule: a failure that cannot say where and why costs more than the time it took to write the message.
+- Verdict: REUSE.
+- Read at: 0.FOUNDATION.org section 6.
+
+** Fail loudly; verify by running; mistakes become rules
+# Nothing is swallowed, nothing is believed unrun, nothing is learned privately.
+- What PM does: no catch-all handlers, nothing swallowed (P-7); verify, do not assume — run it (P-8); every mistake becomes fix + test + an append-only LESSONS entry naming what happened, the root cause and the new rule (P-10, W-7); reports carry pasted real output (W-4).
+- The rule: the log of one's own mistakes is a first-class artifact, and an untested claim is not a result.
+- Verdict: REUSE.
+- Read at: 0.FOUNDATION.org P-7, P-8, P-10 and W-4; docs/LESSONS.org (all four entries).
+
+** One-way dependency order between areas
+# Each area may use only areas below it; the order is written down.
+- What PM does: dependencies point one way; a lower area is never required by a higher one; the areas are ordered lowest first (errors, narration, machine, security, spec, git, process, store, queue, build, install, mirror, entry) and the law lives in one file (A-1).
+- The rule: the area map plus the direction law is what makes a split checkable by a machine instead of by memory.
+- Verdict: REUSE.
+- Read at: plan/ARCHITECTURE.org; 0.FOUNDATION.org A-1.
+
+** Interfaces before implementations; no global mutable state
+# Write the contracts and purposes, get them approved, then build.
+- What PM does: the provided contracts and purpose statements are written and approved before the implementation (A-7); configuration flows through parameters and explicit arguments, never through module-level mutation (A-8); structs and plain functions, no classes (A-9).
+- The rule: an interface agreed first is a review point; an interface invented during implementation is a surprise.
+- Verdict: REUSE.
+- Read at: 0.FOUNDATION.org section 3.
+
+** Module discipline: base language, explicit requires, contract-out, size caps
+# Small modules with stated purpose, contracted provides and measured limits.
+- What PM does: base language plus explicit requires (M-1); fixed layout — purpose line, contracted provides with a purpose comment per identifier, imports, implementation top-down, tests at the end (M-2, M-3); never all-defined-out (M-4); about 500 lines per module with a hard stop at 1000, about one screen per function, 102 columns (M-5); full-word kebab-case names that say what the thing is (M-6).
+- The rule: naming and size limits are enforced before review, because a name that lies costs more than a missing comment.
+- Verdict: REUSE.
+- Read at: 0.FOUNDATION.org section 4.
+
+** Plain data on disk: version markers, safe reading, named hashes
+# Every persisted format is plain, versioned and read defensively.
+- What PM does: unknown keys are errors, not ignored (D-2); files are read with the reader's defaults plus a limited port, with reader, lang and compiled form refused — which is what makes reading untrusted data safe (D-3); every on-disk format carries a version marker (D-5); plain data written sorted so diffs mean something (D-6); hashes are SHA-256 lowercase hex with the algorithm named, and an unpinned network source is an error unless marked (D-7).
+- The rule: data outlives code, so its format needs a version, its reader needs suspicion and its hashes need names.
+- Verdict: REUSE.
+- Read at: 0.FOUNDATION.org section 5.
+
+** Effects at the edge: staged writes, locks, idempotence, confinement
+# The four habits that make a tool safe to crash.
+- What PM does: atomic writes via temp file plus rename (F-3); build in a staging dir on the same filesystem, verify, then rename; remove staging on failure with the old state intact (F-4); one process per prefix via a file lock whose error names the lock path (F-5); the same plan twice gives the same result, and a crash re-run resumes or cleans, never corrupts (F-6); every install path is resolved and checked to be inside the target prefix, tested with hostile inputs (F-7).
+- The rule: crash safety is a design property made of four named habits, not a hope.
+- Verdict: REUSE.
+- Read at: 0.FOUNDATION.org section 7.
+
+** Two trust tiers; closed vocabulary; the explicit run step stands out
+# Data is read and never executed; code is only what the user wrote.
+- What PM does: Tier A specs are data, validated, never executed; Tier B is real code and is never loaded from fetched content (S-1, S-2); builds use a closed vocabulary of steps, and the one explicit run step is highlighted in plan output and warns in strict mode (S-3, D-009); exports come from the vault at the pinned commit, never the network (S-5); builds run with an allowlisted environment so inherited secrets do not leak (S-6).
+- The rule: the difference between data and code is the security model, so the tool must never blur it.
+- Verdict: REUSE.
+- Read at: 0.FOUNDATION.org section 8.
+
+** The AI working agreement
+# Interview, plan, stop and ask — written down, not assumed.
+- What PM does: ask before assuming (W-1); show the plan and wait for approval on anything touching more than three files, public interfaces, deletions or moves (W-2); one concern per step and a report of what changed, how it was verified and what is next (W-3); stop and ask when touching the read-only reference, deleting anything, installing from the network outside the approved list, changing a provided interface, when a rule seems wrong, or when intent is ambiguous (W-8); definition of done spelled out (W-10).
+- The rule: the working agreement is a contract with IDs, the same as the code rules.
+- Verdict: REUSE.
+- Read at: 0.FOUNDATION.org section 13.
+
+** Read-only reference trees, with provenance
+# Frozen originals are never edited; what is extracted carries its license.
+- What PM does: the reference tree is read-only, stripped of write permission, extraction scripts read from it and write elsewhere (P-9, G-3); anything derived from Guix carries its license and a provenance note (G-7).
+- The rule: the shape — a frozen, un-writable source tree plus a provenance note on whatever leaves it — transfers to any study corpus.
+- Verdict: ADAPT — PM's rule was built around a Guix clone and the GPL; for the new programs the equivalent is the read-only neomacs checkout and study notes that say where every extracted idea came from.
+- Read at: 0.FOUNDATION.org P-9 and G-7.
+
+** Literate Org was removed in PM (D-018)
+# Do not copy PM's no-Org stance into Org-first programs.
+- What PM does: the literate rules L-1 to L-4 are removed — no Org source of truth, no tangling; only the "examples runnable when practical" idea remains (L-5).
+- The rule: that removal was right for a code repo whose sources are Racket; it is wrong for programs that live in Org by construction.
+- Verdict: DO NOT REPEAT — the new programs are Org-first planning bases, and AIU NOTATION will decide its own tangling stance in its own rules; PM's D-018 must not be inherited silently.
+- Read at: 0.FOUNDATION.org section 10; plan/DECISIONS.org D-018.
