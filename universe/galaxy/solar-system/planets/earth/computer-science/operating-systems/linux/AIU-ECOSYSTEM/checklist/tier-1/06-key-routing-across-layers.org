@@ -1,0 +1,21 @@
+#+TITLE: 06 — Key routing across layers
+# One job: one small checklist item of the shared build up to the done line.
+# Status: TODO; added 2026-10-16, in chronological order.
+
+* What
+# the work, in a line or two.
+  First-receiver routing: a key reaches the focused pane's program first;
+  the multiplexer keeps the reserved prefix; the editor routes inside
+  itself.
+
+* Done when
+# the single observable check.
+  The routing walk passes with the editor in a pane — no mouse anywhere.
+
+* Dependencies
+# the items that must be DONE first.
+  04 — the panes; 05 — the editor slice.
+
+* State
+# TODO; DONE records its commit hash; BLOCKED names its blocker.
+  TODO.
