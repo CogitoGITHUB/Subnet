@@ -25,14 +25,14 @@ Files that matter:
 
 | file | what it holds |
 |------|---------------|
-| =backends/activate.rkt= |
+| =package-manager/src/install/activate.rkt= |
 |  =profile-activate=, =profile-rollback=, =profile-remove=, =profile-gc=, holds. READ the
 | contracts; do not change them |
-| =cli/main.rkt= |
+| =package-manager/src/entry/cli.rkt= |
 |  command structs, the discovery table, the parser, the documents, the dispatch. YOU EDIT THIS |
-| =core/lock.rkt= | =read-lockfile=, =lockfile-entries=, =lock-entry= accessors |
-| =core/spec-read.rkt= | =read-spec-file=, =read-install= — where relative install paths come from |
-| =core/verbose.rkt= | narration verbs. READ ONLY |
+| =package-manager/src/machine/file-lock.rkt= | =read-lockfile=, =lockfile-entries=, =lock-entry= accessors |
+| =package-manager/src/spec/spec-read.rkt= | =read-spec-file=, =read-install= — where relative install paths come from |
+| =package-manager/src/narration/narration.rkt= | narration verbs. READ ONLY |
 | =docs/API.org= | the surface, and a TEST (see §7) |
 
 * 3. The environment (non-obvious, will bite you)
@@ -41,7 +41,7 @@ Files that matter:
     RACKET=/root/home/shape/opt/racket-full/bin/racket
     RACO=/root/home/shape/opt/racket-full/bin/raco
 - **Nushell gate:**
-    /root/home/shape/opt/nushell/0.116.1/nu --no-config-file scripts/check.nu --changed
+    /root/home/shape/opt/nushell/0.116.1/nu --no-config-file gate/check.nu --changed
 - **proot on a phone.** Every process spawn costs ~0.5-1.5s. A test that
   looks slow is environment tax, not a defect. Never add a =timeout= or a
   =sleep= around anything; run detached and end the command with an
@@ -71,12 +71,12 @@ and the list of RELATIVE paths it installed (e.g. ='("bin/prog")=).
 **No production code in the tree builds this list.** It appears only as
 hand-written literals in two tests:
 
-    ; backends/query.rkt:428
+    ; package-manager/src/store/query.rkt:428
     (profile-activate (list (list "pkg-a" (path->string store-a)
                                   '("bin/prog")))
                       (path->string prof3))
 
-    ; backends/dev.rkt:286
+    ; package-manager/src/install/dev-link.rkt:286
     (profile-activate (list (list "pkg-e2e" ver2 ...)) ...)
 
 So the real work is an entries builder: read a declaration, find where
@@ -84,12 +84,12 @@ each package is installed, and collect its relative paths. Build it
 once, in one place, and have all three commands use it.
 
 Where the data comes from:
-- name + version: =core/lock.rkt=, =lock-entry-name= / =lock-entry-version=
-- installed-at path: the store dir. See =core/plan.rkt=,
+- name + version: =package-manager/src/machine/file-lock.rkt=, =lock-entry-name= / =lock-entry-version=
+- installed-at path: the store dir. See =package-manager/src/spec/plan.rkt=,
   =package-plan-store-dir= (it is =<state>/store/<name>/<slot>/<version>-<hash12>/=)
 - rels: the =install= form of each spec, read by =read-install= in
-  =core/spec-read.rkt=; the same relative paths =check-spec-conflicts=
-  and =spec-install-dests= in =core/plan.rkt= already walk. Reuse that
+  =package-manager/src/spec/spec-read.rkt=; the same relative paths =check-spec-conflicts=
+  and =spec-install-dests= in =package-manager/src/spec/plan.rkt= already walk. Reuse that
   walk; do not write a second one.
 
 Note the shape mismatch to bridge: a =lock-entry= has
@@ -126,17 +126,17 @@ Also available and already exported: =profile-gc=,
 - **Every command can emit JSON** with a fixed key order:
   ={"name":...,"format":...,"operands":[...], ...results}=. All five
   surfaces (CLI, MCP, skill, plugin, television) read this one shape.
-- **docs/API.org is a TEST, not prose.** =cli/main.rkt= parses and
+- **docs/API.org is a TEST, not prose.** =package-manager/src/entry/cli.rkt= parses and
   executes every example in it. If you change a command's operands you
   MUST update API.org or the suite fails. It caught four wrong examples
   in one session, all hand-written, all wrong.
 - **Every command text is emitted through one printer.** Never
   =printf=/=display=/=eprintf= to console; stage 14 of the gate fails the
   build. Use =display-result=.
-- **Effects are allowlisted.** =scripts/check.nu= stage 15 has a named
+- **Effects are allowlisted.** =gate/check.nu= stage 15 has a named
   list of file writers and process spawners. Adding a new one fails the
   gate. You should not need to add any.
-- **Narration is mandatory.** Use the verbs in =core/verbose.rkt=:
+- **Narration is mandatory.** Use the verbs in =package-manager/src/narration/narration.rkt=:
     (with-op who what why [thunk])      ; START/END, FAIL on error
     (step who what why #:how h)         ; a step
     (wait-for who what why #:how h [thunk])  ; WAIT before a block
@@ -174,11 +174,11 @@ Also available and already exported: =profile-gc=,
 
 * 9. How to know you are done
 
-1. =$RACKET scripts/read-check.rkt cli/main.rkt= → 0 bad
-2. =$RACO make cli/main.rkt= → exit 0
-3. =$RACKET scripts/test-runner.rkt cli/main.rkt= → =failed=0=, and the
+1. =$RACKET gate/read-check.rkt package-manager/src/entry/cli.rkt= → 0 bad
+2. =$RACO make package-manager/src/entry/cli.rkt= → exit 0
+3. =$RACKET gate/test-runner.rkt package-manager/src/entry/cli.rkt= → =failed=0=, and the
    total goes UP by the number of tests you added
-4. The gate: =CYBERDECK_STAGES=6 ... scripts/check.nu --changed= → 0 violations
+4. The gate: =CYBERDECK_STAGES=6 ... gate/check.nu --changed= → 0 violations
 5. =docs/API.org= has an example for each new command, matching the real
    output exactly
 6. One commit with explicit paths, its message naming the command.
@@ -195,7 +195,7 @@ Also available and already exported: =profile-gc=,
 
 * 11. Not in scope for you
 
-- =backends/apply.rkt= is being worked on right now by another agent
+- =package-manager/src/install/apply.rkt= is being worked on right now by another agent
   (an E2E hang). Do not edit it.
 - The 7-file rename is planned but not started; do not rename anything.
   If a name genuinely blocks you, work around it and say so.

@@ -72,7 +72,7 @@ temp work dir is gone too; only a temp .tar beside staging, always
 removed. Test: file list matches, vault refs unchanged.
 
 * Locking and cancel
-Writers: try-lock only via core/vault-lock.rkt, fail at once naming the
+Writers: try-lock only via package-manager/src/git/vault-lock.rkt, fail at once naming the
 holder (informational owner record; liveness is the lock). Readers
 (export, has-commit, list, size, status) never lock. POSIX fcntl
 semantics are probed in Racket under proot (same-process re-entry, two
@@ -86,7 +86,7 @@ child.lock means an orphan is alive: the vault is "needs verify"
 pm vault verify passes. flock joins the check.nu tool gate.
 Cancel: (make-cancel-source) -> (values evt trigger!); kind
 'cancelled, exit 130; Ctrl-C routes through the same path (implemented
-in backends/run.rkt + core/cancel.rkt + core/errors.rkt).
+in package-manager/src/process/run.rkt + package-manager/src/machine/cancel.rkt + package-manager/src/errors/error-type.rkt).
 
 * Jobs (no daemon)
 Operations are a closed set of structs: add, fetch-namespace, verify,

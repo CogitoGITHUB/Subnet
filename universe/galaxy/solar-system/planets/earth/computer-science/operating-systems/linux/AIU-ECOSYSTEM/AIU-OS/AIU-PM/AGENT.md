@@ -10,7 +10,7 @@ one was learned by getting it wrong first.
 | look at a file | `read` (gives line numbers) | `cat`, `sed -n` |
 | change a file | `edit` (exact match, fails if 0 or >1) | python/sed/heredoc |
 | create a file | `write` | shell redirection |
-| check it parses | `scripts/read-check.rkt` | a one-off paren one-liner |
+| check it parses | `gate/read-check.rkt` | a one-off paren one-liner |
 
 The built-in `edit` tool refuses to run when the old text is missing or
 ambiguous. That refusal is the whole point: it makes silent corruption
@@ -53,7 +53,7 @@ have happened through `edit`.
 
 ## ## Always use the shared runner, and read its timer lines
 
-`scripts/test-runner.rkt` prints progress and elapsed time EVERY run:
+`gate/test-runner.rkt` prints progress and elapsed time EVERY run:
 
 ```
 TEST-START <file> at=<ms since run start> of=<n files>
@@ -76,8 +76,8 @@ Every `.rkt` is tested, always, in ONE shared process. A file that hangs
 or fails there is an ERROR to isolate and fix (dynamic-wind, temp dirs,
 parameterize cwd/env, kill and reap children), never a reason to give it
 a separate tier. Measured proof spawners are fine in the shared process:
-`backends/git.rkt` (54 tests), `backends/local.rkt` (15) and
-`backends/run.rkt` (52) all pass there.
+`package-manager/src/git/git-repo.rkt` (54 tests), `package-manager/src/install/local-perform.rkt` (15) and
+`package-manager/src/process/run.rkt` (52) all pass there.
 
 ## Scripts in `scripts/` exist to RUN things, not to change text.
 
@@ -85,7 +85,7 @@ a separate tier. Measured proof spawners are fine in the shared process:
 
 Never leave work uncommitted. After every change:
 
-1. `scripts/read-check.rkt <the file>`
+1. `gate/read-check.rkt <the file>`
 2. `git add` the explicit paths, `git commit`
 3. `git push`
 
@@ -100,15 +100,15 @@ the committed version.
 
 | need | command |
 |------|---------|
-| check parens / parse | `~/opt/racket-full/bin/racket scripts/read-check.rkt <files...>` |
-| interactive Racket | `~/opt/racket-full/bin/racket scripts/repl.rkt` |
-| quick test of fast-tier files | `~/opt/racket-full/bin/racket scripts/test-runner.rkt <files...>` |
-| the gate | `~/opt/nushell/0.116.1/nu --no-config-file scripts/check.nu --fast` |
-| between items | `... scripts/check.nu --changed` |
-| full gate, end of phase | `... scripts/check.nu` |
+| check parens / parse | `~/opt/racket-full/bin/racket gate/read-check.rkt <files...>` |
+| interactive Racket | `~/opt/racket-full/bin/racket tools/repl.rkt` |
+| quick test of fast-tier files | `~/opt/racket-full/bin/racket gate/test-runner.rkt <files...>` |
+| the gate | `~/opt/nushell/0.116.1/nu --no-config-file gate/check.nu --fast` |
+| between items | `... gate/check.nu --changed` |
+| full gate, end of phase | `... gate/check.nu` |
 
 **Never** write a python heredoc to patch a `.rkt`, and never re-derive a
-paren check by hand. `scripts/read-check.rkt` is the paren check. If it
+paren check by hand. `gate/read-check.rkt` is the paren check. If it
 does not cover the case you need, fix or extend it, then use it.
 
 ## When a script cannot do the job, build it, then use it
@@ -139,24 +139,24 @@ row in `docs/RACKET-TOOLING.org`.
 
 ## Before editing any `.rkt`
 
-1. `racket scripts/read-check.rkt <the file>` — green before the edit.
+1. `racket gate/read-check.rkt <the file>` — green before the edit.
 2. Make the edit.
-3. `racket scripts/read-check.rkt <the file>` — green after the edit, with
+3. `racket gate/read-check.rkt <the file>` — green after the edit, with
    a `file:line` if not.
-4. Test with `scripts/test-runner.rkt` for fast-tier files, `raco test`
+4. Test with `gate/test-runner.rkt` for fast-tier files, `raco test`
    for the rest.
 
 ## Startup cost, measured
 
 `racket -n -e ''` varies 0.29s to 1.12s for the same empty program on this
 phone. That spread is filesystem variance under proot, not compute. Every
-separate process pays it, which is exactly why `scripts/test-runner.rkt`
+separate process pays it, which is exactly why `gate/test-runner.rkt`
 runs files in one shared process. Prefer one process doing many things
 over many processes doing one thing.
 
 ## Current state
 
-`backends/jobs.rkt` is red and the handshake is NOT the bug. Established
+`package-manager/src/queue/jobs.rkt` is red and the handshake is NOT the bug. Established
 with output: the O_RDWR open, `'linefeed` mode and `read-line-evt` are
 correct; `subprocess-wait` returns immediately in this Racket even while
 the child runs, so a reaper thread plus semaphore cannot be trusted to
@@ -166,5 +166,5 @@ is the only writer and its death shows up as EOF on the read end. A
 holder that writes `"up"` and then blocks on a fifo is the real shape;
 there are no timers in it. Verify this in a `/tmp` replica first.
 
-`scripts/check.nu` tier removal is saved at
+`gate/check.nu` tier removal is saved at
 `docs/patches/WIP-checknu-tiers-removed.patch`, not applied.

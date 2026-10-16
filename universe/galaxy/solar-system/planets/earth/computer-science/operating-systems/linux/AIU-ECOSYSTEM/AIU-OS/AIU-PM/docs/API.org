@@ -33,7 +33,7 @@ non-zero exit, not a half-formed object.
 
 ** Commands
 Sixteen commands take operands; =--help= takes none. Every example
-below is the real output, and =cli/main.rkt= re-runs each one against
+below is the real output, and =package-manager/src/entry/cli.rkt= re-runs each one against
 this file, so an example that drifts fails the gate.
 
 ** =pm plan specs/ --format json=

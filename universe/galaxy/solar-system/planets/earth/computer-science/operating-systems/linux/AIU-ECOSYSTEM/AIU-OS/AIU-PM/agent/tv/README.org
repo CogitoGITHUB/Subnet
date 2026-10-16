@@ -9,7 +9,7 @@ All commands run under =shell = "nu"=.
 
 * Environment
 - =PM_ROOT= (required): the AIU-PM checkout. Channels invoke
-  =racket $PM_ROOT/cli/main.rkt ...=; without it nothing runs.
+  =racket $PM_ROOT/package-manager/src/entry/cli.rkt ...=; without it nothing runs.
 - =PM_SPECS= (optional): specs directory for pm-specs. Default: the
   repo's =docs/examples=.
 - =PM_PROFILE=, =PM_LOCK= (required by pm-packages): profile directory
@@ -27,7 +27,7 @@ All commands run under =shell = "nu"=.
   confirmation, outside tv.
 
 * Installing
-=scripts/install-tv-channels.nu= PRINTS the commands; it writes
+=tools/install-tv-channels.nu= PRINTS the commands; it writes
 nothing. television itself is a pm package: =docs/examples/tv.rktd=
 pins v0.4.21, so =pm= fetches, builds and installs the =tv= binary
 and these channels are never lost with it.

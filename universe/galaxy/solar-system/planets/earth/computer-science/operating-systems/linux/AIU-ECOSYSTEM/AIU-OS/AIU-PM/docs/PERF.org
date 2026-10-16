@@ -8,7 +8,7 @@ Racket 9.3 CS minimal, 2026-10-06.
 |--------------------------------------+-------+-------+-------|
 | =racket -l racket/base -e '(void)'=  | 2.14s | 0.42s | 0.27s |
 
-=cli/main.rkt --help= baseline: pending, no CLI yet.
+=package-manager/src/entry/cli.rkt --help= baseline: pending, no CLI yet.
 
 * 2026-10-08 vault-gc memory envelope (VAULT-SPEC.org)
 Synthetic repo: 20 commits + 500 x 100KB blobs (99MB work tree,
@@ -24,7 +24,7 @@ which is why the code pins a single thread. Bound stands.
 Baselines recorded before 2026-10-09 include user/sys columns and are not
 comparable (=startup.nu= is wall time only, D-026).
 
-** 2026-10-09 =scripts/startup.nu=, median of 5 (one warmup discarded)
+** 2026-10-09 =tools/startup.nu=, median of 5 (one warmup discarded)
 
 Wall time only. These numbers also include Nu's own process-spawn
 overhead inside the measured window, so they read higher than the sh

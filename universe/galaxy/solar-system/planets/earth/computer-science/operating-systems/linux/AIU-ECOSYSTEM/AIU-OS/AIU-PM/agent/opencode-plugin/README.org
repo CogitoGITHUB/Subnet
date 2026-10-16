@@ -23,8 +23,8 @@ approval boundary -- before spawning anything. Approval at the plugin
 is never authorisation inside pm: pm keeps its own rules.
 
 ** What it reads
-=<state>/events/<run-id>.jsonl=, written by =core/verbose.rkt=. The
-state root comes from =core/scope.rkt=, i.e. =$XDG_DATA_HOME= or
+=<state>/events/<run-id>.jsonl=, written by =package-manager/src/narration/narration.rkt=. The
+state root comes from =package-manager/src/machine/directories.rkt=, i.e. =$XDG_DATA_HOME= or
 =~/.local/share=. A partial (not yet newline-terminated) line is left
 alone until it is complete; a truncated file restarts the cursor rather
 than reading garbage; a malformed line is skipped, never thrown.
@@ -65,5 +65,5 @@ exposes =Part=, move the digest there and keep the tools unchanged.
 - =package.json= -- declares the =@opencode-ai/plugin= peer dependency.
 
 ** Installing
-=scripts/install-opencode-plugin.nu= PRINTS the commands; it writes
+=tools/install-opencode-plugin.nu= PRINTS the commands; it writes
 nothing. Run it, read it, run it yourself.

@@ -70,16 +70,16 @@ AIU-PM/
       events.rkt           the event schema, one record shape
       narration.rkt        begin/end a run, step/note/warn/skip/decide
       wait-door.rkt        wait-for / wait-done: the blocking door
-      print-console.rkt    the one printer (from core/verbose.rkt)
+      print-console.rkt    the one printer (from package-manager/src/narration/narration.rkt)
     errors/
-      error-type.rkt        exn:fail:pm and the kinds (from core/errors.rkt)
-      error-message.rkt     rendering, exit codes (from core/errors.rkt)
+      error-type.rkt        exn:fail:pm and the kinds (from package-manager/src/errors/error-type.rkt)
+      error-message.rkt     rendering, exit codes (from package-manager/src/errors/error-type.rkt)
     machine/
-      directories.rkt      the scope seam (from core/scope.rkt)
-      file-lock.rkt        cross-process lock (from core/lock.rkt)
-      cancel.rkt           the cancellation door (from core/cancel.rkt)
+      directories.rkt      the scope seam (from package-manager/src/machine/directories.rkt)
+      file-lock.rkt        cross-process lock (from package-manager/src/machine/file-lock.rkt)
+      cancel.rkt           the cancellation door (from package-manager/src/machine/cancel.rkt)
     spec/
-      spec.rkt             the spec struct (from core/spec.rkt)
+      spec.rkt             the spec struct (from package-manager/src/spec/spec.rkt)
       spec-read.rkt        facade, unchanged public surface
       spec-fields.rkt      (already split)
       spec-source.rkt      (already split)
@@ -89,8 +89,8 @@ AIU-PM/
       plan-derive.rkt      spec -> package plan
       plan-lower.rkt       build steps -> install actions  (the compiler)
       plan-conflicts.rkt   path conflict refusal
-      ecosystem-file.rkt   from core/ecosystem.rkt
-      resolve.rkt          from core/resolve.rkt
+      ecosystem-file.rkt   from package-manager/src/spec/ecosystem-file.rkt
+      resolve.rkt          from package-manager/src/spec/resolve.rkt
     process/
       spawn.rkt            spawn + cwd validation (from run.rkt)
       status-fifo.rkt      the fifo protocol + the holder decision
@@ -138,7 +138,7 @@ AIU-PM/
       cli.rkt              argv -> command
       documents.rkt        one JSON document per command
       dispatch.rkt         command -> call
-      mcp-server.rkt       from mcp/server.rkt
+      mcp-server.rkt       from package-manager/src/entry/mcp-server.rkt
   gate/
     check.nu               the gate
     read-check.rkt
@@ -146,8 +146,8 @@ AIU-PM/
     tree.nu
     env.nu
   test-doubles/
-    fake-git.rkt           from backends/fake.rkt
-    dry-run-perform.rkt    from backends/dry-run.rkt
+    fake-git.rkt           from package-manager/test-doubles/fake-git.rkt
+    dry-run-perform.rkt    from package-manager/test-doubles/dry-run-perform.rkt
   tools/
     repl.rkt  hello-fetch.rkt  build-lua.rkt  probe-blob.rkt
   docs/
@@ -165,14 +165,14 @@ file's own tests, and the dependent set, before the next begins.
 
 | # | from | to | why this order |
 |---|------|-----|----------------|
-| 1 | =core/plan.rkt= (974) | 4 files | =activate= and =apply= both need the lowering vocabulary |
-| 2 | =core/spec-read.rkt= (748) | facade | four modules already exist and work; finish the job |
-| 3 | =backends/jobs.rkt= (1043) | 3 files | **parked, no test net — see the warning** |
-| 4 | =backends/vault.rkt= (1653) | 5 files | **parked, no test net — see the warning** |
-| 5 | =backends/run.rkt= (1063) | 6 files | the substrate; split once its hangs are closed |
-| 6 | =backends/build.rkt= (673) | 3 + 5 files | self-contained executors |
-| 7 | =backends/activate.rkt= (650) | 4 files | depends on plan lowering, hence #1 |
-| 8 | =cli/main.rkt= (1525) | 4 files | requires nine files today; should require two |
+| 1 | =package-manager/src/spec/plan.rkt= (974) | 4 files | =activate= and =apply= both need the lowering vocabulary |
+| 2 | =package-manager/src/spec/spec-read.rkt= (748) | facade | four modules already exist and work; finish the job |
+| 3 | =package-manager/src/queue/jobs.rkt= (1043) | 3 files | **parked, no test net — see the warning** |
+| 4 | =package-manager/src/git/vault.rkt= (1653) | 5 files | **parked, no test net — see the warning** |
+| 5 | =package-manager/src/process/run.rkt= (1063) | 6 files | the substrate; split once its hangs are closed |
+| 6 | =package-manager/src/build/build-plan.rkt= (673) | 3 + 5 files | self-contained executors |
+| 7 | =package-manager/src/install/activate.rkt= (650) | 4 files | depends on plan lowering, hence #1 |
+| 8 | =package-manager/src/entry/cli.rkt= (1525) | 4 files | requires nine files today; should require two |
 
 * The two warnings that decide whether this plan is safe
 
@@ -207,11 +207,11 @@ means moving a file that still has a known open defect in it.
 
 Safe, mechanical, and independently verifiable:
 - =core/*.rkt= → =src/<area>/= per the table above
-- =backends/fake.rkt=, =backends/dry-run.rkt= → =test-doubles/=
+- =package-manager/test-doubles/fake-git.rkt=, =package-manager/test-doubles/dry-run-perform.rkt= → =test-doubles/=
 - =scripts/= → split into =gate/= (=check.nu=, =read-check.rkt=,
   =test-runner.rkt=, =env.nu=, =tree.nu=) and =tools/= (the rest)
-- =cli/main.rkt= → =src/entry/cli.rkt=
-- =mcp/server.rkt= → =src/entry/mcp-server.rkt=
+- =package-manager/src/entry/cli.rkt= → =src/entry/cli.rkt=
+- =package-manager/src/entry/mcp-server.rkt= → =src/entry/mcp-server.rkt=
 
 Every require in the tree changes for these. The test suite catches a
 missing module — it fails to build rather than passing silently — which
@@ -220,8 +220,8 @@ command wiring.
 
 * What must not change
 
-- The public surface of =core/spec-read.rkt=: ten files require it.
-- The JSON event schema in =core/verbose.rkt=: "lift it verbatim, feeds
+- The public surface of =package-manager/src/spec/spec-read.rkt=: ten files require it.
+- The JSON event schema in =package-manager/src/narration/narration.rkt=: "lift it verbatim, feeds
   from different tools stay mutually readable."
 - =profile-activate= / =profile-rollback= / =profile-remove=
   contracts — wired in =69aa0f1=, do not touch.
@@ -270,14 +270,14 @@ DONE <what it fixes> @ <hash>
 
 1. Un-park =jobs.rkt= and =vault.rkt=, or accept the stated risk.
 2. Close the remaining =run.rkt= fifo hang, or record it as accepted.
-3. =core/plan.rkt= split. Gate green.
-4. =core/spec-read.rkt= facade tightened. Gate green.
+3. =package-manager/src/spec/plan.rkt= split. Gate green.
+4. =package-manager/src/spec/spec-read.rkt= facade tightened. Gate green.
 5. =jobs.rkt= split. Gate green.
 6. =vault.rkt= split. Gate green.
 7. =run.rkt= split. Gate green.
 8. =build.rkt= split. Gate green.
 9. =activate.rkt= split. Gate green.
-10. =cli/main.rkt= split. Gate green.
+10. =package-manager/src/entry/cli.rkt= split. Gate green.
 11. =core/ → =src/= moves. Gate green.
 12. =backends/ → =src/= moves. Gate green.
 13. =scripts/ → =gate/= + =tools/=. Gate green.

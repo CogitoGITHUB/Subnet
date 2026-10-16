@@ -38,7 +38,7 @@ import { homedir } from "node:os";
 import { join } from "node:path";
 
 // ---------------------------------------------------------------------------
-// Paths. <state>/events comes from core/scope.rkt (XDG_DATA_HOME or
+// Paths. <state>/events comes from package-manager/src/machine/directories.rkt (XDG_DATA_HOME or
 // ~/.local/share). The plugin reads the same layout pm writes; it never
 // decides it, so the two cannot drift.
 

@@ -16,30 +16,30 @@ tree. Renaming those seven fixes most of the friction by itself.
 | word | where | what it actually means here |
 |------+-------+---------------------------|
 | core/ | the whole directory | nothing. It means "not a backend", which is a location, not a job |
-| plan | core/plan.rkt |
+| plan | package-manager/src/spec/plan.rkt |
 |  not a plan. It hashes specs, derives package plans, LOWERS build steps into install actions, and
 | enforces path conflicts |
-| run | backends/run.rkt |
+| run | package-manager/src/process/run.rkt |
 |  not a run. It spawns processes AND owns the exit-status fifo protocol AND drains pipes AND kills
 | process groups |
-| local | backends/local.rkt |
+| local | package-manager/src/install/local-perform.rkt |
 |  "local" as opposed to what? It is the performer that actually touches the filesystem |
-| jobs | backends/jobs.rkt | a queue, a fifo, worker locks, job
+| jobs | package-manager/src/queue/jobs.rkt | a queue, a fifo, worker locks, job
 | validation, and a serialization format — five things |
-| vault | backends/vault.rkt | git env, refs, creation,
+| vault | package-manager/src/git/vault.rkt | git env, refs, creation,
 | clone/fetch/pack, fsck, and a disk-space collision check |
-| dev | backends/dev.rkt | the developer-mode link/unlink path |
-| build | backends/build.rkt | env construction AND six separate build-system executors |
+| dev | package-manager/src/install/dev-link.rkt | the developer-mode link/unlink path |
+| build | package-manager/src/build/build-plan.rkt | env construction AND six separate build-system executors |
 
 ** The fake files living in the production tree
-=backends/fake.rkt= and =backends/dry-run.rkt= are test doubles sitting
+=package-manager/test-doubles/fake-git.rkt= and =package-manager/test-doubles/dry-run-perform.rkt= are test doubles sitting
 beside real code. Anyone reading the tree has to know to skip them. They
 belong under a =test-doubles/= directory so the production tree reads
 as production code.
 
 * Over-loaded files and where the split lines are
 
-** backends/vault.rkt — 1652 lines, 6 jobs
+** package-manager/src/git/vault.rkt — 1652 lines, 6 jobs
 - git plumbing environment (cwd, child lock, env, git binary path)
 - ref storage (=vault-namespace=, =vault-refmap=, =tips-only=, ref
   collision checks, ref delete/set)
@@ -50,7 +50,7 @@ as production code.
 Split: =vault-refs.rkt=, =vault-create.rkt=, =vault-transfer.rkt=,
 =vault-checks.rkt=, and the git-env pieces move to git.rkt.
 
-** backends/jobs.rkt — 1043 lines, 5 jobs
+** package-manager/src/queue/jobs.rkt — 1043 lines, 5 jobs
 - job record shape and its validation (=check-job-package=, -name=,
   -url=, -pin=, -fsck=)
 - on-disk format (=job-write=, =job-read=)
@@ -59,7 +59,7 @@ Split: =vault-refs.rkt=, =vault-create.rkt=, =vault-transfer.rkt=,
 - status (=job-status=)
 Split: =job-record.rkt=, =job-queue.rkt=, =job-worker-locks.rkt=.
 
-** core/spec-read.rkt — 1024 lines, 4 jobs
+** package-manager/src/spec/spec-read.rkt — 1024 lines, 4 jobs
 - the typo suggester (=levenshtein=, =suggest-key=) — this is a text
   utility that happens to be used while parsing
 - field plumbing (=need-field=, =field-args=, =check-keys=)
@@ -68,7 +68,7 @@ Split: =job-record.rkt=, =job-queue.rkt=, =job-worker-locks.rkt=.
 Split: =spec-typos.rkt=, =spec-fields.rkt=, =spec-source.rkt=,
 =spec-build-steps.rkt=.
 
-** core/plan.rkt — 974 lines, 4 jobs
+** package-manager/src/spec/plan.rkt — 974 lines, 4 jobs
 - content hashing (=string-sha=, =package-plan-identity=)
 - deriving the package plan from a spec (=derive-package-plan=)
 - LOWERING: turning build steps and install forms into actions
@@ -78,7 +78,7 @@ Split: =spec-typos.rkt=, =spec-fields.rkt=, =spec-source.rkt=,
 Split: =plan-hash.rkt=, =plan-derive.rkt=, =plan-lower.rkt=,
 =plan-conflicts.rkt=.
 
-** backends/build.rkt — 673 lines, 3 jobs
+** package-manager/src/build/build-plan.rkt — 673 lines, 3 jobs
 - the build environment (=build-env=, arg and variable expansion,
   prefix confinement)
 - the step EXECUTOR protocol (=execute-build-step=,
@@ -88,7 +88,7 @@ Split: =plan-hash.rkt=, =plan-derive.rkt=, =plan-lower.rkt=,
 Split: =build-env.rkt=, =build-executor.rkt=, and
 =build-systems/{make,cmake,cargo,configure,run}.rkt=.
 
-** backends/activate.rkt — 650 lines, 4 jobs
+** package-manager/src/install/activate.rkt — 650 lines, 4 jobs
 - generation naming and provenance (=gen-dir-name=, =next-gen-number=,
   =generation-provenance=)
 - building a generation and flipping the profile
@@ -99,7 +99,7 @@ Split: =build-env.rkt=, =build-executor.rkt=, and
 Split: =generation.rkt=, =profile-flip.rkt=, =profile-gc.rkt=,
 =profile-holds.rkt=.
 
-** cli/main.rkt — 1223 lines, 5 jobs
+** package-manager/src/entry/cli.rkt — 1223 lines, 5 jobs
 - argument parsing (=parse-format=, =parse-apply-args=, =parse-args=)
 - the command structs and the discovery table
 - one document builder per command (=status-document=, =why-document=,
@@ -111,23 +111,23 @@ Split: =cli/parse.rkt=, =cli/commands.rkt=, =cli/documents.rkt=,
 =cli/main-test.rkt=.
 
 * Files whose names are honest
-These need no change: =core/verbose.rkt= (narration),
-=core/errors.rkt=, =core/scope.rkt=, =core/lock.rkt=, =core/ui.rkt=,
-=core/security.rkt=, =core/cancel.rkt=, =backends/local.rkt= (once
-renamed to say it performs), =backends/store.rkt=, =backends/journal.rkt=,
-=backends/manifest.rkt=, =backends/query.rkt=.
+These need no change: =package-manager/src/narration/narration.rkt= (narration),
+=package-manager/src/errors/error-type.rkt=, =package-manager/src/machine/directories.rkt=, =package-manager/src/machine/file-lock.rkt=, =package-manager/src/narration/print-console.rkt=,
+=package-manager/src/security/security.rkt=, =package-manager/src/machine/cancel.rkt=, =package-manager/src/install/local-perform.rkt= (once
+renamed to say it performs), =package-manager/src/store/store.rkt=, =package-manager/src/queue/journal.rkt=,
+=package-manager/src/store/manifest.rkt=, =package-manager/src/store/query.rkt=.
 
 * Dependency facts that constrain the rename
-- =core/verbose.rkt= is required nearly everywhere; renaming it is cheap
+- =package-manager/src/narration/narration.rkt= is required nearly everywhere; renaming it is cheap
   but it must not gain a dependency on anything that requires it.
-- =backends/activate.rkt= and =backends/apply.rkt= both need the
-  lowering vocabulary from =core/plan.rkt=. Splitting =plan.rkt= moves
+- =package-manager/src/install/activate.rkt= and =package-manager/src/install/apply.rkt= both need the
+  lowering vocabulary from =package-manager/src/spec/plan.rkt=. Splitting =plan.rkt= moves
   that boundary, so the split has to name which half callers want.
-- =cli/main.rkt= requires nine backend and core files. After the split
+- =package-manager/src/entry/cli.rkt= requires nine backend and core files. After the split
   it should require only =commands.rkt= and =dispatch.rkt=.
 
 * What this costs
-Roughly 7 files become ~28, and =cli/main.rkt= becomes 5. Every require
+Roughly 7 files become ~28, and =package-manager/src/entry/cli.rkt= becomes 5. Every require
 line changes. The test suite catches any missed require, because a
 missing module fails the build rather than passing silently — the same
 property that caught four stale documentation examples during the

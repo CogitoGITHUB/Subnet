@@ -34,7 +34,7 @@ Measured on this phone, not assumed:
 * What is NOT available and why
 Minimal has no =racket/glob=, no =racket/environment=, and no
 =directory-list-recursively= in =racket/file=. Do not write code that
-assumes them. Let =scripts/check.nu= list the files (it already globs
+assumes them. Let =gate/check.nu= list the files (it already globs
 them) and pass the list as arguments.
 
 Packages tried and NOT in the catalog (network was up, HTTP 200, so this

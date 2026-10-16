@@ -20,8 +20,8 @@ must exit non-zero. Measured the same day in 0.116.1: =length= and
 
 ** 2026-10-10 The fast/slow test tier was never necessary
 A tier list existed because a spawner-heavy file was assumed not to
-survive a shared test process. Measured: =backends/git.rkt= (54 tests),
-=backends/local.rkt= (15) and =backends/run.rkt= (52) all pass in ONE
+survive a shared test process. Measured: =package-manager/src/git/git-repo.rkt= (54 tests),
+=package-manager/src/install/local-perform.rkt= (15) and =package-manager/src/process/run.rkt= (52) all pass in ONE
 shared process. The tier was a workaround for a problem nobody had
 isolated, and it hid the real bugs: a hang in the shared process read as
 "that file is slow" instead of "that test leaks state". New rule: one

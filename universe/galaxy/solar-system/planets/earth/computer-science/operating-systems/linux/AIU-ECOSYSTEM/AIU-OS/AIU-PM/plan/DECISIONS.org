@@ -89,7 +89,7 @@ comes off "not executable yet". D-038.
 Security is a first-class phase (S-01..S-04) that runs BEFORE any
 package declaration, because a declaration is only as trustworthy as
 pm's ability to refuse a bad one. The policy is pure and lives in one
-module, core/security.rkt, so it can be tested exhaustively and no
+module, package-manager/src/security/security.rkt, so it can be tested exhaustively and no
 other module may answer a security question. Seven named rules: source
 trust (a git source is pinned to an exact 40-hex commit, never a
 branch, tag or "latest"), origin (no file:// or path sources outside
@@ -121,9 +121,9 @@ the CLI with --format json/sexp, the MCP server (E-27) and the skill
 and consumes the same JSON. D-035.
 
 ** 2026-10-12 D-034: run.rkt ignores the retired check.sh
-backends/run.rkt never referenced check.sh (zero matches; it shells
+package-manager/src/process/run.rkt never referenced check.sh (zero matches; it shells
 to git, flock, setsid, pkill and tar, pinned by gate stage 3), so
-there is nothing to rewire. scripts/check.nu keeps its "check.sh
+there is nothing to rewire. gate/check.nu keeps its "check.sh
 lines N-M" provenance comments (comments only, check.sh itself is
 deleted): they trace the conversion and cost nothing. D-034.
 
@@ -168,7 +168,7 @@ MappingOS. v1 ships user scope only. Nu scripts included in the seam;
 =core/= is pure: specs plus flags plus vault pins become a package-level
 plan, the plan becomes lock data, and the package plan lowers to actions.
 No spawn, no filesystem write, no network anywhere in =core/=. The only
-module with effects is =backends/apply.rkt= (plus =activate.rkt= and
+module with effects is =package-manager/src/install/apply.rkt= (plus =activate.rkt= and
 =update.rkt= for their own stages). The lock is written only after the
 whole plan resolves; a partial plan writes nothing. Apply is resumable
 per step through a JSON Lines step journal, one file per package in the
@@ -181,9 +181,9 @@ removed by D-025. D-028, D-025.
 ** 2026-10-10 D-025: verify-action removed
 The exact git commit id is the verification; a second hash check over the
 same tree is redundant. =verify-action= (=expected-hash=, =algorithm=)
-is deleted from =core/plan.rkt=. Inputs that are not git-stored stay
+is deleted from =package-manager/src/spec/plan.rkt=. Inputs that are not git-stored stay
 D-019 and open: cargo, raco, npm and similar still refuse at check/plan
-time. The build environment attaches in =backends/build.rkt=, not in
+time. The build environment attaches in =package-manager/src/build/build-plan.rkt=, not in
 the action, so the same step runs under the same environment without
 the plan carrying an environment. The apply executor reuses
 =local-perform!= as-is; it does not fork a second placement
@@ -257,7 +257,7 @@ existing =target/= deleted. Revisit only if a faster mechanism is found.
 via =env.nu=. D-027.
 
 ** 2026-10-09 D-026: startup measurement is wall time only
-=scripts/startup.nu= reports wall time only; the user/sys CPU columns
+=tools/startup.nu= reports wall time only; the user/sys CPU columns
 are dropped. No pure-Nu source for them exists on this build:
 Nu 0.116.1 has =timeit= (wall duration) and no =bench=, and this
 Racket has no =current-process-*-milliseconds=. REJECTED: shelling out
@@ -276,7 +276,7 @@ logger; =PM_TRACE=0 silences the screen only, never the record.
 D-021.
 
 ** 2026-10-08 D-020 amended: Nu version is manual, never pinned
-No pinned path and no automatic fetch/update: scripts/need-nu.nu
+No pinned path and no automatic fetch/update: gate/need-nu.nu
 reports the binary in effect (newest ~/opt/nushell/*/nu, else PATH)
 with its version, and fails clearly when none exists. Versions change
 only by hand. The 0.116.1 record below stays as history. D-020.
@@ -307,7 +307,7 @@ with all of the above; recover with `git checkout pre-removal` or
 ** 2026-10-07 T-10: fixtures are synthetic, never real packages
 Tests use obviously invented names/versions/commits (demo, unfill,
 40x'a'); real package names, pins and Requires appear only in docs,
-pasted from real output. core/resolve.rkt's hl-todo/compat test data
+pasted from real output. package-manager/src/spec/resolve.rkt's hl-todo/compat test data
 reverted for this reason. T-10.
 
 ** 2026-10-07 RULING: VAULT MONOREPO (supersedes both D-011 wordings)
@@ -339,14 +339,14 @@ tui/README.md. Unverified on-device: no Rust toolchain on the phone;
 
 ** 2026-10-06 Remaining implementation order after plan docs
 Plan docs landed through Phase 6 (D-003, W-9). Build next, in order:
-core/plan.rkt, backends/dry-run.rkt plus fake, core/resolve.rkt plus
-lock.rkt, cli/main.rkt, backends/local.rkt, targets/emacs/ proven on
+package-manager/src/spec/plan.rkt, package-manager/test-doubles/dry-run-perform.rkt plus fake, package-manager/src/spec/resolve.rkt plus
+lock.rkt, package-manager/src/entry/cli.rkt, package-manager/src/install/local-perform.rkt, targets/emacs/ proven on
 racket-mode, git export plus log/diffstat ops, tangle.el, Emacs front
 end, TUI remaster. No code starts ahead of its design. P-1.
 
 ** 2026-10-06 STEP C: export interface (design only) + D-014 decided
 Export is checkout-based from the mirror at the pin into an empty
-staging dir (no implementation yet). Interface for backends/git.rkt:
+staging dir (no implementation yet). Interface for package-manager/src/git/git-repo.rkt:
 #+begin_example
 (provide (contract-out
   [git-export-commit (->* (path-string? string? path-string?)
@@ -416,7 +416,7 @@ proof is the pin-survival test (prune=now plus fetch.prune=true).
 ** 2026-10-06 Locking: fcntl via racket/file, proven under proot
 Per-mirror locks use call-with-file-lock/timeout (racket/file), fcntl
 on Linux, released by process death. Proven by the two-process plus
-kill -9 test in backends/git.rkt. If that test ever fails: STOP, the
+kill -9 test in package-manager/src/git/git-repo.rkt. If that test ever fails: STOP, the
 whole fetch/pin design needs rethinking. Item 12.
 
 ** 2026-10-06 Pending acceptance: dry-run-never-touches-git test
@@ -471,7 +471,7 @@ spec.rktd:1:2 and 1:4 tests. See LESSONS.org. P-8, T-10.
 ** 2026-10-06 Log macros bypass contract-out (M-3 exception)
 Verified in the REPL: =define-logger= level forms (=log-pm-debug=,
 =log-pm-info=, ...) are macros, so they cannot go through
-=contract-out= (or even be referenced as values). =core/log.rkt=
+=contract-out= (or even be referenced as values). =package-manager/src/narration/event-text.rkt=
 provides them bare; everything else in the module is contracted. M-3.
 
 ** 2026-10-06 D-005 details: current symlink, Emacs stamp file

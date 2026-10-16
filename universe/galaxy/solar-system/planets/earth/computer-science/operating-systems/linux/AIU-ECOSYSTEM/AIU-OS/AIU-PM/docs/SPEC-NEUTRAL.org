@@ -348,4 +348,4 @@ suite pins this message with a synthetic v1 fixture.)
 1. One commit: delete targets/emacs, swap spec structs/reader/validator
    to sections 1-2-8b, rewrite suite fixtures to prefix forms, gate green.
 2. Dry-run plans for all three proof specs as far as the engine allows.
-3. STEP 3: vault commit (2) with core/vault-lock.rkt.
+3. STEP 3: vault commit (2) with package-manager/src/git/vault-lock.rkt.

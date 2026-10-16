@@ -1,7 +1,7 @@
 #+TITLE: Errors
 #+AUTHOR: Shape
 
-Kinds live in =core/errors.rkt= (E-3): =spec resolve fetch verify build
+Kinds live in =package-manager/src/errors/error-type.rkt= (E-3): =spec resolve fetch verify build
 install config internal=. One struct =exn:fail:pm= with =kind=, =fields=,
 =hint=, =cause=. Raise only through =raise-pm-error= (E-4). Catch
 narrowly (E-5). User errors print clean messages; internal errors print

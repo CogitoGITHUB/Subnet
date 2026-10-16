@@ -14,9 +14,9 @@
          racket/file
          racket/list
          json
-         "../../../cli/main.rkt"
-         "../../../mcp/server.rkt"
-         "../../../core/verbose.rkt")
+         "../../../package-manager/src/entry/cli.rkt"
+         "../../../package-manager/src/entry/mcp-server.rkt"
+         "../../../package-manager/src/narration/narration.rkt")
 
 (module+ main
   (dynamic-require "skill-examples.rkt" 'test #f))

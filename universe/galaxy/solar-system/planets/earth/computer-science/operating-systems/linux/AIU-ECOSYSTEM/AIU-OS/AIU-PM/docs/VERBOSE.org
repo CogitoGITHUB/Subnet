@@ -6,42 +6,42 @@ any of it moves. Lines are =file:line= for non-test code; the
 whole tree found no printing in a test block that matters here.
 
 ** Inventory
-*** Engine and CLI (these move to core/verbose.rkt in V-3)
+*** Engine and CLI (these move to package-manager/src/narration/narration.rkt in V-3)
 
 | file:line | what it prints |
 | - | - |
-| =cli/main.rkt:260-276= | =display-help=, 17 usage lines |
-| =cli/main.rkt:307= | =ok: NAME VERSION= per good spec (=run-check=) |
-| =cli/main.rkt:392= | the =--format json= document, one line |
-| =cli/main.rkt:396= | one plan package per line (=--format sexp=) |
-| =cli/main.rkt:304,380= | =display-pm-error= (already core/ui.rkt) |
-| =cli/main.rkt:384= | =display-internal-error= (already core/ui.rkt) |
+| =package-manager/src/entry/cli.rkt:260-276= | =display-help=, 17 usage lines |
+| =package-manager/src/entry/cli.rkt:307= | =ok: NAME VERSION= per good spec (=run-check=) |
+| =package-manager/src/entry/cli.rkt:392= | the =--format json= document, one line |
+| =package-manager/src/entry/cli.rkt:396= | one plan package per line (=--format sexp=) |
+| =package-manager/src/entry/cli.rkt:304,380= | =display-pm-error= (already package-manager/src/narration/print-console.rkt) |
+| =package-manager/src/entry/cli.rkt:384= | =display-internal-error= (already package-manager/src/narration/print-console.rkt) |
 
-*** The existing run records (the seam core/verbose.rkt takes over)
+*** The existing run records (the seam package-manager/src/narration/narration.rkt takes over)
 
 | file:line | record |
 | - | - |
-| =backends/run.rkt:398-404= | =print-run-start= -> =pm-run-start <utc> cwd= PID= EXE ARGV= |
-| =backends/run.rkt:407-412= | =print-run-end= -> =pm-run-end <outcome> after=<ms>ms EXE= |
-| =backends/run.rkt:313,318,357,364= | the call sites (process path) |
-| =backends/run.rkt:457,462,491,500= | the call sites (redirect path) |
+| =package-manager/src/process/run.rkt:398-404= | =print-run-start= -> =pm-run-start <utc> cwd= PID= EXE ARGV= |
+| =package-manager/src/process/run.rkt:407-412= | =print-run-end= -> =pm-run-end <outcome> after=<ms>ms EXE= |
+| =package-manager/src/process/run.rkt:313,318,357,364= | the call sites (process path) |
+| =package-manager/src/process/run.rkt:457,462,491,500= | the call sites (redirect path) |
 
 Both go to stderr with an explicit =flush-output= after each line.
 The =pm-run-start= / =pm-run-end= pair is already a START/END pair with
 a UTC stamp and a monotonic duration: exactly the shape V-1 needs, and
-V-1 makes it call core/verbose.rkt instead of printing.
+V-1 makes it call package-manager/src/narration/narration.rkt instead of printing.
 
 *** The existing trace path (D-021)
 
 | file:line | what |
 | - | - |
-| =core/log.rkt:39= | =fprintf out "[~a] ~a\n" level message=, the logger sink |
-| =core/log.rkt:122-137= | =trace-screen-drain!=, the =[TRACE]= / =[LOG]= screen pump |
-| =core/log.rkt:110= | =trace-on-default=, =PM_TRACE=0= turns the screen off |
-| =core/log.rkt:114= | =trace-on?= parameter |
-| =core/log.rkt:139-143= | =trace-record=, one IN/OUT record plus its drain |
-| =core/log.rkt:84-87= | =trace-redact=, the single redaction path (S-8) |
-| =core/log.rkt:90-96= | =trace-render=, redaction plus a 200-char bound |
+| =package-manager/src/narration/event-text.rkt:39= | =fprintf out "[~a] ~a\n" level message=, the logger sink |
+| =package-manager/src/narration/event-text.rkt:122-137= | =trace-screen-drain!=, the =[TRACE]= / =[LOG]= screen pump |
+| =package-manager/src/narration/event-text.rkt:110= | =trace-on-default=, =PM_TRACE=0= turns the screen off |
+| =package-manager/src/narration/event-text.rkt:114= | =trace-on?= parameter |
+| =package-manager/src/narration/event-text.rkt:139-143= | =trace-record=, one IN/OUT record plus its drain |
+| =package-manager/src/narration/event-text.rkt:84-87= | =trace-redact=, the single redaction path (S-8) |
+| =package-manager/src/narration/event-text.rkt:90-96= | =trace-render=, redaction plus a 200-char bound |
 
 D-036 supersedes line 110: =PM_TRACE=0= may no longer silence the
 screen. The parameter stays (tests need a quiet drain) but nothing in
@@ -49,20 +49,20 @@ the environment can set it.
 
 *** Other printers (left alone, listed so nothing is missed)
 
-- =core/ui.rkt:37,39,46,50-53= -- warnings and errors, already the one
+- =package-manager/src/narration/print-console.rkt:37,39,46,50-53= -- warnings and errors, already the one
   user-facing printer module.
-- =backends/dry-run.rkt:29= -- =display-plan=.
-- =backends/git.rkt:453=, =backends/journal.rkt:62= -- write a line to
+- =package-manager/test-doubles/dry-run-perform.rkt:29= -- =display-plan=.
+- =package-manager/src/git/git-repo.rkt:453=, =package-manager/src/queue/journal.rkt:62= -- write a line to
   a caller-supplied port, not to the screen.
-- =backends/jobs.rkt:447,645,648=, =backends/local.rkt:158=,
-  =backends/run.rkt:113,131= -- the same: pipe channels.
+- =package-manager/src/queue/jobs.rkt:447,645,648=, =package-manager/src/install/local-perform.rkt:158=,
+  =package-manager/src/process/run.rkt:113,131= -- the same: pipe channels.
 - =scripts/*.rkt= -- dev scripts (=build-lua=, =hello-fetch=,
   =probe-blob=, =repl=, =test-runner=, =read-check=). These are not
   engine code and keep their own printing.
-- =mcp/server.rkt:235= -- =write-json= to the MCP stdout. That is the
+- =package-manager/src/entry/mcp-server.rkt:235= -- =write-json= to the MCP stdout. That is the
   protocol, not narration; it stays.
 
-*** How cli/main.rkt builds command->json
+*** How package-manager/src/entry/cli.rkt builds command->json
 
 Three small pure functions, no printing:
 
@@ -101,6 +101,6 @@ polling. The package manager never waits for a reader.
 indented two spaces per nesting level, flushed after every event.
 
 *** Redaction
-Every field goes through =trace-redact= (core/log.rkt:84) before ANY
+Every field goes through =trace-redact= (package-manager/src/narration/event-text.rkt:84) before ANY
 destination, so a password cannot reach the screen, the log or the
 feed by three different routes.

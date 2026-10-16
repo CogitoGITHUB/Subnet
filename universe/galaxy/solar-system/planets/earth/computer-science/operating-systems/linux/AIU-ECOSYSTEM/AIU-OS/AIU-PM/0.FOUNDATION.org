@@ -35,7 +35,7 @@ raco pkg install --auto rackunit-lib
   needed, and record the result in DECISIONS.org.
 
 * 2. Prime directives
-- *P-1* Small steps. Every step ends with a green =scripts/check.nu= and a commit.
+- *P-1* Small steps. Every step ends with a green =gate/check.nu= and a commit.
 - *P-2* Plan as data, effects at the edge. Anything that changes the machine is first an
   =action= value. The default backend is =dry-run=.
 - *P-3* Errors are a feature. Every failure says WHAT, WHERE, WHY, NEXT, with the exact
@@ -194,7 +194,7 @@ syntax/parse docs)
   =  field: value=. Field names are short and end with a colon.
 - *E-2* Every user-facing error answers four questions: WHAT failed, WHERE (package, step,
   file:line:col), WHY (cause, exit code, last lines of stderr), NEXT (a hint or command).
-- *E-3* Exception types live only in =core/errors.rkt=. One struct =exn:fail:pm= with
+- *E-3* Exception types live only in =package-manager/src/errors/error-type.rkt=. One struct =exn:fail:pm= with
   fields =kind=, =fields=, =hint=, =cause=. Kinds: =spec resolve fetch verify build
   install config internal=. Export one predicate per kind (=fetch-error?= ...) so handlers
   can be narrow.
@@ -238,7 +238,7 @@ syntax/parse docs)
 |   70 | internal bug                    |
 |  130 | interrupted (Ctrl-C)            |
 
-** =core/errors.rkt= (shape, not final code)
+** =package-manager/src/errors/error-type.rkt= (shape, not final code)
 #+begin_src racket
 #lang racket/base
 ;; errors.rkt -- the only module that defines exception types and formats messages.
@@ -359,7 +359,7 @@ build: step failed;
 - *T-5* Fixtures live in =tests/fixtures/=. Temp dirs come from =make-temporary-directory*=
   and are removed in =dynamic-wind=.
 - *T-6* A bug fix starts with a failing test.
-- *T-7* =scripts/check.nu= runs: =raco make -v= on everything, =raco test=, and a text
+- *T-7* =gate/check.nu= runs: =raco make -v= on everything, =raco test=, and a text
   lint (no tabs, no trailing spaces, no line over 102 characters, final newline). It must
   pass before every commit.
 - *T-8* The core is tested with the =fake= backend. Core tests never need real effects.
@@ -380,7 +380,7 @@ build: step failed;
   Racket's startup to be noticeably slower than Guile's, and slower on a phone than on a
   laptop.
 - *X-2* Measure before optimizing. Record baselines in =docs/PERF.org=:
-  =time racket -l racket/base -e '(void)'= and =time racket cli/main.rkt --help=. Do not
+  =time racket -l racket/base -e '(void)'= and =time racket package-manager/src/entry/cli.rkt --help=. Do not
   regress without a DECISIONS entry.
 - *X-3* [VERIFY] Keep Typed Racket, =racket/gui= and =racket/class= out of the CLI path
   unless measured acceptable.
@@ -445,7 +445,7 @@ every code file is a stub holding only its purpose statement and an empty =provi
 cyberdeck-pm/
   README.org              purpose, status, how to run check.nu
   FOUNDATIONS.org         this file
-  info.rkt                package metadata: collection, version, deps, build-deps
+  package-manager/src/entry/package-info.rkt                package metadata: collection, version, deps, build-deps
   .gitignore              compiled/, *.zo, *.dep, tmp/
   docs/
     DECISIONS.org         decision log (seed with section 14)
@@ -484,14 +484,14 @@ cyberdeck-pm/
 
 ** Build order (each step must pass T-7 before the next)
 1. Docs and scaffold: README, DECISIONS (seeded), ERRORS, GLOSSARY, LESSONS, PERF,
-   =info.rkt=, =.gitignore=, =scripts/check.nu=.
-2. =core/errors.rkt= + =core/log.rkt= + =core/ui.rkt=, with tests.
-3. =core/version.rkt= + =core/git-id.rkt=, with tests.
-4. =core/spec.rkt= + =core/spec-read.rkt=, with hostile-input and error-message tests.
-5. =core/plan.rkt= + =backends/dry-run.rkt= + =backends/fake.rkt=, with golden tests.
-6. =core/resolve.rkt= + =core/lock.rkt=.
-7. =cli/main.rkt= (top-level error handler and exit codes).
-8. =backends/local.rkt= executes plans under a prefix.
+   =package-manager/src/entry/package-info.rkt=, =.gitignore=, =gate/check.nu=.
+2. =package-manager/src/errors/error-type.rkt= + =package-manager/src/narration/event-text.rkt= + =package-manager/src/narration/print-console.rkt=, with tests.
+3. =package-manager/src/entry/version.rkt= + =package-manager/src/git/git-commit.rkt=, with tests.
+4. =package-manager/src/spec/spec.rkt= + =package-manager/src/spec/spec-read.rkt=, with hostile-input and error-message tests.
+5. =package-manager/src/spec/plan.rkt= + =package-manager/test-doubles/dry-run-perform.rkt= + =package-manager/test-doubles/fake-git.rkt=, with golden tests.
+6. =package-manager/src/spec/resolve.rkt= + =package-manager/src/machine/file-lock.rkt=.
+7. =package-manager/src/entry/cli.rkt= (top-level error handler and exit codes).
+8. =package-manager/src/install/local-perform.rkt= executes plans under a prefix.
 
 * 16. Reading list (in this order)
 1. Racket Style Guide: https://docs.racket-lang.org/style/

@@ -1,6 +1,6 @@
 // Offline test for the plugin's parsing and formatting. No pm, no
 // OpenCode runtime, no network: synthetic JSON Lines exactly as
-// core/verbose.rkt writes them, fed through the real functions.
+// package-manager/src/narration/narration.rkt writes them, fed through the real functions.
 //
 //   node agent/opencode-plugin/test.mjs
 
@@ -19,7 +19,7 @@ import {
 } from "./aiu-pm.js";
 
 // --- the fixtures ---------------------------------------------------------
-// Byte-for-byte the shape core/verbose.rkt emits (see its tests).
+// Byte-for-byte the shape package-manager/src/narration/narration.rkt emits (see its tests).
 const ev = (o) =>
   JSON.stringify({
     runId: "test-42",

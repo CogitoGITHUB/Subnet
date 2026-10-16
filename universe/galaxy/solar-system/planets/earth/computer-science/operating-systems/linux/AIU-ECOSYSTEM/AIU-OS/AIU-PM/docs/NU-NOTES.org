@@ -82,7 +82,7 @@ $ printf 'hello-nu' > /tmp/opencode/nu-fifo
 reader-exit: 0; content: hello-nu
 #+end_example
 A writer must be present or the open blocks; keep a writer held open
-across handshakes (same rule as backends/run.rkt).
+across handshakes (same rule as package-manager/src/process/run.rkt).
 
 * Signals: no trap, no signal commands
 #+begin_example

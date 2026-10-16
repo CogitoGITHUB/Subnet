@@ -3,7 +3,7 @@
 
 * Status
 Final design. Nothing here is implemented yet: =plan/= and =lock/= exist
-only as =core/plan.rkt= and =backends/dry-run.rkt=. The work order is
+only as =package-manager/src/spec/plan.rkt= and =package-manager/test-doubles/dry-run-perform.rkt=. The work order is
 plan/OPEN-DECISIONS.org, which is the file a resuming session reads
 first. No item in this file is open; anything still unconfirmed became an
 item in that file to inspect, not a question parked here.
@@ -19,7 +19,7 @@ These hold for every module below.
   =sleep=, no =timeout=, no foreground waits; every wait ends on an
   event and =#:cancel= replaces timeouts (D-015).
 - Every step emits a start and an end record on the record path in
-  =core/log.rkt=, with the same redaction as everything else. A step
+  =package-manager/src/narration/event-text.rkt=, with the same redaction as everything else. A step
   that starts and never ends is the only thing that looks like a hang.
 - Dev packages are skipped by =update --all=, never rebuilt, and
   listed with their reason. =update --all= never changes its exit code
@@ -34,15 +34,15 @@ These hold for every module below.
 * Data flow
 #+BEGIN_EXAMPLE
 specs + flags config + vault pins
-  -> core/flags.rkt    resolve flags, check conflicts/requires,
+  -> package-manager/src/spec/flags.rkt    resolve flags, check conflicts/requires,
                        unknown flag is an error
-  -> core/plan.rkt     package-level plan: name, slot, version, commit,
+  -> package-manager/src/spec/plan.rkt     package-level plan: name, slot, version, commit,
                        resolved flags, dependency identities, steps,
                        install forms, check, input hash
-  -> core/lock.rkt     plan -> lock data: base pin, resolved flags,
+  -> package-manager/src/machine/file-lock.rkt     plan -> lock data: base pin, resolved flags,
                        spec build/install hash, input hash, dependency
                        identities. NOT the dev fingerprint.
-  -> lowering          package plan -> actions (in core/plan.rkt)
+  -> lowering          package plan -> actions (in package-manager/src/spec/plan.rkt)
 #+END_EXAMPLE
 
 Lowering emits the existing action structs =fetch-action=,
@@ -110,7 +110,7 @@ effect. DECIDED: =update.rkt= is its own module. It is not folded into
 =apply.rkt=, and review logic stays inside it rather than moving to
 =core/= or =cli/=.
 
-* core/flags.rkt
+* package-manager/src/spec/flags.rkt
 : Purpose
 Resolve the flags a package was built with. New module.
 : Inputs
@@ -133,17 +133,17 @@ unsatisfied require each raise kind ='config=.
 The flags resolved here are recorded in the lock and are part of
 install identity (D-022, D-023).
 
-* core/plan.rkt
+* package-manager/src/spec/plan.rkt
 : Purpose
 Take resolved flags, a validated spec, the manifest and the vault
 state, and emit a package-level plan; lower that plan to actions. This
 is the only place that decides what to do.
 : Inputs
-- spec (from =core/spec-read.rkt=, format-version 2) with its =slot=
+- spec (from =package-manager/src/spec/spec-read.rkt=, format-version 2) with its =slot=
   and =flags= fields
-- resolved flags from =core/flags.rkt=
-- =(listof manifest-entry)= from =backends/manifest.rkt=
-- vault namespace listing and pins from =backends/vault.rkt=
+- resolved flags from =package-manager/src/spec/flags.rkt=
+- =(listof manifest-entry)= from =package-manager/src/store/manifest.rkt=
+- vault namespace listing and pins from =package-manager/src/git/vault.rkt=
 : Outputs
 A package plan carrying name, slot, version, commit, resolved flags,
 dependency identities, steps, install forms, check and input hash.
@@ -160,13 +160,13 @@ Synthetic fixtures only: =pkg-alpha=, =pkg-beta=, =pkg-cycle-a= in the
 resolve cycle. Golden =plan->text= output. Two versions of one package
 in two slots plan to two store dirs.
 : Notes
-- The build environment attaches in =backends/build.rkt=, not in
+- The build environment attaches in =package-manager/src/build/build-plan.rkt=, not in
   =run-step-action= (D-025).
 - =verify-action= is deleted from this module (D-025).
 - Confirm nothing else in the tree already derives a plan from a spec
   before writing the derivation (was checklist item E-04).
 
-* core/lock.rkt
+* package-manager/src/machine/file-lock.rkt
 : Purpose
 Turn a resolved plan into lockfile data, and only that. The module
 exists and is already tested for =read-lockfile= / =write-lockfile=
@@ -191,7 +191,7 @@ different input hash.
   build and install forms. It does NOT record the =dev= fingerprint;
   that fingerprint lives in build state, not in the lockfile.
 
-* backends/build.rkt
+* package-manager/src/build/build-plan.rkt
 : Purpose
 Execute the closed build-step vocabulary. Nothing else may spawn a
 build. The build environment is attached here, not carried in the
@@ -213,7 +213,7 @@ cmake-install, configure, cargo, make-info, copy, run.
   placement and before =.pm-incomplete= is cleared. SPEC-NEUTRAL
   section 3 calls it a post-install check.
 
-* backends/install.rkt
+* package-manager/src/install/install-command.rkt
 : Purpose
 Place a built tree into PREFIX under the install forms.
 : Inputs
@@ -226,11 +226,11 @@ escapes PREFIX (=local-perform!= already raises this today).
 : Tests
 Synthetic package, each install form once, in and out of PREFIX.
 : Notes
-Reuses =local-perform!= from =backends/local.rkt= rather than
+Reuses =local-perform!= from =package-manager/src/install/local-perform.rkt= rather than
 forking it: =local-perform!= is proven and tested, and D-025 keeps it
 as the single placement implementation.
 
-* backends/store.rkt
+* package-manager/src/store/store.rkt
 : Purpose
 Own the on-disk shape: versioned dirs, the =.pm-incomplete= marker,
 and the =current= link.
@@ -249,12 +249,12 @@ dead run.
 A failing step keeps the marker. A succeeding run removes it. Two slots
 of one package get two dirs and two links.
 : Notes
-- DECIDED: activation lives in =backends/activate.rkt=, a module
+- DECIDED: activation lives in =package-manager/src/install/activate.rkt=, a module
   separate from =store.rkt=. It owns the profile generations
   (=profile-NNN/= plus the atomic =profile= link swap) from
   SPEC-NEUTRAL section 4.
 
-* backends/journal.rkt
+* package-manager/src/queue/journal.rkt
 : Purpose
 Append-only JSON Lines step journal, one file per package in the state
 dir. This is what makes apply resumable.
@@ -272,7 +272,7 @@ Synthetic: kill a run between two steps, resume, assert the completed
 step is skipped and the next one runs; change a step's input hash,
 assert it is NOT skipped.
 
-* backends/apply.rkt
+* package-manager/src/install/apply.rkt
 : Purpose
 The only orchestrator with effects: fetch, export, build, install,
 check, clear the marker, current.
@@ -296,7 +296,7 @@ mid-write. Steps run under a try-lock and fail fast.
 - DECIDED: =apply= is the only writer of the manifest. It writes; it
   does not return entries for a caller to write.
 
-* backends/activate.rkt
+* package-manager/src/install/activate.rkt
 : Purpose
 Own the profile: generations, activate, rollback, remove, hold.
 : Inputs
@@ -319,7 +319,7 @@ swap is proven already (SPEC-NEUTRAL section 4, 500 reads 0 failures).
   list of generations is itself the rollback state, so there is no
   separate rollback record to write.
 
-* backends/update.rkt
+* package-manager/src/store/update.rkt
 : Purpose
 =check=, =review=, =apply=, =rollback=, =hold=. Never auto-applies.
 : Inputs
@@ -338,7 +338,7 @@ listed, never rebuilt, with the line
 emitted from here. =check= fetches into the vault and compares
 remote-head against the pin; it never installs.
 
-* backends/query.rkt
+* package-manager/src/store/query.rkt
 : Purpose
 Answer =why=, =owner= and =verify=. Read-only.
 : Inputs
@@ -412,13 +412,13 @@ and will be caught by review, not by mechanism; that limit is stated
 here instead of hidden.
 
 * Sequencing
-1. =core/flags.rkt= and the =slot=/=flags= spec fields.
-2. =core/plan.rkt= derivation, with =plan->text= goldens, then lowering.
-3. =core/lock.rkt= extended to the lock shape (D-028), pure, then its
+1. =package-manager/src/spec/flags.rkt= and the =slot=/=flags= spec fields.
+2. =package-manager/src/spec/plan.rkt= derivation, with =plan->text= goldens, then lowering.
+3. =package-manager/src/machine/file-lock.rkt= extended to the lock shape (D-028), pure, then its
    writer.
-4. =backends/store.rkt=, the marker and =current= link.
-5. =backends/build.rkt=, one vocabulary word at a time.
-6. =backends/install.rkt=, reusing =local-perform!=.
-7. =backends/journal.rkt= and =backends/apply.rkt=, then the CLI flags.
+4. =package-manager/src/store/store.rkt=, the marker and =current= link.
+5. =package-manager/src/build/build-plan.rkt=, one vocabulary word at a time.
+6. =package-manager/src/install/install-command.rkt=, reusing =local-perform!=.
+7. =package-manager/src/queue/journal.rkt= and =package-manager/src/install/apply.rkt=, then the CLI flags.
 8. =activate.rkt=, then =query.rkt= and =update.rkt= last: dev mode
    waits on a working =apply=.

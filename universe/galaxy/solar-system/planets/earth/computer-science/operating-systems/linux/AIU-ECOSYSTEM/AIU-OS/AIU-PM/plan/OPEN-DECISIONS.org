@@ -36,8 +36,8 @@ is mapped to that sentence in the last column of the first table.
   already exited, so this is a pure-Racket block, not a slow git.
   The suspects are =child.lock=/=flock= plus a waiter-miss family in
   the run.rkt / vault child management. Repro: the full
-  =backends/update.rkt= suite.
-- *Decision:* =(DEFAULT: isolate the wedge in =core/vault-lock.rkt= and
+  =package-manager/src/store/update.rkt= suite.
+- *Decision:* =(DEFAULT: isolate the wedge in =package-manager/src/git/vault-lock.rkt= and
   the run.rkt waiter, fix it, and keep E-16b BLOCKED until a 3-package
   fixture passes in one process.)=
   - (a) Hunt the wedge now and fix it. Recommended: E-16b/E-16c and
@@ -79,7 +79,7 @@ is mapped to that sentence in the last column of the first table.
   fetch-namespace does not blow up.
 - *Blocked by:* it needs ~100 MB of synthetic fixture and the gate runs
   on a phone.
-- *Decision:* =(DEFAULT: keep parked; leave =scripts/probe-blob.rkt= as
+- *Decision:* =(DEFAULT: keep parked; leave =tools/probe-blob.rkt= as
   the manual proof.)=
 
 ** vault-lock.rkt re-acquire in a shared process -- PARKED
@@ -138,7 +138,7 @@ is mapped to that sentence in the last column of the first table.
 - *Owed:* the wedge investigation in E-16b is in its territory.
 
 ** E-25 ecosystems -- DONE
-- *Purpose:* =core/ecosystem.rkt=, =make-c.rktd= (Lua) and
+- *Purpose:* =package-manager/src/spec/ecosystem-file.rkt=, =make-c.rktd= (Lua) and
   =cargo.rktd=, with a host-tool preflight before any build step.
 - *Owed:* ecosystem files exist and are read, but nothing selects an
   ecosystem from a spec yet, so the templates are inert.
@@ -190,7 +190,7 @@ is mapped to that sentence in the last column of the first table.
 
 ** V-3 / V-3a -- DONE
 - =display-result= is the only printer; gate stage 14 enforces it and
-  is proven to bite. =core/log.rkt= is exempt for a require cycle, and
+  is proven to bite. =package-manager/src/narration/event-text.rkt= is exempt for a require cycle, and
   the exemption is a named list in the gate.
 
 * Phase G: the structural spine
@@ -231,7 +231,7 @@ G-12) need no owner decision. Each is implementation of a declared
 intent, and each has a testable "done when" here.
 
 * Phase S: security
-** S-01 =core/security.rkt=, the pure policy
+** S-01 =package-manager/src/security/security.rkt=, the pure policy
 - *Purpose:* one module that answers "may pm do this?", seven named
   rules, no I/O.
 - *Needs a decision:* the rules are written; the mechanism is not. The
@@ -288,11 +288,11 @@ Stage 6 (one-printer) and stage 15 (audited effects) do not scan
 S2-10 was one instance found by reading; there may be more.
 
 ** TODO S3-03 update, activate, rollback, remove, hold, verify
-Engine is ready for all six (backends/update.rkt, activate.rkt,
+Engine is ready for all six (package-manager/src/store/update.rkt, activate.rkt,
 query.rkt); the dispatch is not written yet. One command per commit.
   / Done when: each refuses nothing and its JSON example is rendered
   by the suite.
-  / NOT COMMITTED YET: cli/main.rkt requires backends/apply.rkt, which
+  / NOT COMMITTED YET: package-manager/src/entry/cli.rkt requires package-manager/src/install/apply.rkt, which
   is still uncommitted work in another lane. Committing the CLI alone
   would land a tree that cannot load.
 (The checklist repeated the S2-05 acceptance paragraph under this item;
@@ -333,7 +333,7 @@ The =run-command= fifo strand is FIXED at its cause: =#:cwd= is now
 validated in =spawn-prelude= before anything is created or spawned, so a
 nonexistent directory raises a named =exn:fail:pm= instead of letting the
 child die in =chdir= before the wrapper's first act. That was the whole
-of the measured hang (backends/git.rkt, 7+ minutes on a =git-has-commit?=
+of the measured hang (package-manager/src/git/git-repo.rkt, 7+ minutes on a =git-has-commit?=
 against a =demo.git= that was never created).
 
 What is NOT done is the belt-and-braces part: having the PARENT hold a
@@ -397,7 +397,7 @@ observed in practice.
   violates the mirror's first invariant.
 
 * A fifth module in the plan split, and why
-MOVE-ORDER step 3 named four new modules for =core/plan.rkt=. Reality
+MOVE-ORDER step 3 named four new modules for =package-manager/src/spec/plan.rkt=. Reality
 needs five. The twelve action structs plus =plan= and =package-plan=
 must live somewhere that is NOT the facade, because the facade
 re-provides them: a module that re-provides cannot also be required by
@@ -408,3 +408,36 @@ compile time rather than at run time. So the data model gets its own
   not a violation of one-file-one-job; a module with two is.)= The
   amendment is recorded in =plan/MOVE-ORDER.org= in the same commit that
   makes it true.
+
+* D-027 reversed: compiled output leaves the tree
+- *What D-027 said:* do NOT set =PLTCOMPILEDROOTS=. Measured on this
+  phone, ="<cache>:same"= -- two roots, the second the literal value
+  ="same"= -- made =raco make= 401s and =raco test= 216s on a 2-module
+  project against 18s unset. The stated cause was that the first root is
+  the write root and Racket re-emits its own stock libraries into it, so
+  the cache grows without bound. =compiled/= stayed in-tree and
+  gitignored.
+- *What was measured instead:* ONE root, no =":same"=. Loading
+  =racket/list= and =racket/string= with the root set left the root at
+  its previous file count and mirrored no =collects/= or =pkgs/= path
+  into it. The stock-library re-emission does not happen in this
+  configuration, so the 401s does not follow from it. Mechanism tested
+  before any config was written; see commit f792eca.
+- *Decision:* =(DEFAULT: keep the single root. A cold root costs one
+  rebuild, which is what a fresh checkout costs anyway. If a stock-library
+  tree ever appears under the root, D-027 was right after all and this
+  gets reverted with that directory as the evidence.)=
+- *Not silently dropped:* the old note stays in =gate/env.nu=, because
+  a reader who remembers D-027 needs to find out it was reversed and why.
+
+* OWED: the safety test leaves its scratch repo behind
+=package-manager/src/git/git-repo.rkt:808= builds =<cyberdeck-dir>/tmp/pm-safety-<millis>=
+from =current-milliseconds= and nothing removes it. 107K of leftover git
+repo from Oct 10 was deleted by hand during the compiled-output commit.
+It is untracked and gitignored, so it never dirtied a commit, but it
+accumulates one directory per safety run, and =tmp= is a banned word
+besides.
+- *Decision:* =(DEFAULT: the test that creates it removes it, in the same
+  way every other fixture in this repo does. Not a new mechanism and not
+  a timer; the path already comes from one place and one place can delete
+  it.)=

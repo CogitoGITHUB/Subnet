@@ -7,40 +7,75 @@ is true.
 
 Resuming: read the last line, then =plan/MOVE-ORDER.org= for the script.
 
-| step | what | hash | next |
-|------+------+------+------|
-| 1 | =plan/= and =agent/= created, 28 references updated, symlink untracked | 9fe48f8 | 2 |
-| 2 | ARCHITECTURE, NAMING-REGISTER, MOVE-ORDER written before any move | 896d82c | 3 |
-| 3 | split =core/plan.rkt= into actions/hash/derive/lower/conflicts + facade | e8ddabc | 4 |
-| 4 | split =backends/run.rkt= into spawn, fifo, drain, kill, wait, progress | this | 5 |
-| 5 | =core/spec-read.rkt= facade already split; verify and record | pending | 6 |
-| 6 | split =backends/build.rkt= | pending | 7 |
-| 7 | split =backends/activate.rkt= | pending | 8 |
-| 8 | split =cli/main.rkt= into cli/documents/dispatch | pending | 9 |
-| 9 | =jobs.rkt= and =vault.rkt= move WHOLE, unsplit | pending | 10 |
-| 10 | =core/*.rkt= into =package-manager/src/<area>/= | pending | 11 |
-| 11 | =backends/*.rkt= into src areas; fake/dry-run into test-doubles | pending | 12 |
-| 12 | =cli/= and =mcp/= into =src/entry/= | pending | 13 |
-| 13 | =scripts/= into =gate/= and =tools/= | pending | 14 |
-| 14 | inline tests into =package-manager/tests/= mirroring src | pending | 15 |
-| 15 | =gate/check.nu= learns the new root and every allowlist path | pending | 16 |
-| 16 | identifier renames from NAMING-REGISTER | pending | 17 |
-| 17 | gate stage 17, banned words, file:line | pending | 18 |
-| 18 | gate stage 18, one-way dependency, file:line | pending | 19 |
-| 19 | mirror feature in =src/mirror/= | pending | 20 |
-| 20 | per-area README.org files | pending | 21 |
-| 21 | ENGINE-CHECKLIST entries reconciled into OPEN-DECISIONS | pending | 22 |
-| 22 | full verification, prove stages 17/18 bite, final gate, push | pending | — |
+| step | what | state |
+|------+------+-------|
+| 1 | =plan/= and =agent/= created, references updated, symlink untracked | 9fe48f8 |
+| 2 | ARCHITECTURE, NAMING-REGISTER, MOVE-ORDER written before any move | 896d82c |
+| 3 | =core/plan.rkt= split five ways, facade unchanged, 37=37 tests | e8ddabc |
+| 4 | =backends/run.rkt= split six ways, 62=62 tests | 341abe2 |
+| — | compiled output out of the tree, =PLTCOMPILEDROOTS= in one place | f792eca |
+| 5 | =core/spec-read.rkt= facade already split at abd748c; verified, not redone | — |
+| 6 | split =backends/build.rkt= | NOT DONE, see below |
+| 7 | split =backends/activate.rkt= | NOT DONE, see below |
+| 8 | split =cli/main.rkt= | NOT DONE, moved whole, see below |
+| 9 | =jobs.rkt= and =vault.rkt= moved WHOLE, unsplit, as decided | same commit as 10-13 |
+| 10 | =core/*.rkt= into =package-manager/src/<area>/= | same commit as 9-13 |
+| 11 | =backends/*.rkt= into src areas; fake/dry-run into test-doubles | same commit as 9-13 |
+| 12 | =cli/= and =mcp/= into =src/entry/= | same commit as 9-13 |
+| 13 | =scripts/= into =gate/= and =tools/= | same commit as 9-13 |
+| 14 | inline tests into =package-manager/tests/= | TODO |
+| 15 | =gate/check.nu= learns the new root and every allowlist path | done in 9-13 |
+| 16 | identifier renames from NAMING-REGISTER | TODO |
+| 17 | gate stage 17, banned words, file:line | TODO |
+| 18 | gate stage 18, one-way dependency, file:line | TODO |
+| 19 | mirror feature in =src/mirror/= | TODO |
+| 20 | per-area README.org | TODO |
+| 21 | ENGINE-CHECKLIST entries reconciled | TODO |
+| 22 | full verification, prove stages 17/18 bite, final gate, push | TODO |
 
-* Rule per step
-No test runs between steps. =read-check= on the touched files, =raco make= on
-the touched files and their direct dependents, then the commit. If =raco make=
-is red, fix it before moving on: a compile error is not a test.
+* The three splits that were NOT done, and why
+Steps 6, 7 and 8 were each handed to a subagent and each was cancelled.
+The reason is the same and it is not the code: the account can only run
+the free subagent model, and each split asked it to read a 650+ line file,
+emit five to eight new files, redistribute every test, and run the suite
+twice. Hours passed with a load average of 0.12 and no racket process
+running -- the machine was idle and the model was not keeping up.
 
-* The one tightening of that rule
-A split is the only step where a wrong-but-compiling result is invisible until
-the very end, when the tree has moved far and localising the fault is
-expensive. So each split also runs =raco test= on the files it produced and
-checks the total against the count from before the split. That is a compile
-plus identity check, not a gate run, and it is why the split steps are the only
-ones that do it.
+=cli/main.rkt= (1525 lines) was moved WHOLE to
+=package-manager/src/entry/cli.rkt= rather than split first, because the
+restructure was the thing being waited on and splitting is easier once a
+file is in its final home. It is over the ~400-line rule and that is
+stated rather than hidden. =build.rkt= (673) is at
+=src/build/build-plan.rkt= and =activate.rkt= (650) at
+=src/install/activate.rkt=, both unsplit for the same reason.
+
+A partial split of =build.rkt= existed briefly -- six files -- and was
+removed rather than committed. It was half a split: the new modules were
+dead code and =build.rkt= had never been rewritten into a facade, so
+nothing required them and the gate would have compiled files no one
+called.
+
+* What the restructure did
+79 files moved through =git mv=, so history follows each file. 27 files
+had relative requires rewritten: for every require the target was
+resolved against the file's OLD directory, mapped through the table, and
+recomputed from its NEW directory, then every rewritten require was
+checked to point at a file that exists. 33 non-Racket files had path
+references updated, longest-key-first so =read-check.rkt= is rewritten
+before a bare =read-check.rkt= can match inside it.
+
+Two passes were needed. The first missed BARE requires -- ="errors.rkt"=
+without a =./= -- because its pattern demanded a prefix, and 38 files
+contain literals like that. =raco make= caught it (spec.rkt:7 cannot open
+module file). The second pass only rewrites a literal that is ALREADY
+broken from its current directory, so it cannot damage one that works.
+
+Three things the second pass correctly refused to guess at, rather than
+silently rewriting: =holder.rkt= and =k-holder.rkt= are temp files the
+tests CREATE with =build-path=, not modules, and =tools/repl.rkt= holds
+repo-root-relative names passed to =path->complete-path=, which were fixed
+by hand because they are not file-relative.
+
+One real corruption was caused and found: the blind replacement rewrote
+NAMING-REGISTER.org's OLD-path column as well as its new-path column, so a
+row read =package-package-manager/src/entry/package-info.rkt=. Repaired.

@@ -12,7 +12,7 @@ as the change that disagreed.
 Numbering note: the numbers below are THIS RUN's step numbers, matching
 =plan/PROGRESS.org=, which is the index. An earlier version of this file
 numbered its own list from 1 with nothing marked done, so "step 1" here
-meant =core/plan.rkt= while the owner meant step 1 = =plan/= and
+meant =package-manager/src/spec/plan.rkt= while the owner meant step 1 = =plan/= and
 =agent/=. That is fixed: this file and PROGRESS.org now agree, and
 PROGRESS.org is where the hash lands.
 
@@ -25,9 +25,9 @@ PROGRESS.org is where the hash lands.
 Each split keeps the old path as a thin facade when other files require
 it, so no dependent's require line changes at this stage.
 
-3. =core/plan.rkt= (974) -> =src/spec/=: =plan-actions.rkt=,
+3. =package-manager/src/spec/plan.rkt= (974) -> =src/spec/=: =plan-actions.rkt=,
    =plan-hash.rkt=, =plan-derive.rkt=, =plan-lower.rkt=,
-   =plan-conflicts.rkt=, facade stays =core/plan.rkt=. First because
+   =plan-conflicts.rkt=, facade stays =package-manager/src/spec/plan.rkt=. First because
    =activate= and =apply= both need the lowering vocabulary and this
    moves that boundary.
    AMENDED: five modules, not the four first written here. The twelve
@@ -36,26 +36,26 @@ it, so no dependent's require line changes at this stage.
    what it re-provides, and Racket rejects the cycle at compile time.
    The data model gets =plan-actions.rkt= and the four job modules sit
    above it. Reason in =plan/OPEN-DECISIONS.org=.
-4. =backends/run.rkt= (1063) -> =spawn.rkt=, =status-fifo.rkt=,
+4. =package-manager/src/process/run.rkt= (1063) -> =spawn.rkt=, =status-fifo.rkt=,
    =drain.rkt=, =kill-tree.rkt=, =cancel-wait.rkt=, =progress.rkt=.
    The substrate. Its two known hangs are already documented
    (accepted-mitigated, in OPEN-DECISIONS), so splitting it does not
    have to wait for that decision.
-5. =core/spec-read.rkt= (748) -> ALREADY SPLIT at abd748c into four
+5. =package-manager/src/spec/spec-read.rkt= (748) -> ALREADY SPLIT at abd748c into four
    modules with the facade intact; this step VERIFIES the public surface
    and records the result. No new modules. Its 432 test lines are why the
    file is still 748: the code is 316, and step 14 takes the tests out.
-6. =backends/build.rkt= (673) -> =build-env.rkt=, =build-executor.rkt=,
+6. =package-manager/src/build/build-plan.rkt= (673) -> =build-env.rkt=, =build-executor.rkt=,
    =build-systems/{make,cmake,cargo,configure,run}.rkt=
-7. =backends/activate.rkt= (650) -> =generation.rkt=,
+7. =package-manager/src/install/activate.rkt= (650) -> =generation.rkt=,
    =profile-flip.rkt=, =profile-gc.rkt=, =profile-holds.rkt=.
    =profile-activate=, =profile-rollback= and =profile-remove= are
    contracts that must not change, so their contract-out stays on the
    facade.
-8. =cli/main.rkt= (1525) -> =cli.rkt=, =documents.rkt=, =dispatch.rkt=,
+8. =package-manager/src/entry/cli.rkt= (1525) -> =cli.rkt=, =documents.rkt=, =dispatch.rkt=,
    tests to =tests/entry/cli-test.rkt=. Last of the splits: it requires
    nine files today and should require two afterwards.
-9. =backends/jobs.rkt= (1043) and =backends/vault.rkt= (1653).
+9. =package-manager/src/queue/jobs.rkt= (1043) and =package-manager/src/git/vault.rkt= (1653).
    BOTH ARE STILL PARKED, so they move WHOLE and UNSPLIT into their
    areas, and the reason is recorded in OPEN-DECISIONS. Splitting a
    parked file moves thousands of lines with no behavioural net.
@@ -65,7 +65,7 @@ it, so no dependent's require line changes at this stage.
 11. =backends/*.rkt= -> =package-manager/src/<area>/=, except =fake.rkt=
     and =dry-run.rkt= which go to =package-manager/test-doubles/=.
 12. =cli/= and =mcp/= -> =package-manager/src/entry/=. =main.rkt= becomes
-    =cli.rkt=, =mcp/server.rkt= becomes =mcp-server.rkt= (main and
+    =cli.rkt=, =package-manager/src/entry/mcp-server.rkt= becomes =mcp-server.rkt= (main and
     server are both banned words).
 13. =scripts/= splits: =check.nu=, =read-check.rkt=, =test-runner.rkt=,
     =env.nu=, =tree.nu= to =gate/=; =repl.rkt=, =hello-fetch.rkt=,

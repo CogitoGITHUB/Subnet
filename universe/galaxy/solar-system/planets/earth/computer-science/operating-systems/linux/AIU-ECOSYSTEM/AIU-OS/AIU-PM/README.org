@@ -36,21 +36,21 @@ this machine they live in =~/opt/racket-full= and =~/opt/nushell/0.116.1/=.
 
 **Compiled output lives outside the tree.** Racket's =compiled/=
 directories and =.zo= files are written to =$PLTCOMPILEDROOTS=, which
-=scripts/env.nu= sets to =~/.local/share/aiu-pm/compiled=, mirroring the
+=gate/env.nu= sets to =~/.local/share/aiu-pm/compiled=, mirroring the
 source path underneath it. Nothing ever creates a =compiled/= directory
 beside a source file, and =raco make= therefore leaves the tree exactly
 as it found it. Delete the root directory to force a clean rebuild: the
 next =raco make= recreates it from scratch.
 
 #+begin_src sh
-opt/nushell/0.116.1/nu scripts/check.nu          # the gate; the only test command
-opt/nushell/0.116.1/nu scripts/check.nu --changed # only what changed
+opt/nushell/0.116.1/nu gate/check.nu          # the gate; the only test command
+opt/nushell/0.116.1/nu gate/check.nu --changed # only what changed
 #+end_src
 
 #+begin_src sh
-racket cli/main.rkt check docs/examples          # validate every .rktd
-racket cli/main.rkt plan docs/examples --format json
-racket cli/main.rkt --help                       # every command
+racket package-manager/src/entry/cli.rkt check docs/examples          # validate every .rktd
+racket package-manager/src/entry/cli.rkt plan docs/examples --format json
+racket package-manager/src/entry/cli.rkt --help                       # every command
 #+end_src
 
 The gate verdict is one of =ALL GREEN=, =ALL GREEN (parked: N)= or
@@ -127,10 +127,10 @@ rather than three implementations of package-manager logic.
 
 **CLI.** =pm [--format sexp|json] COMMAND [ARGS]=. Every command's
 field list and a real example per command are in =docs/API.org=, and
-that document *is* the test: =cli/main.rkt= re-renders every example
+that document *is* the test: =package-manager/src/entry/cli.rkt= re-renders every example
 in it, so a stale example fails the gate.
 
-**MCP** (=mcp/server.rkt=). JSON-RPC 2.0 over stdio, one object per
+**MCP** (=package-manager/src/entry/mcp-server.rkt=). JSON-RPC 2.0 over stdio, one object per
 line. Three methods: =initialize=, =tools/list=, =tools/call=. All
 fourteen pm commands are tools. The seven read-only ones run free; the
 seven state-changing ones refuse with code =-32001= unless the call
@@ -141,7 +141,7 @@ carries the confirmation token that =initialize= handed out.
 deliberately no =apply= and no =activate=: an agent cannot change the
 machine from there. When the dispatch is wired, those tools will call
 OpenCode's own =context.ask()= approval boundary first, and pm keeps
-its own policy regardless. =scripts/install-opencode-plugin.nu= only
+its own policy regardless. =tools/install-opencode-plugin.nu= only
 prints the install commands; it writes nothing.
 
 **Skill** (=agent/skills/aiu-pm/SKILL.md=) tells an AI when to use each
@@ -195,7 +195,7 @@ context so it can be reported.
 
 * Scope
 
-Home and =XDG_*= are read in exactly one place, =core/scope.rkt=, so
+Home and =XDG_*= are read in exactly one place, =package-manager/src/machine/directories.rkt=, so
 roots cannot drift between modules. The state root is
 =$XDG_DATA_HOME/aiu-pm/=; there is one scope today (user), and a
 second one raises rather than half-working.
