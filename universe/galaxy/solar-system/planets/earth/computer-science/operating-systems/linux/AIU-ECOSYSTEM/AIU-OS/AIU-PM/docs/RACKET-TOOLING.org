@@ -91,7 +91,7 @@ not compute, and every separate process pays it. That is the reason
 - =PLTCOMPILEDROOTS= redirection: first rejected in D-027, then D-027 was
   REVERSED (commit f792eca): =gate/env.nu= points it at
   =~/.local/share/aiu-pm/compiled=, and compiled output stays out of the
-  tree (README.org, "Compiled output lives outside the tree").
+  tree.
 
 * How packages get installed here
 =#~/opt/racket-full/bin/raco pkg install NAME=, always with
