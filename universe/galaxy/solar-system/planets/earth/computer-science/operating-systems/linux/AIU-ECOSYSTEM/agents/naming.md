@@ -17,6 +17,20 @@ not the pattern it follows, not the decade it was written in.
 | `local.rkt` | `perform-action-on-this-machine.rkt` | "local" as opposed to what? |
 | `plan(p)` | `resolve-deps-in-order(p)` | noun hides the verb |
 
+## The reader test
+
+The owner looks at a path, a directory, a file, or an identifier and
+must never have to ask: what is this, why is it here? If the question
+comes up, the name has failed — no comment or document repairs a name
+that lies.
+
+This binds every project under `AIU-ECOSYSTEM/`, from its first
+commit. A project that inherited bad names repairs them the way pm
+did: inventory first (what each file is, one line), then the register
+(old path -> new path, the one job), then rename in dependency order
+with the old path kept as a facade — one step, one commit, nothing
+broken between steps.
+
 ## Why this is not bikeshedding
 
 The owner of this ecosystem read a directory listing and could not tell

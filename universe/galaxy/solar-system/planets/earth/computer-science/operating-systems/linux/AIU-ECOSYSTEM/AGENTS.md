@@ -26,6 +26,8 @@ In short:
    `manager`, `handler`. A name that lies costs more than a missing
    comment. One file, one job. Stages and checks are named too:
    `text-lint` with `text-lint/line-length` sub-stages, never `stage 6`.
+   The reader test, in every project: the owner must never have to ask
+   "what is that, why is it there?" about a file, dir or identifier.
 4. **Nushell for gates and scripts. Output is data.** Every command can
    emit JSON with a fixed key order. Errors are exit codes, not error
    objects. Doc examples execute in the test suite, so they cannot rot.
@@ -62,6 +64,8 @@ In short:
 - The journal-resume shape (input-hash-keyed steps, SKIP-with-reason).
 - The policy-module-plus-gate pattern for anything safety-relevant.
 - The read-free / mutate-gated split for every AI surface.
+- The naming law: the reader test, the banned list, and the
+  register-first repair of an old tree (section 3).
 
 ## What does NOT transfer literally
 
@@ -81,3 +85,8 @@ In short:
    not after your first hang. See `agents/verbosity.md` rule 2.
 5. Keep one scope seam for environment/roots; nothing else reads HOME.
 6. Ship a skill file alongside the CLI the day commands start working.
+7. Write the file inventory and the naming register before the tree
+   grows: one line per file and directory, the job it does, why it
+   exists (pm's `plan/FILE-INVENTORY.org`, `plan/NAMING-REGISTER.org`
+   are the model). The reader test applies from the first commit —
+   no path, directory, or identifier may make the owner ask what it is.

@@ -62,7 +62,12 @@ story gets kept and a rule without one gets "simplified" away.
 * 3. Names say what the thing does
 
 : A name that lies costs more than a missing comment, because every
-  reader trusts it.
+  reader trusts it. The reader test binds every project in this
+  ecosystem from its first commit: the owner must never look at a
+  file, a directory, a path, or an identifier and have to ask "what
+  is that, why is it there?" If the question comes up, the name is
+  wrong; no comment or document repairs it. pm's =plan/FILE-INVENTORY.org=
+  and =plan/NAMING-REGISTER.org= are the worked example.
 
 - 3.1 **The name must state the job, not the layer or the era.**
   =core/plan.rkt= says nothing; =lower-build-steps-into-install-actions.rkt=
@@ -96,6 +101,13 @@ story gets kept and a rule without one gets "simplified" away.
   =text-lint/line-length=, =security-gate-lint/audited-writers= —
   never =6.2= and never a bare =line-length=. The prefix says which
   runner the rule belongs to, so selection and output read the same.
+- 3.9 **Repairing an old tree goes through a register.** Inventory
+  first (what each file is, one line, measured not remembered), then
+  the register (old path, new path, the one job), then rename in
+  dependency order with the old path kept as a facade until nothing
+  requires it. One step, one commit, nothing broken between steps.
+  pm's =plan/FILE-INVENTORY.org=, =plan/NAMING-REGISTER.org= and
+  =plan/MOVE-ORDER.org= are the worked example.
 
 * 4. Nushell is the shell, and output is data
 
