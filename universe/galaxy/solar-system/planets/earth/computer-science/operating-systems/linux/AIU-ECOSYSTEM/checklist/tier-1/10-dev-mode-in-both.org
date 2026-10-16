@@ -1,0 +1,21 @@
+#+TITLE: 10 — Dev mode in both
+# One job: one small checklist item of the shared build up to the done line.
+# Status: TODO; added 2026-10-16, in chronological order.
+
+* What
+# the work, in a line or two.
+  Work mode loads live from source; the manual bake keeps the last good
+  build; the baked binary prints its measured start — in the editor and
+  the multiplexer.
+
+* Done when
+# the single observable check.
+  A bake cycle on the phone plus each binary's printed start.
+
+* Dependencies
+# the items that must be DONE first.
+  05 — the editor slice; 03 — the holder.
+
+* State
+# TODO; DONE records its commit hash; BLOCKED names its blocker.
+  TODO.
