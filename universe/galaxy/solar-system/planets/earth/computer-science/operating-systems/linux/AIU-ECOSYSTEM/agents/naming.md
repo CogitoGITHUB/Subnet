@@ -64,6 +64,25 @@ Real splits from the inventory:
 
 Splitting costs an hour once. Not splitting costs every future read.
 
+## Stages, gates and lints
+
+Binding: `HARD-RULES.org` 3.7 and 3.8.
+
+A stage name states what it checks. `text-lint`, `one-printer-lint`,
+`security-gate-lint` — reading the gate output tells you what ran and
+what a red means. `stage 6` tells you nothing without opening the
+source, and it lies the moment the order changes.
+
+Sub-stages read `parent-name/rule`: `text-lint/line-length`,
+`security-gate-lint/audited-writers`. They select the same way on the
+command line: `CYBERDECK_STAGES=text-lint/line-length`.
+
+The runner is the reference. `nu gate/check.nu --list` prints every
+stage name and what it checks, from the same table the dispatcher
+validates against, so the list cannot drift from what runs. A wrong
+or retired name fails loudly — exit 2 or a named reason — and never
+runs nothing silently.
+
 ## Directories
 
 Name a directory for the job its contents share. Do not create a

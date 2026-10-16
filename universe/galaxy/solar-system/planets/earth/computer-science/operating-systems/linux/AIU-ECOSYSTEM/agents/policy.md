@@ -1,6 +1,6 @@
 # Policy — one pure module, gate-enforced
 
-Learned building pm's `core/security.rkt` plus gate stage 15 (D-037).
+Learned building pm's `core/security.rkt` plus the `security-gate-lint` stage (D-037).
 The rule: security questions are answered by total predicates in ONE
 module with no I/O, enforced at choke points that refuse with
 messages, and a lint stage fails the build when a rule is unwired.

@@ -24,7 +24,8 @@ In short:
    engine re-checks the confirmation itself.
 3. **Names say what the thing does.** No `core/`, `engine`, `utils`,
    `manager`, `handler`. A name that lies costs more than a missing
-   comment. One file, one job.
+   comment. One file, one job. Stages and checks are named too:
+   `text-lint` with `text-lint/line-length` sub-stages, never `stage 6`.
 4. **Nushell for gates and scripts. Output is data.** Every command can
    emit JSON with a fixed key order. Errors are exit codes, not error
    objects. Doc examples execute in the test suite, so they cannot rot.

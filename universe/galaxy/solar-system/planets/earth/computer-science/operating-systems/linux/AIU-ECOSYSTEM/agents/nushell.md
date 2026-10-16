@@ -65,10 +65,14 @@ so they cannot drift.
 
 ```
 [check] run start utc=...
-[check] stage 6 text lint
-lint: 83 files, 0 violations
+[check] text-lint rules=tabs,trailing-space,line-length,final-newline
+text-lint: 83 files, 0 violations
 [check] end utc=... after=8158ms
 ```
+
+Stage names say what ran (`text-lint`), never a number (`stage 6`);
+sub-stages read `text-lint/line-length`. `nu gate/check.nu --list`
+prints every name.
 
 **The verdict is one line**: version, files, failed, total, and the
 parked list. Anything else is commentary.

@@ -66,10 +66,10 @@
 
 ** Racket: one printer, through narration
 # User-visible output leaves the program through one door.
-- What PM does: every place the tree printed was inventoried first (V-0), then the output moved behind one narration module (V-1, V-3); gate stage 14 lints the one-printer rule in code and stage 16 lints it inside test bodies; narration has no off-switch (D-036).
+- What PM does: every place the tree printed was inventoried first (V-0), then the output moved behind one narration module (V-1, V-3); one-printer-lint lints the rule in code and test-body-print-lint lints it inside test bodies; narration has no off-switch (D-036).
 - The rule: output is a public interface, so it has one owner and lint stages that defend it.
 - Verdict: REUSE.
-- Read at: docs/VERBOSE.org; gate/check.nu stages 14 and 16; plan/DECISIONS.org D-036.
+- Read at: docs/VERBOSE.org; gate/check.nu one-printer-lint and test-body-print-lint; plan/DECISIONS.org D-036.
 
 ** JSON: one object, one line, fixed key order
 # The machine surface is a strict, boring document.
