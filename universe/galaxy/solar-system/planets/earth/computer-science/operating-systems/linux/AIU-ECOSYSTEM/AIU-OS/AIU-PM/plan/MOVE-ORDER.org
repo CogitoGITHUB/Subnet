@@ -3,8 +3,8 @@
 
 Every step is one commit with explicit paths. Per step: =read-check= on
 touched files, =raco make= on touched files and their direct
-dependents, then commit. No test runs between steps; the gate runs at
-the end.
+dependents, and the tests that cover what changed (one =test-runner.rkt=
+process), then commit. The full gate runs at the end (step 22).
 
 If reality disagrees with this file, fix this file in the same commit
 as the change that disagreed.
