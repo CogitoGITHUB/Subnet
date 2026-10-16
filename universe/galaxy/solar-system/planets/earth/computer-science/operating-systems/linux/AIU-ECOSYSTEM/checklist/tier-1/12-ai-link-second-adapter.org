@@ -1,0 +1,20 @@
+#+TITLE: 12 — AI link, second adapter
+# One job: one small checklist item of the shared build up to the done line.
+# Status: TODO; added 2026-10-16, in chronological order.
+
+* What
+# the work, in a line or two.
+  The second adapter (the Hermes candidate) on the same boundary and the
+  same one skill file.
+
+* Done when
+# the single observable check.
+  The boundary's checks pass through it unchanged.
+
+* Dependencies
+# the items that must be DONE first.
+  11 — the first adapter.
+
+* State
+# TODO; DONE records its commit hash; BLOCKED names its blocker.
+  TODO.
