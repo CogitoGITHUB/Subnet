@@ -5,6 +5,26 @@
 * Log
 # Every entry: a dated D-number, WHAT changed, WHY it had to; name the files it touches.
 
+** 2026-10-17 D-017: naming and engine wording — AIU-NOTATION in the docs, the ReadMe follows D-012
+   Touches ReadMe.md; AGENTS.md; STATE.org.
+1. WHAT: ReadMe.md and AGENTS.md say AIU-NOTATION; the ReadMe's "engine is primary / a default notation sits on top" framing is replaced by one plain-text notation, elements named in words, the engine behind a boundary (D-012); the two stale STATE entries close.
+2. WHY: the product name is AIU-NOTATION (AIU NOTATION/HANDOFF.org, rule 14) and the old engine sentence contradicted the plan; the owner chose the alignment on 2026-10-17.
+
+** 2026-10-17 D-016: secrets for AI — sops with age
+   Touches AIU EDITOR/TODO.org; research/secrets-for-ai.org; agents/secrets-handling.org.
+1. WHAT: the secrets package is named — sops (github.com/getsops/sops) with age (github.com/FiloSottile/age); the editor's secrets item (item 13, tier-1 15) unblocks; done when the no-secrets check passes on a real bundle and on disk.
+2. WHY: no package named "secrets-for-AI" was found (research, 2026-10-16) and the candidates were already named; the owner picked them on 2026-10-17.
+
+** 2026-10-17 D-015: the title's creation-time source — the owner's own file-creation package
+   Touches AIU NOTATION/questions/usage-inventory.org; AIU NOTATION/HANDOFF.org.
+1. WHAT: a page's title and its creation-time context come from the owner's own file-creation package (their Emacs setup); the notation defines no source of its own; the owner names the package when it exists.
+2. WHY: the owner answered 2026-10-17; the loading preference already recorded this shape ("the full things I set up in file creation"); the notation must not invent what it does not own.
+
+** 2026-10-17 D-014: the mark — one tiny consistent mark, elements named in words
+   Touches AIU NOTATION/TODO.org; AIU NOTATION/HANDOFF.org; AIU NOTATION/questions/usage-inventory.org.
+1. WHAT: the direction is one tiny consistent mark around a named element; elements are written as names, not per-element symbols (title, paragraph, code block — the owner's words); the exact sign and its typing comfort are decided as TODO item 2's first act: candidates, the phone test, the winner recorded.
+2. WHY: the owner answered 2026-10-17; the names-not-signs line becomes the law and the sign question becomes one small phone test instead of an open questionnaire.
+
 ** 2026-10-17 D-013: notation first element set — title, paragraph and code block
    Touches AIU NOTATION/plan/open-decisions.org (retired).
 1. WHAT: the smallest slice is title, paragraph and code block; outlines and links come once the mark and the round trip are proven.

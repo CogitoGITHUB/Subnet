@@ -6,7 +6,7 @@
 # one line per project: what its session works, where its package lives, its first item.
   - AIU EDITOR — its own tab; package =editor/=; list: TODO.org there; first item 1 (the tree), then item 2 (tier-1 01, the Racket-join probe). This tab starts the shared build.
   - AIU TERMINAL MULTIPLEXER — its own tab; package =multiplexer/=; list: TODO.org there; first item 1 (the tree), then item 2 (tier-1 02, the tiny-binary probe that decides the route).
-  - AIU NOTATION — its own tab; package =notation/=; list: TODO.org there; first item 1 (the tree); item 2 is BLOCKED on the owner's mark questionnaire.
+  - AIU NOTATION — its own tab; package =notation/=; list: TODO.org there; first item 1 (the tree); item 2's first act is the sign candidates and the phone test (D-014).
   - AIU-OS/AIU-PM — the owner's separate session; read-only here.
 
 * Read order for a fresh session
@@ -20,8 +20,8 @@
   - Probes first: editor 01 (Racket in a baked binary) and multiplexer 02 (tiny Rust binary + the route) — measured on the phone, written down.
   - Then floors and slices: multiplexer 03–04 (holder, panes) beside editor 05 (plain text slice).
   - Then routing 06, journal 07, keyboard 08, dashboard 09, dev mode 10.
-  - Then the AI link: 11 (OpenCode first, D-009), 12 (Hermes), 13 (audit), 14 (checkpoints + stop switch), 15 (secrets — BLOCKED on the owner), 16–17 (select and send).
-  - Notation joins at 18 (core hosted) once the mark answer exists and its own steps 2–3 are green; kits 19; the done line 20 closes the shared checklist.
+  - Then the AI link: 11 (OpenCode first, D-009), 12 (Hermes), 13 (audit), 14 (checkpoints + stop switch), 15 (secrets — sops with age, D-016), 16–17 (select and send).
+  - Notation joins at 18 (core hosted) once its own steps 2–3 are green; kits 19; the done line 20 closes the shared checklist.
 
 * Where the shared things live
 # one line per shared artifact.

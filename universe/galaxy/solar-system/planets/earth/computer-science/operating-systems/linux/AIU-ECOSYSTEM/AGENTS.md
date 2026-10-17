@@ -1,6 +1,6 @@
 # AGENTS.md — how to build in the AIU ecosystem
 
-Applies to every project under `AIU-ECOSYSTEM/` (pm, Node notation,
+Applies to every project under `AIU-ECOSYSTEM/` (pm, AIU-NOTATION,
 editor, TM, OS tooling). The ecosystem ReadMe states the design laws;
 this file and `agents/` turn them into build rules that survived
 contact with a real implementation (the package manager).

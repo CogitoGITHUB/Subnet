@@ -150,9 +150,10 @@ AIU NOTATION/            the project: context and docs stay where they are
   - The first slice (build-order steps 1–2): text/, parser/, elements/,
     model/, rendering/plain.rs and entry/cli.rkt — a page with a title
     and paragraphs parses, renders and re-parses agreeing.
-  - BLOCKED on the owner: build-order step 1 needs the mark answered
-    (the questionnaire). Until then nothing of =notation/= exists and
-    this file is the whole plan.
+  - The mark is decided in direction (D-014): build-order step 1 starts
+    with the sign candidates and the typing-comfort phone test, then the
+    floor files land. Until then nothing of =notation/= exists and this
+    file is the whole plan.
 
 * Absent on purpose
 # what similar programs carry and this one will not.

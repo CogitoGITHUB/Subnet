@@ -11,7 +11,7 @@
 
 * Retired into redirects
 # reduced, not deleted: the path stays as a signpost.
-  - AIU NOTATION/plan/open-decisions.org — closed into the root DECISIONS.org (D-011..D-013); the mark, its typing comfort and the title's creation-time source stay owner questions. Last live: d8e6e3b.
+  - AIU NOTATION/plan/open-decisions.org — closed into the root DECISIONS.org (D-011..D-013; the mark and the title's creation-time source answered as D-014 and D-015, 2026-10-17). Last live: d8e6e3b.
   - AIU EDITOR/plan/open-decisions.org — closed into the root DECISIONS.org (D-007..D-010; D-005 shared). Last live: 4b37c15.
   - AIU TERMINAL MULTIPLEXER/plan/open-decisions.org — closed into the root DECISIONS.org (D-002..D-004, D-006; D-005 shared). Last live: 5b20ebe.
 

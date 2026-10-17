@@ -1,6 +1,6 @@
 #+TITLE: Usage inventory
 # One job: the owner questionnaire: what is used from Org and Markdown, what is missed, and typing comfort for the sign
-# Status: answered 2026-10-16 on a phone; transcribed in the owner's words; typing comfort still open.
+# Status: answered 2026-10-16 on a phone; transcribed in the owner's words; the mark direction closed 2026-10-17 (D-014) — the exact sign and typing comfort are TODO item 2's phone test.
 
 * What is used from Org
 # the owner answers on a phone, short lines. Do not guess any of it.
@@ -26,9 +26,9 @@
 
 * Typing comfort for the mark
 # which signs are easy to type on the phone keyboard, and which collide with prose or tags.
-  - Not answered separately on 2026-10-16 (answers covered 1, 2, 3, 5). The
-    names-not-signs line under What is wished for is the nearest fact so far;
-    the exact signs remain open.
+  - Closed 2026-10-17 (D-014): no separate questionnaire — the exact sign
+    and its typing comfort are decided by the phone test inside TODO item 2;
+    the direction is the names-not-signs line under What is wished for.
 
 * Loading preference
 # a loader heading first, or a language line first; still open.
@@ -37,3 +37,6 @@
     (their custom package); first the full plan, then the specialties; no
     engine etc. for notation; no format created unless absolutely necessary.
     [5, 2026-10-16]
+  - Closed 2026-10-17 (D-015): the title's creation-time source is that
+    custom package — the owner's own file-creation package; the owner
+    names it when it exists.

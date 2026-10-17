@@ -4,9 +4,10 @@
 
 * Steps
 # one line per step, in build order, each with the proof that proves it.
-  1. The mark and the first elements: options with a recommendation, the
-     owner chooses on a phone keyboard (rule 12) — proof: the approved
-     mark and element list, D-numbered.
+  1. The mark and the first elements: the direction is decided (D-014);
+     the sign candidates and the typing-comfort phone test pick the
+     winner (rule 12) — proof: the chosen sign and element list, written
+     down.
   2. Round trip: a page with a title and paragraphs parses and renders
      back with nothing lost; plain writing needs almost no syntax —
      proof: parse, render and re-parse agree on a real page.

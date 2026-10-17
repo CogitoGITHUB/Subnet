@@ -36,15 +36,15 @@
   - agents/ — 8 design files filled 2026-10-16, each with an "Open decisions" section; 8 build instructions beside them.
   - learned/ — 6 files filled 2026-10-16, sourced read-only from PM, each item naming its PM path.
   - pm-integration/ — 9 files filled 2026-10-16; runs later by its own prompt.
-  - research/ — 17 files; secrets-for-ai.org flagged "not located" (owner question); synthesis.org written last.
+  - research/ — 17 files; secrets-for-ai.org settled 2026-10-17 (D-016: sops with age); synthesis.org written last.
 
 * AIU-OS, read-only
 # another session is active here; nothing is touched by this ready-up.
   - AIU-PM is mid-work (57 modified or staged entries while surveying); its own decision log just closed D-044..D-066 in commit 0954fe6. Read-only throughout.
 
 * Stale or contradicting, numbered to act on
-  1. "Node notation" in ReadMe.md (three times) and AGENTS.md (once); the product name is AIU-NOTATION (AIU NOTATION/HANDOFF.org, rule 14). Pick the name.
-  2. ReadMe.md says the notation engine is primary and "a default notation sits on top"; the project plan says one plain-text notation with the engine behind a boundary — reconcile with the open engine-wording decision.
+  1. Closed 2026-10-17 (D-017): "Node notation" is gone; ReadMe.md and AGENTS.md now say AIU-NOTATION.
+  2. Closed 2026-10-17 (D-017): ReadMe.md now reads one plain-text notation, the engine behind a boundary (D-012's reading).
   3. ReadMe.md says "Each project is its own repo"; today everything lives in one repo — read as intent for later, or correct at review.
   4. 38 "step N" mentions across 26 files (e.g. "contract step 9", "filled in step 8"); rule 3.7 says stages and checks are named, never numbered, and references use that text. Step 5 rewrites the HANDOFFs; the rest when touched.
   5. AIU EDITOR/HANDOFF.org says neomacs is "about 500 files"; counted 421 on 2026-10-17. Measure, then correct.

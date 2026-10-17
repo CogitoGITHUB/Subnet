@@ -18,16 +18,16 @@
 * The owner's answers
 # what the owner has given; what is still open.
   - questions/usage-inventory.org — answered 2026-10-16 in the owner's words.
-  - Still open: the mark and its typing comfort (the questionnaire), and the title's creation-time source. The mark blocks the first slice (TODO item 2).
+  - Answered 2026-10-17 (D-014, D-015): the mark is one tiny consistent mark with elements named in words — the exact sign and its typing comfort are TODO item 2's first act, on the phone; the title's creation-time source is the owner's own file-creation package.
 
 * Current state
 # what is true right now.
-  - Base complete; the ready-up closed the decisions: numbering, engine wording and the first element set are D-011..D-013; plan/open-decisions.org is a redirect stub.
+  - Base complete; the ready-up closed the decisions: numbering, engine wording and the first element set are D-011..D-013; the owner's mark and title answers are D-014 and D-015; plan/open-decisions.org is a redirect stub.
   - The package is planned at =notation/= per plan/package-tree.org; the work list is TODO.org; nothing is built.
 
 * Next step
 # one line, so a fresh conversation starts in the right place.
-  - TODO.org, top to bottom: item 1 (the tree lands with the light gate) can start now; item 2 waits on the owner's mark answer; then the round trip slice.
+  - TODO.org, top to bottom: item 1 (the tree lands with the light gate) can start now; item 2 starts with the sign candidates and the typing-comfort phone test (D-014); then the round trip slice.
 
 * How to work here
 # house rules.

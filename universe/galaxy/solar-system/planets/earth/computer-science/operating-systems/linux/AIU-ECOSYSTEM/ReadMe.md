@@ -10,7 +10,7 @@ Each project is its own repo, its own release cycle, and its own README. Use one
 | Component | Role | Status |
 |-----------|------|--------|
 | **Package manager** (`pm`) | Declarative install, plan/apply/rollback, full event narration, agent-safe MCP | In progress — engine real, commands coming online |
-| **Node notation** | Syntax + format engine for structured documents (Markdown-easy surface, deep structure, typesetting-capable). Engine is primary; a default notation sits on top | Planned |
+| **AIU-NOTATION** | Syntax + format engine for structured documents (Markdown-easy surface, deep structure, typesetting-capable). One plain-text notation, elements named in words; the engine stays behind a boundary | Planned |
 | **AIU editor** | Text editor built for that structure, keyboard-driven workflow, and AI-readable session state | Planned |
 | **AIU TM** | Terminal multiplexer with the same event discipline: sessions, panes, and jobs as structured runs | Planned |
 
@@ -25,7 +25,7 @@ Each project is its own repo, its own release cycle, and its own README. Use one
 ## Intended workflow (optional)
 
 1. **pm** installs and records what the machine has.
-2. **Node notation** defines structured documents and specs.
+2. **AIU-NOTATION** defines structured documents and specs.
 3. **AIU editor** edits those documents and project code.
 4. **AIU TM** hosts live processes with the same audit-friendly event model.
 
@@ -45,7 +45,7 @@ The ecosystem treats AI as a primary operator:
 | Project | Repository |
 |---------|------------|
 | Package manager | *link when public* |
-| Node notation | *link when public* |
+| AIU-NOTATION | *link when public* |
 | AIU editor | *link when public* |
 | AIU TM | *link when public* |
 

@@ -23,7 +23,7 @@
   10. Second adapter (item 12): Hermes; done when: the boundary's checks pass through it unchanged; deps: 9.
   11. Live agent audit (item 13): done when: an agent edit appears as it lands and is undone; the conflict test passes; deps: 9, 5.
   12. Git checkpoints (item 14): checkpoint before agent actions, rollback, and the stop switch (D-010); done when: rollback returns the tree to the checkpoint and the stop switch stops every running agent session for this project; deps: 9.
-  13. Secrets package (item 15): BLOCKED — the owner names the package (research/secrets-for-ai.org says not located; sops and age are the named candidates); done when: the no-secrets check passes on a real bundle and on disk; deps: 9.
+  13. Secrets package (item 15): the package is named — sops with age (D-016); done when: the no-secrets check passes on a real bundle and on disk; deps: 9.
   14. Select and send (item 16, editor side): done when: sends land from the editor to both agents with the context attached; deps: 9, 10, 4.
   15. Kit conformance (item 19, shared with the multiplexer): done when: the checklist runs green for both; deps: 9–14.
   16. Done line (item 20, shared): every done-line clause holds; the shared checklist closes; deps: all above and the notation's item 11.

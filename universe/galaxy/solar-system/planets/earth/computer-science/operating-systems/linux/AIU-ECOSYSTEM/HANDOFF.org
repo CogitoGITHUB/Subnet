@@ -45,12 +45,12 @@
 # what is true right now.
   - The base is filled through step 10; the ready-up (2026-10-17) closed its leftovers: STATE.org, the eight learned/ topic files, WORKFLOW.org, D-001..D-013, redirected open-decision files, CLEANUP-LOG.org, one TODO.org per project and plan/package-tree.org for each.
   - The three packages are planned into their own subdirs (notation/, editor/, multiplexer/), every name registered in the package trees; nothing is built yet.
-  - The owner's questions still open: the mark questionnaire and the title's creation-time source (notation), the secrets-for-AI package (editor item 13), the public-naming ask.
+  - The ready-up's owner questions are answered (2026-10-17; D-014..D-017): the mark direction, the title's creation-time source (the owner's own file-creation package), sops with age for secrets (editor item 13 unblocked), the ReadMe/AGENTS.md alignment. Remaining with the owner: the mark sign candidates and the phone test (notation item 2), and naming their file-creation package when it exists.
   - PM is still in progress; its integration is planned only, in pm-integration/.
 
 * Next step
 # where the work stands and where it goes next; no dates.
-  - The owner answers the open questions; then the build starts per SESSION-MAP.org: AIU EDITOR item 2 (tier-1 01) leads, AIU TERMINAL MULTIPLEXER item 2 (tier-1 02) beside it, AIU NOTATION as soon as the mark answer lands.
+  - The build starts per SESSION-MAP.org: AIU EDITOR item 2 (tier-1 01) leads, AIU TERMINAL MULTIPLEXER item 2 (tier-1 02) beside it; AIU NOTATION item 1 can start, and item 2's first act is the sign candidates and the typing-comfort phone test (D-014).
   - One item one commit, stopping nowhere before the done line.
 
 * How to work here

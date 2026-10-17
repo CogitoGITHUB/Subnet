@@ -3,13 +3,14 @@
 # Status: retired; kept as a stub because other files cite this path.
 
 * Where everything went
-# one line per answer, or the question still in the owner's hands.
+# one line per answer; every question is closed.
   - Closed by recommendation: numbering, engine wording, the first
     element set — D-011, D-012 and D-013 in the root =DECISIONS.org=.
-  - Still open, in the owner's hands (asked 2026-10-17): the exact mark
-    and its typing comfort — the questionnaire decides, on a phone
-    keyboard — and where the title's creation-time context comes from.
-    The mark blocks the first build step.
+  - Closed by the owner's answers (2026-10-17): the mark — one tiny
+    consistent mark, elements named in words (D-014) — the exact sign
+    and its typing comfort are item 2's first act, on a phone — and the
+    title's creation-time source, the owner's own file-creation package
+    (D-015). Nothing blocks the first build step.
 
 * The old text
 # recover it exactly.

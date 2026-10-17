@@ -12,8 +12,9 @@
     reparse is table stakes (research).
   - Literate tangling complexity — targets and dependency scanning grow
     edge cases; Org Babel's history is the warning.
-  - The mark choice stalls (typing comfort still open, Q4) — the first
-    build step cannot start.
+  - The mark choice stalls — the sign and its typing comfort are picked
+    by the phone test inside item 2 (D-014); until a sign types cleanly,
+    the first build step waits.
   - Wording drift: "no engine" and "no format unless necessary" read
     against the engine surface the contract needs — decisions block
     before architecture.
@@ -36,7 +37,7 @@
     until the owner opens it.
   - Treat incremental reparse and error recovery as the first slice's
     work, not later polish.
-  - Settle the engine/format wording in open decisions before
-    architecture begins.
+  - The engine/format wording is settled (D-012) before architecture
+    begins.
   - Record every phone limit in WHEN-ON-LAPTOP.org the moment it
     appears.
