@@ -15,8 +15,8 @@
 * Group (a): leftovers from PM's own plan
 
 - =src/backup/= — the backup area (step 19): declarations and fetched
-  sources, off the machine. ARCHITECTURE.org lists it as area 12 and
-  nothing is built, so backup today is all law and no code.
+  sources, off the machine. Designed in =plan/BACKUP-FEATURE.org=,
+  listed as area 12 in ARCHITECTURE.org, and not built: law, no code.
 - build-plan and build-env — split =build-plan.rkt= (673 lines, 3 jobs)
   and execute the =build-env.rkt= rename the register already records.
   A name that lies costs more than a missing comment; both are recorded.
@@ -75,6 +75,34 @@
   =jobs.rkt= (5), =cli.rkt= (5), =spec-read.rkt= (4), =plan.rkt= (4),
   =activate.rkt= (4). One file one job is half the structure law; each
   of these is a split waiting for its turn.
+
+* Group (d): the remaining MOVE-ORDER features, each with a plan file
+
+- =pm doctor= (step 23) — a read-only health check, area
+  =entry/doctor-report.rkt=, per =plan/FEATURE-doctor.org=. Missing
+  because PM cannot say what is wrong without changing anything.
+- =pm export= / =pm import= (step 24) — portable bundles, areas
+  =store/bundle-format.rkt=, =install/export-profile.rkt=,
+  =install/import-profile.rkt=, per =plan/FEATURE-export-import.org=.
+  A machine can be set up today but never reproduced elsewhere.
+- binary cache (step 25) — build once and reuse by content hash, areas
+  =store/content-address.rkt= and =build/build-cache.rkt=, per
+  =plan/FEATURE-binary-cache.org=. Every machine rebuilds what another
+  machine already built.
+- =pm search= / =pm info= (step 26) — browse and show one, areas
+  =entry/search-report.rkt= and =entry/info-report.rkt=, per
+  =plan/FEATURE-search-info.org=. Asking today means reading the store
+  by hand.
+- =pm shell SPECS= (step 27) — a temporary environment on PATH, nothing
+  persisted, area =install/shell-env.rkt=, per =plan/FEATURE-shell.org=.
+  Trying a package without installing it is impossible today.
+- users and declarations (step 28) — one declaration per user, one
+  shared content-addressed store, per-user profiles, per
+  =plan/FEATURE-users.org=. Everything today is one owner's, and
+  =profile-gc= already has to guess about other users.
+- =pm config= and completions (step 29) — per
+  =plan/FEATURE-config-and-completions.org=. Settings have no home and
+  the shell has nothing to complete from.
 
 * Index
 # One line per file in this directory; extended in step 2.

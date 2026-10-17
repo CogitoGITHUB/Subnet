@@ -21,6 +21,84 @@ list that drifts.
 dev mode for any git package with a =.rktd= spec." Every item below
 is mapped to that sentence in the last column of the first table.
 
+* Decisions only the owner can make (asked 2026-10-17)
+# One section per open question, in the shape this file already uses:
+# options, a recommendation, and the choice in use until it is answered.
+# Nothing here is decided by an agent, and nothing waits on it: each
+# section says what stays untouched until the answer arrives.
+
+** oneway-law-gap -- ASKED
+- *Question:* the one-way lint prints 34 crossings every run. The entry
+  below records the two options; the owner picks one.
+- *Options:* (a) move the modules so the ranking holds; (b) correct
+  ARCHITECTURE.org to the tree as it stands.
+- *Recommendation:* (a).
+- *Decision:* =(DEFAULT: neither yet. The lint keeps printing every run
+  and no module moves until the owner answers.)=
+
+** exit-code wording, D-008 -- ASKED
+- *Question:* =config= and =internal= are invented locally and cite
+  "E-15 [PROPOSAL]". Exit codes are a public contract.
+- *Options:* (a) adopt sysexits: =config= 78 (EX_CONFIG), =internal= 70
+  (EX_SOFTWARE), and close D-008; (b) keep 2 and 70, close D-008, cite
+  the closed decision; (c) keep the numbers, keep D-008 open, cite D-008
+  instead of E-15.
+- *Recommendation:* (a) -- the numbers then have outside vocabulary.
+- *Decision:* =(DEFAULT: (c), the citation fix only. No exit code
+  changes before the owner picks.)=
+
+** step 14: the 26 inline test submodules -- ASKED
+- *Question:* 26 test submodules were moved and then reverted: the
+  copied require list collides with the module under test (=activate.rkt=
+  and =profile-holds.rkt= both provide =profile-held?=).
+- *Options:* (a) finish it, building each require list as the module
+  under test plus only the copied modules that do not overlap its
+  provides; (b) require the module under test alone and fix the bodies
+  that need more, one file at a time; (c) leave the 26 inline and record
+  why here.
+- *Recommendation:* (a).
+- *Decision:* =(DEFAULT: (c) for now -- the staged work is left exactly
+  as it is, RED and untouched, until the owner answers.)=
+
+** the split inside =src/backup/= -- ASKED
+- *Question:* =plan/BACKUP-FEATURE.org= fixes behaviour, invariants and
+  the command; it does not split the files.
+- *Options:* (a) =backup-set.rkt= (what a backup carries),
+  =backup-run.rkt= (copy, commit, push, retry), =backup-record.rkt=
+  (pending and failed state); (b) two files, with the record inside
+  =backup-status.rkt=.
+- *Recommendation:* (a) -- the record must outlive a failed push.
+- *Decision:* =(DEFAULT: (a).)=
+
+** where the agent-side components live -- ASKED
+- *Question:* sight files, context-bundle senders, the kit entry and the
+  skill each need a home that respects the one-way law.
+- *Options:* (a) one new area =src/agent/= above =entry=, holding the
+  kit entry, sight files and senders, with the skill beside the CLI it
+  documents; (b) inside =entry/=, beside the MCP tools; (c) a new area
+  for the kit entry and sight files only, with senders in =narration/=.
+- *Recommendation:* (a) -- one topic, one area; =entry= already carries
+  CLI, dispatch and MCP.
+- *Decision:* =(DEFAULT: (a).)=
+
+** the five MCP additions -- ASKED
+- *Question:* search, install, status, build and bake must appear on MCP
+  without becoming a second implementation of any decision.
+- *Options:* (a) one report file per verb family in =entry/=, shared by
+  CLI and MCP, with =mcp-tools.rkt= gaining one row per tool; (b) five
+  tools inline in =mcp-tools.rkt=.
+- *Recommendation:* (a) -- one file one job, and the two surfaces cannot
+  drift.
+- *Decision:* =(DEFAULT: (a).)=
+
+** small items, ASKED together
+- *INVENTORY entries:* (a) keep wrapped at the 102-character law, or
+  (b) one physical line each under 102. Recommendation: (a).
+- *AGENT.md:* line 79 is over 102 characters and the file has no final
+  newline; .md is not linted. (a) fix both, or (b) leave. Rec: (a).
+- *Decision:* =(DEFAULT: INVENTORY wrapped; AGENT.md left alone until
+  the owner says.)=
+
 * The blocked and parked work
 
 ** E-16b pm fetch -- BLOCKED
