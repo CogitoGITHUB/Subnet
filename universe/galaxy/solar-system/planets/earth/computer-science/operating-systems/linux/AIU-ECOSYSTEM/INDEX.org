@@ -28,7 +28,7 @@
   - agents/ — build instructions, plus the agent integration design
   - checklist/ — the shared build, ending at the done line
   - contract/ — the one written contract between the programs
-  - learned/ — what the package manager already proved, read-only
+  - learned/ — what the package manager already proved; PM is the read-only source
   - pm-integration/ — what PM must gain, listed, never done here
   - research/ — one file per studied subject, shared lessons
 
