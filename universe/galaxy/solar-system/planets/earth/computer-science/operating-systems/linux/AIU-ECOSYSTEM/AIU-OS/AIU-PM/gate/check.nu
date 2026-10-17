@@ -929,16 +929,24 @@ def main [--changed, --list] {
     }
     print $"[check] run start utc=(utc)"
     let changed_mode = ($changed or (($env | get -o CYBERDECK_CHANGED?) == "1"))
+    # A stage can be wired, correct and passing when named, and still never
+    # run: THESE TWO LISTS, not the STAGES table above, decide what a bare
+    # check.nu does. Adding a row to STAGES without adding the name here is
+    # how a gate silently stops guarding -- it happened to both lints below
+    # on the day they were written: the first full gate after wiring them
+    # exited 0 without ever reaching them.
     let full_default = ([
         "cli-no-file-url-flag" "git-present" "helper-tools-present"
         "monorepo-rules" "text-lint" "pinned-nu-report" "file-set"
         "compile" "run-tests" "verdict" "read-check" "obs-ok-lint"
         "one-printer-lint" "security-gate-lint" "test-body-print-lint"
+        "banned-words-lint" "one-way-dependency-lint"
     ] | str join ",")
     let changed_default = ([
         "cli-no-file-url-flag" "git-present" "helper-tools-present"
         "monorepo-rules" "pinned-nu-report" "obs-ok-lint"
         "one-printer-lint" "security-gate-lint" "test-body-print-lint"
+        "banned-words-lint" "one-way-dependency-lint"
         "changed-files"
     ] | str join ",")
     let want = (if $changed_mode {
