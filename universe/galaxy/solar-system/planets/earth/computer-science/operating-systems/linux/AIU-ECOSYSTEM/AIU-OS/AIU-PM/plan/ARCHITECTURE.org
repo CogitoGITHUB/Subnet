@@ -132,6 +132,30 @@ it. Nothing depends on =entry=.
 - =errors= requiring anything. It is the floor.
 - Any area requiring =entry=. =entry= is the ceiling.
 
+* Planned components, not built yet
+One line per group; every component has a design file in
+=plan/new-components/= and registered names in =plan/NAMING-REGISTER.org=
+(Planned). None of this changes the ordering, and each one is written
+to respect the one-way law as it stands.
+
+- =errors= (1): wording only (exit codes); no new file
+- =spec= and =security= (5, 4): =user-declaration=, =user-view=,
+  =user-write=; adapter version pins as declaration fields
+- =store= (8): =content-address=, =bundle-format=, adapter version
+  records
+- =build= (10): =build-cache=, after the =build-plan= facade split
+  (step 6, done)
+- =install= (11): =export-profile=, =import-profile=, =shell-env=, the
+  per-user profiles, and the =user-gc= reachability question
+- =backup= (12): step 19, per =plan/BACKUP-FEATURE.org=
+- =entry= (13): =doctor-report=, =search-report=, =info-report=,
+  =config-report=, =completion=, =user-report=, five MCP tool rows
+- agent-side group (kit entry, sight files, context-bundle senders):
+  the home is the owner's open question; the surface files stay in
+  =agent/= beside the plugin and skill
+- =machine= (3): the settings file (step 29) is the one planned
+  addition; =git= (6), =process= (7) and =narration= (2) gain nothing
+
 * Reading order for a newcomer
 1. =errors/error-type.rkt= — what can go wrong and how it is named.
 2. =narration/wait-door.rkt= — why nothing blocks silently.

@@ -17,9 +17,10 @@
 - =src/backup/= — the backup area (step 19): declarations and fetched
   sources, off the machine. Designed in =plan/BACKUP-FEATURE.org=,
   listed as area 12 in ARCHITECTURE.org, and not built: law, no code.
-- build-plan and build-env — split =build-plan.rkt= (673 lines, 3 jobs)
-  and execute the =build-env.rkt= rename the register already records.
-  A name that lies costs more than a missing comment; both are recorded.
+- build-plan and build-env — the split already landed (step 6,
+  =ea76c3b=), and the register's line 13 still reads =build-plan.rkt= ->
+  =build-env.rkt=; the file stayed, as the facade. Only the stale record
+  remains: correct the line (register Flags).
 - E-16b multi-package fetch — one =pm fetch= of three packages in one
   process, as a fixture. OPEN-DECISIONS.org has it BLOCKED, and E-16c
   parallel fetch waits behind it: two features stuck on one test.
@@ -71,10 +72,10 @@
 - refusal wording — the confirmation refusal always appends "pass it as
   the confirmationToken argument", even for already-used or wrong-plan
   refusals. A refusal with the wrong next step teaches the wrong habit.
-- the splits FILE-INVENTORY.org recorded — =vault.rkt= (6 jobs),
-  =jobs.rkt= (5), =cli.rkt= (5), =spec-read.rkt= (4), =plan.rkt= (4),
-  =activate.rkt= (4). One file one job is half the structure law; each
-  of these is a split waiting for its turn.
+- the splits FILE-INVENTORY.org recorded — five of the seven landed with
+  the MOVE-ORDER work (steps 3-8); two remain: =vault.rkt= (1653 lines)
+  and =jobs.rkt= (1043), parked whole and unsplit by decision, no test
+  net yet. The record file is =file-splits.org=.
 
 * Group (d): the remaining MOVE-ORDER features, each with a plan file
 
@@ -108,7 +109,7 @@
 # One line per file in this directory.
   - INVENTORY.org — every component PM does not have yet, one entry each.
   - backup.org — the backup area: declarations and sources, off the machine.
-  - build-plan-split.org — one job per file in the build planner.
+  - build-plan-split.org — split done; the stale register line remains.
   - multi-package-fetch.org — three packages, one process, one test (E-16b).
   - profile-gc-cross-user.org — see other users before reclaiming.
   - exit-code-wording.org — two invented codes become one decided contract.

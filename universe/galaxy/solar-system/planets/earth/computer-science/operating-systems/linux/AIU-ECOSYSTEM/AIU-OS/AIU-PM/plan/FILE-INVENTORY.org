@@ -136,3 +136,16 @@ line changes. The test suite catches any missed require, because a
 missing module fails the build rather than passing silently — the same
 property that caught four stale documentation examples during the
 command wiring.
+
+* Update (docs step 3): the over-loaded list, now
+- Split and done, facade kept: =plan.rkt= (step 3), =spec-read.rkt=
+  (verified step 5), =build-plan.rkt= (step 6), =activate.rkt= (step 7),
+  =cli.rkt= (step 8). The split lines above are the map the tree
+  followed, with one difference: =build-plan.rkt= kept its name as the
+  facade, so =plan/NAMING-REGISTER.org= line 13 is stale (its Flags 6).
+- Still unsplit, parked by decision (step 9): =vault.rkt= (1653 lines)
+  and =jobs.rkt= (1043 lines). =file-splits.org= records what they
+  wait on.
+- Files that do not exist yet are listed in =plan/NAMING-REGISTER.org=
+  (Planned), with designs in =plan/new-components/=; this file stays
+  what the tree IS.
