@@ -13,6 +13,11 @@ publish = false
 name = "notation"
 path = "src/lib.rs"
 
+[[bin]]
+# One small binary for the one by-hand run: parse, render, roundtrip.
+name = "notation"
+path = "src/main.rs"
+
 # No [dependencies] on purpose. The first slice parses and round-trips text
 # with the standard library only, so a build needs no network and no crate
 # from outside this package.

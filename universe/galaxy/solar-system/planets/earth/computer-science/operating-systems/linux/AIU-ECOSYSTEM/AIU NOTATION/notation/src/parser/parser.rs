@@ -224,6 +224,23 @@ pub fn parse(buffer: &Buffer) -> Tree {
         let span = Span { start: buffer.line_start(line), end: buffer.line_end(line) };
         let text = buffer.line_text(line);
 
+        // A code block's body is opaque (rule D): nothing inside it is read as
+        // notation, and only an exact matching end line closes it. A line that
+        // looks like a start line is content, so it opens nothing.
+        if let Some(inner) = open.last() {
+            if inner.is_opaque() {
+                match shape_of(text) {
+                    LineShape::BlockLine { ref name, is_start: false } if *name == inner.name => {
+                        close_block(&mut open, &mut top, name, span, line);
+                    }
+                    // every other line, including a "<name> start" line and a
+                    // mismatched end line, is content of the opaque body
+                    _ => {}
+                }
+                continue;
+            }
+        }
+
         match shape_of(text) {
             LineShape::Blank => {
                 // Blank lines between blocks carry no meaning (rule b).

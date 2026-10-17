@@ -38,6 +38,10 @@
 
 * The crate
 # minimal on purpose: one crate, no workspace, no dependencies.
+  - =src/main.rs= — the three commands, one small binary: =parse= prints the
+    payload document, =render= prints the plain render, =roundtrip= says
+    whether the tree prints back to identical bytes. Each takes one file path.
+    The binary is the by-hand run's Rust side; nothing is automatic yet.
   - =Cargo.toml= — the crate manifest for the package: one crate named
     notation, no workspace, no dependencies.
   - =src/lib.rs= — the module list: which area files belong to the crate. It
@@ -66,6 +70,16 @@
   - =check= — the CLI command that reads a file, lists every error with its
     line number and exits non-zero when any error is found; the same
     documents the editor receives through the boundary.
+  - =syntax/first-run-output.org= — the captured output of the one by-hand run
+    allowed for items 2 and 3, with its timings and its failures named.
+    Registered 2026-10-17.
+- =syntax/example.notation= — the real sample page the first by-hand run
+    reads: a title with tags, two paragraphs, and a code block whose body holds
+    a line that looks like a start line. Registered 2026-10-17.
+- =.notation= — **provisional** file extension for a notation page, registered
+    2026-10-17 for the first slice only. It is provisional because no owner
+    decision has fixed the extension; a page may be read with any name today,
+    and the parser does not care what a file is called.
   - =parse-tree-document= — the payload the Rust parser prints and the Racket
     side reads: one plain text document in one frozen shape, with no Racket
     dependency on the Rust side. Its shape is written in words in

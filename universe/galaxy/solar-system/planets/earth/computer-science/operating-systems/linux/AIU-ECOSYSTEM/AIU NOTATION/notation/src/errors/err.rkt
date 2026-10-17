@@ -2,13 +2,13 @@
 ;; One job: the error record — what happened, who, where.
 ;; The floor of the package: this file uses nothing from any other area.
 ;; Lands with TODO item 1 (the tree lands).
+;;
+;; This build has no gen:custom-write ("bad require spec" — found by the first
+;; by-hand run, 2026-10-17), so the record carries no writer of its own.
+;; Printing is render.rkt's one job, and that is where the shape lives.
 
 (struct exn:notation exn:fail (who where)
-  #:transparent
-  #:methods gen:custom-write
-  [(write-exn e port _)
-   (fprintf port "ERR ~a at ~a: ~a" (exn:notation-who e) (exn:notation-where e)
-            (exn-message e))])
+  #:transparent)
 
 ;; make-err builds the record; it never raises, so a caller may hold an error
 ;; as a value and decide later whether to raise or to report it.

@@ -1,0 +1,21 @@
+title start
+tags: sample first-run
+The first sample page
+title end
+
+paragraph start
+Every line of this page sits inside a named block. The blocks are the syntax:
+a start line, the content, an end line, and nothing else.
+paragraph end
+
+paragraph start
+The code block below holds a line that looks like a start line. The body of a
+code block is opaque, so that line is content and opens nothing.
+paragraph end
+
+code start
+language: text
+def example():
+    return 1
+code start
+code end
