@@ -1,0 +1,43 @@
+#+TITLE: CLEANUP-LOG -- every doc this cleanup removed, and why
+#+AUTHOR: Shape
+
+# One job: say, for every doc the 2026-10-17 cleanup deleted, the one
+# line why and where its last live copy sits. Recover anything with
+# =git show <last live commit>:<path>=. Plan docs retired into
+# =TODO.org= / =plan/DECISIONS.org= get their own section below.
+
+* Deleted -- docs and patches
+- =docs/archive/EMACS-FRONTEND.org= -- SUPERSEDED (D-018): no Emacs
+  front end; history only. Last live: 0fd8617.
+- =docs/archive/LOADER-CONTRACT.org= -- SUPERSEDED (D-018): target
+  neutral; there is no loader work. Last live: 0fd8617.
+- =docs/archive/ORG-AUTHORING.org= -- SUPERSEDED (D-018): no Org format
+  and no Org reader. Last live: 0fd8617.
+- =docs/archive/PKGDEF-EMACS.org= -- SUPERSEDED (D-018): the Emacs
+  sections were replaced by the neutral spec. Last live: 0fd8617.
+- =docs/NU-ADOPTION.org= -- D-020 landed; the gate is =gate/check.nu=.
+  Last live: 0fd8617.
+- =docs/NU-NOTES.org= -- the Nu probes were consumed by D-020; the
+  evidence is superseded. Last live: 0fd8617.
+- =docs/PKGDEF-REQUIREMENTS.org= -- the Guix study was consumed by the
+  neutral spec (=docs/SPEC-NEUTRAL.org= stays). Last live: 0fd8617.
+- =docs/VERBOSE.org= -- the V-0 inventory and V-1 rules were built; the
+  narration law is now D-036/D-041. Last live: 0fd8617.
+- =docs/HANDOFF-PROFILE-COMMANDS.org= -- its task is closed (S3-03: all
+  six verbs are in the dispatch). Last live: 0fd8617.
+- =plan/REORGANISE-PLAN.org= -- the proposal was implemented; MOVE-ORDER
+  and PROGRESS hold the record. Last live: 0fd8617.
+- =docs/patches/jobs-fix.patch= -- work committed: the split displays
+  live in =package-manager/src/queue/jobs.rkt= (lines 855-856). Last
+  live: 0fd8617.
+- =docs/patches/WIP-checknu-tiers-removed.patch= -- abandoned: never
+  applied, its target =scripts/check.nu= is gone, and =gate/check.nu=
+  has no tiers. Last live: 0fd8617.
+
+* Kept, with the reason
+- =docs/patches/jobs-wip.patch= -- OPEN, not abandoned: the job-queue
+  work is parked (P-03/P-04; pm v1 does not use the queue). Delete or
+  apply when the queue direction is decided.
+- =docs/PERF.org=, =docs/RACKET-TOOLING.org=, =docs/SPEC-NEUTRAL.org=,
+  =docs/VAULT-SPEC.org=, =docs/ENGINE.org= -- LIVE: cited by code, by
+  the gate, by DECISIONS.org or by the contract.

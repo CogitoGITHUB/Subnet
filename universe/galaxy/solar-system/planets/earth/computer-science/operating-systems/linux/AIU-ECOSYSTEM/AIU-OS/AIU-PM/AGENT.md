@@ -51,7 +51,7 @@ have happened through `edit`.
 - Assuming `jobs.rkt` had a handshake bug when the handshake was correct
   and a stale lock holder was the actual blocker.
 
-## ## Always use the shared runner, and read its timer lines
+## Always use the shared runner, and read its timer lines
 
 `gate/test-runner.rkt` prints progress and elapsed time EVERY run:
 
@@ -76,10 +76,11 @@ Every `.rkt` is tested, always, in ONE shared process. A file that hangs
 or fails there is an ERROR to isolate and fix (dynamic-wind, temp dirs,
 parameterize cwd/env, kill and reap children), never a reason to give it
 a separate tier. Measured proof spawners are fine in the shared process:
-`package-manager/src/git/git-repo.rkt` (54 tests), `package-manager/src/install/local-perform.rkt` (15) and
+`package-manager/src/git/git-repo.rkt` (54 tests),
+`package-manager/src/install/local-perform.rkt` (15) and
 `package-manager/src/process/run.rkt` (52) all pass there.
 
-## Scripts in `scripts/` exist to RUN things, not to change text.
+## Scripts exist to RUN things, not to change text.
 
 ## Commit and push constantly
 
@@ -102,10 +103,10 @@ the committed version.
 |------|---------|
 | check parens / parse | `~/opt/racket-full/bin/racket gate/read-check.rkt <files...>` |
 | interactive Racket | `~/opt/racket-full/bin/racket tools/repl.rkt` |
-| quick test of fast-tier files | `~/opt/racket-full/bin/racket gate/test-runner.rkt <files...>` |
-| the gate | `~/opt/nushell/0.116.1/nu --no-config-file gate/check.nu --fast` |
+| test specific files | `~/opt/racket-full/bin/racket gate/test-runner.rkt <files...>` |
+| the gate | `~/opt/nushell/0.116.1/nu --no-config-file gate/check.nu` |
 | between items | `... gate/check.nu --changed` |
-| full gate, end of phase | `... gate/check.nu` |
+| list the stages | `... gate/check.nu --list` |
 
 **Never** write a python heredoc to patch a `.rkt`, and never re-derive a
 paren check by hand. `gate/read-check.rkt` is the paren check. If it
@@ -114,9 +115,9 @@ does not cover the case you need, fix or extend it, then use it.
 ## When a script cannot do the job, build it, then use it
 
 If a task needs the same mechanics three times, that is a missing script,
-not a repeated command. Add it under `scripts/`, make it take arguments
-rather than hard-coded paths, and run it from then on. New scripts get a
-row in `docs/RACKET-TOOLING.org`.
+not a repeated command. Add it under `gate/` or `tools/`, make it take
+arguments rather than hard-coded paths, and run it from then on. New
+scripts get a row in `docs/RACKET-TOOLING.org`.
 
 ## Ground rules
 
@@ -166,8 +167,8 @@ is the only writer and its death shows up as EOF on the read end. A
 holder that writes `"up"` and then blocks on a fifo is the real shape;
 there are no timers in it. Verify this in a `/tmp` replica first.
 
-`gate/check.nu` tier removal is saved at
-`docs/patches/WIP-checknu-tiers-removed.patch`, not applied.
+`gate/check.nu` carries no test tiers and no `--fast` flag; the old
+tier-removal patch retired when `check.nu` moved into `gate/`.
 
 ## The standing rule: names, structure, register first
 
