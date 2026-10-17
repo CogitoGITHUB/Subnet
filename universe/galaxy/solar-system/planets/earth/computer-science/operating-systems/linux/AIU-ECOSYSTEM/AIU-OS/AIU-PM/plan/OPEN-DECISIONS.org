@@ -99,6 +99,22 @@ is mapped to that sentence in the last column of the first table.
 - *Decision:* =(DEFAULT: INVENTORY wrapped; AGENT.md left alone until
   the owner says.)=
 
+** More owner words that the step-3 flags need
+Found while registering the planned names (step 3,
+=plan/NAMING-REGISTER.org= -- its Flags section). Two are new asks; one
+is a pointer to a question already asked above.
+
+- The =shell-env= name: "env" is an abbreviation, and the naming rule
+  bans abbreviations outside the register. Allow it here, or the
+  step-27 file gets a full name (=shell-environment.rkt=).
+  (DEFAULT in use: allow it as the plans already write it, =shell-env=.)
+- Cross-user reachability: =plan/FEATURE-users.org= names
+  =install/user-gc.rkt= for it; the step-2 design file instead changes
+  =profile-gc= in place. One name must win before step 28 starts.
+  (DEFAULT in use: neither moves until you pick.)
+- The backup file names: whatever split the backup question above
+  picks, its names get registered before the first file is written.
+
 * The blocked and parked work
 
 ** E-16b pm fetch -- BLOCKED
