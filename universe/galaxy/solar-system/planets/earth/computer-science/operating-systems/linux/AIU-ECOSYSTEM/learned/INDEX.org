@@ -6,6 +6,14 @@
 # one line per file: its name, then the single job it performs. This index is updated in the same commit as any change here.
 
   - general-rules.org — the rules PM proved in practice, each ready to reuse, adapt or refuse
+  - structure-and-naming-rules.org — the register-first law, the one-way area law, the banned words and the index rule
+  - gate-set.org — text-lint, the paren check, the one-way dependency lint, the security gate, and how a gate is proven to bite
+  - narration-pattern.org — the event schema, the wait door and the one printer
+  - confirmation-gated-mutations.org — read free, mutate gated; the token and its four refusals
+  - decision-log-style.org — the append-only D-numbered log, and retiring an open file by redirect
+  - todo-list-practice.org — one TODO.org per project: item shape, phases, blocked never stops the run
+  - acceptance-pattern.org — captured real runs, ACCEPTANCE.org, README rewritten from truth
+  - doc-retirement-practice.org — CLEANUP-LOG lines, redirect stubs, cited docs stay
   - racket-nu-json-patterns.org — the patterns that worked in PM, one verdict each: reuse, adapt or do not repeat
   - television-integration.org — how PM or its tooling uses Television and what the editor should copy
   - versioning-and-rollback.org — how PM versions and rolls back, because adapters and the contract must reuse it
@@ -13,5 +21,5 @@
   - parts-worth-sharing.org — what of PM can be shared with the new programs: surfaces, shapes and rules
 
 * Later
-# Read-only from the package manager, one verdict per item: reuse, adapt or do not repeat.
+# Read from the package manager; PM is the read-only source, and every item names its PM path. One verdict per item: reuse, adapt or do not repeat.
 

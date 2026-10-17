@@ -1,6 +1,6 @@
 #+TITLE: Phone problems
 # One job: every wall the phone hit: Termux and proot limits, Racket build gaps, measured costs
-# Status: filled 2026-10-16 from =AIU-OS/AIU-PM=, read-only; every item names the PM path it was read from.
+# Status: filled 2026-10-16 from =AIU-OS/AIU-PM=, read-only; extended 2026-10-17 with the full-distribution API names, the REPL cost and the Nu exit-code trap.
 
 * How to read this file
 # Verdict key: REUSE carries, ADAPT re-shapes, DO NOT REPEAT did not survive.
@@ -28,6 +28,27 @@
 - The rule: the installer story changed once already, so a build dependency is verified against the install that exists, never against a doc describing an older one.
 - Verdict: ADAPT — facts to check first when deciding what to install for the new programs.
 - Read at: 0.FOUNDATION.org section 1; docs/RACKET-TOOLING.org; plan/DECISIONS.org D-010 and the minimal-tarball entry.
+
+** Racket 9.3 full: the names that actually exist (measured 2026-10-16)
+# The live install decides; a doc describing an older one misleads.
+- What PM does: the full CS distribution is installed at =~/opt/racket-full= (2026-10-15, D-042); verified names: =file/glob=, not =racket/glob= (not a module in 9.3); no =racket/environment= (the variables live in =racket/base=); no =directory-list-recursively= (=in-directory= and =directory-list= work in =racket/file=); the parameter is =exit-handler=, not =current-exit-handler=; =read-line-evt= modes are exactly ='(linefeed return return-linefeed any any-one)= — ='line= does not exist; =json= is bundled; =data-lib= was installed, shipped nothing useful, cost startup (0.299s to 1.178s) and was removed.
+- The rule: read the tooling doc's measured section before trusting any Racket API name; the install, not the manual, is the truth here.
+- Verdict: ADAPT — facts to check first when the new programs pick Racket APIs.
+- Read at: docs/RACKET-TOOLING.org ("What is already there", "What the full distribution changed"); plan/DECISIONS.org D-042.
+
+** The REPL pays one heavy cost; measure the loop you actually run
+# Five trivial probes: one repl.rkt 11.778s versus five separate launches 1.531s.
+- What PM does: the REPL loads 13 core modules once, so trivial work loses; it wins when expressions are not trivial and above all when an expression RAISES and the stack stays alive for the next probe.
+- The rule: use the REPL for investigation, never for one-liners.
+- Verdict: REUSE.
+- Read at: docs/RACKET-TOOLING.org ("REPL measured, honestly").
+
+** A gate exit code can be lost inside a closure (Nu 0.116.1)
+# The one place the exit code is decided must not rely on a side channel.
+- What PM does: an environment write inside a =timeit { }= closure did NOT persist in 0.116.1, so the gate read its default and exited 0 while printing CHECK FAILED; the fix reads the value from the same scope that computed it, and a failing synthetic .rkt is the standing proof; same day, measured: =length= and =where= reject string input, =split row= needs a list.
+- The rule: never smuggle an exit code through an env write inside a closure; prove every deciding gate with a fixture that fails.
+- Verdict: REUSE.
+- Read at: docs/LESSONS.org (2026-10-10 entry); learned/gate-set.org.
 
 ** Startup costs are measured and recorded
 # Both languages pay a visible tax at every process start.

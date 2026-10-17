@@ -1,0 +1,48 @@
+#+TITLE: Structure and naming rules (proven in PM)
+# One job: the register-first law, the area law and the file discipline, each with a verdict
+# Status: filled 2026-10-17; read from =AIU-OS/AIU-PM= read-only (PM is the source; this ready-up never edits it); every item names the PM path it was read from.
+
+* How to read this file
+# Verdict key: REUSE carries, ADAPT re-shapes, DO NOT REPEAT did not survive.
+
+** Register first: a name not in the register does not exist
+# The register is written before the first line of a component.
+- What PM does: four rules bind before any new component — the name says what the thing is or does (no vague names, no abbreviations outside the register); one purpose per file, one topic per directory, an index per directory; every name and location is registered in =plan/NAMING-REGISTER.org= BEFORE code uses it; the one-way law holds for new components too.
+- The rule: a name or a place picked at the moment of writing is the habit behind lying identifiers and overloaded files; picking it first and writing it down is the cure.
+- Verdict: REUSE.
+- Read at: AGENT.md ("The standing rule"); plan/ARCHITECTURE.org (same four rules); plan/NAMING-REGISTER.org.
+
+** The register shapes: current path -> new path, then the one job
+# One bullet per file; the job is the third column, always present.
+- What PM does: every file gets one bullet: the path it has now, =->= and the new path when it changes, then the job it does. Moved-whole files say so with the reason ("still parked, no test net"); identifiers to rename are listed with why each lies; planned names for new components are registered before their build step.
+- The rule: the register doubles as the rename order and the proof that every name was chosen, not stumbled into.
+- Verdict: REUSE.
+- Read at: plan/NAMING-REGISTER.org ("Files moved whole and unsplit", "Identifiers to rename", "Planned: names the new components will use").
+
+** The inventory is measured, never remembered
+# One line per file, read from the tree, with the truth about size.
+- What PM does: =plan/FILE-INVENTORY.org= lists what each file is, one line each, measured; overloaded files are named as findings; the register-repair order (inventory, register, rename with a facade kept until nothing requires the old path) ran as one step per commit.
+- The rule: archaeology is more expensive than inventory; the register-first repair needs the measured list first.
+- Verdict: REUSE — every new package plans its tree the same way before the first file lands.
+- Read at: plan/FILE-INVENTORY.org; HARD-RULES.org 3.9 (the ecosystem restatement).
+
+** The one-way area law, transcribed into the lint
+# A law in prose drifts; a law in a table fails the gate.
+- What PM does: dependencies point one way; =plan/ARCHITECTURE.org= orders the areas lowest first (errors, narration, machine, security, spec, git, process, store, queue, build, install, backup, entry) and names two absolute rules: errors is the floor, entry is the ceiling; =gate/one-way-dependency-lint.nu= transcribes the same table, keeps the 34 known crossings VISIBLE on every run, and fails any NEW crossing.
+- The rule: the map plus the direction is what makes the split checkable by a machine instead of by memory.
+- Verdict: REUSE — and each new package writes its own area table before its first file.
+- Read at: plan/ARCHITECTURE.org ("The law"); gate/one-way-dependency-lint.nu (MAY_USE, KNOWN_PAIRS).
+
+** Banned words are a gate, not a taste
+# The naming law bites on every run, by whole segment, on tracked paths only.
+- What PM does: core, main, server, backends, handler, manager and tmp are banned everywhere in paths and definitions; the lint reads git-TRACKED paths (a test run once left an empty =src/git/tmp= behind, and build output litters) and matches by segment so =bats-core= and =cores= survive; =docs/examples/= name real upstream packages and are exempt as outside data; the product's own name =package-manager= is the single allowed "manager".
+- The rule: a lint that goes red on litter teaches people to ignore it; scope it to tracked paths and make it exact.
+- Verdict: REUSE.
+- Read at: gate/banned-words-lint.nu; plan/NAMING-REGISTER.org header.
+
+** One HOME seam per language, mirrored
+# Nothing reads HOME except the named seam.
+- What PM does: =machine/directories.rkt= is the ONE place Racket reads HOME or XDG; =gate/env.nu= is its Nushell mirror; generated state lives outside the source tree, from that seam.
+- The rule: one scope seam for environment and roots; everything else receives paths.
+- Verdict: REUSE.
+- Read at: plan/ARCHITECTURE.org (=machine/=); docs/RACKET-TOOLING.org; gate/env.nu.

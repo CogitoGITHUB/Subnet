@@ -1,0 +1,34 @@
+#+TITLE: Retiring finished docs (proven in PM)
+# One job: how a done doc leaves without its meaning leaving — the CLEANUP-LOG and the redirect stub
+# Status: filled 2026-10-17; read from =AIU-OS/AIU-PM= read-only; every item names the PM path it was read from.
+
+* How to read this file
+# Verdict key: REUSE carries, ADAPT re-shapes, DO NOT REPEAT did not survive.
+
+** Every removal gets a line: one-line why, last live commit
+# A deleted doc without its line is indistinguishable from an accident.
+- What PM does: =plan/CLEANUP-LOG.org= holds, per deleted doc, the one line why (SUPERSEDED by D-018, consumed by D-020, task closed, abandoned) and "Last live: <commit>"; anything is recoverable with =git show <hash>:<path>=; the log says so in its header.
+- The rule: delete freely once the replacement exists — but the log line lands with the deletion, and the last live commit is named.
+- Verdict: REUSE.
+- Read at: plan/CLEANUP-LOG.org header and "Deleted" section.
+
+** Kept, with the reason: cited docs stay
+# Liveness beats tidiness: docs cited by code, gate or decisions remain.
+- What PM does: PERF, RACKET-TOOLING, SPEC-NEUTRAL, VAULT-SPEC and ENGINE stay because they are cited by code, by the gate, by DECISIONS.org or by the contract; the pile of patches keeps OPEN ones with a deletion condition instead of a blind sweep.
+- The rule: deletion follows the cites, one by one; an open artifact gets its condition, not a verdict.
+- Verdict: REUSE.
+- Read at: plan/CLEANUP-LOG.org ("Kept, with the reason").
+
+** Reduced, not deleted: redirect stubs for cited paths
+# A path others cite is an interface; keep it as a signpost.
+- What PM does: OPEN-DECISIONS.org shrank to a redirect: where the content went, the recovery command, why it is kept; MOVE-ORDER and the new-components plan files retired into TODO.org the same way.
+- The rule: a retired plan doc points at the list that owns its content now — TODO.org for owed work, DECISIONS.org for policy, PROGRESS.org and git log for history.
+- Verdict: REUSE.
+- Read at: plan/OPEN-DECISIONS.org; plan/CLEANUP-LOG.org ("Retired into TODO.org").
+
+** The test before deleting: does anything still cite it?
+# One grep, then delete or keep.
+- What PM does: the kept list gives the grounds — "cited by code, by the gate, by DECISIONS.org or by the contract"; the abandoned patch was safe because its target was gone and nothing applied it.
+- The rule: no citation, no reason to keep; a citation, no reason to delete until the pointer is redirected.
+- Verdict: REUSE.
+- Read at: plan/CLEANUP-LOG.org ("docs/patches/WIP-checknu-tiers-removed.patch").

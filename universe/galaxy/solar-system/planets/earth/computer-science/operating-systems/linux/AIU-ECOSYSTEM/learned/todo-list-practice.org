@@ -1,0 +1,34 @@
+#+TITLE: The single TODO list (proven in PM)
+# One job: one list per project, its item shape, its order, and what it refuses to be
+# Status: filled 2026-10-17; read from =AIU-OS/AIU-PM= read-only; every item names the PM path it was read from.
+
+* How to read this file
+# Verdict key: REUSE carries, ADAPT re-shapes, DO NOT REPEAT did not survive.
+
+** One list IS the order of record
+# Two lists drift; one list owns the order.
+- What PM does: =TODO.org= at the project root is THE list of what is left (D-066 made that explicit when OPEN-DECISIONS retired); phases A–F were fixed by the owner on 2026-10-17 and the phase order is the order of record; a dependency always wins over the order.
+- The rule: one list, owner-fixed phases, deps named per item — never a second parallel list.
+- Verdict: REUSE — each project gets exactly one TODO.org.
+- Read at: TODO.org header; plan/DECISIONS.org D-066.
+
+** The item shape: what, done when, tests, deps
+# Four lines; no item without its observable check.
+- What PM does: every item names =what:= (the work), =done when:= (the single observable check), =tests:= (what proves it), =deps:= (what must be DONE first); an item that finishes leaves the file in the commit that finishes it — one item, one commit, DONE and hash together.
+- The rule: a "done when" that cannot be seen is not a check; an item with no tests says so and names its proof.
+- Verdict: REUSE.
+- Read at: TODO.org (items "exit codes", "text-lint for .md", PHASE F items).
+
+** Blocked never stops the run; phase boundaries run the full gate
+# The run continues; the block is a recorded fact.
+- What PM does: a truly blocked item is marked BLOCKED with its reason and the run continues; at each phase boundary the full gate runs once with the pinned nu, one status line, and the run continues without stopping; reports stay 20 lines max.
+- The rule: blocking one thread is never blocking the whole; a phase boundary is a gate run, not a meeting.
+- Verdict: REUSE.
+- Read at: TODO.org header ("A truly blocked item...", "At each PHASE boundary...").
+
+** Tests mirror src; the gate is the only green
+# test paths mirror source paths, area for area.
+- What PM does: tests live in =package-manager/tests/<area>/= mirroring src, unless an item says otherwise; the staged extraction of 26 inline test blocks is item one (step 14 to green) because the suite must be green before anything else.
+- The rule: the first item of a package is its structure made green, never a feature on a red tree.
+- Verdict: REUSE.
+- Read at: TODO.org header and "step 14 to green"; plan/PROGRESS.org.
