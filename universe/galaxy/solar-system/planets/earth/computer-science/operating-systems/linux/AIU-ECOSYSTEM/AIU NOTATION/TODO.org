@@ -10,7 +10,7 @@
   - No tests for now: the light gate only (root DECISIONS.org D-001); the full gate arrives with the first test item.
 
 * Items
-# in build order; twelve numbered items, 1 to 12, then the after-done-line list.
+# in build order; twelve numbered items, 1 to 12, then the after-done-line list, then the open items.
   1. The tree lands — create =notation/= per plan/package-tree.org: INDEX.org, the floor areas (errors, narration, machine) and gate/ with its first stages; done when: the light gate is green on the new tree; deps: none.
   2. The mark and the first elements (build step 1): FIRST ACT DONE 2026-10-17 — the owner chose the sign { } (notation D-014; root =DECISIONS.org= record pending in ROOT-REQUEST-D014.org), and a code block's body is opaque to the parser, so a { in code never opens an element (history: the sign and its typing comfort were item 2's first act, on a phone); still open: title, paragraph and code block (D-013) land; done when: the first three elements are written down and the light gate is green; deps: 1.
   3. Round trip (build step 2): text/, parser/, elements/, model/, rendering/plain.rs, entry/cli.rkt; done when: parse, render and re-parse agree on a real page (captured output); deps: 1, 2.
@@ -23,6 +23,21 @@
   10. The kit (step 9): MCP server, skill with executed examples, read-only plugin; done when: the kit checklist runs green; deps: 8.
   11. Notation core hosted (tier-1 item 18): notation on and off both work; the trigger chain runs once end to end; done when: captured real output; deps: 8, editor items 2 and 3.
   12. Done-line share (tier-1 item 20, shared): the notation's share of the done-line state holds; deps: 11.
+
+* Open items
+# named and left open by the owner on 2026-10-17; none of them blocks item 1 or the first slice.
+  - Inline emphasis and links inside a paragraph — OPEN, not decided; the
+    owner named it open and it stays open until they answer (notation D-014
+    revised: still open).
+  - The Tier 2 element list — comment, citation, tables and so on — OPEN, not
+    decided.
+  - Block reuse by an authored id — Tier 2, design note only; needs the
+    contract question in ROOT-REQUEST-D014.org answered first, because the
+    contract says addresses are computed and never authored.
+  - Editor side: auto-insert a start and end line while typing, and hide the
+    end line on display — dependency of item 11 (notation core hosted), where
+    the editor's notation mode runs over the contract boundary; the one-key
+    wrap belongs here, not to the engine.
 
 * After the done line
 # what continues on its own.

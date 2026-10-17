@@ -12,12 +12,15 @@
     reparse is table stakes (research).
   - Literate tangling complexity — targets and dependency scanning grow
     edge cases; Org Babel's history is the warning.
-  - Mark collision after the sign was chosen — the sign is { } (notation
-    D-014, owner, 2026-10-17); a code block's body is opaque to the parser,
-    so a { in code cannot open an element, but a { in ordinary prose still
-    can, and rule 12 names that collision as the failure the design exists
-    to avoid (history: before 2026-10-17 this risk read "the mark choice
-    stalls — until a sign types cleanly, the first build step waits").
+  - Mark collision after the sign was chosen — NOTATION D-014 REVISED
+    2026-10-17: start/end keywords, everything inside a block (owner;
+    root =DECISIONS.org= record pending). A block closes only on its own
+    matching end line, and a block body is opaque, so ordinary prose can no
+    longer close a block by accident; the risk left is nesting — an end line
+    that does not match the innermost open block, which is a precise error
+    naming the opener's line (history: before 2026-10-17 this risk read "the
+    mark choice stalls — until a sign types cleanly, the first build step
+    waits"; revised the same day, it read "the sign is { }").
   - Wording drift: "no engine" and "no format unless necessary" read
     against the engine surface the contract needs — decisions block
     before architecture.

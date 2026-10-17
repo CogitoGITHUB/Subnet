@@ -1,47 +1,78 @@
 #+TITLE: The open and close mark
-# One job: the tiny consistent mark around a named element — the sign is decided: braces { }
-# Status: the sign decided 2026-10-17 by the owner (notation D-014); the parser side starts at TODO item 2.
+# One job: how a named element is opened and closed, and what may sit inside it
+# Status: decided 2026-10-17 by the owner and revised the same day (notation D-014); the parser side starts at TODO item 2.
 
 * What it is for
-# why this exists, in the owner's terms. The mark exists so a name can be opened and closed without one symbol per element.
-  - Ordinary things are written as names, not as symbols; the same pair of marks
-    opens and closes every named element, so nothing new must be remembered per
-    element (rule 12).
+# why this exists: so a name can be opened and closed in words, with nothing new to remember per element.
+  - Ordinary things are written as names, not as symbols: a title is called
+    title, a paragraph is called paragraph, a code block is called code block.
 
-* The shape
-# how it reads, in words; no code here, the implementation is TODO item 2.
-  - { opens a named element and } closes it; one pair for every element kind.
-  - The body between them is ordinary text; the element's name is written inside,
-    in words: title, paragraph, code block.
-  - A code block's body is opaque to the parser: the parser does not read code as
-    notation text, so a { inside code never opens a notation element.
-  - A code block closes by repeating its own word: the word that opened it stands
-    again, alone, on its own line, and that line is the closer (owner, 2026-10-17 —
-    the named closer, not a brace).
-  - The hole fix: a word closes a code block only when it stands alone on its own
-    line and matches its own opener; the same word sitting inside a line of prose
-    or inside code is ordinary text, never a closer.
-  - The editor hides the closer when it shows the file; the file itself keeps it.
-  - Whether ordinary elements (title, paragraph) close the same way is still open
-    and is not decided here.
-  - A { in ordinary prose still opens an element; the first elements and the
-    typing-comfort check inside TODO item 2 decide how that reads for the owner.
+* The opening and closing lines
+# the shape, in words; no code here, the implementation is TODO item 2.
+  - No braces and no enclosing mark. A block is opened by a line that reads
+    "<name> start" and closed by a line that reads "<name> end", each alone on
+    its own line, and the name in the closing line is the same name that
+    opened it.
+  - The block's text sits between those two lines. Nothing marks the start or
+    the end except the word itself.
 
-* Decisions it needs
-# the questions this area must answer, listed as questions; options welcome with a recommendation.
-  - Closed 2026-10-17: the sign is { } (owner; notation D-014). The root
-    =DECISIONS.org= record is pending, carried in ROOT-REQUEST-D014.org.
-  - Closed 2026-10-17: a code block closes by repeating its own word, alone on
-    its own line, matching its opener (the named closer); the editor hides it,
-    the file keeps it. Ordinary elements' closer: still open, not decided here.
-  - Still open, inside TODO item 2: how the first three elements (title,
-    paragraph, code block) are written with the mark, and the light gate that
-    proves it.
+* Everything lives inside a block
+# the law: a notation file is a stack of named blocks, nothing else.
+  - Every element is a block, paragraphs included. There is no default
+    paragraph and no plain line that means anything on its own.
+  - Blank lines and whitespace between blocks carry no meaning.
+  - Text outside any block is an error named "stray text": severity error, no
+    off switch. The text is kept exactly as written, never deleted and never
+    rewritten, and the rest of the file keeps parsing.
+  - The meaning tree has no node kind for loose text: it holds blocks and
+    error nodes, nothing else.
+  - The engine enforces this; the editor only shows what the engine reports,
+    through the boundary.
+
+* Nesting
+# blocks may sit inside blocks, so the parser keeps a stack.
+  - Blocks nest: a comment block may sit inside a title block.
+  - A closing line must match the block that is innermost and still open. If it
+    does not, that is a precise error naming the line where the open block
+    started, and the text stays untouched.
+
+* Opaque bodies
+# what the parser refuses to read inside.
+  - A code block's body is opaque: the parser does not read it as notation, so
+    only an exact matching "<name> end" line closes it. A word that matches,
+    but sits inside a line of text or a line of code, closes nothing.
+
+* Styling is a hint, never meaning
+# declared inside the block, under its start line.
+  - Styling is written on keyword-colon lines straight under the start line:
+    style, theme, color, format, font and so on.
+  - Those lines are stored as hints. They never change what an element means.
+  - A terminal honors bold, italic and color and ignores the rest.
+
+* Reuse by an authored id — Tier 2, design note only
+# not decided, no files; recorded so the shape is known before it is built.
+  - A block may later be included in another file by reference. That needs an
+    optional authored id line inside the block, distinct from its title and
+    from its path.
+  - Includes are followed by the reference resolver, never by the parser, and
+    an include cycle is an error.
+  - This is Tier 2. No file is created for it until the owner opens Tier 2, and
+    the contract question in ROOT-REQUEST-D014.org is answered first: the
+    contract says addresses are computed and never authored, while an authored
+    id is a different thing and must not collide with it.
+
+* Still open
+# questions the owner has not answered; nothing here decides them.
+  - Inline emphasis and links inside a paragraph: open, not decided.
+  - The Tier 2 element list (comment, citation, tables and so on): open.
 
 * History
-# one line of the old wording, kept so nothing is lost.
-  - Before 2026-10-17 this file said the sign "is an open decision for the owner",
-    and the exact design "is decided in a later conversation".
+# one line per answer, kept so nothing is lost.
+  - 2026-10-17, first answer: braces { } opened and closed every element, and a
+    code block closed by repeating its own word. Superseded the same day.
+  - 2026-10-17, revised answer: start/end keywords, everything inside a block.
+  - Before that: the sign "is an open decision for the owner", and the exact
+    design "is decided in a later conversation".
 
 * Where it is proven
 # the build step or check that shows this works; named 2026-10-16.

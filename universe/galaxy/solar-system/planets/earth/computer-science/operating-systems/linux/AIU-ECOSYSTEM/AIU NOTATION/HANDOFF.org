@@ -18,17 +18,18 @@
 * The owner's answers
 # what the owner has given; what is still open.
   - questions/usage-inventory.org — answered 2026-10-16 in the owner's words.
-  - Answered 2026-10-17 (notation D-014, D-015): the mark is one tiny consistent mark with elements named in words, and its sign is decided — { } (owner; root =DECISIONS.org= record pending in ROOT-REQUEST-D014.org); a code block's body is opaque to the parser, so a { in code never opens an element; the title's creation-time source is the owner's own file-creation package.
+  - Answered 2026-10-17 (notation D-014, D-015): the mark is elements named in words with a decided sign, revised the same day — NOTATION D-014 REVISED 2026-10-17: start/end keywords, everything inside a block (owner; root =DECISIONS.org= record pending in ROOT-REQUEST-D014.org); block bodies are opaque, so only an exact matching end line closes one; the title's creation-time source is the owner's own file-creation package.
   - History (before 2026-10-17): "the exact sign and its typing comfort are TODO item 2's first act, on the phone".
+  - History (revised 2026-10-17): the first sign was braces { }; superseded, not deleted.
 
 * Current state
 # what is true right now.
-  - Base complete; the ready-up closed the decisions: numbering, engine wording and the first element set are D-011..D-013; the owner's mark and title answers are notation D-014 and D-015, the mark's sign { } decided 2026-10-17 (root record pending); plan/open-decisions.org is a redirect stub.
+  - Base complete; the ready-up closed the decisions: numbering, engine wording and the first element set are D-011..D-013; the owner's mark and title answers are notation D-014 and D-015, the mark's sign revised 2026-10-17 to start/end keywords with everything inside a block (root record pending); plan/open-decisions.org is a redirect stub.
   - The package is planned at =notation/= per plan/package-tree.org; the work list is TODO.org; nothing is built.
 
 * Next step
 # one line, so a fresh conversation starts in the right place.
-  - TODO.org, top to bottom: item 1 (the tree lands with the light gate) starts now; item 2 keeps the decided sign { } and takes the first elements (title, paragraph, code block); then the round trip slice.
+  - TODO.org, top to bottom: item 1 (the tree lands with the light gate) starts now; item 2 takes the first elements (title, paragraph, code block) under the revised sign; then the round trip slice.
 
 * How to work here
 # house rules.

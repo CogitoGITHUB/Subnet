@@ -154,13 +154,15 @@ AIU NOTATION/            the project: context and docs stay where they are
   - The first slice (build-order steps 1–2): text/, parser/, elements/,
     model/, rendering/plain.rs and entry/cli.rkt — a page with a title
     and paragraphs parses, renders and re-parses agreeing.
-  - The mark is decided: { } (notation D-014; owner, 2026-10-17; the root
+  - The mark is decided and was revised the same day: NOTATION D-014 REVISED
+    2026-10-17: start/end keywords, everything inside a block (owner; the root
     =DECISIONS.org= record is pending, carried in ROOT-REQUEST-D014.org).
     Nothing waits for that record — TODO item 1 lands this tree and the
     floor first, and item 2 writes the first elements with the mark while
-    code block bodies stay opaque to the parser (history: before 2026-10-17
-    this line said "Until then nothing of =notation/= exists and this file is
-    the whole plan", which contradicted item 1 and is gone).
+    block bodies stay opaque to the parser (history: before 2026-10-17 this
+    line said "Until then nothing of =notation/= exists and this file is the
+    whole plan", which contradicted item 1 and is gone; revised the same day
+    it read "the mark is decided: { }").
 
 * Absent on purpose
 # what similar programs carry and this one will not.

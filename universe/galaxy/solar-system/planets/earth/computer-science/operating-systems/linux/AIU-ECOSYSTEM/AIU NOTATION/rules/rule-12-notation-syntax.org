@@ -14,18 +14,22 @@
   parts (math, graphs) use a more advanced symbolic syntax in the LaTeX tradition, simplified
   a lot, backed by the meaning layer, tier 3, far future. The editor helps typing: completion,
   the keyboard layer inserts names, live rendering hides the marks.
-# Editor's note 2026-10-17: the owner's words above are unchanged, as this file demands.
-# The phrase on line 10 ("the exact sign is worked out later, with options and a
-# recommendation") described what was true when the rule was written. It was worked out
-# later, on the phone: the sign is { } (notation D-014; root =DECISIONS.org= record pending
-# in ROOT-REQUEST-D014.org), and a code block closes by repeating its own word, alone on
-# its own line. Ordinary elements' closer is still open.
+# Editor's note 2026-10-17 (revised the same day): the owner's words above are
+# unchanged, as this file demands. The phrase on line 10 ("the exact sign is worked
+# out later, with options and a recommendation") described what was true when the rule
+# was written. It was worked out later, on the phone, and then revised the same day:
+# NOTATION D-014 REVISED 2026-10-17: start/end keywords, everything inside a block;
+# root =DECISIONS.org= record pending (carried in ROOT-REQUEST-D014.org).
+# History of this file's own notes: the first answer was braces { } with a code block
+# closing by repeating its own word; that wording is superseded, not deleted.
 
 * What it demands here
 # how this rule bites in this program. No examples; the plan carries the detail.
-  Ordinary things use literal names; plain lines are a paragraph; the mark is decided
-  by the owner — { } (notation D-014, 2026-10-17) — and a code block closes by
-  repeating its own word, alone on its own line, matching its opener.
+  Ordinary things use literal names; every element lives inside a named block opened
+  by "<name> start" and closed by "<name> end" on their own lines, same name in both
+  (notation D-014 REVISED 2026-10-17); there is no default paragraph, and blank lines
+  between blocks carry no meaning; text outside any block is a precise error naming its
+  line, kept untouched, and the rest of the file keeps parsing.
 
 * What breaks it
 # the failure this rule exists to prevent.
