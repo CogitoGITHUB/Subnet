@@ -1,0 +1,17 @@
+#+TITLE: INDEX — AIU NOTATION/notation/src/narration/
+# One job: list every file in this directory and the single job of each.
+# Status: current; updated in the same commit as any change in this directory.
+
+* Files
+# one line per file: its name, then the single job it performs.
+
+  - events.rkt — the event record: schema only, decides nothing
+  - narration.rkt — a run's voice: open, step, note, warn, skip, decide
+  - wait-door.rkt — wait-for / wait-done; why is never blank
+  - print-console.rkt — the ONE printer to the terminal
+
+* Where it sits
+# why this area exists and what it may use.
+  - Every run speaks through this area, so a stage never writes to the
+    terminal itself. Narration stands above errors and uses the floor; it
+    uses nothing above itself.
