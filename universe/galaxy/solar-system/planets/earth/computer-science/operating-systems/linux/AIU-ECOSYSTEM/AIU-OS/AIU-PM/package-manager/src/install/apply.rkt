@@ -701,7 +701,13 @@
   (define feed-dir (build-path state "events-g08"))
   (make-directory* feed-dir)
   (define feed-text
-    (parameterize ([verbose-screen? #f])
+    ;; The fake log is scoped, like every other test in this file. Without
+    ;; the second binding the performer wrote into the module's DEFAULT
+    ;; box, and every later file in the shared process can see it -- that
+    ;; is what failed fake-git.rkt's "the outer box stays empty" assertion
+    ;; when the whole suite ran in one process, and not when run alone.
+    (parameterize ([verbose-screen? #f]
+                   [current-fake-log (box '())])
       (begin-run! #:who 'test #:events-dir feed-dir)
       (with-handlers ([exn:fail:pm? void?])
         (apply-plan fail-plan "hG08" boom-performer
