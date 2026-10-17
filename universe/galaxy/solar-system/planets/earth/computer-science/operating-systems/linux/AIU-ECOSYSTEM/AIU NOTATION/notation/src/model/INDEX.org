@@ -1,0 +1,23 @@
+#+TITLE: INDEX — AIU NOTATION/notation/src/model/
+# One job: list every file in this directory and the single job of each.
+# Status: current; updated in the same commit as any change in this directory.
+
+* Files
+# one line per file: its name, then the single job it performs.
+
+  - nodes.rkt — what a node is; identity; blocks and error nodes only — there
+    is no node kind for loose text
+  - outline.rkt — the tree built from parsed elements
+  - addressing.rkt — how a send names a node (contract step 9)
+  - properties.rkt — tags, properties, planning states on nodes
+
+* Where it sits
+# why this area exists and what it may use.
+  - Racket owns the meaning side (rules/rule-09-language-split.org). This area
+    reads the parse-tree-document that Rust printed (join/INDEX.org) and holds
+    what it found.
+  - The tree has two node kinds and no more: blocks and error nodes. Loose text
+    is not a node; it is an error node with its text kept
+    (syntax/first-slice-freeze.org, rule b).
+  - Addressing is computed from kind and position and is never authored
+    (contract/node-addressing-and-comments.org:13-15).
