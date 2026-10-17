@@ -5,8 +5,8 @@
 * Files
 # one line per file: its name, then the single job it performs. This index is updated in the same commit as any change here.
 
-  - none yet
+  - none yet — every decision of this program is D-numbered in the root DECISIONS.org
 
 * Later
-# No decisions yet. A decision file names its options, the recommendation, the default taken when one is used, and the date; newest first.
+# This directory stays for program-only decisions if the need ever appears; ecosystem-wide ones land in the root DECISIONS.org, newest first.
 

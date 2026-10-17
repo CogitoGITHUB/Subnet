@@ -1,0 +1,20 @@
+#+TITLE: CLEANUP-LOG — retired docs and why they left
+# One job: one line per retired or deleted doc: why, and the last commit it was live in
+# Status: current; a line lands in the same commit as the retirement or deletion.
+
+* The rule
+# recover first, remove second.
+  - Every removal names its reason and =Last live: <commit>=; anything
+    is recoverable with =git show <commit>:<path>=.
+  - A doc that code, the gate, the contract or a decision still cites is
+    not deleted; it is reduced to a redirect so the citation keeps a target.
+
+* Retired into redirects
+# reduced, not deleted: the path stays as a signpost.
+  - AIU NOTATION/plan/open-decisions.org — closed into the root DECISIONS.org (D-011..D-013); the mark, its typing comfort and the title's creation-time source stay owner questions. Last live: d8e6e3b.
+  - AIU EDITOR/plan/open-decisions.org — closed into the root DECISIONS.org (D-007..D-010; D-005 shared). Last live: 4b37c15.
+  - AIU TERMINAL MULTIPLEXER/plan/open-decisions.org — closed into the root DECISIONS.org (D-002..D-004, D-006; D-005 shared). Last live: 5b20ebe.
+
+* Deleted
+# gone for good; recover with git show.
+  - none yet.

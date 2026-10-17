@@ -1,40 +1,14 @@
 #+TITLE: Open decisions — AIU TERMINAL MULTIPLEXER
-# One job: the decisions this program still owes, options with a recommendation each, and where they land
-# Status: filled 2026-10-16; plans stay general, not yet reviewed.
+# One job: retired 2026-10-17 — a redirect to where each decision now lives
+# Status: retired; kept as a stub because other files cite this path.
 
-* Open decisions
-# one line per decision this program still owes.
-  - The route: adopt an existing multiplexer now and own it later, or
-    build ours first — the proot test decides.
-  - Which tool is adopted if the route is adoption (the studies located
-    candidates).
-  - The control surface's exact shape — what the socket and CLI expose.
-  - The key-routing handover point with the editor (shared with the
-    editor's decision).
-  - The log's shape and where it lives.
+* Where everything went
+# one line per answer.
+  - Closed by recommendation: the route, the adopted tool, the control
+    surface, the log — D-002 to D-004 and D-006 in the root
+    =DECISIONS.org=; the key-routing handover is D-005, recorded once,
+    shared with the editor.
 
-* Options
-# two or three options per decision, each with a recommendation marked.
-  - The route — (a) Option C from synthesis: adopt for now, build ours
-    behind the same contract, migrate when proven — recommended, decided
-    by the tiny-binary test; (b) Option B: own from the start — slowest,
-    highest risk on this phone; (c) Option A: adopt permanently — refused
-    as the destination, kept only as the fallback if the phone cannot
-    build.
-  - The adopted tool — (a) herdr, agent-first with pane status and a
-    socket API — recommended candidate to test first; (b) zellij, mature
-    panes and layouts, heavier and plugin-shaped; (c) neither yet —
-    refused: something must run the panes.
-  - Control surface — (a) mirror keyboard actions one to one — recommended:
-    it adds no privileges and covers agents' needs; (b) a richer API
-    beyond keys — later, when a need appears; (c) no control until asked
-    — refused: agents need hands.
-  - The log — (a) one append-only file per session, flushed per record —
-    recommended; (b) structured records beside the narration feed; (c)
-    no log — refused: the holder's promise includes the log (rule 03).
-
-* Where it lands
-# once decided it becomes a D-numbered file in decisions/, newest first.
-  Each decision becomes a D-numbered file in decisions/, newest first; the
-  route lands with the proot test; the control surface and routing handover
-  freeze with the contract in step 9.
+* The old text
+# recover it exactly.
+  =git show 5b20ebe:"AIU TERMINAL MULTIPLEXER/plan/open-decisions.org"=

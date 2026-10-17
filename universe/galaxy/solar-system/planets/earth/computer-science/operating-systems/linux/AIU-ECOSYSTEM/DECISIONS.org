@@ -5,6 +5,66 @@
 * Log
 # Every entry: a dated D-number, WHAT changed, WHY it had to; name the files it touches.
 
+** 2026-10-17 D-013: notation first element set — title, paragraph and code block
+   Touches AIU NOTATION/plan/open-decisions.org (retired).
+1. WHAT: the smallest slice is title, paragraph and code block; outlines and links come once the mark and the round trip are proven.
+2. WHY: it is the smallest set that proves the mark and the literate goal; the full Org feature list before proof was refused (rule 11).
+
+** 2026-10-17 D-012: notation engine wording — no heavyweight machinery beyond the language's need
+   Touches AIU NOTATION/plan/open-decisions.org (retired).
+1. WHAT: the recommended reading is taken: "no engine" and "no format unless necessary" refuse heavy machinery beyond the language's need and keep the boundary to the editor that the contract needs; the separate-process reading stays the fallback.
+2. WHY: architecture must not begin with the question open; this reading matches the plan and the engine-surface need. The ReadMe's older "engine is primary" framing is asked back to the owner with the ready-up report.
+
+** 2026-10-17 D-011: notation numbering — computed when loading
+   Touches AIU NOTATION/plan/open-decisions.org (retired).
+1. WHAT: heading numbers are computed when loading; the file text stays clean; the explicit pin element stays available for the day a pinned number is needed.
+2. WHY: written numbers are stable outside our tools but noisy and they drift; computed is the recommended option.
+
+** 2026-10-17 D-010: editor stop switch — every running agent session for this project
+   Touches AIU EDITOR/plan/open-decisions.org (retired).
+1. WHAT: the stop switch stops every running agent session for this project; per-session and per-agent toggles are not built.
+2. WHY: recommended option; the coarse switch is the honest one until a real need for finer granularity appears.
+
+** 2026-10-17 D-009: editor first adapter — OpenCode, if the proot test passes
+   Touches AIU EDITOR/plan/open-decisions.org (retired); checklist/tier-1/11.
+1. WHAT: OpenCode is pinned first (its headless server seam is verified); Hermes is the alternate from its Termux packaging; both at once refused.
+2. WHY: recommended; the pin follows the proot test, so item 11 proves it before anything is built on it.
+
+** 2026-10-17 D-008: editor Racket join — baked at build time as the meaning layer
+   Touches AIU EDITOR/plan/open-decisions.org (retired); checklist/tier-1/01.
+1. WHAT: Racket is baked into the binary at build time as the meaning layer and loads nothing at startup; the phone test at item 01 confirms it or forces the external-process fallback.
+2. WHY: recommended, pending the phone test; Racket in work mode only was refused — the release would lose the meaning layer.
+
+** 2026-10-17 D-007: editor Racket–Rust seam — the study's split
+   Touches AIU EDITOR/plan/open-decisions.org (retired).
+1. WHAT: Rust for input, drawing, layout and parsing; Racket for keymaps, commands, rules and semantic models.
+2. WHY: the recommended option, and the language-split rule read together; the seam's exact files are named on the first build step's proof.
+
+** 2026-10-17 D-006: multiplexer log — one append-only file per session, flushed per record
+   Touches AIU TERMINAL MULTIPLEXER/plan/open-decisions.org (retired).
+1. WHAT: the session log is one append-only file per session, flushed per record; structured records beside the narration feed stay a later shape.
+2. WHY: the holder's promise includes the log (rule 03); append-only per session is the cheapest honest form. Freezes with the contract.
+
+** 2026-10-17 D-005: key-routing handover (editor + multiplexer) — the focused program sees the key first
+   Touches AIU EDITOR/plan/open-decisions.org and AIU TERMINAL MULTIPLEXER/plan/open-decisions.org (both retired).
+1. WHAT: the focused program receives a key first; the multiplexer keeps a reserved prefix; a mode key and full translation are refused.
+2. WHY: recommended; full translation "would need config it must not have". Recorded once because both files carried it; freezes with the contract.
+
+** 2026-10-17 D-004: multiplexer control surface — mirror keyboard actions one to one
+   Touches AIU TERMINAL MULTIPLEXER/plan/open-decisions.org (retired).
+1. WHAT: the socket and CLI expose the keyboard actions 1:1; a richer API waits for a real need.
+2. WHY: it adds no privileges and covers what agents need (hands); the exact surface freezes with the contract.
+
+** 2026-10-17 D-003: adopted multiplexer — herdr tested first
+   Touches AIU TERMINAL MULTIPLEXER/plan/open-decisions.org (retired); checklist/tier-1/02.
+1. WHAT: if the route is adoption, herdr is the candidate tested first (agent-first, pane status, socket API); zellij stays the standby.
+2. WHY: recommended candidate; the tool choice is proven by the tiny-binary test before anything is built on it.
+
+** 2026-10-17 D-002: multiplexer route — adopt for now, build ours behind the same contract, migrate when proven
+   Touches AIU TERMINAL MULTIPLEXER/plan/open-decisions.org (retired); checklist/tier-1/02.
+1. WHAT: Option C from the synthesis is taken: adopt an existing multiplexer now, build ours behind the same contract, migrate when the tiny binary is proven; adopt-permanently stays the fallback only.
+2. WHY: decided by the tiny-binary test (item 02), not by preference; owning from the start is the slowest, highest-risk path on this phone.
+
 ** 2026-10-17 D-001: no tests for now — the light gate until the owner says otherwise
    Touches WORKFLOW.org; each project's AGENT.md.
 1. WHAT: no test files and no test runs in the three new projects until the owner says tests start; the light gate is paren-check, text-lint and the naming register; the test rules already written in the plans stay and wait.
