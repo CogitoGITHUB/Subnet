@@ -1,0 +1,96 @@
+#+TITLE: README — AIU NOTATION
+# One job: what this program is, in one short read; status lives elsewhere
+# Status: current 2026-10-17. This file never repeats status; it points to where status lives.
+
+* What it is
+# the short answer, from HANDOFF.org and rule 12.
+  - The owner's own file format and syntax in one: it replaces Org, Markdown
+    and LaTeX for their everyday use.
+  - Plain text is the source of truth; a rendering engine shows it live.
+  - The product name is AIU-NOTATION. The program is separate and the code
+    lives in one package directory, =notation/=.
+
+* Principles
+# one line each, from rules/rule-12-notation-syntax.org and HANDOFF.org.
+  - Ordinary things use literal names, not symbols: a title is called title.
+  - Plain lines with no name are a paragraph by default.
+  - A named element is opened and closed with one tiny, consistent mark.
+  - Links and other inline things use that same small enclosing mark.
+  - Goal: insanely easy to read, insanely easy to type, instantly
+    understandable by the owner and by agents alike.
+  - The smallest slice first: title, paragraph, code block.
+  - The editor helps typing, and live rendering hides the marks.
+  - Only the hardcore parts (math, graphs) use advanced symbolic syntax:
+    tier 3, far future.
+
+* The mark
+# decided by the owner; syntax/open-close-mark.org carries the detail.
+  - Braces: { opens, } closes (notation D-014, owner, 2026-10-17).
+  - A code block's body is opaque to the parser, so a { inside code never
+    opens a notation element.
+  - A code block closes by repeating its own word: the opening word alone
+    on its own line. The editor hides that closer; the file keeps it.
+  - Whether ordinary elements close the same way is still open; not decided.
+  - The root =DECISIONS.org= record is pending; ROOT-REQUEST-D014.org holds
+    the exact text to carry there.
+
+* How it fits
+# the seams, from plan/architecture.org.
+  - The engine surface is called by the editor and the multiplexer, and
+    calls nothing back into them.
+  - The editor plugs in through the notation-engine boundary, in
+    =../contract/=; it triggers the engine build and enters dev mode after.
+  - Agents read a notation address carried inside the context bundle.
+  - PM installs the notation, then bakes it in (rule 02); it is a package
+    with its own kit, like every program.
+  - The editor keeps its own features; notation carries none (rule 14).
+
+* Folder map
+# one line per top-level folder and file, as they exist today; INDEX.org is the full index.
+  - README.org — this file: what the program is, in one read
+  - AGENT.md — the session rules: scope, the light gate, building, git
+  - HANDOFF.org — what a fresh conversation needs to start here
+  - INDEX.org — every file and folder with its single job
+  - TODO.org — the single list of what is left, in build order
+  - ROOT-REQUEST-D014.org — the root-log text the owner still has to carry
+  - architecture/ — the project's shape
+  - comments/ — first-class comments and what rendering strips
+  - decisions/ — choices already made, newest first
+  - engine/ — the machine behind the language
+  - graphs/ — tier 3, planned only
+  - literate-code/ — named chunks, targets, dependency scanning
+  - lsp/ — the notation side of the engine surface
+  - math/ — tier 3, planned only
+  - plan/ — one topic per file, the general build plan
+  - questions/ — owner questions, answerable on a phone
+  - rendering/ — plain, rich unicode, optional graphics
+  - research/ — program-specific findings only
+  - rules/ — the hard rules, one file each, rule 12 among them
+  - syntax/ — the element language
+
+* Tiers
+# what each tier means here, one line each.
+  - Tier 1: up to the done line — the build in TODO.org, including the
+    notation hosted end to end and its share of the done line.
+  - Tier 2: after the done line — references and numbering, tables and
+    data, variants and versioning, engine services, kit entries, conformance.
+  - Tier 3: the LaTeX heritage — math and physics, units, figures,
+    numbering, citations; plan only until the owner opens it.
+
+* Where truth lives
+# this file points; it does not repeat.
+  - HANDOFF.org — start here; the current state and the next step.
+  - TODO.org — the only work list, in build order.
+  - plan/package-tree.org — the register of the package: a name that is
+    not in it does not exist yet.
+  - =../contract/= — the shared boundary: engine surface, node addressing.
+  - rules/ — the binding hard rules, including rule 12.
+
+* Rules for anyone working here
+# the short list; AGENT.md is the full session contract.
+  - Work only inside this project directory; other projects and the root
+    files are read-only.
+  - No tests for now (root DECISIONS.org D-001): the light gate only.
+  - Register every name in plan/package-tree.org before using it.
+  - Small commits, explicit relative paths, never a blanket add, no pushes.
+  - Report real output only, and say "not run" where something was not run.

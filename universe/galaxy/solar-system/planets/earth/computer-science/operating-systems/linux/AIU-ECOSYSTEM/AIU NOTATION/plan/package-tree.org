@@ -41,6 +41,10 @@
 #+begin_example
 AIU NOTATION/            the project: context and docs stay where they are
   AGENT.md               the session rules (landed)
+  README.org             what the program is in one read; status lives elsewhere (landed)
+  HANDOFF.org            what a fresh conversation needs to start here (landed)
+  INDEX.org              every file and folder here, one job each (landed)
+  ROOT-REQUEST-D014.org  the root-log text the owner carries for the mark sign (landed)
   TODO.org               the one list of what is left (lands with this plan)
   gate/                  the light gate now, the full gate when tests open
     INDEX.org
