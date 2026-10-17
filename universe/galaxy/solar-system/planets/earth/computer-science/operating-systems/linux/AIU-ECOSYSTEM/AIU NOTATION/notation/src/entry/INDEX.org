@@ -1,0 +1,22 @@
+#+TITLE: INDEX — AIU NOTATION/notation/src/entry/
+# One job: list every file in this directory and the single job of each.
+# Status: current; updated in the same commit as any change in this directory.
+
+* Files
+# one line per file: its name, then the single job it performs.
+
+  - dispatch.rkt — the command table: one name, one function; =check= lists
+    every error with its line number and exits non-zero
+  - cli.rkt — argv to a command: one parser, one dispatch
+
+* Not written yet
+# named in plan/package-tree.org, still planned; no file, no stub.
+  - mcp.rkt — the MCP server: the same commands, the machine surface (step 10)
+  - documents.rkt — the one JSON shape shared by CLI, MCP, skill and plugin
+    (step 10)
+
+* Where it sits
+# why this area exists and what it may use.
+  - =entry/= is the ceiling of the area table: it may use every area below it
+    and nothing uses it (plan/package-tree.org, "The law"). It is the only
+    place argv is read.
