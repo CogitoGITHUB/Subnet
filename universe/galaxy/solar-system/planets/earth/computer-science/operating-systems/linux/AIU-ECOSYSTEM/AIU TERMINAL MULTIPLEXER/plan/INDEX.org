@@ -14,6 +14,7 @@
   - phone-first-tests.org — what must be proven on the phone first, what waits for the laptop, and how each is proven; filled 2026-10-16
   - reused-vs-written.org — what comes from the package manager, what comes from research, what is written here; filled 2026-10-16
   - open-decisions.org — retired 2026-10-17; the closed decisions live in the root DECISIONS.org, the rest are owner questions; kept as a redirect
+  - package-tree.org — the package directory, the area law, and every planned directory and file with its single job
 
 * Later
 # One topic per file, filled in step 8. Plans stay general; detailed design comes later.

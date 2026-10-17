@@ -1,0 +1,163 @@
+#+TITLE: Package tree — AIU NOTATION
+# One job: the package directory, the area law, and every planned directory and file with its single job
+# Status: planned 2026-10-17; this file is the register for the package — a name that is not here does not exist yet.
+
+* The package directory
+# one subdir holds the whole package; nothing is scattered.
+  - The package is =notation/=, directly under this project directory.
+    Everything a run needs lives inside it; the project root keeps only
+    context and docs plus gate/, tools/ and agent/ — the same split as
+    PM, where =AIU-PM/package-manager/= holds the code and the repo
+    root holds the rest.
+  - =notation/INDEX.org= is created with the directory and lists every
+    dir and file below, one job each; every subdirectory carries its
+    own INDEX.org (PM calls these README.org; we use the ecosystem's
+    one index name for every directory).
+  - Nothing of the package lives outside =notation/=: no src/ at the
+    project root, no stray scripts.
+
+* The law
+# areas lowest first; dependencies point one way; the language seam is named.
+  - Areas, lowest first; a require may point downward only. The gate's
+    one-way lint transcribes this table, and it is the source for it:
+    errors, narration, machine, security, join, text, parser,
+    elements, model, diagnostics, references, literate, generation,
+    rendering, surface, entry.
+  - errors is the floor (everything may use it; it uses nothing);
+    entry is the ceiling (it may use everything; nothing uses it).
+  - Rule 09, named exactly: Rust owns the hot path — =text/=,
+    =parser/= and =rendering/= (input, drawing, layout, parsing,
+    terminal handling). Racket owns the meaning side — element names,
+    the model, rules, documents. The seam is =join/=: the only place
+    the two languages meet, holding how the meaning side loads in the
+    baked binary that loads nothing at startup.
+    =gate/language-split-lint.nu= keeps every other area clean.
+  - One file, one job; the reader test on every name; banned words as
+    in the ecosystem law (no core/, engine/, utils/, manager/,
+    handler/, tmp/).
+
+* The tree
+# every planned directory and file, one job each.
+#+begin_example
+AIU NOTATION/            the project: context and docs stay where they are
+  AGENT.md               the session rules (landed)
+  TODO.org               the one list of what is left (lands with this plan)
+  gate/                  the light gate now, the full gate when tests open
+    INDEX.org
+    check.nu             the dispatcher: named stages, one table, --list
+    need-nu.nu           pinned Nu or exit 3; never fetches
+    env.nu               the Nushell mirror of the one HOME seam
+    read-check.rkt       the paren check: READ-BAD file:line, the bad form named
+    one-way-dependency-lint.nu  the area table above, enforced
+    security-gate-lint.nu       predicates called, writers audited
+    banned-words-lint.nu        the naming law, made mechanical
+    language-split-lint.nu      only join/ may cross Rust and Racket
+  tools/                 dev scripts; empty until the first needs a home
+  agent/                 the kit's agent side (ships with the package, rule 2)
+    INDEX.org
+    skills/notation/SKILL.md  the skill: what notation is, commands, runnable examples
+    opencode-plugin/          the read-only plugin (lands with the kit, build step 9)
+  notation/              THE PACKAGE — all of it lives here
+    INDEX.org
+    src/
+      errors/            the error type and how it renders (the floor)
+        INDEX.org
+        err.rkt          the error record: what happened, who, where
+        raise.rkt        the one raise helper; nothing raises around it
+        render.rkt       how an error prints: one shape, never a dump
+      narration/         how work speaks: events, the wait door, the printer
+        INDEX.org
+        events.rkt       the event record: schema only, decides nothing
+        narration.rkt    a run's voice: open, step, note, warn, skip, decide
+        wait-door.rkt    wait-for / wait-done; why is never blank
+        print-console.rkt  the ONE printer to the terminal
+      machine/           the machine seam and the block door
+        INDEX.org
+        directories.rkt  the one place HOME / XDG is read
+        locks.rkt        one-writer locks: wait and retry, never force
+        cancel.rkt       the cancellation door every blocking call passes
+      security/          what may happen without asking
+        INDEX.org
+        security.rkt     the total predicates: output-safe?, state-changing?, refusals
+      join/              the Racket–Rust seam; the only language crossing
+        INDEX.org
+        rust-exports.rs  the functions the meaning side may call, one per crossing
+        racket-entry.rkt the meaning side starting inside the baked binary
+        load.rkt         nothing loads at startup; everything comes from the bake
+      text/              the raw text: bytes, lines, positions
+        INDEX.org
+        buffer.rs        the text state: bytes, lines, offsets
+        positions.rs     offset to line/column and back, one pair of functions
+        comments.rs      comment spans found and kept here; stripped only at rendering
+      parser/            the context-free core (hot path)
+        INDEX.org
+        parser.rs        the layered parser: the mark, blocks, elements, recovery
+        reparse.rs       a keystroke touches only its slice
+        partial.rs       a broken element recovers; the rest keeps parsing
+      elements/          the element vocabulary: names and what they mean
+        INDEX.org
+        register.rkt     the one table: name to meaning
+        dispatch.rkt     a name and its body reach the right meaning
+        literals.rkt     literal names: what a name is, what it is not
+      model/             the meaning tree
+        INDEX.org
+        nodes.rkt        what a node is; identity
+        outline.rkt      the tree built from parsed elements
+        addressing.rkt   how a send names a node (contract step 9)
+        properties.rkt   tags, properties, planning states on nodes
+      diagnostics/       the reports the reader sees
+        INDEX.org
+        collect.rkt      parse and model problems gathered, in order
+        report.rkt       one diagnosis: where, what, what the reader can do
+      references/        links and numbering (after the done line)
+        INDEX.org
+        resolve.rkt      references resolved against the model
+        numbering.rkt    numbers computed at load (D-011); nothing written back
+      literate/          named chunks and targets (build step 5)
+        INDEX.org
+        chunks.rkt       named chunks and their graph
+        targets.rkt      targets as data: where a chunk may go
+        scan.rkt         dependency scanning over the chunks
+        skip-journal.rkt a changed chunk rebuilds; an unchanged one SKIPs naming the hash
+      generation/        writing generated files (build step 5; the only bulk writes)
+        INDEX.org
+        plan.rkt         what would be written: the dry-run shape
+        write.rkt        write through security, into declared targets only
+      rendering/         the screen and printer output (build step 8)
+        INDEX.org
+        plain.rs         the plain fallback: text out, nothing invented
+        rich.rs          rich unicode: lines, indent, tables
+        strip.rs         comments and marks stripped here, in one place
+      surface/           the notation side of the engine boundary (build step 7)
+        INDEX.org
+        surface.rkt      the calls the editor and the multiplexer make
+        answers.rkt      the documents the boundary answers with
+        notices.rkt      what the boundary sends unasked (parsed, did-change)
+      entry/             the outside world: argv and MCP
+        INDEX.org
+        cli.rkt          argv to a command: one parser, one dispatch
+        dispatch.rkt     the command table: one name, one function
+        mcp.rkt          the MCP server: the same commands, the machine surface
+        documents.rkt    the one JSON shape shared by CLI, MCP, skill and plugin
+    tests/               mirrors src, area for area; opens when tests open (D-001)
+    test-doubles/        fake pages and recordings; opens when tests open (D-001)
+#+end_example
+
+* What starts first
+# the first files, tied to the build order.
+  - Lands first, with the light gate: errors, narration, machine and
+    the =notation/= INDEX.org — the floor every later file stands on.
+  - The first slice (build-order steps 1–2): text/, parser/, elements/,
+    model/, rendering/plain.rs and entry/cli.rkt — a page with a title
+    and paragraphs parses, renders and re-parses agreeing.
+  - BLOCKED on the owner: build-order step 1 needs the mark answered
+    (the questionnaire). Until then nothing of =notation/= exists and
+    this file is the whole plan.
+
+* Absent on purpose
+# what similar programs carry and this one will not.
+  - No engine/, core/, utils/ or any description-name directory; the
+    word "engine" stays a description in the docs, never a path.
+  - No math, graphs or advanced-syntax areas: tier 3, opened only by
+    the owner (checklist/tier-3/).
+  - No editor features; the editor is its own package (rule 14).
