@@ -1,0 +1,81 @@
+#+TITLE: INVENTORY — every component PM does not have yet
+#+AUTHOR: Shape
+# One job: name every missing component, group it, and say what it is and
+# why it is needed. No design here: the design files sit beside this one.
+# Status: planned only; nothing in this file is built, and no name in it
+# may be used by code until NAMING-REGISTER.org lists it (step 3).
+#
+# Why this file exists: PM has a plan for what it does and a register for
+# what it is called, but nowhere that says what it still LACKS. Work picked
+# from memory is how the same gap gets rediscovered three times.
+#
+# One entry per component: what it is, then why it is needed. Entries wrap
+# at the 102-character line law; one entry is one component.
+
+* Group (a): leftovers from PM's own plan
+
+- =src/backup/= — the backup area (step 19): declarations and fetched
+  sources, off the machine. ARCHITECTURE.org lists it as area 12 and
+  nothing is built, so backup today is all law and no code.
+- build-plan and build-env — split =build-plan.rkt= (673 lines, 3 jobs)
+  and execute the =build-env.rkt= rename the register already records.
+  A name that lies costs more than a missing comment; both are recorded.
+- E-16b multi-package fetch — one =pm fetch= of three packages in one
+  process, as a fixture. OPEN-DECISIONS.org has it BLOCKED, and E-16c
+  parallel fetch waits behind it: two features stuck on one test.
+- profile-gc cross-user reachability (step 28) — what =profile-gc= does
+  with another user's leftover generation. A collector that cannot see
+  other users leaks generations forever, and nothing else notices.
+- exit-code wording (D-008) — the two codes invented locally, =config=
+  and =internal=, citing E-15 [PROPOSAL]. Exit codes are a public
+  contract; two of them rest on a proposal nobody approved.
+- the one-way law gap — the 34 crossings the lint prints every run. The
+  law in ARCHITECTURE.org does not match the tree: either move the
+  modules or correct the law. A law with unpaid edges is a lie the gate
+  repeats on every run until someone decides.
+
+* Group (b): the ecosystem plan, ../../pm-integration/
+
+- Hermes integration — PM from Hermes: skill or plugin, and what each
+  action looks like (hermes-integration.org). Every project ships its
+  agent surfaces; PM's Hermes side has no entry at all.
+- install-then-bake — how a PM install feeds a program's dev-mode bake
+  (install-then-bake.org). Without it, dev mode cannot consume a package
+  PM installed, which is the first thing a developer tries.
+- adapter versioning and rollback — versions and rollbacks for the agent
+  adapters and the contract itself (adapter-versioning-and-rollback.org).
+  An adapter that cannot be rolled back pins the contract to its worst
+  version forever.
+- MCP surface additions — search, install, status, build, bake
+  (mcp-surface.org). The six verbs stop at activation; the ecosystem
+  plan promises five more, and an agent can only call what is exposed.
+- kit entry — what PM declares about its own capabilities (kit-entry.org).
+  The kit entry is how other projects discover what PM can do at all.
+- context-bundle senders — sending a package, a plan or a failure to an
+  agent as a context bundle (context-bundle-senders.org). A failure an
+  agent cannot read is a failure the agent will repeat.
+- AI-sight files — the files PM writes so an agent reads PM state
+  directly (ai-sight-files.org). Reading state from files beats parsing
+  narration: it is stable, cheap, and needs no heartbeat.
+# =pm-change-checklist.org= and =INDEX.org= live in that directory and are
+# not components; the checklist is one line per PM change, run later.
+
+* Group (c): found while reading, not in either list
+
+- OpenCode skill — the half of OPEN-DECISIONS.org V-5 still TODO: the
+  plugin is DONE and the skill is not, so one of the four surfaces the
+  ecosystem law names is missing on the OpenCode side.
+- text-lint coverage of =README.md= — text-lint scans .org and .nu only,
+  so the first file a newcomer reads is the one prose file with no line
+  rule (60 lines over 102 characters today).
+- refusal wording — the confirmation refusal always appends "pass it as
+  the confirmationToken argument", even for already-used or wrong-plan
+  refusals. A refusal with the wrong next step teaches the wrong habit.
+- the splits FILE-INVENTORY.org recorded — =vault.rkt= (6 jobs),
+  =jobs.rkt= (5), =cli.rkt= (5), =spec-read.rkt= (4), =plan.rkt= (4),
+  =activate.rkt= (4). One file one job is half the structure law; each
+  of these is a split waiting for its turn.
+
+* Index
+# One line per file in this directory; extended in step 2.
+  - INVENTORY.org — every component PM does not have yet, one entry each.
