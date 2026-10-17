@@ -578,4 +578,4 @@ it approved.
   called green until that is fixed, and this line exists so "the suite was
   red first" is never later mistaken for damage done here. Caveat, stated
   rather than hidden: that run overlapped the edits to =security.rkt= and
-  =mcp-server.rkt=, so it is a strong signal rather than a proof.
+  =mcp-tools.rkt=, so it is a strong signal rather than a proof.

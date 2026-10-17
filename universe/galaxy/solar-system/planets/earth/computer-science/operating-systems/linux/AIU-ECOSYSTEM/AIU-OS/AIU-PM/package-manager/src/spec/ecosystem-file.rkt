@@ -117,14 +117,14 @@
   (define table
     (for/hash ([s (in-list overrides)])
       (values (build-step-name s) s)))
-  (define main
+  (define kept-steps
     (for/list ([s (in-list (ecosystem-steps eco))])
       (hash-ref table (build-step-name s) s)))
   (define eco-names (map build-step-name (ecosystem-steps eco)))
   (define extra
     (filter (lambda (s) (not (member (build-step-name s) eco-names)))
             overrides))
-  (append main extra))
+  (append kept-steps extra))
 
 ;; ecosystem spec -> (values tools steps). The whole E-25 surface in
 ;; one call: the backend preflights TOOLS, then runs STEPS. Pure.

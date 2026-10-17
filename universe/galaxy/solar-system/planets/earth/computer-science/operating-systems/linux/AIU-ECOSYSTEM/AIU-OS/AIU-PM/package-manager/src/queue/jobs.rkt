@@ -235,15 +235,15 @@
   (unless (directory-exists? d)
     (make-directory* d)))
 
-;; path-string string job -> void, tmp+rename record write
+;; path-string string job -> void, staging+rename record write
 (define (job-write state-dir id j)
   (ensure-jobs-dir state-dir)
   (define p (job-file state-dir id))
-  (define tmp (string-append (path->string p) ".tmp"))
-  (call-with-output-file tmp
+  (define record-staging (string-append (path->string p) ".tmp"))
+  (call-with-output-file record-staging
     (lambda (out) (writeln (job->datum j) out))
     #:exists 'truncate/replace)
-  (rename-file-or-directory tmp p #t))
+  (rename-file-or-directory record-staging p #t))
 
 ;; path-string string -> job, validated on load
 (define (job-read state-dir id)
@@ -280,15 +280,15 @@
                           #:fields (list (cons "state" "jobs"))))
         d)))
 
-;; path-string (listof string?) -> void, tmp+rename queue write
+;; path-string (listof string?) -> void, staging+rename queue write
 (define (queue-write state-dir ids)
   (ensure-jobs-dir state-dir)
   (define p (job-queue-path state-dir))
-  (define tmp (string-append (path->string p) ".tmp"))
-  (call-with-output-file tmp
+  (define queue-staging (string-append (path->string p) ".tmp"))
+  (call-with-output-file queue-staging
     (lambda (out) (writeln ids out))
     #:exists 'truncate/replace)
-  (rename-file-or-directory tmp p #t))
+  (rename-file-or-directory queue-staging p #t))
 
 ;; -> string, fresh id from atomic exclusive create (count-bounded)
 (define (fresh-job-id state-dir)
@@ -395,9 +395,9 @@
                      state-dir))
     ;; Spawn the module's own main submodule with the state dir as its
     ;; single argument. The previous form used `racket -e "(require
-    ;; (file jobs.rkt)) (worker-main DIR)"`, but worker-main is not
+    ;; (file jobs.rkt)) (worker-entry DIR)"`, but worker-entry is not
     ;; provided, so every worker died at module load with
-    ;; "worker-main: undefined" and no job ever ran.
+    ;; "worker-entry: undefined" and no job ever ran.
     (define child
       (process* (path->string setsid-exe)
                 (path->string racket-exe) mod-path sdir))
@@ -689,7 +689,7 @@
       (worker-run-one state-dir id))))
 
 ;; path-string -> void, one-shot worker entry for the child
-(define (worker-main state-dir)
+(define (worker-entry state-dir)
   ;; Any raise in here used to kill the worker in silence, leaving the
   ;; job 'queued' forever with nothing to show why. Record a terminal
   ;; state carrying the error text instead, then exit non-zero in the
@@ -736,7 +736,7 @@
      'jobs.rkt
      "worker entry point needs exactly one argument: the jobs state dir"
      "got" args))
-  (worker-main (car args)))
+  (worker-entry (car args)))
 
 (module+ test
   (require rackunit

@@ -65,7 +65,7 @@ it, so no dependent's require line changes at this stage.
 11. =backends/*.rkt= -> =package-manager/src/<area>/=, except =fake.rkt=
     and =dry-run.rkt= which go to =package-manager/test-doubles/=.
 12. =cli/= and =mcp/= -> =package-manager/src/entry/=. =main.rkt= becomes
-    =cli.rkt=, =package-manager/src/entry/mcp-server.rkt= becomes =mcp-server.rkt= (main and
+    =cli.rkt=, =package-manager/src/entry/mcp-tools.rkt= becomes =mcp-tools.rkt= (main and
     server are both banned words).
 13. =scripts/= splits: =check.nu=, =read-check.rkt=, =test-runner.rkt=,
     =env.nu=, =tree.nu= to =gate/=; =repl.rkt=, =hello-fetch.rkt=,

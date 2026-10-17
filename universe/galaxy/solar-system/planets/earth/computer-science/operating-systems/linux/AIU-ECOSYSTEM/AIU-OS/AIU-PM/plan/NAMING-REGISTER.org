@@ -90,7 +90,7 @@ does; =core=, =main=, =server=, =backends=, =handler=, =manager= and
   the pinned version the gate enforces
 - =package-manager/src/entry/package-info.rkt=
   the package identity the surfaces report
-- =package-manager/src/entry/mcp-server.rkt=
+- =package-manager/src/entry/mcp-tools.rkt=
   the MCP surface over the same JSON
 - =tools/build-lua.rkt=
   builds the Lua target
@@ -128,7 +128,7 @@ would double it. Recorded in =plan/OPEN-DECISIONS.org=.
 - =run-command= -> =spawn-and-wait=
   it spawns, waits and collects; the old name sounds like it only
   builds a command line
-- =package-manager/src/entry/mcp-server.rkt= -> =entry/mcp-server.rkt=
+- =package-manager/src/entry/mcp-tools.rkt= -> =entry/mcp-tools.rkt=
   "server" and "main" are banned and say nothing about the job
 - =package-manager/src/entry/cli.rkt= -> =entry/cli.rkt=
   "main" is banned and is a filename convention, not a job

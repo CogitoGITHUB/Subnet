@@ -5,7 +5,7 @@
 ;; the spec declares the source url, the lockfile holds resolved pins,
 ;; the manifest holds the inventory (single owner per datum).
 ;; Times are exact-integer seconds, data only, never decisions (D-015).
-;; All writes are atomic tmp+rename appends. Readers re-validate every
+;; All writes are atomic staging+rename appends. Readers re-validate every
 ;; field (name regex, git-url); a corrupt manifest is kind 'config.
 
 (require racket/contract/base
@@ -19,7 +19,7 @@
  (contract-out
   ;; path-string -> (listof manifest-entry?), missing file reads empty
   [manifest-read (-> path-string? (listof manifest-entry?))]
-  ;; path-string (listof manifest-entry?) -> void, atomic tmp+rename
+  ;; path-string (listof manifest-entry?) -> void, atomic staging+rename
   [manifest-write (-> path-string? (listof manifest-entry?) void?)]
   ;; (listof manifest-entry?) manifest-entry? -> (listof manifest-entry?)
   [manifest-upsert (-> (listof manifest-entry?) manifest-entry?
@@ -128,16 +128,16 @@
         (manifest-entry-last-fetched e) (manifest-entry-fsck-allow e)
         (manifest-entry-allow-large? e)))
 
-;; path-string (listof manifest-entry?) -> void, atomic tmp+rename
+;; path-string (listof manifest-entry?) -> void, atomic staging+rename
 (define (manifest-write path entries)
   (define p (if (path? path) path (string->path path)))
-  (define tmp (string-append (path->string p) ".tmp"))
-  (call-with-output-file tmp
+  (define staging-path (string-append (path->string p) ".tmp"))
+  (call-with-output-file staging-path
     (lambda (out)
       (for ([e (in-list entries)])
         (writeln (entry->datum e) out)))
     #:exists 'truncate/replace)
-  (rename-file-or-directory tmp p #t))
+  (rename-file-or-directory staging-path p #t))
 
 ;; (listof manifest-entry?) manifest-entry? -> (listof manifest-entry?)
 (define (manifest-upsert entries e)

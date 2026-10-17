@@ -60,12 +60,12 @@
 
 ;; string string string -> void, atomic write of the holder record
 (define (write-owner-file vault-root id note)
-  (define tmp (string-append (path->string (vault-owner-path vault-root))
+  (define owner-staging (string-append (path->string (vault-owner-path vault-root))
                              ".tmp"))
-  (call-with-output-file tmp
+  (call-with-output-file owner-staging
     (lambda (out) (write (holder id note (current-seconds)) out))
     #:exists 'truncate/replace)
-  (rename-file-or-directory tmp (vault-owner-path vault-root) #t))
+  (rename-file-or-directory owner-staging (vault-owner-path vault-root) #t))
 
 ;; string -> (or/c holder #f), never raises (a torn record reads as absent)
 (define (read-owner-file vault-root)

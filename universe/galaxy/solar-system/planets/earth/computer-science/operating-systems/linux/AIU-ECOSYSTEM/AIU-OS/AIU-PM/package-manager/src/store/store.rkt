@@ -118,12 +118,12 @@
 (define (swap-link! target link)
   (define link-s (if (path? link) (path->string link) link))
   (define target-s (if (path? target) (path->string target) target))
-  (define tmp (string-append link-s ".tmp-"
+  (define staging-link (string-append link-s ".tmp-"
                              (symbol->string (gensym 'store))))
-  (when (or (file-exists? tmp) (link-exists? tmp))
-    (delete-file tmp))
-  (make-file-or-directory-link target-s tmp)
-  (rename-file-or-directory tmp link-s #t)
+  (when (or (file-exists? staging-link) (link-exists? staging-link))
+    (delete-file staging-link))
+  (make-file-or-directory-link target-s staging-link)
+  (rename-file-or-directory staging-link link-s #t)
   (string->path link-s))
 
 ;; string string string path -> path, atomic current-link flip
@@ -202,13 +202,13 @@
     (ensure-store-dir (path->string state-root)
                       "pkg-alpha" "lts" "1.0" "7edb3f66fd80" void))
   (check-false (equal? vdir v-lts))
-  (define link-main
+  (define link-current
     (set-store-current (path->string state-root)
                        "pkg-alpha" "default" vdir))
   (define link-lts
     (set-store-current (path->string state-root) "pkg-alpha" "lts" v-lts))
-  (check-false (equal? link-main link-lts))
-  (check-equal? (path->string (resolve-path link-main))
+  (check-false (equal? link-current link-lts))
+  (check-equal? (path->string (resolve-path link-current))
                 (path->string vdir))
 
   ;; The flip is atomic: swapping twice lands on the second target.
@@ -218,6 +218,6 @@
   (clear-store-marker vdir2)
   (set-store-current (path->string state-root)
                      "pkg-alpha" "default" vdir2)
-  (check-equal? (path->string (resolve-path link-main))
+  (check-equal? (path->string (resolve-path link-current))
                 (path->string vdir2))
   (delete-directory/files state-root))

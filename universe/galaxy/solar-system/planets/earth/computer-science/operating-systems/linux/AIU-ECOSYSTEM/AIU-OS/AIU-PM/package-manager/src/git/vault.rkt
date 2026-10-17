@@ -768,7 +768,7 @@
         (raise-pm-error 'config 'vault-export-commit "tar executable not found"
                         #:hint "install tar so exports can unpack archives")))
   (define-values (parent _name _dir?) (split-path (simplify-path staging)))
-  (define tar-tmp
+  (define tar-staging
     (build-path parent
                 (string-append ".tmp-export-"
                                (symbol->string (gensym 'vault))
@@ -790,14 +790,14 @@
                           #:fields (list (cons "commit" pin)))))
       (define archive-res
         (vault-git vault-root (list "archive" "--format=tar" "--output"
-                                    (dir-string tar-tmp) pin)
+                                    (dir-string tar-staging) pin)
                    #:op 'vault-export-commit #:kind 'fetch
                    #:operation "write export archive"
                    #:cancel cancel #:on-progress on-progress))
       (vault-git! vault-root 'vault-export-commit '("archive") archive-res
                   'fetch "archive")
       (define untar-res
-        (run-command tar (list "-x" "-f" (dir-string tar-tmp)
+        (run-command tar (list "-x" "-f" (dir-string tar-staging)
                                "-C" (dir-string staging))
                      #:cwd (dir-string parent)
                      #:kind 'fetch #:operation "unpack export tree"
@@ -809,8 +809,8 @@
                                              (dir-string staging)))))
       (set! failed? #f))
     (lambda ()
-      (when (file-exists? tar-tmp)
-        (delete-file tar-tmp))
+      (when (file-exists? tar-staging)
+        (delete-file tar-staging))
       (when failed?
         (for ([entry (in-list (directory-list staging))])
           (delete-directory/files (build-path staging entry)))))))
@@ -1297,7 +1297,7 @@
   (check-true (> (length (vault-add-result-warnings ff2)) 0))
   (check-false (member tip1b (list (vault-add-result-pin ff2))))
   ;; The new tip survives the rescue; only the old tip moves.
-  (define ff2-main
+  (define ff2-pin-line
     (car (run-result-stdout-lines
           (run-command git-exe
                        `("--git-dir" ,(path->string
@@ -1306,7 +1306,7 @@
                        #:cwd (path->string test-root)
                        #:kind 'fetch #:operation "test-fixture"
                        #:env (fixture-env)))))
-  (check-true (string-prefix? ff2-main (vault-add-result-pin ff2)))
+  (check-true (string-prefix? ff2-pin-line (vault-add-result-pin ff2)))
   ;; A second rewrite in the same second rescues under its own old sha.
   (define tip2 (vault-add-result-pin ff2))
   (fixture-git ff-dir "update-ref" "refs/heads/main" tip1b)

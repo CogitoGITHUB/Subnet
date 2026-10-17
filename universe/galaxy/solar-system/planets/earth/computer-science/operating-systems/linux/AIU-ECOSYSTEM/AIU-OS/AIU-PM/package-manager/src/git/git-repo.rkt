@@ -298,7 +298,7 @@
                     #:hint "fetch into it instead"))
   (with-mirror-lock dir 'fetch 'git-clone-mirror timeout
     (lambda ()
-      (define tmp
+      (define clone-staging
         (build-path parent (format ".tmp-clone-~a-~a"
                                    (current-milliseconds) (gensym))))
       (dynamic-wind
@@ -309,7 +309,7 @@
               ;; Bare repo with an empty template: no hooks installed (7).
               (git-run! git 'git-clone-mirror parent
                         `("init" "--bare" "--template=" "--"
-                          ,(path->string tmp))
+                          ,(path->string clone-staging))
                         #:kind 'fetch
                         #:operation "git init mirror"
                         #:git-dir #f)
@@ -319,11 +319,11 @@
                                     ("gc.pruneExpire" . "never")
                                     ("gc.reflogExpire" . "never")
                                     ("gc.reflogExpireUnreachable" . "never")))])
-                (git-run! git 'git-clone-mirror tmp
+                (git-run! git 'git-clone-mirror clone-staging
                           `("config" ,(car kv) ,(cdr kv))
                           #:kind 'fetch
                           #:operation "git config mirror"))
-              (git-run! git 'git-clone-mirror tmp
+              (git-run! git 'git-clone-mirror clone-staging
                         `("remote" "add" "origin" "--" ,url)
                         #:kind 'fetch
                         #:operation "git remote add")
@@ -333,7 +333,7 @@
               ;; history. Some upstreams have gigabytes of history that
               ;; would never be read. git-deepen-mirror fetches more on
               ;; demand when a pin is older than the depth.
-              (git-run! git 'git-clone-mirror tmp
+              (git-run! git 'git-clone-mirror clone-staging
                         `("fetch" "--depth" ,(number->string mirror-fetch-depth)
                           "origin" "--" "+refs/*:refs/upstream/*")
                         #:kind 'fetch
@@ -341,11 +341,11 @@
           ;; (void) last, deliberately: dynamic-wind returns its body's
           ;; value and rename-file-or-directory returns the path, so
           ;; without this the function broke its own void? contract.
-          (rename-file-or-directory tmp dir)
+          (rename-file-or-directory clone-staging dir)
           (void))
         (lambda ()
-          (when (directory-exists? tmp)
-            (delete-directory/files tmp)))))))
+          (when (directory-exists? clone-staging)
+            (delete-directory/files clone-staging)))))))
 
 ;; path -> void, fetch refspec, never --prune (D-011)
 (define (git-fetch-mirror dir #:timeout [timeout 300])
@@ -554,7 +554,7 @@
   (check-no-escaping-links staging commit))
 
 ;; path string path -> void, checkout pin into empty staging (STEP C)
-;; Mirror untouched; work-tmp dies always; staging emptied on failure.
+;; Mirror untouched; export-staging dies always; staging emptied on failure.
 ;; Staging should be an absolute empty dir the caller owns.
 (define (git-export-commit dir commit staging #:timeout [timeout 300])
   (check-commit 'git-export-commit commit)
@@ -596,18 +596,18 @@
            ;; Without this the depth only ever doubled and a pin that is
            ;; absent upstream deepened forever instead of refusing.
            (deepen (if (>= to mirror-deepen-cap) 0 (* 2 to)))]))
-      (define work-tmp
+      (define export-staging
         (build-path parent (format ".tmp-export-~a-~a"
                                    (current-milliseconds) (gensym))))
       (define failed? #t)
       (dynamic-wind
         void
         (lambda ()
-          (export-commit-tree git cp dir commit work-tmp staging timeout)
+          (export-commit-tree git cp dir commit export-staging staging timeout)
           (set! failed? #f))
         (lambda ()
-          (when (directory-exists? work-tmp)
-            (delete-directory/files work-tmp))
+          (when (directory-exists? export-staging)
+            (delete-directory/files export-staging))
           (when failed?
             (for ([entry (in-list (directory-list staging))])
               (delete-directory/files

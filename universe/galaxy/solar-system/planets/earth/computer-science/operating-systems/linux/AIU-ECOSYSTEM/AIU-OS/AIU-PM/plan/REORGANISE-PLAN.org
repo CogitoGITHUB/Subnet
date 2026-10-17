@@ -138,7 +138,7 @@ AIU-PM/
       cli.rkt              argv -> command
       documents.rkt        one JSON document per command
       dispatch.rkt         command -> call
-      mcp-server.rkt       from package-manager/src/entry/mcp-server.rkt
+      mcp-tools.rkt       from package-manager/src/entry/mcp-tools.rkt
   gate/
     check.nu               the gate
     read-check.rkt
@@ -218,7 +218,7 @@ Safe, mechanical, and independently verifiable:
 - =scripts/= → split into =gate/= (=check.nu=, =read-check.rkt=,
   =test-runner.rkt=, =env.nu=, =tree.nu=) and =tools/= (the rest)
 - =package-manager/src/entry/cli.rkt= → =src/entry/cli.rkt=
-- =package-manager/src/entry/mcp-server.rkt= → =src/entry/mcp-server.rkt=
+- =package-manager/src/entry/mcp-tools.rkt= → =src/entry/mcp-tools.rkt=
 
 Every require in the tree changes for these. The test suite catches a
 missing module — it fails to build rather than passing silently — which

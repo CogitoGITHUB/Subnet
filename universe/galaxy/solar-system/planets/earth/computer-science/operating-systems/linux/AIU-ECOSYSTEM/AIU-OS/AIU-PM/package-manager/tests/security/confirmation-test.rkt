@@ -16,7 +16,7 @@
          racket/list
          racket/port
          "../../src/security/security.rkt"
-         "../../src/entry/mcp-server.rkt")
+         "../../src/entry/mcp-tools.rkt")
 
 (define (fresh-session)
   (make-session (open-input-string "") (open-output-nowhere)))

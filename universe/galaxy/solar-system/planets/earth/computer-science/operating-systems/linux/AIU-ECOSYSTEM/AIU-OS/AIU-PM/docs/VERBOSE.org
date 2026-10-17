@@ -66,7 +66,7 @@ the environment can set it.
 - =scripts/*.rkt= -- dev scripts (=build-lua=, =hello-fetch=,
   =probe-blob=, =repl=, =test-runner=, =read-check=). These are not
   engine code and keep their own printing.
-- =package-manager/src/entry/mcp-server.rkt:235= -- =write-json= to the MCP stdout. That is the
+- =package-manager/src/entry/mcp-tools.rkt:235= -- =write-json= to the MCP stdout. That is the
   protocol, not narration; it stays.
 
 *** How package-manager/src/entry/cli.rkt builds command->json

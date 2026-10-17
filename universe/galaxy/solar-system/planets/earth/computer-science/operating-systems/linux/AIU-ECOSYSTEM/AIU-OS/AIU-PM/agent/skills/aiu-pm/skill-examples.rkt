@@ -15,7 +15,7 @@
          racket/list
          json
          "../../../package-manager/src/entry/cli.rkt"
-         "../../../package-manager/src/entry/mcp-server.rkt"
+         "../../../package-manager/src/entry/mcp-tools.rkt"
          "../../../package-manager/src/narration/narration.rkt")
 
 (module+ main

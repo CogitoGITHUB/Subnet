@@ -444,11 +444,11 @@
                                 #:exists 'truncate/replace))
   (current-verbose-run (verbose-run run-id (box 0) #f 0 (mono-ms) port))
   ;; current: the active run id, written then renamed, never half-written
-  (define tmp (build-path dir "current.tmp"))
-  (call-with-output-file tmp
+  (define current-staging (build-path dir "current.tmp"))
+  (call-with-output-file current-staging
     (lambda (out) (displayln run-id out))
     #:exists 'truncate/replace)
-  (replace-file tmp (build-path dir "current"))
+  (replace-file current-staging (build-path dir "current"))
   (emit! 'START who "run" "session start" #f '() '() run-id)
   run-id)
 
