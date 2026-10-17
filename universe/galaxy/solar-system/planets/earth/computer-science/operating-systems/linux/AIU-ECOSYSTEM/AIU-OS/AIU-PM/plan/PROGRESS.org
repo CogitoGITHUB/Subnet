@@ -5,6 +5,10 @@ One line per step: what it was, the hash, what comes next. Appended after
 each commit, never rewritten. If this file and =git log= disagree, =git log=
 is true.
 
+A row lands in the commit AFTER the one it names, so its hash is the
+commit that carries the step's work -- never that row's own. Writing the
+hash before the work commit exists is what makes a row lie; do not do it.
+
 Resuming: read the last line, then =plan/MOVE-ORDER.org= for the script.
 
 | step | what | state |
@@ -26,11 +30,11 @@ Resuming: read the last line, then =plan/MOVE-ORDER.org= for the script.
 | 13 | =scripts/= into =gate/= and =tools/= | same commit as 9-13 |
 | 14 | inline tests into =package-manager/tests/= | TODO |
 | 15 | =gate/check.nu= learns the new root and every allowlist path | done in 9-13 |
-| 16 | identifier renames from =NAMING-REGISTER=, =mcp-server.rkt= becomes =mcp-tools.rkt= | eb28557 |
-| 17 | =banned-words-lint= gate stage, 149 files 0 violations, regexes with file:line | 57c1969 |
-| 18 | =one-way-dependency-lint= gate stage, 34 known unpaid edges, 0 new; gap recorded, decision needed | a97dba1 |
+| 16 | identifier renames from =NAMING-REGISTER=, =mcp-server.rkt= becomes =mcp-tools.rkt= | 8ad0c30 |
+| 17 | =banned-words-lint= gate stage, 149 files 0 violations, regexes with file:line | b21a983 |
+| 18 | =one-way-dependency-lint= gate stage, 34 known unpaid edges, 0 new | 3b32120 |
 | 19 | backup feature in =src/backup/= | TODO |
-| 20 | per-area =README.org= in all 12 =src/= areas, one job each | bd9f159 |
+| 20 | per-area =README.org= in all 12 =src/= areas, one job each | 00c5154 |
 | 21 | ENGINE-CHECKLIST entries reconciled | TODO |
 | 22 | full verification, prove =banned-words-lint=/=one-way-dependency-lint= bite, push | TODO |
 | — | gate stages are named, never numbered (D-043); =--list=; sub-stages | e1c9c55 |
