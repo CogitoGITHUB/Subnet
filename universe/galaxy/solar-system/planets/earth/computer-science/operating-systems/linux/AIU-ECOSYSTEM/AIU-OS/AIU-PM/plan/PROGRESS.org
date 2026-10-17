@@ -27,7 +27,7 @@ Resuming: read the last line, then =plan/MOVE-ORDER.org= for the script.
 | 14 | inline tests into =package-manager/tests/= | TODO |
 | 15 | =gate/check.nu= learns the new root and every allowlist path | done in 9-13 |
 | 16 | identifier renames from =NAMING-REGISTER=, =mcp-server.rkt= becomes =mcp-tools.rkt= | eb28557 |
-| 17 | =banned-words-lint= gate stage, banned words, file:line | TODO |
+| 17 | =banned-words-lint= gate stage, 149 files 0 violations, regexes with file:line | 57c1969 |
 | 18 | =one-way-dependency-lint= gate stage, one-way dependency, file:line | TODO |
 | 19 | backup feature in =src/backup/= | TODO |
 | 20 | per-area README.org | TODO |

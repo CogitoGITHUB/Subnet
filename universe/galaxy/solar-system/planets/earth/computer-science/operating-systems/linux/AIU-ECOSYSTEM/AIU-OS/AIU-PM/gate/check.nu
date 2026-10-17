@@ -135,6 +135,8 @@ const STAGES = [
    "no raw print outside the two printers, D-036"]
   ["security-gate-lint" ["uncalled-predicates" "audited-writers"]
    "S-04: every security predicate is called; effects are the measured set"]
+  ["banned-words-lint" []
+   "the naming law: no core/main/server/backends/handler/manager/tmp in paths or definitions"]
   ["test-body-print-lint" []
    "inside (module+ test, a print naming no port is a violation"]
   ["changed-files" []
@@ -803,6 +805,22 @@ def run-read-check [] {
     $code
 }
 
+# -> nothing, run one law script and stop the gate if it refuses. Both law
+# stages live in their own file so the law and its enforcement stay in one
+# place and this file only wires them: the script owns the exit code, and
+# its own summary line is what the reader sees.
+def run-law-stage [label: string, script: string] {
+    print $"[check] ($label)"
+    let nu_bin = ($env | get -o CYBERDECK_NU? | default ($nu.current-exe))
+    let r = (do { run-external $nu_bin "--no-config-file" $script } | complete)
+    if ($r.stdout | str trim) != '' { print ($r.stdout | str trim) }
+    if $r.exit_code != 0 { exit $r.exit_code }
+}
+
+def run-banned-words-lint [] {
+    run-law-stage "banned-words-lint" "gate/banned-words-lint.nu"
+}
+
 # -> bool, is the stage (or one of its sub-stages) requested?
 def stage-on? [todo name] {
     ($name in $todo) or ($todo | any {|t| ($t | str starts-with ($name + "/")) })
@@ -1002,6 +1020,9 @@ def main [--changed, --list] {
     }
     if (stage-on? $todo "test-body-print-lint") {
         run-test-body-print-lint
+    }
+    if (stage-on? $todo "banned-words-lint") {
+        run-banned-words-lint
     }
     let elapsed = (((date now | into int) - $started) / 1000000)
     print $"[check] end utc=(utc) after=($elapsed)ms"
