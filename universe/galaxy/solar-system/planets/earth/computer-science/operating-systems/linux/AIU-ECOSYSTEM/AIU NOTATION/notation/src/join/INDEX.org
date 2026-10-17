@@ -1,0 +1,60 @@
+#+TITLE: INDEX — AIU NOTATION/notation/src/join/
+# One job: the Racket–Racket seam; the only language crossing — and, in words,
+# the frozen shape of the document that crosses it.
+# Status: the shape is frozen 2026-10-17; how the document is carried is open.
+
+* The one crossing
+# why this area exists, and what may not happen outside it.
+  - Rust owns the hot path and the Racket side owns meaning
+    (rules/rule-09-language-split.org). This directory is the only place the
+    two meet; =gate/language-split-lint.nu= keeps every other area clean.
+  - rust-exports.rs prints the parse tree as a plain text document. Racket
+    reads that document. Neither side needs the other's language to build.
+
+* The parse tree document, frozen
+# the payload named "parse-tree-document" in plan/package-tree.org. It is
+# plain text, one line per fact, UTF-8, and a newline after the last line.
+  - The first line is exactly =NOTATION-DOCUMENT 1=. The number is the shape
+    version; a reader that does not know the number must refuse the document
+    rather than guess.
+  - The second line is =file <path>= — the file this document describes. It is
+    a quoted string, because a path may hold spaces.
+  - After that come the entries, in the order they appear in the file: a
+    =node= or an =error= for the top level, then a node's own children
+    immediately after it. The =depth= number says how deep an entry sits, so a
+    reader needs no counting to know what sits inside what.
+  - A node entry is:
+    =node <kind> <name> <startLine> <startOffset> <endLine> <endOffset> <depth>=
+    where kind is =block= (there is no other kind in Tier 1) and name is the
+    block name. Lines and offsets are 1-based lines and byte offsets, as
+    syntax/first-slice-freeze.org rule F says.
+  - A declaration line inside a node is:
+    =decl <keyword> <value> <line> <offset>=
+    A declaration is a hint, never meaning (rule B).
+  - An error entry is:
+    =error <kind> <line> <offset> <openerLine> <what> <whatToDo>=
+    kind is one of the five registered names; openerLine is 0 when no block
+    was open. =what= and =whatToDo= are quoted and are always filled: an error
+    that cannot say what to do is not an error yet.
+  - The last line is =end=. A document without it is truncated, and a reader
+    must say so rather than read half a tree.
+
+* Quoting
+# one rule, so no reader has to guess where a field ends.
+  - A quoted field is wrapped in double quotes; spaces inside are kept as they
+    are; a double quote inside is written twice. Newlines never appear inside
+    a quoted field.
+
+* Bytes, not text, where it matters
+# what the offsets count.
+  - Every offset is a byte offset into the original file, so a reader can cut
+    the exact bytes of any node out of the source. Columns are characters and
+    are derived, never carried.
+
+* What is still open
+# named so nobody decides it here.
+  - How the document is carried: a direct call from Rust into the meaning side
+    (baked) or a subprocess. Both remain open; the shape above works for
+    either, and this file does not choose.
+  - join/racket-entry.rkt and join/load.rkt are named in
+    plan/package-tree.org and are not written yet.

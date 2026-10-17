@@ -1,0 +1,22 @@
+#+TITLE: INDEX — AIU NOTATION/notation/src/rendering/
+# One job: list every file in this directory and the single job of each.
+# Status: current; updated in the same commit as any change in this directory.
+
+* Files
+# one line per file: its name, then the single job it performs.
+
+  - strip.rs — comments and marks stripped here, in one place
+  - plain.rs — the plain fallback: text out, nothing invented
+
+* Not written yet
+# named in plan/package-tree.org, still planned; no file, no stub.
+  - rich.rs — rich unicode: lines, indent, tables (build step 8)
+
+* Where it sits
+# why this area exists and what it may use.
+  - Rust owns the hot path, and rendering is part of it
+    (rules/rule-09-language-split.org).
+  - strip.rs is the **only** stripper in the package. plain.rs calls it; no
+    other file decides to drop a line. Plain rendering hides start, end and
+    declaration lines and keeps the content word for word
+    (syntax/first-slice-freeze.org, rule F).

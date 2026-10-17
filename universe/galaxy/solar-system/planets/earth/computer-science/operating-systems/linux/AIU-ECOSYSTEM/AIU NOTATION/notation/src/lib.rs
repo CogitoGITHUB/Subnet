@@ -17,3 +17,12 @@ pub mod positions;
 
 #[path = "parser/parser.rs"]
 pub mod parser;
+
+#[path = "join/rust-exports.rs"]
+pub mod rust_exports;
+
+#[path = "rendering/strip.rs"]
+pub mod strip;
+
+#[path = "rendering/plain.rs"]
+pub mod plain;

@@ -8,13 +8,16 @@
 ;; It only reads. One line per file, exit non-zero if any file does not parse.
 ;; It never rewrites a file and never loads one.
 ;;
-;; Two facts about this phone's Racket 9.3 install shape this file:
-;;   1. "..." is read as an ordinary identifier, so rest arguments and
-;;      ellipsis forms are unavailable; every .rkt file here takes plain
-;;      single arguments.
-;;   2. The #lang line is dropped before reading and the body is read in the
-;;      base namespace (PM's way, AIU-OS/AIU-PM/gate/read-check.rkt:94-111),
-;;      because reading a #lang line through a plain string port fails here.
+;; Two facts about this phone's Racket 9.3 install shape this file, each proved
+;; by a command (2026-10-17):
+;;   1. The ellipsis form in a parameter list does not expand here: a definition
+;;      written "(define (f a b ...) ...)" counts "..." as a third parameter
+;;      ("arity mismatch; expected 3"), while the dotted form "(define (f . xs)
+;;      ...)" works and prints (1 2). So this package takes a list, never an
+;;      ellipsis rest argument.
+;;   2. Reading a #lang line through a plain string port fails here
+;;      ("#lang not enabled"), so the header is dropped and the body is read in
+;;      the base namespace — PM's way, AIU-OS/AIU-PM/gate/read-check.rkt:94-111.
 ;;
 ;; A reader error names where reading stopped, which for an unclosed form is
 ;; the end of the file. So on failure this also walks the raw text and prints
@@ -68,7 +71,9 @@
   out)
 
 (define (read-one f)
-  ;; file->string, not port->string: port->string is unbound in this build.
+  ;; file->string comes from racket/file and reads the bytes as written. (The
+;; racket/port route works too — port->string is fine once racket/port is
+;; required — but file->string says what it reads in one call.)
   (define raw
     (with-handlers ([exn:fail? (lambda (e) "")])
       (file->string f #:mode 'binary)))
