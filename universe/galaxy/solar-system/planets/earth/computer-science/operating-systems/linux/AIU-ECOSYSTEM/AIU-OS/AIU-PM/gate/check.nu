@@ -137,6 +137,8 @@ const STAGES = [
    "S-04: every security predicate is called; effects are the measured set"]
   ["banned-words-lint" []
    "the naming law: no core/main/server/backends/handler/manager/tmp in paths or definitions"]
+  ["one-way-dependency-lint" []
+   "ARCHITECTURE.org: an area may require only the areas below it"]
   ["test-body-print-lint" []
    "inside (module+ test, a print naming no port is a violation"]
   ["changed-files" []
@@ -821,6 +823,10 @@ def run-banned-words-lint [] {
     run-law-stage "banned-words-lint" "gate/banned-words-lint.nu"
 }
 
+def run-one-way-dependency-lint [] {
+    run-law-stage "one-way-dependency-lint" "gate/one-way-dependency-lint.nu"
+}
+
 # -> bool, is the stage (or one of its sub-stages) requested?
 def stage-on? [todo name] {
     ($name in $todo) or ($todo | any {|t| ($t | str starts-with ($name + "/")) })
@@ -1023,6 +1029,9 @@ def main [--changed, --list] {
     }
     if (stage-on? $todo "banned-words-lint") {
         run-banned-words-lint
+    }
+    if (stage-on? $todo "one-way-dependency-lint") {
+        run-one-way-dependency-lint
     }
     let elapsed = (((date now | into int) - $started) / 1000000)
     print $"[check] end utc=(utc) after=($elapsed)ms"

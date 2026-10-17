@@ -579,3 +579,44 @@ it approved.
   red first" is never later mistaken for damage done here. Caveat, stated
   rather than hidden: that run overlapped the edits to =security.rkt= and
   =mcp-tools.rkt=, so it is a strong signal rather than a proof.
+
+* The one-way area law does not match the tree -- FOUND, DECISION NEEDED
+:PROPERTIES:
+:ID: oneway-law-gap
+:END:
+
+=gate/one-way-dependency-lint.nu= transcribes ARCHITECTURE.org's area
+table and checks every cross-area =require= under =package-manager/src/=.
+Written as step 18 and run on the tree of 2026-10-17, it reported 34
+crossings that the doc says cannot exist, in 14 area-pairs:
+
+- =spec/= and =git/= require each other. That is a cycle, not a ranking,
+  and no table of one-way edges can be satisfied by a cycle.
+- Ten modules in =install/=, =machine/=, =spec/=, =store/= and =queue/=
+  reach up into =entry/=, which the doc calls the ceiling.
+- =git/= requires =security/=; =machine/= requires =git/= and =spec/=;
+  =narration/= requires =machine/=; =store/= requires =install/=,
+  =machine/= and =queue/=.
+
+The stage is wired and green because the debt is enumerated in the
+script's =KNOWN_PAIRS=: those edges print on every run as "known unpaid
+edges", and a NEW crossing still fails with =file:line=. So the law is
+enforceable for anything new from today, and the existing gap is visible
+instead of implied.
+
+What is NOT done, and is now a decision for the owner -- make the tree
+match the doc, or the doc match the tree:
+
+1. Move the modules so the ranking holds. Breaks the spec/git cycle and
+   gives =entry/version.rkt= a home below the ceiling. A real refactor,
+   worth its own step; this is the only option that keeps the law a law.
+2. Correct ARCHITECTURE.org to the shape the tree actually has. Honest,
+   cheap, and retires a rule that three phases of work already ignored.
+
+Recommend 1, in a step of its own. It is not folded into step 18 because
+a 34-edge dependency refactor is not a step's worth of work, and because
+the lint already stops the gap getting any wider.
+
+Recorded rather than fixed: the alternative -- quietly widening the table
+until it matched -- would have destroyed the only copy of the intended
+shape, which is the thing worth keeping.
