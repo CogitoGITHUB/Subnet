@@ -1,0 +1,18 @@
+#+TITLE: INDEX — AIU NOTATION/notation/src/elements/
+# One job: list every file in this directory and the single job of each.
+# Status: current; updated in the same commit as any change in this directory.
+
+* Files
+# one line per file: its name, then the single job it performs.
+
+  - register.rkt — the one table: name to meaning
+  - dispatch.rkt — a name and its body reach the right meaning
+  - literals.rkt — literal names: what a name is, what it is not
+
+* Where it sits
+# why this area exists and what it may use.
+  - Racket owns the meaning side (rules/rule-09-language-split.org). This area
+    is the vocabulary: it says what a name means, and it is the only place
+    that may add a name.
+  - A name that is not in register.rkt has no meaning and must not reach the
+    model; dispatch.rkt refuses it rather than guessing.
