@@ -47,12 +47,30 @@ const KNOWN_PAIRS = [
     [queue git] [queue spec] [security git]
     [spec git] [store install] [store machine] [store queue]
 ]
-# The ceiling rule is crossed by ten modules across five areas.
-const KNOWN_CEILING = true
+# The ceiling rule is crossed by exactly these ten modules, measured
+# 2026-10-17. Named file by file rather than waved through, so an
+# ELEVENTH module reaching into entry/ still fails the gate: a blanket
+# "the ceiling is known debt" would have been a loophole, not a ledger.
+const KNOWN_CEILING = [
+    "install/apply.rkt"
+    "machine/file-lock.rkt"
+    "spec/plan-actions.rkt"
+    "spec/plan-derive.rkt"
+    "spec/plan-hash.rkt"
+    "spec/plan-lower.rkt"
+    "spec/resolve.rkt"
+    "spec/spec-fields.rkt"
+    "spec/spec.rkt"
+    "store/query.rkt"
+]
 
-# string string -> bool, is this crossing already counted as debt
-def known-pair [from: string, to: string] {
-    if $to == 'entry' { return $KNOWN_CEILING }
+# string string string -> bool, is this crossing already counted as debt.
+# rel is the path relative to package-manager/src/, which is the form the
+# ceiling list is written in.
+def known-crossing [from: string, to: string, rel: string] {
+    if $to == 'entry' {
+        return ($KNOWN_CEILING | any {|r| $r == $rel })
+    }
     ($KNOWN_PAIRS | any {|p| ($p | get 0) == $from and ($p | get 1) == $to })
 }
 
@@ -87,6 +105,7 @@ def main [] {
     mut known = 0
     for f in $files {
         let area = ($f | path split | get 2)
+        let rel = ($f | str replace 'package-manager/src/' '')
         let ls = (open --raw $f | lines)
         # A (module+ test) block may reach anywhere it needs to assert on:
         # the one-printer-lint set that precedent, and an inline test
@@ -105,7 +124,7 @@ def main [] {
                 if $t == $area { continue }
                 let why = (violation-of $area $t)
                 if $why == '' { continue }
-                if (known-pair $area $t) {
+                if (known-crossing $area $t $rel) {
                     $known = ($known + 1)
                     continue
                 }
