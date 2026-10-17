@@ -67,8 +67,11 @@
 * G. Check policy
 # the owner's default, revisable: what may run while building this.
   - One cargo check and one Racket read-check per finished area.
-  - No tests and no program runs, because no tests exist yet (root
-    DECISIONS.org D-001).
+  - One by-hand program run per item is allowed: exactly the run that item's
+    done-when names. For items 2 and 3 that is a real page with its output
+    captured, and TODO.org carries the wording.
+  - Every other program run is forbidden, and so is every test file, because no
+    tests exist yet (root DECISIONS.org D-001).
   - If a cargo check does not finish in reasonable time on the phone, stop and
     write it down for the laptop list instead of forcing it.
 
