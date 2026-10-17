@@ -7,6 +7,7 @@
 # one line per file: its name, then the single job it performs. This index is updated in the same commit as any change here.
 
   - element-names.org — ordinary things use literal names, not symbols: a title is called title, a paragraph is called paragraph
+  - first-slice-freeze.org — the rules frozen for the first slice (title, paragraph, code) so coding can start; frozen 2026-10-17
   - open-close-mark.org — the tiny consistent mark around a named element; the sign is decided: { } (notation D-014, 2026-10-17)
   - file-identity.org — the first heading carries title and tags so a file identifies itself alone and cheaply
   - structure.org — how named elements nest, and what plain reading of the outline looks like

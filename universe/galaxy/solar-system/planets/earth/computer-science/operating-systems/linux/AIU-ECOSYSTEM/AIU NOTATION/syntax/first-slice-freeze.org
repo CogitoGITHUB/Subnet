@@ -1,0 +1,79 @@
+#+TITLE: First slice freeze
+# One job: the rules frozen for the first slice — title, paragraph, code — so coding can start
+# Status: frozen 2026-10-17 by the owner. Changing any rule here needs the owner.
+
+* What this file is
+# why it exists, and what it is not.
+  - The first slice is title, paragraph and code block (notation D-013). This
+    file says exactly what those three accept, in plain words, so nobody has to
+    guess while coding.
+  - It does not decide Tier 2 or later, and it does not decide the join. Both
+    are asked elsewhere and still open.
+
+* A. Block names and block lines
+# the names, and what makes a line a block line.
+  - Tier 1 has three block names: title, paragraph, code.
+  - A block line is exactly "<name> start" or "<name> end". The name is
+    lowercase, at column 0, alone on its line. Trailing spaces are ignored.
+  - Blocks nest. An end line matches the innermost block that is still open,
+    and only that one.
+
+* B. Declarations
+# the keyword-colon lines under a start line, and what they may say.
+  - Consecutive "keyword: value" lines sit directly under a start line.
+  - Only these keywords may declare anything: tags, language, style, theme,
+    color, format, font.
+  - Any other "word:" line is plain content. It is an information hint for the
+    reader only.
+  - Styling is stored as hints, never as meaning. A terminal honors bold, italic
+    and color, and ignores the rest.
+
+* C. The title block
+# the one block with a position rule.
+  - The title block must be the first block of the file. Its text is the title.
+  - Its "tags:" declaration holds the title's tags.
+  - Any other arrangement is the error missing-title.
+
+* D. Paragraph and code blocks
+# what their bodies may hold.
+  - A paragraph block holds text lines. Blank lines inside it are kept. Tier 1
+    has no inline structure inside a paragraph.
+  - A code block's body is opaque: the parser does not read it as notation, and
+    only an exact matching end line closes it.
+
+* E. The errors
+# all of them: severity error, no off switch, each naming file, line, what and
+# what to do.
+  - stray-text — text found outside any named block. The text stays exactly as
+    written and the rest of the file keeps parsing.
+  - mismatched-end — an end line that does not match the innermost open block.
+    It names the line where that block was opened.
+  - unclosed-block — a block still open at the end of the file. It names the
+    line where it was opened.
+  - unknown-block-name — a start or end line whose name is not one of the three.
+  - missing-title — no title block, or a first block that is not a title.
+  - Every one of these is severity error and has no off switch.
+
+* F. Bytes, columns and the round trip
+# the promises about text that the parser must keep.
+  - The file is UTF-8. Line endings are kept exactly as they are, never
+    normalized.
+  - Offsets are counted in bytes. Columns are counted in characters.
+  - The round trip is exact: the tree must print back to the identical file
+    bytes.
+  - Plain rendering hides the start, end and declaration lines and keeps the
+    content. rendering/strip.rs is the only place anything is stripped.
+
+* G. Check policy
+# the owner's default, revisable: what may run while building this.
+  - One cargo check and one Racket read-check per finished area.
+  - No tests and no program runs, because no tests exist yet (root
+    DECISIONS.org D-001).
+  - If a cargo check does not finish in reasonable time on the phone, stop and
+    write it down for the laptop list instead of forcing it.
+
+* What stays open
+# named so nobody decides it here.
+  - The join: how the Rust parser and the Racket model cross. Not decided here.
+  - Inline emphasis and links inside a paragraph.
+  - The Tier 2 element list, and block reuse by an authored id.

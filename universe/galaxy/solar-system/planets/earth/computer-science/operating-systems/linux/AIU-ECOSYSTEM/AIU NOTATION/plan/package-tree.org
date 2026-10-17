@@ -42,6 +42,19 @@
   - =stray-text= — the error name for text found outside any named block:
     severity error, no off switch, the text kept untouched and the rest of
     the file still parsed. Carried by the parser as an error node.
+  - =mismatched-end= — the error name for an end line that does not match the
+    innermost open block; it names the line where that block was opened.
+  - =unclosed-block= — the error name for a block still open at the end of the
+    file; it names the line where the block was opened.
+  - =unknown-block-name= — the error name for a start or end line whose name is
+    not one of the Tier 1 block names.
+  - =missing-title= — the error name for a file whose first block is not a
+    title, or which has no title block at all.
+  - Tier 1 block names: =title=, =paragraph=, =code= — the only names a start
+    or end line may carry in Tier 1.
+  - Declaration keywords: =tags=, =language=, =style=, =theme=, =color=,
+    =format=, =font= — the only "keyword: value" lines a block may declare;
+    they are stored as hints, never as meaning.
   - =check= — the CLI command that reads a file, lists every error with its
     line number and exits non-zero when any error is found; the same
     documents the editor receives through the boundary.
