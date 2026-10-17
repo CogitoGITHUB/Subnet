@@ -36,7 +36,7 @@ Resuming: read the last line, then =plan/MOVE-ORDER.org= for the script.
 | 19 | backup feature in =src/backup/= | TODO |
 | 20 | per-area =README.org= in all 12 =src/= areas, one job each | 00c5154 |
 | 21 | ENGINE-CHECKLIST reconciled: 88 headings, all accounted for, S3-03 closed | 389cc9d |
-| 22 | full verification, prove =banned-words-lint=/=one-way-dependency-lint= bite, push | TODO |
+| 22 | full gate rc=0: 74 files, 1355 checks, 0 failed; both lints bite and run by default | 9826858 |
 | — | gate stages are named, never numbered (D-043); =--list=; sub-stages | e1c9c55 |
 
 * The three splits that were not done by subagent, and why
