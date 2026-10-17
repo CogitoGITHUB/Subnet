@@ -1,0 +1,16 @@
+#+TITLE: INDEX — AIU NOTATION/notation/src/text/
+# One job: list every file in this directory and the single job of each.
+# Status: current; updated in the same commit as any change in this directory.
+
+* Files
+# one line per file: its name, then the single job it performs.
+
+  - buffer.rs — the text state: bytes, lines, offsets
+  - positions.rs — offset to line/column and back, one pair of functions
+
+* Where it sits
+# why this area exists and what it may use.
+  - Rust owns the hot path (rules/rule-09-language-split.org). This area holds
+    the text and nothing else: no block names, no meaning, no errors. It is
+    the only place that knows how a line begins.
+  - =../parser/parser.rs= uses this area and never the reverse.

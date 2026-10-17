@@ -1,0 +1,18 @@
+[package]
+# One job: the crate manifest for the notation package. One crate, no
+# workspace, no dependencies: the first slice is Rust alone and nothing is
+# fetched to build it. Registered in plan/package-tree.org.
+name = "notation"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.70"
+publish = false
+
+[lib]
+# The library is the package; src/lib.rs lists the area files.
+name = "notation"
+path = "src/lib.rs"
+
+# No [dependencies] on purpose. The first slice parses and round-trips text
+# with the standard library only, so a build needs no network and no crate
+# from outside this package.

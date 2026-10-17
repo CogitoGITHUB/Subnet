@@ -36,6 +36,14 @@
     in the ecosystem law (no core/, engine/, utils/, manager/,
     handler/, tmp/).
 
+* The crate
+# minimal on purpose: one crate, no workspace, no dependencies.
+  - =Cargo.toml= — the crate manifest for the package: one crate named
+    notation, no workspace, no dependencies.
+  - =src/lib.rs= — the module list: which area files belong to the crate. It
+    uses =#[path]= so every area file lives exactly where the tree lists it
+    and no per-area module file is invented.
+
 * Names registered
 # one line per name: the name, then what it is for. Registered here before
 # any file uses it; a name not in this list does not exist yet.

@@ -1,0 +1,21 @@
+#+TITLE: INDEX — AIU NOTATION/notation/src/parser/
+# One job: list every file in this directory and the single job of each.
+# Status: current; updated in the same commit as any change in this directory.
+
+* Files
+# one line per file: its name, then the single job it performs.
+
+  - parser.rs — the layered parser: the mark, blocks, elements, recovery; text
+    found outside any block becomes a =stray-text= error node
+
+* Not written yet
+# named in plan/package-tree.org, still planned; no file, no stub.
+  - reparse.rs — a keystroke touches only its slice (build step 3)
+  - partial.rs — a broken element recovers; the rest keeps parsing (build step 3)
+
+* Where it sits
+# why this area exists and what it may use.
+  - Rust owns the hot path (rules/rule-09-language-split.org). The parser reads
+    =../text/= for bytes and positions and never the reverse. It produces
+    blocks and error nodes only: the meaning tree has no node kind for loose
+    text (syntax/first-slice-freeze.org, rule b).
