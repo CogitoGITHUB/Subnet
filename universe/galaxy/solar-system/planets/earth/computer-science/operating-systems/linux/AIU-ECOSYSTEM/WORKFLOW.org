@@ -1,0 +1,37 @@
+#+TITLE: WORKFLOW — how this ecosystem is planned and built
+# One job: the one workflow every session follows, from the base plan to an accepted package
+# Status: current; changes only through a root decision.
+
+* The order of work
+# general plan, then per-project handoff, then one session per project, then packages.
+  1. The general plan first: research, the program plans, the contract working draft, the checklist tiers. Done; this ready-up closes the leftovers.
+  2. A HANDOFF.org per project: everything a fresh session needs, so it can start from that file alone.
+  3. One session per project. A session works its own directory only; the other projects and AIU-OS are read-only; no sub-agents.
+  4. One TODO.org per project — the single list of what is left, in build order, each item with name, one line, done-when, dependencies.
+  5. The package lives in its own subdir inside the project (notation/, editor/, multiplexer/), planned in plan/PACKAGE-TREE.org; nothing of the package is scattered across the project dir.
+
+* How a session runs
+# the prompt discipline and the report discipline.
+  - Short numbered prompts with STOP points; after a STOP the owner reads the report before the next step.
+  - Small commits, explicit relative paths, never a blanket add, no pushes unless the owner asks.
+  - A commit leaves the gate green; until tests start that is the light gate (paren-check, text-lint, naming register — DECISIONS.org D-001).
+  - Reports are 20 lines max, real output only, "not run" where not run.
+  - Nothing is "done" without real output (learned/acceptance-pattern.org); an item closes in the commit that captures its run.
+  - A blocked item never stops the run: mark BLOCKED with the reason and continue (learned/todo-list-practice.org).
+
+* Decisions
+# one log, one rule about the contract.
+  - Every decision closes with a recommendation and is recorded in the root DECISIONS.org, append-only, newest first, WHAT then WHY (learned/decision-log-style.org).
+  - The contract changes only through the root decision log; a contract piece freezes when a program and an adapter both depend on it.
+  - Owner questions are asked once, with options and a recommendation; a question that needs only the owner stays a question until answered.
+
+* Docs
+# finish means the doc leaves or tells the truth.
+  - Finished docs are deleted, each with a CLEANUP-LOG.org line: one-line why and the last live commit; cited paths retire by redirect (learned/doc-retirement-practice.org).
+  - README status is honest: "working now" only from acceptance results; everything else is "in plan"; the section carries date and commit hash.
+  - One TODO.org per project is the only task list; plans, PROGRESS-style history and the log hold the rest.
+
+* The gate
+# what green means, and when the full gate starts.
+  - Named stages, never numbers: text-lint, the paren check, the one-way dependency lint, the security gate, banned words (learned/gate-set.org).
+  - Until the owner says tests start: the light gate only — paren-check, text-lint, naming register. The full gate arrives with the first test item per package.

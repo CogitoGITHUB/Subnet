@@ -90,3 +90,20 @@ In short:
    exists (pm's `plan/FILE-INVENTORY.org`, `plan/NAMING-REGISTER.org`
    are the model). The reader test applies from the first commit —
    no path, directory, or identifier may make the owner ask what it is.
+
+## Session rules
+
+# one session per project; the rest of the vault is read-only.
+
+- One session per project. A session works its own project directory
+  only; the other projects and `AIU-OS/` are read-only (AIU-OS/AIU-PM
+  carries a live session of its own).
+- No sub-agents.
+- Phone-light: read in small pieces, never whole large files; reports
+  20 lines max, real output only, "not run" where not run.
+- No test files and no test runs in the three new projects until the
+  owner says tests start; until then the light gate only: paren-check,
+  text-lint, the naming register (DECISIONS.org D-001 holds the risk).
+- Each project's `AGENT.md` repeats these beside its own details;
+  `WORKFLOW.org` is the workflow; owner questions are asked once, with
+  options and a recommendation.

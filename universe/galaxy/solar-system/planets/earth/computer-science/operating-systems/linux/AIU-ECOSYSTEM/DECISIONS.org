@@ -1,0 +1,11 @@
+#+TITLE: DECISIONS — the ecosystem decision log
+# One job: every closed decision, append-only, newest first, each with WHAT and WHY
+# Status: current; new entries land at the top; the contract changes only through this file.
+
+* Log
+# Every entry: a dated D-number, WHAT changed, WHY it had to; name the files it touches.
+
+** 2026-10-17 D-001: no tests for now — the light gate until the owner says otherwise
+   Touches WORKFLOW.org; each project's AGENT.md.
+1. WHAT: no test files and no test runs in the three new projects until the owner says tests start; the light gate is paren-check, text-lint and the naming register; the test rules already written in the plans stay and wait.
+2. WHY: the phone pays seconds to minutes for suites (learned/phone-problems.org) and there is no code yet; tests written now would be written blind. RISK ACCEPTED AND WRITTEN DOWN: a behaviour-breaking change can land green until tests start, because the light gate catches syntax and naming, not behaviour; therefore the first test item per package is mandatory the day tests open, and no item may claim "done" on the light gate alone where its done-when needs behaviour.

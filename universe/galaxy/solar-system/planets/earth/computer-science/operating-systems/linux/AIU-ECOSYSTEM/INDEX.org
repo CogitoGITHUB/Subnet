@@ -7,6 +7,8 @@
 
   - HANDOFF.org — everything a fresh conversation needs to start working in this ecosystem
   - STATE.org — the ready-up survey: what is filled, what is still an empty skeleton, what is stale or contradicts another file
+  - WORKFLOW.org — the one workflow every session follows, from the base plan to an accepted package
+  - DECISIONS.org — the ecosystem decision log: every closed decision, append-only, newest first
   - WHEN-ON-LAPTOP.org — the living list of everything the phone cannot do or can only partly do
   - AGENTS.md — ecosystem build rules already here; the starting point for any build work
   - HARD-RULES.org — the binding ecosystem rules, each written so a gate can check it
