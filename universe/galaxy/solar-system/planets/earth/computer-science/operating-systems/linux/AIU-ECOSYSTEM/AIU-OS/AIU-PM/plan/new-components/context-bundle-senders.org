@@ -1,0 +1,36 @@
+#+TITLE: context-bundle senders — a failure an agent can read
+#+AUTHOR: Shape
+# One job: send a package, a plan or a failure to an agent as one
+# context-bundle shape. Status: planned only; nothing here is built.
+# Source: =../../pm-integration/context-bundle-senders.org=; the home is
+# the owner's open question.
+
+* Purpose
+- A failure an agent cannot read is a failure the agent will repeat.
+  Failures, plans and packages become one bundle shape an agent
+  consumes without parsing narration.
+* Name and location
+- name: the senders' names are registered in step 3
+- code: the senders reuse the event and bundle shapes already in
+  =narration=; their final home is the owner's open question (one
+  option puts them there beside those shapes)
+- area and layer: the area whose shapes they reuse; never above =entry=
+- may require: =errors=, =narration=, and the shape owners
+- may be required by: =entry=
+* Public interface, in plain words
+- send failure: the error, its kind, the step, the redacted context;
+- send plan: what was planned and where the decisions were;
+- send package: the declaration and where it was installed.
+* What it must never do
+- Never invent a second error shape: a bundle wraps the one event
+  schema.
+- Never leak secrets: redacted like the feed, same rules.
+* Tests
+- beside the senders; one test per bundle kind, against the schema.
+* Docs it updates
+- the register; =plan/OPEN-DECISIONS.org= (the entry closes).
+* Depends on new components
+- =ai-sight-files= for the state a bundle points at.
+* Build order
+- After the sight files: senders are the push side of the same state,
+  read is the pull side.

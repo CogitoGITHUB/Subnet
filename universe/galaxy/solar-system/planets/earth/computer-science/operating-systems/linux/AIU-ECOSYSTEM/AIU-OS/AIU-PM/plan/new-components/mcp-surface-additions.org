@@ -1,0 +1,39 @@
+#+TITLE: MCP surface additions — five more verbs
+#+AUTHOR: Shape
+# One job: search, install, status, build and bake on MCP, each reading
+# the same document the CLI reads. Status: planned only; nothing here
+# is built. Source: =../../pm-integration/mcp-surface.org=; the home is
+# the owner's open question (where the new verbs live).
+
+* Purpose
+- The six MCP verbs stop at activation; the ecosystem plan promises
+  five more: search, install, status, build, bake. An agent can only
+  call what is exposed, so the surface is the capability.
+* Name and location
+- name: five tool names added to the MCP document, registered in step 3
+- code: =src/entry/mcp-tools.rkt= gains one row per tool; the work each
+  row does lives in the verb's own report file beside it (its final
+  home is the owner's open question)
+- area and layer: =entry= (area 13)
+- may require: everything below it
+- may be required by: nothing
+* Public interface, in plain words
+- search: find declared and installed packages;
+- install: the gated install, confirmation door intact;
+- status: what is installed and which generation is live;
+- build: run the build steps a declaration names;
+- bake: hand the bake the install it needs (=install-then-bake=).
+* What it must never do
+- Never bypass the confirmation door: mutate on MCP is as gated as
+  mutate on the CLI.
+- Never re-implement: each tool calls the same document the CLI prints.
+* Tests
+- =tests/entry/= beside the tools; one test per tool row.
+* Docs it updates
+- the register; =plan/OPEN-DECISIONS.org= (the question is answered);
+  the MCP section of the entry README.
+* Depends on new components
+- =search-info= (its two reports), =install-then-bake=, and the status
+  half of =binary-cache=.
+* Build order
+- Each row lands with the verb's report file, not before it.
