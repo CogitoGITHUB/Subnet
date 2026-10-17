@@ -1,0 +1,45 @@
+#+TITLE: backup — declarations and sources, off the machine
+#+AUTHOR: Shape
+# One job: copy each batch of new declarations and sources into one
+# backup repo, commit as one commit per batch, push, and retry a failed
+# push first. Status: planned only; nothing here is built, and no name
+# here may be used by code until NAMING-REGISTER.org lists it (step 3).
+# Source: =plan/BACKUP-FEATURE.org= (the design); =plan/MOVE-ORDER.org=
+# step 19 (the build turn); =plan/ARCHITECTURE.org= area 12 (the law).
+
+* Purpose
+- After a fetch that succeeded: copy that batch's declarations and
+  sources into the backup repo, one commit naming the packages and
+  versions, then push. Idempotent: a second run with no changes commits
+  nothing.
+- =pm backup SPECDIR= works with no configuration beyond the backup
+  path; automatic backup after a fetch happens only when configured, and
+  unconfigured is a SKIP narrating its reason, never an error.
+* Name and location
+- name: =backup=, the area; its file names are registered in step 3
+  before any of them is written
+- code: =src/backup/=
+- area and layer: =backup= (area 12 of 13)
+- may require: =errors=, =narration=, =machine=, =spec=, =git=; nothing
+  above it, and =entry= is the only thing allowed to require it
+- may be required by: =entry=
+* Public interface, in plain words
+- back up a batch of just-fetched packages;
+- retry a pending push before copying anything new;
+- report status: what last went up, what is pending, and why.
+* What it must never do
+- Never fail the fetch it follows: warn, record the pending push, and
+  exit as the fetch would have.
+- Never edit =git/=, =process=, =spec= or =install/=; every git call
+  goes through the =git= area.
+- Never become an input to install: backup is a copy, not a source.
+* Tests
+- =tests/backup/=, one test file per source file.
+* Docs it updates
+- =plan/PROGRESS.org= (step 19), =plan/NAMING-REGISTER.org= (the file
+  names), =plan/FILE-INVENTORY.org=.
+* Depends on new components
+- =config-and-completions= when it lands: it gives the two settings
+  their home. Not required before it: unconfigured is a narrated skip.
+* Build order
+- =plan/MOVE-ORDER.org= step 19; no other component waits on it.

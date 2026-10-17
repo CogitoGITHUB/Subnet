@@ -1,0 +1,36 @@
+#+TITLE: one-way law gap — 34 crossings, one decision
+#+AUTHOR: Shape
+# One job: close the gap between the law and the tree: move the modules
+# the lint names, or correct the law to the tree as it stands. Status:
+# planned only; nothing here is built. Source: =plan/OPEN-DECISIONS.org=
+# (the owner's pick); the lint prints the 34 edges =file:line= every run.
+
+* Purpose
+- The one-way law is the structure law; the lint prints 34 crossings
+  on every run. A law with unpaid edges is a lie the gate repeats until
+  someone decides: (a) move the modules so the ranking holds, or
+  (b) correct ARCHITECTURE.org to the tree as it stands.
+- This component is the closing move, whichever option is picked.
+* Name and location
+- name: none new; moved modules keep their names; the law keeps its
+- code: the modules the lint names, printed =file:line= each run
+- area and layer: the areas the chosen modules sit in; the fix may not
+  add a new crossing while removing old ones
+- may require: as the tree already is; the fix adds no dependency
+- may be required by: as the tree already is
+* Public interface, in plain words
+- none: the proof is the next lint run: 0 crossings (move) or a law
+  whose text matches the tree (correct).
+* What it must never do
+- Never silence the lint; it keeps printing until the gap is closed.
+- Never fix a crossing by adding a require in the other direction.
+* Tests
+- the one-way stage's own output is the test.
+* Docs it updates
+- =plan/ARCHITECTURE.org= (if corrected), =plan/OPEN-DECISIONS.org=
+  (the question is answered), =plan/PROGRESS.org=.
+* Depends on new components
+- none.
+* Build order
+- After the owner answers; before other new components land, so they
+  inherit a law that is true.

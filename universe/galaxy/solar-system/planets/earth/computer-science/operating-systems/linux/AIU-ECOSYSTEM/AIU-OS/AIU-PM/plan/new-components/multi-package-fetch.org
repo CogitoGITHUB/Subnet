@@ -1,0 +1,37 @@
+#+TITLE: multi-package fetch — three packages, one process, one test
+#+AUTHOR: Shape
+# One job: a fixture that fetches three packages in one =pm fetch=
+# process and proves each landed. Status: planned only; nothing here is
+# built, and no name here may be used by code until the register lists
+# it (step 3). Source: =plan/OPEN-DECISIONS.org= has it BLOCKED as
+# E-16b, with E-16c (parallel fetch) waiting behind it.
+
+* Purpose
+- Every fetch test today fetches one package; the multi-package path is
+  unproven, and parallel fetch cannot be trusted until the sequential
+  case is. This is evidence, not production code: one fixture, three
+  packages, one process, each outcome asserted.
+* Name and location
+- name: a fixture beside the fetch tests; the file name is registered
+  in step 3
+- code: =tests/=, next to the fetch path it exercises
+- area and layer: none: test-only. It may require anything below
+  =entry=; nothing may require it.
+- may require: the fetch path and the local repository shapes its other
+  tests already use
+- may be required by: nothing
+* Public interface, in plain words
+- =raco test= runs it like any other test; its evidence is that all
+  three packages completed in one process.
+* What it must never do
+- Never spawn parallel fetches: that is E-16c, and it waits behind this.
+- Never become production code.
+* Tests
+- it is one.
+* Docs it updates
+- =plan/OPEN-DECISIONS.org= (E-16b moves from BLOCKED to DONE),
+  =plan/PROGRESS.org=.
+* Depends on new components
+- none.
+* Build order
+- First of the two blocked fetch features; unblocks E-16c.

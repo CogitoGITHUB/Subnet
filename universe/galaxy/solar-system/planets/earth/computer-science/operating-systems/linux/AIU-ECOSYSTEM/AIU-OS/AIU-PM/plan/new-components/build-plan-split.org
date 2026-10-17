@@ -1,0 +1,41 @@
+#+TITLE: build-plan split — one job per file in the build planner
+#+AUTHOR: Shape
+# One job: split =build-plan.rkt= (673 lines, three jobs) into one-job
+# files and land the =build-env= rename the register already records.
+# Status: planned only; nothing here is built, and no name here may be
+# used by code until NAMING-REGISTER.org lists it (step 3).
+# Source: =plan/FILE-INVENTORY.org= (the over-load record);
+# =plan/NAMING-REGISTER.org= line 13 (the rename: =build-plan.rkt= ->
+# =build-env.rkt=).
+
+* Purpose
+- =build-plan.rkt= does three jobs: reading the plan a build follows,
+  ordering its steps, and fixing the environment they run in. Each job
+  gets a file.
+- The register already corrected the environment name to =build-env=;
+  the tree currently holds both an old and a new name, so the rename
+  executes first, the split second, one commit each.
+- Pure move: the split must not change what a build does.
+* Name and location
+- name: =build-plan= stays for the reading job; the other names come
+  from step 3's register entries, never invented at split time
+- code: =src/build/=
+- area and layer: =build= (area 10 of 13)
+- may require: =process=, =spec=, =errors=, =narration=, =machine=
+- may be required by: =build= itself, =install=, =entry=
+* Public interface, in plain words
+- unchanged from today: callers still ask the planner what to run and
+  with which environment; only the file boundaries move.
+* What it must never do
+- Never change behaviour in the same commit as a move.
+- Never grow a fourth job: a new job means a new file.
+* Tests
+- =tests/build/=, unchanged; each piece keeps the tests that cover it.
+* Docs it updates
+- =plan/FILE-INVENTORY.org= (the over-load entry drops),
+  =plan/NAMING-REGISTER.org=, =plan/PROGRESS.org=.
+* Depends on new components
+- none.
+* Build order
+- Before =binary-cache= (step 25), so the cache lands in the smaller
+  tree and not in the 673-line file.
