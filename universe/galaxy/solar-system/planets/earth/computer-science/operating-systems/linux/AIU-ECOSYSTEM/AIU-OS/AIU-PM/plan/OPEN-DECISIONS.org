@@ -297,8 +297,55 @@ query.rkt); the dispatch is not written yet. One command per commit.
   package-manager/src/install/apply.rkt, which is still uncommitted work
   in another lane. Committing the CLI alone would land a tree that
   cannot load.
+  / CLOSED 2026-10-17 (step 21): all six verbs are in the dispatch, both
+  =package-manager/src/entry/dispatch.rkt= and
+  =package-manager/src/entry/mcp-tools.rkt=, and =install/apply.rkt= is
+  committed, so the note above is spent. Activation now lives in
+  =install/=, not the =store/activate.rkt= this item names -- the
+  restructure moved it, the item's path is the pre-move one. Acceptance
+  (every JSON example rendered by the suite) is the suite's own check.
 (The checklist repeated the S2-05 acceptance paragraph under this item;
 the copy is not carried twice.)
+
+* The deleted checklist reconciled, entry by entry (step 21, 2026-10-17)
+
+The file held 88 =**= headings when it was deleted in =9df4cd3=. Every
+one of them has a state here or in =git log=; none was dropped and none
+was quietly upgraded:
+
+| state | count | where it lives now |
+|-------+-------+--------------------|
+| DONE | 68 | history -- the checklist bodies, then =git log= |
+| REMOVED | 2 | E-23 and E-24, the Rust TUI, deleted under D-035 |
+| TODO | 11 | all eleven are spelled out just below |
+| STOP | 2 | =vault.rkt:1611= and the jobs e2e, both PARKED above |
+| BLOCKER | 1 | the same jobs stop, stated as P-03/P-04 above |
+| PARKED | 1 | the same P-03/P-04 pair |
+| PARTIAL | 1 | V-3, closed as DONE above (V-3 and V-3a) |
+| (no state) | 2 | dated probes: P-01 vs a real remote, one runner |
+
+The eleven =TODO= headings, with their state as of this line:
+
+- P-03 prove the jobs queue end to end -- PARKED above.
+- P-04 wire tracing at boundaries -- PARKED above, same stop.
+- S2-04, S2-05, S2-11 -- carried verbatim above, still owed.
+- S3-03 update, activate, rollback, remove, hold, verify -- CLOSED; the
+  closure note sits at the end of its own item above.
+- R-01 and R-02 -- delivered, =plan/FILE-INVENTORY.org= and
+  =plan/NAMING-REGISTER.org=, as the Phase R block already says.
+- R-03, R-04 and the rest of R-05 -- this run, in =plan/MOVE-ORDER.org=.
+
+The two =STOP= lines stay stops and the =BLOCKER= stays a blocker: none
+is renamed into progress to make the tally prettier. That is the point of
+writing the counts down -- a resuming session can re-derive all of them
+from the deleted file in one command, and the numbers either match or
+they do not:
+
+  git show '9df4cd3^:./docs/ENGINE-CHECKLIST.org' | grep -cE '^\*\*'
+
+Finding that command non-obvious is itself the reason this block exists:
+the checklist is gone from the tree, and a reader who cannot find it must
+not have to guess whether its work was finished or forgotten.
 
 * Anything else missing for the v1 bar
 
