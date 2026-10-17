@@ -3,7 +3,7 @@
 # One job: make =profile-gc= compute reachability from every user's
 # profile links before it deletes a generation. Status: planned only;
 # nothing here is built, and no name here may be used by code until the
-# register lists it (step 3). Source: =plan/MOVE-ORDER.org= step 28 and
+# register lists it (step 3). Source: =TODO.org= phase D (step 28) and
 # =plan/FEATURE-users.org=, whose per-user profiles this needs.
 
 * Purpose

@@ -35,4 +35,4 @@
 * Depends on new components
 - none strictly; =backup='s two settings get their home here first.
 * Build order
-- =plan/MOVE-ORDER.org= step 29.
+- =TODO.org= phase D (step 29).

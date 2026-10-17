@@ -9,7 +9,7 @@ A row lands in the commit AFTER the one it names, so its hash is the
 commit that carries the step's work -- never that row's own. Writing the
 hash before the work commit exists is what makes a row lie; do not do it.
 
-Resuming: read the last line, then =plan/MOVE-ORDER.org= for the script.
+Resuming: read the last line, then =TODO.org= for what is left.
 
 | step | what | state |
 |------+------+-------|
@@ -28,12 +28,12 @@ Resuming: read the last line, then =plan/MOVE-ORDER.org= for the script.
 | 11 | =backends/*.rkt= into src areas; fake/dry-run into test-doubles | same commit as 9-13 |
 | 12 | =cli/= and =mcp/= into =src/entry/= | same commit as 9-13 |
 | 13 | =scripts/= into =gate/= and =tools/= | same commit as 9-13 |
-| 14 | inline tests into =package-manager/tests/= | TODO |
+| 14 | inline tests into =package-manager/tests/= | TODO.org A |
 | 15 | =gate/check.nu= learns the new root and every allowlist path | done in 9-13 |
 | 16 | identifier renames from =NAMING-REGISTER=, =mcp-server.rkt= becomes =mcp-tools.rkt= | 8ad0c30 |
 | 17 | =banned-words-lint= gate stage, 149 files 0 violations, regexes with file:line | b21a983 |
 | 18 | =one-way-dependency-lint= gate stage, 34 known unpaid edges, 0 new | 3b32120 |
-| 19 | backup feature in =src/backup/= | TODO |
+| 19 | backup feature in =src/backup/= | TODO.org D |
 | 20 | per-area =README.org= in all 12 =src/= areas, one job each | 00c5154 |
 | 21 | ENGINE-CHECKLIST reconciled: 88 headings, all accounted for, S3-03 closed | 389cc9d |
 | 22 | full gate rc=0: 74 files, 1355 checks, 0 failed; both lints bite and run by default | 9826858 |
@@ -125,10 +125,13 @@ row read =package-package-manager/src/entry/package-info.rkt=. Repaired.
 
 * The missing-components plan, 2026-10-17
 Every missing component is inventoried, designed, registered and ordered:
-=plan/new-components/INVENTORY.org= (24 entries), one design file each,
-=plan/NAMING-REGISTER.org= (its Planned section), and
-=plan/new-components/BUILD-ORDER.org= (the order). Rows land after their
-commit, per the rule at the top.
+=plan/new-components/INDEX.org= (one design file each; 23 files),
+=plan/NAMING-REGISTER.org= (its Planned section), and =TODO.org= (the
+phase order). Rows land after their commit, per the rule at the top.
+
+What is left, 2026-10-17: =TODO.org= (project root) is the only work
+list; =LATER.org= holds what is deliberately not built. MOVE-ORDER and
+the inventory files retired into them (see =plan/CLEANUP-LOG.org=).
 
 | step | what | state |
 |------+------+-------|

@@ -29,7 +29,7 @@
 - =plan/NAMING-REGISTER.org=; =plan/FEATURE-binary-cache.org= open
   questions.
 * Depends on new components
-- =build-plan-split= first: the cache lands in the smaller tree;
-  shares the content-address shape with =export-import=.
+- the =build-plan= split is done (step 6), so the cache lands in the
+  smaller tree; shares the content-address shape with =export-import=.
 * Build order
-- =plan/MOVE-ORDER.org= step 25.
+- =TODO.org= phase D (step 25).

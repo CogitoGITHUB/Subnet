@@ -2,7 +2,7 @@
 #+AUTHOR: Shape
 # One job: give each confirmation refusal its own reason and its own
 # next step. Status: planned only; nothing here is built. Source:
-# =plan/new-components/INVENTORY.org= (found while reading); the text
+# =TODO.org= phase A (found while reading); the text
 # lives at =src/entry/mcp-tools.rkt=, which appends one sentence to
 # every refusal today.
 

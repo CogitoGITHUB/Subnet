@@ -3,8 +3,8 @@
 # One job: a temporary environment on PATH around chosen packages,
 # nothing persisted. Status: planned only; nothing here is built, and
 # no name here may be used by code until the register lists it
-# (step 3). Source: =plan/FEATURE-shell.org=; =plan/MOVE-ORDER.org=
-# step 27 (which names the file =install/shell-env.rkt=).
+# (step 3). Source: =plan/FEATURE-shell.org=; =TODO.org= phase D
+# (step 27, which names the file =install/shell-env.rkt=).
 
 * Purpose
 - Trying a package without installing it is impossible today. =pm
@@ -34,4 +34,4 @@
 - none strictly; =install-then-bake= shares the "give a consumer what
   it needs" shape and should agree on it.
 * Build order
-- =plan/MOVE-ORDER.org= step 27.
+- =TODO.org= phase D (step 27).

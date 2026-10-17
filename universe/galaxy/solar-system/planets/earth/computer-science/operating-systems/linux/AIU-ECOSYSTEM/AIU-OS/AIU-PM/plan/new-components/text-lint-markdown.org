@@ -3,7 +3,7 @@
 # One job: text-lint the README, or the prose file nobody lints. Status:
 # planned only; nothing here is built. Source: the gate's text-lint
 # stage covers .org and .nu only; =README.md= runs 60 lines over 102
-# characters today (=plan/new-components/INVENTORY.org=).
+# characters today (see =TODO.org= phase A).
 
 * Purpose
 - =README.md= is the first file a newcomer reads and the only prose

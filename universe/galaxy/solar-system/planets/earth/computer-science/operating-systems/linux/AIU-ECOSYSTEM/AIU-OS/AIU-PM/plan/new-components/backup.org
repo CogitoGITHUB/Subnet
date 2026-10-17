@@ -4,8 +4,8 @@
 # backup repo, commit as one commit per batch, push, and retry a failed
 # push first. Status: planned only; nothing here is built, and no name
 # here may be used by code until NAMING-REGISTER.org lists it (step 3).
-# Source: =plan/BACKUP-FEATURE.org= (the design); =plan/MOVE-ORDER.org=
-# step 19 (the build turn); =plan/ARCHITECTURE.org= area 12 (the law).
+# Source: =plan/BACKUP-FEATURE.org= (the design); =TODO.org= phase D
+# (step 19, the build turn); =plan/ARCHITECTURE.org= area 12 (the law).
 
 * Purpose
 - After a fetch that succeeded: copy that batch's declarations and
@@ -42,4 +42,4 @@
 - =config-and-completions= when it lands: it gives the two settings
   their home. Not required before it: unconfigured is a narrated skip.
 * Build order
-- =plan/MOVE-ORDER.org= step 19; no other component waits on it.
+- =TODO.org= phase D (step 19); no other component waits on it.

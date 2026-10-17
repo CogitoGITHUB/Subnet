@@ -29,4 +29,4 @@
 - =ai-sight-files= (it reads the same state) and
   =config-and-completions= (its settings' home).
 * Build order
-- =plan/MOVE-ORDER.org= step 23; after the state pieces it reads.
+- =TODO.org= phase D (step 23); after the state pieces it reads.

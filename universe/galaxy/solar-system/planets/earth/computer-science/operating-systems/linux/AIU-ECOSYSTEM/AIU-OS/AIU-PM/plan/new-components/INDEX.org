@@ -1,0 +1,45 @@
+#+TITLE: INDEX -- one line per design in this directory
+#+AUTHOR: Shape
+
+# One job: point at each design file here and say what it is for. The
+# build order and the open work live in =TODO.org= (project root);
+# decided policy lives in =plan/DECISIONS.org=. The owner decisions
+# that shaped these designs are D-044 through D-066.
+
+- =adapter-versioning-and-rollback.org= -- version pins and rollback
+  for the agent adapters and the contract itself.
+- =ai-sight-files.org= -- the files pm writes so an agent reads pm
+  state directly.
+- =backup.org= -- the backup area: declarations and sources, off the
+  machine (step 19).
+- =binary-cache.org= -- build once, reuse by content hash (step 25).
+- =config-and-completions.org= -- the settings' home and the shell
+  hints (step 29).
+- =context-bundle-senders.org= -- sending a package, plan or failure
+  to an agent as a context bundle.
+- =exit-code-wording.org= -- the two invented exit codes become one
+  decided contract (D-045).
+- =export-import.org= -- a setup that can leave the machine (step 24).
+- =file-splits.org= -- the two files still unsplit and what they wait
+  on (a test net first).
+- =hermes-integration.org= -- PM from Hermes: skill and actions.
+- =install-then-bake.org= -- a pm install feeds a program's dev bake.
+- =kit-entry.org= -- what PM declares about its own capabilities.
+- =mcp-surface-additions.org= -- search, install, status, build and
+  bake on MCP (D-049).
+- =multi-package-fetch.org= -- three packages, one process, one test
+  (E-16b).
+- =one-way-law-gap.org= -- the 34 crossings close, by move (D-044).
+- =opencode-skill.org= -- finish the skill half of the OpenCode
+  surface (E-28).
+- =pm-doctor.org= -- say what is wrong without changing anything
+  (step 23).
+- =profile-gc-cross-user.org= -- see other users before reclaiming; in
+  place, not a new file (D-051).
+- =refusal-wording.org= -- each refusal gets its own next step.
+- =search-info.org= -- ask the store without reading it (step 26).
+- =shell-environment.org= -- try a package without installing it
+  (step 27).
+- =text-lint-markdown.org= -- the first file a newcomer reads gets
+  linted.
+- =users-and-declarations.org= -- one declaration per user (step 28).

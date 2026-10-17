@@ -29,4 +29,4 @@
 - =mcp-surface-additions= uses these two reports as its search and
   status rows: report first, MCP row second.
 * Build order
-- =plan/MOVE-ORDER.org= step 26.
+- =TODO.org= phase D (step 26).

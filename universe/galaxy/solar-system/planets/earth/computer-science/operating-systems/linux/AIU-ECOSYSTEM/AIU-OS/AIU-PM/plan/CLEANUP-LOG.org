@@ -47,3 +47,15 @@
   (DECISIONS.org D-044..D-066); what was owed moved to =TODO.org=.
   Kept as a redirect because code, gates and designs cite the path.
   Last full version: 0fd8617.
+
+* Retired into TODO.org, same day
+- =plan/MOVE-ORDER.org= -- remaining steps moved to =TODO.org=; done
+  steps are in =plan/PROGRESS.org=. Last live: 0954fe6.
+- =plan/new-components/INVENTORY.org= -- absorbed by =TODO.org=; the
+  directory index now lives in =plan/new-components/INDEX.org=. Last
+  live: 0954fe6.
+- =plan/new-components/BUILD-ORDER.org= -- absorbed by =TODO.org= (the
+  phase order is the order of record). Last live: 0954fe6.
+- =plan/new-components/build-plan-split.org= -- done: the register line
+  is corrected (D-051) and the split it recorded landed at step 6.
+  Last live: 0954fe6.

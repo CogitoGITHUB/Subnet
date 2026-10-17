@@ -1,0 +1,445 @@
+#+TITLE: TODO -- everything still owed, in the order it gets built
+#+AUTHOR: Shape
+
+# One job: THE list of what is left. An item leaves this file in the
+# commit that finishes it; one item, one commit, DONE and hash together.
+# Print one line per finished item; reports stay short (20 lines max).
+# Order: the owner's phases, fixed 2026-10-17. A dependency always wins
+# over this order -- each item names its deps. A truly blocked item is
+# marked BLOCKED with its reason and the run continues.
+# At each PHASE boundary: the full gate with the pinned nu, one status
+# line, continue without stopping.
+# Deliberately not built: =LATER.org=. Decided policy:
+# =plan/DECISIONS.org=. Done history: =plan/PROGRESS.org= and =git log=.
+# Tests live in =package-manager/tests/<area>/=, mirroring src, unless an
+# item says otherwise. The gate runs with
+# =~/opt/nushell/0.116.1/nu --no-config-file gate/check.nu=.
+
+* PHASE A -- foundation and gates
+** step 14 to green
+what: finish the staged extraction: the 26 inline (module+ test ...)
+  blocks move to =package-manager/tests/<area>/= with TEST-END; each
+  require list is the module under test plus only the copied modules
+  that do not overlap its provides (=activate.rkt= and
+  =profile-holds.rkt= both provide =profile-held?=); the test headers
+  stop citing MOVE-ORDER (retired) and cite this item.
+done when: the full gate is green on the moved state; every extracted
+  file ends with TEST-END; no header cites a retired plan file.
+tests: the 26 files already staged under =tests/<area>/=.
+deps: none -- the work is staged and red.
+
+** exit codes (sysexits)
+what: =config= becomes 78 (EX_CONFIG), =internal= 70 (EX_SOFTWARE) in
+  =errors/error-type.rkt=; =docs/ERRORS.org= follows; the "E-15
+  [PROPOSAL]" citation retires (D-045, closes D-008).
+done when: tests pin both codes; ERRORS.org matches; no E-15 citation
+  remains.
+tests: =tests/errors/error-type-test.rkt= + the entry suite.
+deps: none.
+
+** refusal wording
+what: each confirmation refusal's next step is its own; the wrong-plan
+  and already-used refusals stop telling callers to pass the token
+  again (=src/entry/mcp-tools.rkt='s appended sentence).
+done when: one test per refusal reason shows its own text.
+tests: the security suite around the confirmation token.
+deps: none.
+
+** text-lint for .md and README line lengths
+what: text-lint covers .md (README.md included); README.md's
+  over-length lines are wrapped. Phase F rewrites the README Status
+  section later and keeps it lint-clean.
+done when: the stage reports 0 on the whole tree with .md included,
+  and is proven to bite on a long line.
+tests: =gate/check.nu= text-lint stage.
+deps: none.
+
+** the two renames
+what: =run-command= -> =spawn-and-wait=; =run-result-exit= ->
+  =result-exit=: =src/install/local-perform.rkt=, every caller, every
+  comment and every contract row.
+done when: grep finds neither old name anywhere in the tree.
+tests: the install, build and process suites that use them.
+deps: after step 14 (same files move).
+
+** safety-test scratch cleanup
+what: the git-repo safety test removes the
+  =<cyberdeck-dir>/tmp/pm-safety-<millis>= repo it creates (D-059).
+done when: nothing is left under the scratch prefix after the suite.
+tests: =tests/git/git-repo-test.rkt= (the safety case).
+deps: none.
+
+** S2-04 no un-narrated blocking primitive
+what: a lint stage over non-test sources: every blocking primitive
+  (=sync=, =thread-wait=, =semaphore-wait=, =channel-get/put=,
+  =read-line=, =subprocess-wait=, timeouts) sits inside the wait door
+  or in a named allowlist; narrow until every hit is real, prove it
+  bites, then switch on by default (D-060).
+done when: the stage runs by default and a planted violation fails.
+tests: the stage itself + the gate stage list.
+deps: none.
+
+** S2-11 lint blind spot on test submodules
+what: =one-printer-lint= and =security-gate-lint= scan
+  =(module+ test ...)= bodies too, not only non-test paths (D-060).
+done when: a planted violation in a test body fails the gate.
+tests: those two stages.
+deps: after step 14 (test bodies move).
+
+** S-03 check names the violated rule
+what: =pm check= names the violated rule from S-01's named set, not
+  just "refused" (D-060).
+done when: a refused check prints the rule name; a test asserts it.
+tests: =tests/security/= + the entry suite.
+deps: none.
+
+** S-04 gate turns red when an enforcement call is deleted
+what: prove the gate bites: delete an enforcement call, see red with
+  =file:line=, restore it; the proof goes into the commit message
+  (D-060).
+done when: the proof is in the commit.
+tests: =security-gate-lint= stage.
+deps: none.
+
+** vault-lock re-acquire test
+what: prove the writer lock can be re-acquired after release inside one
+  process (the parked phenomenon, D-054); a wedge here sharpens the
+  E-16b hunt.
+done when: the test exists and passes in the shared runner.
+tests: =tests/git/= (vault-lock's home).
+deps: none.
+
+** opencode-plugin node_modules on a fresh clone
+what: =agent/opencode-plugin/node_modules= is a symlink to
+  =/root/home/shape/.config/opencode/node_modules= -- an absolute path
+  outside the repo, so a fresh clone cannot run the plugin. Make it
+  work: generate it (=package.json= + a documented =npm install=) or
+  document the one step; no absolute path remains in the tree.
+done when: a fresh clone that follows the README can run the plugin's
+  test; =find . -type l -lname '/*'= finds nothing.
+tests: none (documentation); the plugin's own =test.mjs= unaffected.
+deps: none.
+
+* PHASE B -- structure and safety
+** one-way law gap
+what: move the modules so the ranking holds (D-044): the 34 crossings
+  in 14 area-pairs close; the spec/git cycle breaks;
+  =entry/version.rkt= gets a home below the ceiling.
+done when: =one-way-dependency-lint= reports zero known unpaid edges
+  and the gate is green; ARCHITECTURE.org matches the tree.
+tests: =gate/one-way-dependency-lint.nu= + the suites of moved areas.
+deps: after step 14 and the two renames (stable tree).
+
+** G-01 dependency resolution and path conflicts
+what: resolve a closure; two packages claiming one path fail at plan
+  time, kind =activate=, naming both packages (D-058).
+done when: a conflict fixture refuses at plan time; a closure
+  resolves.
+tests: =tests/spec/= (plan).
+deps: none.
+
+** G-02 + G-07 closure lock + idempotent apply
+what: the lock covers the whole closure; a second apply cannot
+  interleave; apply SKIPs a step whose input hash already landed.
+done when: an interleave is refused naming the holder; a re-run skips
+  with reasons.
+tests: =tests/install/= (apply).
+deps: G-01.
+
+** G-03 to G-12
+what: the spine, each piece its own commit (D-038, D-058): G-03 verify
+  stage; G-04 path-ownership ledger so remove and rollback cannot
+  strand (also settles P-04's trace fate, D-064); G-05 generation GC
+  keeps the last 5, holds and the live link absolute; G-06 discovery
+  contract; G-08 partial-failure law; G-09 build isolation -- no
+  network, scrubbed env, stated and enforced; G-10 provenance per
+  generation; G-11 status/search surface; G-12 format-version 3
+  migration rule.
+done when: each piece has its commit, its test, and its done-when from
+  its design page.
+tests: the area each piece lives in (spec, install, store, build).
+deps: G-01, G-02 + G-07.
+
+** S-01 security policy mechanism
+what: the seven named rules enforced in the pure module; =file://=
+  refused by policy outside a test root, the escape hatch names itself
+  (D-060).
+done when: each rule has a choke point and a message.
+tests: =tests/security/security-test.rkt=.
+deps: none.
+
+** S-02 choke points
+what: S-01 enforced at every choke point; the gate fails when an
+  enforcement call is deleted (S-04's proof extended over the set).
+done when: the full rule set is covered by the bite proof.
+tests: =security-gate-lint= + the security suite.
+deps: S-01, S-03, S-04.
+
+** E-16b multi-package fetch -- the wedge
+what: isolate the shared-process wedge (suspects: child.lock/flock plus
+  the run.rkt waiter), fix it, prove it with one =pm fetch= of 3
+  packages in ONE process (D-052).
+done when: the 3-package fixture passes in one shared process.
+tests: =tests/store/update-test.rkt= + the 3-package fixture.
+deps: none.
+
+** E-16c parallel fetch
+what: fetch with concurrency limit 4; each add waits only on its own
+  exit; serialize the vault write path per package; one failure does
+  not stop the others (D-052).
+done when: the parallel fixture passes; N=4 is the default.
+tests: =tests/store/update-test.rkt=.
+deps: E-16b.
+
+** S2-05 E2E green with narration on
+what: the apply suite completes with narration on; a hang reports its
+  last WAIT line instead of silence (D-060).
+done when: the suite completes; a planted hang narrates.
+tests: =tests/install/= apply suite.
+deps: E-16b (the wedge family).
+
+** P-02 manifest round trip
+what: write/read round trip preserving entries and order; a malformed
+  manifest raises kind ='spec= (D-055).
+done when: the test exists and passes.
+tests: =tests/store/manifest-test.rkt=.
+deps: none.
+
+** P-01 vault end to end
+what: fetch-namespace, verify, gc, export and backup against a
+  synthetic local repo; the output is pasted into the commit (D-055).
+done when: the five synthetic operations run and their output is in
+  the commit.
+tests: =tools/= + the suites it drives.
+deps: none.
+
+* PHASE C -- agent and ecosystem surface (needs B)
+# Needs B first: agents get full power only after the security and
+# lock work, and rollback needs the lock and idempotent apply.
+** V-4 MCP feed tools
+what: =events.runs=, =events.tail= and =run.get= over the same redacted
+  feed the OpenCode plugin reads (D-057).
+done when: the three tools read the feed in a test.
+tests: =tests/entry/= (MCP tools).
+deps: none; first in this phase.
+
+** E-28 skill (+ examples as a test)
+what: finish =agent/skills/aiu-pm/SKILL.md=: when to use each command,
+  the confirmation and redaction rules, three worked examples that run
+  as a test; commands that still refuse are marked not-yet-executable,
+  never pretended (D-057).
+done when: the examples run in the suite.
+tests: the skill's examples, run as a test.
+deps: V-4.
+
+** AI-sight files
+what: the files pm writes so an agent reads pm state directly; home is
+  =src/agent= (D-048); first of the agent-side group because the
+  others read it.
+done when: an agent-side test reads a written sight file.
+tests: =tests/agent/=.
+deps: B complete.
+
+** MCP surface additions
+what: search, install, status, build and bake on MCP: one report file
+  per verb family in =entry/=, shared by CLI and MCP; =mcp-tools.rkt=
+  gains one row per tool (D-049).
+done when: each tool returns its report; CLI and MCP share the file.
+tests: =tests/entry/=.
+deps: AI-sight files.
+
+** install-then-bake
+what: a pm install feeds a program's dev bake; the seam lives in
+  =src/agent=.
+done when: a test installs then bakes in one flow.
+tests: =tests/agent/=, driving =tests/build/= fixtures.
+deps: AI-sight files.
+
+** kit entry
+what: what PM declares about its own capabilities -- the declaration
+  an agent reads to know what pm can do.
+done when: the kit document is written by a surface and read by a
+  test.
+tests: =tests/agent/=.
+deps: AI-sight files.
+
+** context-bundle senders
+what: sending a package, plan or failure to an agent as a context
+  bundle.
+done when: a sender produces a bundle a test can read back.
+tests: =tests/agent/=.
+deps: kit entry.
+
+** Hermes integration
+what: PM from Hermes: skill and actions; the second adapter.
+done when: Hermes reads status and starts one action in a test.
+tests: =tests/agent/= + the skill examples.
+deps: context-bundle senders.
+
+** adapter versioning and rollback
+what: version pins and rollback for the agent adapters and the
+  contract itself; needs B's lock and idempotent apply.
+done when: a version pin is recorded and a rollback restores it, both
+  tested.
+tests: =tests/agent/=.
+deps: Hermes (the second adapter).
+
+** API.org result-key examples
+what: the =check= and =plan= result-key examples join =docs/API.org=,
+  rendered by the suite (D-057).
+done when: the doc examples run as a test.
+tests: the docs-as-test suite.
+deps: the command set stopped moving (end of this phase).
+
+* PHASE D -- features
+** backup
+what: the =backup= area (step 19): =backup-set=, =backup-run=,
+  =backup-record= (D-047), per =plan/BACKUP-FEATURE.org= and
+  =plan/new-components/backup.org=; repo a sibling of the vault with
+  =PM_BACKUP_PATH= override; the push runs in the wait door (D-061).
+done when: the design's behaviours and invariants have tests; a
+  synthetic backup commits and pushes to a local repo.
+tests: =tests/backup/=.
+deps: none inside D; phase order needs B and C.
+
+** pm doctor
+what: say what is wrong without changing anything (step 23);
+  =entry/doctor-report.rkt=, read-only.
+done when: the report names planted problems and writes nothing.
+tests: =tests/entry/=.
+deps: none.
+
+** export and import
+what: a setup that can leave the machine (step 24):
+  =store/bundle-format.rkt=, =install/export-profile.rkt=,
+  =install/import-profile.rkt=.
+done when: an export -> import round trip holds in a test.
+tests: =tests/store/= + =tests/install/=.
+deps: none.
+
+** binary cache
+what: build once, reuse by content hash (step 25):
+  =store/content-address.rkt=, =build/build-cache.rkt=.
+done when: a second build of the same inputs hits the cache.
+tests: =tests/store/= + =tests/build/=.
+deps: none.
+
+** search and info
+what: ask the store without reading it (step 26):
+  =entry/search-report.rkt=, =entry/info-report.rkt=.
+done when: both reports answer over a synthetic store.
+tests: =tests/entry/=.
+deps: none.
+
+** pm shell
+what: try a package without installing it (step 27):
+  =install/shell-env.rkt= ("env" allowed, D-051).
+done when: the shell env is entered and left cleanly in a test.
+tests: =tests/install/=.
+deps: none.
+
+** users and declarations
+what: one declaration per user (step 28): =spec/user-declaration.rkt=,
+  =spec/user-view.rkt=, =security/user-write.rkt=,
+  =entry/user-report.rkt=; =profile-gc= gains cross-user reachability
+  in place (D-051); the eight owner answers hold (D-063).
+done when: the design's behaviours are tested; applying another user
+  takes =--confirm= AND the token.
+tests: =tests/spec/= + =tests/install/=.
+deps: none.
+
+** config and completions
+what: the settings' home and the shell hints (step 29):
+  =entry/config-report.rkt=, =entry/completion.rkt=; pm config never
+  writes; completions cover verbs, flags and directory operands
+  (D-063).
+done when: config reads a file and never writes; completions render
+  in a test.
+tests: =tests/entry/=.
+deps: none.
+
+* PHASE E -- parked
+** vault large-blob test
+what: fetch a blob above the 100 MB threshold against a synthetic
+  fixture; =tools/probe-blob.rkt= is the manual proof today (D-054).
+done when: the test runs in the suite without leaking phone time
+  (skip-and-say-so is acceptable; silence is not).
+tests: =tests/git/= or =tests/store/=, whichever owns the fetch.
+deps: none.
+
+** vault.rkt split
+what: split the 1653-line =src/git/vault.rkt= per
+  =plan/new-components/file-splits.org=: =vault-refs=, =vault-create=,
+  =vault-transfer=, =vault-checks=.
+done when: the stated map holds and each file has one job; only after
+  the large-blob test above (the test net first).
+tests: the existing vault suites, moved one to one.
+deps: vault large-blob test.
+
+** jobs.rkt split
+what: split =src/queue/jobs.rkt= (=job-record=, =job-queue=,
+  =job-worker-locks=) ONLY if a jobs test net exists by then;
+  otherwise leave it whole and say so here.
+done when: (conditional) the map holds with the test net; otherwise
+  this item closes with "left whole: no test net; the queue is not in
+  v1".
+tests: (conditional) =tests/queue/=.
+deps: a jobs test net (does not exist today).
+
+* PHASE F -- acceptance (after every other phase)
+** fresh-clone build
+what: clone the repo into a scratch directory outside it and build
+  from the clone; nothing from the working tree may be needed.
+done when: the clone builds and its gate is green.
+tests: the clone's own suite.
+deps: all phases above.
+
+** acceptance runs
+what: ONE real end-to-end use per feature, from the fresh clone,
+  against synthetic fixtures, output captured into committed
+  =acceptance/<feature>.log= files. Core: fetch, install, activate,
+  build, per-user profiles with holds, vault create, vault transfer,
+  vault writer lock, the confirmation-gated security model, narration
+  with machine-readable output. Features: backup, pm doctor, export
+  and import, binary cache, search and info, pm shell, users and
+  declarations, config and completions, the MCP tools, the OpenCode
+  plugin and skill, the Hermes integration, install-then-bake,
+  adapter versioning and rollback.
+done when: every line in ACCEPTANCE.org has a real output file.
+tests: none; the captured runs ARE the evidence.
+deps: fresh-clone build.
+
+** ACCEPTANCE.org
+what: one line per feature: PASS or FAIL, the exact command used, and
+  the pointer to =acceptance/<feature>.log=. Never PASS without real
+  output.
+done when: the file exists and every feature is PASS or FAIL (no
+  blanks).
+tests: none.
+deps: acceptance runs.
+
+** FAIL loop
+what: every FAIL goes back into this file as an item and gets fixed in
+  the loop; repeat until every feature is PASS or BLOCKED with a
+  reason.
+done when: no unhandled FAIL remains.
+tests: as the returned items say.
+deps: ACCEPTANCE.org.
+
+** README Status rewrite (from ACCEPTANCE.org)
+what: rewrite the README Status section FROM ACCEPTANCE.org: "Working
+  now" lists only PASS features; "In plan" lists FAIL, BLOCKED and
+  =LATER.org= items; the section carries the date and the commit hash
+  it was verified at; hand-written counts (such as the check count) are
+  replaced with the count printed by the final gate run; lines stay
+  within the lint; the framing stays "developer preview".
+done when: README Status matches ACCEPTANCE.org exactly and the .md
+  lint is green.
+tests: =gate/check.nu= text-lint.
+deps: FAIL loop closed.
+
+** scratch cleanup
+what: delete the fresh-clone scratch directory.
+done when: it is gone; nothing in the repo points into it.
+tests: none.
+deps: README Status rewrite.

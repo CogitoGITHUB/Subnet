@@ -34,4 +34,4 @@
 - =binary-cache= shares the content-address shape: agree on it once,
   in either file, before both land.
 * Build order
-- =plan/MOVE-ORDER.org= step 24.
+- =TODO.org= phase D (step 24).
