@@ -168,3 +168,24 @@ there are no timers in it. Verify this in a `/tmp` replica first.
 
 `gate/check.nu` tier removal is saved at
 `docs/patches/WIP-checknu-tiers-removed.patch`, not applied.
+
+## The standing rule: names, structure, register first
+
+Four rules bind before the first line of a component is written, and they
+apply to every change, not only to new areas:
+
+1. **The name says what the thing is or does.** No vague names, and no
+   abbreviations outside `plan/NAMING-REGISTER.org`.
+2. **One purpose per file, one topic per directory.** Small specialised
+   files, an index per directory, no dumping grounds.
+3. **Register first.** Every name and every location is registered in
+   `plan/NAMING-REGISTER.org` BEFORE any code uses it. A name that is
+   not in the register is a name that does not exist yet.
+4. **The one-way law holds for the new component too.** The area order
+   is in `plan/ARCHITECTURE.org`; nothing new sits outside it, and
+   nothing new requires a higher area.
+
+They exist because each was paid for. The over-loaded files recorded in
+`plan/FILE-INVENTORY.org`, the lying identifiers the register lists, and
+the 34 unpaid edges the one-way lint prints every run are one habit: a
+name or a place picked at the moment of writing instead of before it.

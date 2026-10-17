@@ -26,6 +26,26 @@ The ordering, lowest first:
 two known fifo hangs lived in =process=, and =git/= is where the bare clones
 feature must call for its work.
 
+* The standing rule: names, structure, register first
+Four rules bind before the first line of a component is written, and they
+apply to every change, not only to new areas:
+
+  1. The name says what the thing is or does. No vague names, and no
+     abbreviations outside =plan/NAMING-REGISTER.org=.
+  2. One purpose per file, one topic per directory, small specialised
+     files, an index per directory, no dumping grounds.
+  3. Every name and every location is registered in
+     =plan/NAMING-REGISTER.org= BEFORE any code uses it. A name that is
+     not in the register is a name that does not exist yet.
+  4. The one-way law above holds for every new component too.
+
+The register is the ordering: it is written first, and code follows it.
+The index rule is the same law one level down, because a directory with
+no index is a dumping ground that has not been noticed yet. The
+over-loaded files in =plan/FILE-INVENTORY.org= and the 34 unpaid edges
+the one-way lint prints every run are the same habit: a name or a place
+picked at the moment of writing instead of before it.
+
 * Why =process= is low and not lowest
 It needs =errors= and =narration= and nothing else. It is low because
 everything that does real work eventually spawns something.
