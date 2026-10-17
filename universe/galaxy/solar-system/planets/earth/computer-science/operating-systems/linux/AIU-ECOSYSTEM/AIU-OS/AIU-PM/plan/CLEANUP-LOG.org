@@ -41,3 +41,9 @@
 - =docs/PERF.org=, =docs/RACKET-TOOLING.org=, =docs/SPEC-NEUTRAL.org=,
   =docs/VAULT-SPEC.org=, =docs/ENGINE.org= -- LIVE: cited by code, by
   the gate, by DECISIONS.org or by the contract.
+
+* Reduced, not deleted (same day)
+- =plan/OPEN-DECISIONS.org= -- every question in it is decided
+  (DECISIONS.org D-044..D-066); what was owed moved to =TODO.org=.
+  Kept as a redirect because code, gates and designs cite the path.
+  Last full version: 0fd8617.

@@ -4,6 +4,252 @@
 * Log
 Append-only. Newest first. Every entry names the rule IDs it touches.
 
+** 2026-10-17 D-066: OPEN-DECISIONS retires; TODO.org is the order of record
+   Touches =plan/OPEN-DECISIONS.org=; =plan/MOVE-ORDER.org=;
+   =TODO.org=; =LATER.org=.
+1. WHAT: =plan/OPEN-DECISIONS.org= is reduced to a redirect stub (kept,
+   not deleted: code, gates and designs cite the path). The order of
+   record is the owner's phases A-F in =TODO.org=: A foundation and
+   gates, B structure and safety, C agent and ecosystem surface,
+   D features, E parked, F acceptance. =plan/MOVE-ORDER.org= and the
+   =plan/new-components/= inventory files retire into =TODO.org=.
+2. WHY: every question in the file is decided (this batch); a second
+   list that drifts is the failure mode its own header warned about.
+   The owner fixed the phase order on 2026-10-17.
+
+** 2026-10-17 D-065: history closes -- fifth plan module, compiled root, red suite
+   Touches =package-manager/src/spec/plan-actions.rkt=; =gate/env.nu=.
+1. WHAT: (a) the plan split's fifth module executed: =plan-actions.rkt=
+   exists and the facade re-provides it, as the split required;
+   (b) the D-027 reversal stands -- one compiled root, no ":same",
+   measured at =f792eca=; the old note stays in =gate/env.nu= for a
+   reader who remembers D-027; (c) the suite-red finding of 2026-10-16
+   (73 files, 939 checks, 17 FAILED; one real defect: =git-clone-mirror=
+   breaks its =void?= contract at =git-repo.rkt:297=) stays on the
+   record, so "it was red first" is never mistaken for damage done here.
+2. WHY: these are records, not questions; they had to leave
+   OPEN-DECISIONS without being lost. The defect named in (c) is part
+   of what step 14 takes green.
+
+** 2026-10-17 D-064: the blocking records -- P-04 and the fifo holder
+   Touches =package-manager/src/git/git-repo.rkt=; =narration/=.
+1. WHAT: P-04's trace path is folded into G-04/V-3a: whether the D-021
+   trace survives at all is decided when the event feed is complete,
+   not before. The fifo record stands as ACCEPTED-MITIGATED: Racket 9.3
+   has no call that blocks on a fifo write end, so the belt-and-braces
+   holder was removed rather than shipped pretending; the =#:cwd= guard
+   fixes the measured hang and the wait door narrates the rest.
+2. WHY: both were decided defaults sitting inside a file that retires;
+   they move here so neither is silently dropped.
+
+** 2026-10-17 D-063: multi-user and config -- eight answers carried
+   Touches =plan/FEATURE-users.org=;
+   =plan/FEATURE-config-and-completions.org=.
+1. WHAT: the eight owner answers stand and live in their designs:
+   identity is name AND uid (a mismatch is a named refusal); a user
+   file names packages, the lockfile pins versions; applying another
+   user needs =--confirm= AND the token (self needs =--confirm= only);
+   system-forced packages do not count toward a hold budget; no
+   per-user store quota (the size limit covers the backup only);
+   =pm config= never writes; completions cover verbs, flags and
+   directory operands only; pm never installs its own completions
+   (README documents the one placement step).
+2. WHY: they were already decided and stated in their designs; this
+   entry keeps one citable home now that OPEN-DECISIONS retires.
+
+** 2026-10-17 D-062: not-planned stays not-planned
+   Touches README.md "Deliberately not planned".
+1. WHAT: install hooks (pm never runs unapproved code at install
+   time), services (pm runs no daemons) and vulnerability audit (pm
+   will not claim a package is safe without an advisory source) remain
+   NOT PLANNED, each with its stated reason.
+2. WHY: a refusal without a recorded reason is indistinguishable from
+   an oversight.
+
+** 2026-10-17 D-061: the backup repo and the push retry -- defaults confirmed
+   Touches =plan/BACKUP-FEATURE.org=; =package-manager/src/backup/=.
+1. WHAT: the backup repo is a sibling of the vault under the state
+   root, overridable with =PM_BACKUP_PATH= (not configurable = SKIP,
+   never error); the push runs inside the wait door with a non-blank
+   why; a push failure warns and leaves the commit local for the next
+   run; a backup failure NEVER fails the fetch that preceded it.
+2. WHY: recommendations taken; a detached push would need a timer or a
+   second queue, and P-03 already showed a queue is a second way to be
+   stuck.
+
+** 2026-10-17 D-060: the security policy and the carried lint items
+   Touches =package-manager/src/security/security.rkt=; =gate/=.
+1. WHAT: =GIT_ALLOW_PROTOCOL=file= is refused by policy outside a test
+   root, with an escape hatch that names itself in the error. S2-04
+   (no un-narrated blocking primitive), S2-11 (lint test submodules)
+   and S2-05 (apply suite green with narration on; a hang reports its
+   last WAIT line) are owed work with stated done-whens; they live in
+   =TODO.org=, phases A and B.
+2. WHY: confinement alone is one forgotten variable away from a hole;
+   each of the three lint items carries a mechanical bite test.
+
+** 2026-10-17 D-059: the safety test removes its scratch repo
+   Touches =package-manager/tests/git/=; =git-repo.rkt:808=.
+1. WHAT: the git safety test deletes the repo it creates under
+   =<cyberdeck-dir>/tmp/pm-safety-<millis>=, like every other fixture.
+2. WHY: it accumulates one gitignored directory per run, and =tmp= is
+   a banned word besides.
+
+** 2026-10-17 D-058: the G spine policies settle
+   Touches D-038; =spec/plan=; =install/=; =build/=.
+1. WHAT: G-01 fails at plan time when two packages claim one path,
+   kind =activate=, naming both packages (G-02..G-12 depend on it);
+   G-05 keeps the last 5 generations, with holds and the live profile
+   link absolute; G-09 builds with no network and a scrubbed
+   environment, stated in build.rkt and enforced. The other nine need
+   no owner call -- each implements a declared intent with its own
+   done-when.
+2. WHY: recommendations taken; last-wins was rejected because
+   silently overwriting is the thing a package manager exists to
+   prevent, and a build that fetches is unverified by construction.
+
+** 2026-10-17 D-057: the AI surface order -- V-4, then E-28; API examples late
+   Touches =agent/skills/aiu-pm/SKILL.md=; =entry/mcp-tools.rkt=;
+   =docs/API.org=.
+1. WHAT: V-4 (=events.runs=, =events.tail=, =run.get= over the
+   existing redacted feed) lands before E-28 (the skill), because the
+   skill documents its tools. The skill is written against the
+   commands that work; commands that still refuse are marked
+   not-yet-executable rather than pretended, and its three examples
+   run as a test. The =check= and =plan= result-key examples join
+   =docs/API.org= last, when the command set stops moving.
+2. WHY: dependency order; the owner's phase C keeps both behind the
+   security and lock work so agents get full power first.
+
+** 2026-10-17 D-056: v1 deferrals move to LATER.org
+   Touches =LATER.org= (new); =plan/FEATURE-config-and-completions.org=.
+1. WHAT: E-19's deferred half (fingerprints, branch policy, strict
+   mode, update flows) and E-25's ecosystem selection leave v1 and
+   live in =LATER.org=; both wait on G-01's closure model. V-5 (the
+   OpenCode plugin) stays as is; if a later SDK exposes =Part=, the
+   digest moves there and the tools stay put.
+2. WHY: they are owed work whose blocker is G-01; LATER.org is never
+   built by the loop.
+
+** 2026-10-17 D-055: P-01 and P-02 finish
+   Touches =tools/=; =package-manager/tests/store/=.
+1. WHAT: P-01 runs the five synthetic vault operations
+   (fetch-namespace, verify, gc, export, backup) against a synthetic
+   local repo and pastes the output into the commit; P-02 adds the
+   manifest write/read round trip plus the malformed-manifest refusal
+   (kind ='spec=).
+2. WHY: no decision needed -- the code exists and only proof is
+   missing; both sit in =TODO.org= phase B.
+
+** 2026-10-17 D-054: the parked vault work divides
+   Touches =package-manager/tests/git/=; =tools/probe-blob.rkt=.
+1. WHAT: the large-blob test stays parked (it needs ~100 MB of
+   fixture on a phone; =tools/probe-blob.rkt= remains the manual proof)
+   and moves to =TODO.org= phase E; the vault-lock re-acquire test is
+   promoted to phase A -- it is cheap, named, and the wedge family
+   needs the answer.
+2. WHY: owner's phase list; the re-acquire test also sharpens the
+   E-16b investigation.
+
+** 2026-10-17 D-053: the job queue stays parked; v1 has none
+   Touches =package-manager/src/queue/jobs.rkt=;
+   =docs/patches/jobs-wip.patch=.
+1. WHAT: P-03/P-04 stay parked and move to =LATER.org=; pm v1 does
+   NOT use the job queue, stated plainly. Two recorded defects wait
+   with it: =job-start= rejects vault-wide jobs (=check-job-name=
+   demands a package name, jobs.rkt:109-113 via =datum->job=:221) and
+   =job-cancel= leaks the =job-held.fifo= descriptor.
+2. WHY: D-036 narration already makes a hung operation visible; a
+   queue adds a second way to be stuck. =docs/patches/jobs-wip.patch=
+   stays, marked OPEN, waiting for the queue direction.
+
+** 2026-10-17 D-052: E-16b -- hunt the wedge now; E-16c after
+   Touches =package-manager/src/store/update.rkt=;
+   =package-manager/src/git/vault-lock.rkt=.
+1. WHAT: isolate the shared-process wedge (suspects: =child.lock=/
+   =flock= plus the run.rkt waiter), fix it, and prove it with one
+   =pm fetch= of 3 packages in ONE process; keep E-16b blocked until
+   that fixture is green. E-16c follows: concurrency limit 4, each add
+   waits only on its own exit, serialize the vault write path per
+   package, one failure does not stop the others.
+2. WHY: the sequence wedge is the only thing between pm and a working
+   =fetch=; a per-add process workaround was rejected -- it hides the
+   bug and multiplies startup on a phone.
+
+** 2026-10-17 D-051: the step-3 register flags dispose
+   Touches =plan/NAMING-REGISTER.org=; =AGENT.md=.
+1. WHAT: owner's answers: =shell-env.rkt= keeps its name ("env" is the
+   one grandfathered abbreviation); =install/user-gc.rkt= is dropped
+   and =profile-gc= gains cross-user reachability in place. Line 13 is
+   corrected to the executed shape (=build-env.rkt= split out;
+   =build-plan.rkt= stayed as the facade). The backup names and the
+   =src/agent/= area are registered (D-047, D-048). Flag 2 (the
+   settings file name) waits for its FEATURE; flag 7 (vault/jobs
+   splits) stays parked behind a test net.
+2. WHY: the register must read the executed shape before any step
+   trusts it; the flags had gone stale.
+
+** 2026-10-17 D-050: small items, both recommendations taken
+   Touches =AGENT.md=; =plan/new-components/INVENTORY.org= (retires
+   into =TODO.org=; the wrap law stays).
+1. WHAT: AGENT.md's over-length line is wrapped, its duplicate
+   heading and dead pointers are fixed, and it gets its final newline;
+   the inventory entries keep the 102-character wrap.
+2. WHY: both were recorded defects with mechanical fixes; the owner
+   took both recommendations. .md linting itself is phase A work.
+
+** 2026-10-17 D-049: the five MCP additions get one report file per verb family
+   Touches =package-manager/src/entry/=;
+   =package-manager/src/entry/mcp-tools.rkt=.
+1. WHAT: search, install, status, build and bake appear on MCP as one
+   report file per verb family in =entry/=, shared by CLI and MCP,
+   with =mcp-tools.rkt= gaining one row per tool.
+2. WHY: one file one job; the two surfaces cannot drift if they share
+   the report.
+
+** 2026-10-17 D-048: the agent-side components get a new =agent= area
+   Touches =plan/ARCHITECTURE.org=; =plan/NAMING-REGISTER.org=.
+1. WHAT: the kit entry, the sight files and the context-bundle
+   senders live in a new area =package-manager/src/agent=, above
+   =entry=; the skill stays beside the CLI in =agent/skills/aiu-pm/=.
+2. WHY: one topic, one area; =entry= already carries CLI, dispatch
+   and MCP.
+
+** 2026-10-17 D-047: the backup splits into three
+   Touches =plan/NAMING-REGISTER.org=; =package-manager/src/backup/=.
+1. WHAT: =backup-set.rkt= (what a backup carries), =backup-run.rkt=
+   (copy, commit, push, retry), =backup-record.rkt= (pending and
+   failed state).
+2. WHY: the record must outlive a failed push; a two-file split with
+   the record inside =backup-status= was rejected.
+
+** 2026-10-17 D-046: step 14 finishes -- overlap-safe require lists
+   Touches =package-manager/tests/=; =plan/new-components/=.
+1. WHAT: the 26 inline test submodules move to
+   =package-manager/tests/<area>/=, each require list built as the
+   module under test plus only the copied modules that do not overlap
+   its provides (the collision: =activate.rkt= and =profile-holds.rkt=
+   both provide =profile-held?=).
+2. WHY: the collision is mechanical, not conceptual; leaving the
+   staged work red was the fallback, not the plan.
+
+** 2026-10-17 D-045: exit codes adopt sysexits; D-008 closes
+   Touches D-008; =docs/ERRORS.org=;
+   =package-manager/src/errors/error-type.rkt=.
+1. WHAT: =config= becomes 78 (EX_CONFIG), =internal= 70 (EX_SOFTWARE);
+   the "E-15 [PROPOSAL]" citation retires; D-008 is closed.
+2. WHY: the numbers then have outside vocabulary; keeping invented
+   numbers with a closed citation was the fallback.
+
+** 2026-10-17 D-044: the one-way gap closes by moving modules
+   Touches =plan/ARCHITECTURE.org=; =gate/one-way-dependency-lint.nu=.
+1. WHAT: the 34 crossings in 14 area-pairs close by MOVING the
+   modules so the ranking holds -- breaking the spec/git cycle and
+   giving =entry/version.rkt= a home below the ceiling.
+2. WHY: it is the only option that keeps the law a law; correcting
+   the doc to the tree was honest but retires a rule three phases of
+   work already ignored. =KNOWN_PAIRS= in the lint empties when done.
+
 ** 2026-10-16 D-043: stages are named, never numbered
    Touches HARD-RULES 3.7/3.8 (ecosystem); =gate/check.nu=.
 1. WHAT: every gate stage is named by what it checks (=text-lint=,

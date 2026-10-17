@@ -10,8 +10,9 @@ does; =core=, =main=, =server=, =backends=, =handler=, =manager= and
   facade over generations and the profile
 - =package-manager/src/install/apply.rkt=
   make it so: journalled, reversible install
-- =package-manager/src/build/build-plan.rkt= -> =package-manager/src/build/build-env.rkt=
-  the environment a build step runs in
+- =package-manager/src/build/build-env.rkt=
+  the environment a build step runs in; split out of
+  =build-plan.rkt=, which stayed as the facade (step 6, D-051)
 - =package-manager/src/install/dev-link.rkt=
   the developer-mode link and unlink
 - =package-manager/test-doubles/dry-run-perform.rkt=
@@ -202,8 +203,8 @@ plans, never identifiers that already exist.
   the effective view: the user file over the system file
 - =package-manager/src/security/user-write.rkt=
   the predicate "may this caller write this"
-- =package-manager/src/install/user-gc.rkt=
-  gc reachability across every user's generations (FLAG 1)
+- (no =install/user-gc.rkt=: dropped 2026-10-17, D-051; =profile-gc=
+  gains cross-user reachability in place instead)
 - =package-manager/src/entry/user-report.rkt=
   the result documents for =pm user list/show=
 
@@ -232,34 +233,35 @@ plans, never identifiers that already exist.
 - =package-manager/src/entry/info-report.rkt=
 
 ** From =plan/FEATURE-shell.org= (step 27)
-- =package-manager/src/install/shell-env.rkt= (FLAG 3)
+- =package-manager/src/install/shell-env.rkt= — "env" is allowed here
+  (D-051: the one grandfathered abbreviation)
 
 ** From =plan/BACKUP-FEATURE.org= (step 19)
-- =package-manager/src/backup/= — file names exist nowhere yet; the
-  split question is in =plan/OPEN-DECISIONS.org= (recommendation:
-  set / run / record). Register them here before the first is written.
-  (FLAG 4)
+- =package-manager/src/backup/backup-set.rkt= — what a backup carries
+- =package-manager/src/backup/backup-run.rkt= — copy, commit, push,
+  retry
+- =package-manager/src/backup/backup-record.rkt= — pending and failed
+  state (D-047; names registered before the first file is written)
 
 ** The agent-side group (group b of the inventory)
-- home and names wait on the owner's open question (new =agent= area
-  or inside =entry=); the surface files live beside the existing
-  =agent/opencode-plugin/= and =agent/skills/aiu-pm/=. (FLAG 5)
+- home decided (D-048): a new area =package-manager/src/agent= above
+  =entry=; the kit entry, the sight files and the context-bundle
+  senders live there and register here when each design lands. The
+  surface files stay beside the existing =agent/opencode-plugin/= and
+  =agent/skills/aiu-pm/=.
 
 * Flags for the owner (step 3)
-- 1. =install/user-gc.rkt= (FEATURE-users) and =profile-gc= changed in
-  place (the step-2 design file) name the same job. One name must win
-  before step 28 starts.
+- 1. RESOLVED 2026-10-17 (owner; D-051): =install/user-gc.rkt= is
+  dropped; =profile-gc= gains cross-user reachability in place.
 - 2. Settings file: if the FEATURE leaves its name or home open, pick
   both here first.
-- 3. =shell-env.rkt=: "env" is the one abbreviation among the planned
-  names; allow it in this register, or pick a full name before step 27.
-- 4. Backup file names: nothing to reuse; the owner's split answer
-  names them.
-- 5. Agent-side area: the OPEN-DECISIONS question; five planned names
-  wait on it.
-- 6. Line 13 of this file is stale: it reads =build-plan.rkt= ->
-  =build-env.rkt=, but step 6 (=ea76c3b=) kept =build-plan.rkt= as the
-  facade and extracted =build-env.rkt=. Correct the line to the
-  executed shape.
+- 3. RESOLVED 2026-10-17 (owner; D-051): =shell-env.rkt= keeps its
+  name; "env" is allowed here.
+- 4. RESOLVED 2026-10-17 (D-047): =backup-set=, =backup-run= and
+  =backup-record=; registered above.
+- 5. RESOLVED 2026-10-17 (D-048): the new
+  =package-manager/src/agent= area, above =entry=.
+- 6. RESOLVED 2026-10-17 (D-051): line 13 now reads the executed shape
+  — =build-env.rkt= split out, =build-plan.rkt= stayed as the facade.
 - 7. =vault.rkt= and =jobs.rkt= stay whole and parked (step 9); no
   split starts without a test net. =file-splits.org= records it.

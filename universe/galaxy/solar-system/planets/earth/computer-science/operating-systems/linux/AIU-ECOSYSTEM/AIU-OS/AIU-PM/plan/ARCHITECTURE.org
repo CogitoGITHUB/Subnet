@@ -145,13 +145,14 @@ to respect the one-way law as it stands.
   records
 - =build= (10): =build-cache=, after the =build-plan= facade split
   (step 6, done)
-- =install= (11): =export-profile=, =import-profile=, =shell-env=, the
-  per-user profiles, and the =user-gc= reachability question
+- =install= (11): =export-profile=, =import-profile=, =shell-env=, and
+  the per-user profiles; =profile-gc= gains cross-user reachability in
+  place (D-051), so no =user-gc.rkt=
 - =backup= (12): step 19, per =plan/BACKUP-FEATURE.org=
 - =entry= (13): =doctor-report=, =search-report=, =info-report=,
   =config-report=, =completion=, =user-report=, five MCP tool rows
 - agent-side group (kit entry, sight files, context-bundle senders):
-  the home is the owner's open question; the surface files stay in
+  a new =agent= area above =entry= (D-048); the surface files stay in
   =agent/= beside the plugin and skill
 - =machine= (3): the settings file (step 29) is the one planned
   addition; =git= (6), =process= (7) and =narration= (2) gain nothing
