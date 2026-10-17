@@ -1,0 +1,17 @@
+#+TITLE: INDEX — AIU NOTATION/notation/src/machine/
+# One job: list every file in this directory and the single job of each.
+# Status: current; updated in the same commit as any change in this directory.
+
+* Files
+# one line per file: its name, then the single job it performs.
+
+  - directories.rkt — the one place HOME / XDG is read
+  - locks.rkt — one-writer locks: wait and retry, never force
+  - cancel.rkt — the cancellation door every blocking call passes
+
+* Where it sits
+# why this area exists and what it may use.
+  - The machine seam: everything about the machine this package touches —
+    where files live, who is writing, and how a blocking call is stopped —
+    lives here and nowhere else. It stands above errors and narration and
+    uses nothing above itself.
