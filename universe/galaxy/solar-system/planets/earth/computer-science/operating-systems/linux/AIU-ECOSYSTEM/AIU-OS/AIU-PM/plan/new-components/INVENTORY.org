@@ -62,9 +62,9 @@
 
 * Group (c): found while reading, not in either list
 
-- OpenCode skill — the half of OPEN-DECISIONS.org V-5 still TODO: the
-  plugin is DONE and the skill is not, so one of the four surfaces the
-  ecosystem law names is missing on the OpenCode side.
+- OpenCode skill — carried as TODO by OPEN-DECISIONS.org E-28 and V-4:
+  the plugin is DONE; the skill file exists but is unfinished, so one
+  of the four surfaces the ecosystem law names is not yet complete.
 - text-lint coverage of =README.md= — text-lint scans .org and .nu only,
   so the first file a newcomer reads is the one prose file with no line
   rule (60 lines over 102 characters today).
@@ -105,5 +105,29 @@
   the shell has nothing to complete from.
 
 * Index
-# One line per file in this directory; extended in step 2.
+# One line per file in this directory.
   - INVENTORY.org — every component PM does not have yet, one entry each.
+  - backup.org — the backup area: declarations and sources, off the machine.
+  - build-plan-split.org — one job per file in the build planner.
+  - multi-package-fetch.org — three packages, one process, one test (E-16b).
+  - profile-gc-cross-user.org — see other users before reclaiming.
+  - exit-code-wording.org — two invented codes become one decided contract.
+  - one-way-law-gap.org — the 34 crossings close, by move or by law.
+  - hermes-integration.org — PM from Hermes: skill and actions.
+  - install-then-bake.org — a PM install feeds a program's dev bake.
+  - adapter-versioning-and-rollback.org — pins, contract version, rollback.
+  - mcp-surface-additions.org — search, install, status, build, bake on MCP.
+  - kit-entry.org — what PM declares about its own capabilities.
+  - context-bundle-senders.org — a failure an agent can read.
+  - ai-sight-files.org — PM state an agent reads directly.
+  - opencode-skill.org — finish the skill half of the OpenCode surface.
+  - text-lint-markdown.org — the first file a newcomer reads gets linted.
+  - refusal-wording.org — each refusal gets its own next step.
+  - file-splits.org — six over-loaded files, one split each.
+  - pm-doctor.org — say what is wrong without changing anything.
+  - export-import.org — a setup that can leave the machine.
+  - binary-cache.org — build once, reuse by content.
+  - search-info.org — ask the store without reading it.
+  - shell-environment.org — try a package without installing it.
+  - users-and-declarations.org — one declaration per user.
+  - config-and-completions.org — settings' home and shell hints.

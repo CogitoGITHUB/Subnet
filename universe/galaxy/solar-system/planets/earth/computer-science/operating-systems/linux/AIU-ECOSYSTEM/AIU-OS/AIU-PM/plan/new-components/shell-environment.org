@@ -1,0 +1,37 @@
+#+TITLE: pm shell SPECS — try a package without installing it
+#+AUTHOR: Shape
+# One job: a temporary environment on PATH around chosen packages,
+# nothing persisted. Status: planned only; nothing here is built, and
+# no name here may be used by code until the register lists it
+# (step 3). Source: =plan/FEATURE-shell.org=; =plan/MOVE-ORDER.org=
+# step 27 (which names the file =install/shell-env.rkt=).
+
+* Purpose
+- Trying a package without installing it is impossible today. =pm
+  shell SPECS ...= resolves the specs, puts their bins on PATH in a
+  child shell, and leaves the machine as it was when the child exits.
+* Name and location
+- name: =shell-env= per step 27; the register owns the final name and
+  settles whether =env= is the abbreviation it allows
+- code: =src/install/shell-env.rkt=
+- area and layer: =install= (area 11)
+- may require: everything below =install=
+- may be required by: =entry= only
+* Public interface, in plain words
+- =pm shell SPECS ...=: resolve, spawn a child shell with PATH set,
+  return its exit status; nothing written anywhere.
+* What it must never do
+- Never persist: no store write, no profile flip; a shell is a look,
+  not an install.
+- Never block the parent silently: the same wait door as everything.
+* Tests
+- =tests/install/=: the child sees the bins; nothing changed after
+  exit.
+* Docs it updates
+- =plan/NAMING-REGISTER.org= (final name);
+  =plan/FEATURE-shell.org= open questions.
+* Depends on new components
+- none strictly; =install-then-bake= shares the "give a consumer what
+  it needs" shape and should agree on it.
+* Build order
+- =plan/MOVE-ORDER.org= step 27.

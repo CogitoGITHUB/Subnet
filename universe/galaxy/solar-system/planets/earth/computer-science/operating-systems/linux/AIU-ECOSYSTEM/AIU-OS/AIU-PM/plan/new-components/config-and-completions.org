@@ -1,0 +1,38 @@
+#+TITLE: pm config and completions — settings' home and shell hints
+#+AUTHOR: Shape
+# One job: =pm config= gives settings one home, validated; completions
+# come from the same tables. Status: planned only; nothing here is
+# built, and no name here may be used by code until the register lists
+# it (step 3). Source: =plan/FEATURE-config-and-completions.org=.
+
+* Purpose
+- Settings have no home and the shell has nothing to complete from.
+  One settings file, one verb to read and set it, and completion
+  scripts generated from the dispatch tables.
+* Name and location
+- names: the feature's files are registered in step 3
+- code: =src/machine/= owns the settings file (the one seam that reads
+  HOME); =src/entry/= prints and completes; completion scripts live
+  beside the CLI
+- area and layer: =machine= (3) owns the file; =entry= (13) reads;
+  nothing gains a new direction
+- may require: as those areas already may
+- may be required by: =entry=
+* Public interface, in plain words
+- =pm config get/set=, validated, with the effective config printable;
+  completion scripts that name only verbs dispatch has.
+* What it must never do
+- Never a second HOME reader: =machine/directories.rkt= stays the one
+  seam.
+- Never completions that claim verbs dispatch does not have: generate
+  from the tables.
+* Tests
+- =tests/machine/= and =tests/entry/=: a set-then-get round trip; the
+  completions match the dispatch table.
+* Docs it updates
+- =plan/NAMING-REGISTER.org=;
+  =plan/FEATURE-config-and-completions.org= open questions.
+* Depends on new components
+- none strictly; =backup='s two settings get their home here first.
+* Build order
+- =plan/MOVE-ORDER.org= step 29.

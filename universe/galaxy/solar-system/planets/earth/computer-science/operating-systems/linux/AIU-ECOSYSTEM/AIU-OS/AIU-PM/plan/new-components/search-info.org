@@ -1,0 +1,32 @@
+#+TITLE: pm search and pm info — ask the store without reading it
+#+AUTHOR: Shape
+# One job: =pm search= finds declared and installed packages; =pm info=
+# shows one. Status: planned only; nothing here is built, and no name
+# here may be used by code until the register lists it (step 3).
+# Source: =plan/FEATURE-search-info.org=.
+
+* Purpose
+- Asking today means reading the store by hand.
+* Name and location
+- names: =search-report= and =info-report= per the FEATURE
+- code: =src/entry/search-report.rkt=, =src/entry/info-report.rkt=
+- area and layer: =entry= (area 13)
+- may require: =store='s query module and below
+- may be required by: nothing
+* Public interface, in plain words
+- search: find by name and version, declared or installed;
+- info: everything known about one package: its declaration, its
+  install state, its generation, the sight files it touches.
+* What it must never do
+- Never mutate: both are read-only, cheap, and agent-safe.
+- Never its own query engine: reuse =store='s query module.
+* Tests
+- =tests/entry/=, one test per report, against a fixture store.
+* Docs it updates
+- =plan/NAMING-REGISTER.org=; =plan/FEATURE-search-info.org= open
+  questions.
+* Depends on new components
+- =mcp-surface-additions= uses these two reports as its search and
+  status rows: report first, MCP row second.
+* Build order
+- =plan/MOVE-ORDER.org= step 26.
