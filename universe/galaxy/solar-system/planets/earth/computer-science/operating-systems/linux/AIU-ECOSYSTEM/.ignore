@@ -1,0 +1,3 @@
+# keep the deepwork session files visible to tools despite .gitignore
+!.slim/deepwork/
+!.slim/deepwork/**
