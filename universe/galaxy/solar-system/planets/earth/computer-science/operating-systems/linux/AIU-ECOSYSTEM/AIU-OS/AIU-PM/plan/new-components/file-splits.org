@@ -1,0 +1,40 @@
+#+TITLE: file splits — six over-loaded files, one split each
+#+AUTHOR: Shape
+# One job: split the six files FILE-INVENTORY.org recorded, one job per
+# file, each split a pure move. Status: planned only; nothing here is
+# built, and no name here may be used by code until NAMING-REGISTER.org
+# lists it (step 3). Source: =plan/FILE-INVENTORY.org= (the over-load
+# record).
+
+* Purpose
+- One file one job is half the structure law. Six files carry several:
+  =vault.rkt= (6 jobs), =jobs.rkt= (5), =cli.rkt= (5), =spec-read.rkt=
+  (4), =plan.rkt= (4), =activate.rkt= (4). Each is a split waiting for
+  its turn.
+* Name and location
+- name: each split's new names are registered in step 3 before the
+  split; the old file keeps the name of the job it keeps
+- code: =src/git/vault.rkt=, =src/queue/jobs.rkt=, =src/entry/cli.rkt=,
+  =src/spec/spec-read.rkt=, =src/spec/plan.rkt=,
+  =src/install/activate.rkt=
+- area and layer: unchanged: =git=, =queue=, =entry=, =spec=,
+  =install=
+- may require: unchanged; a split adds no dependency
+- may be required by: unchanged
+* Public interface, in plain words
+- unchanged for every caller: definitions move, requires follow,
+  nothing else moves.
+* What it must never do
+- Never change behaviour in the same commit as a move.
+- Never leave a file's tests behind: each split keeps its tests green
+  with no edits except require paths.
+* Tests
+- the existing per-area tests; a split is proven by them staying green.
+* Docs it updates
+- =plan/FILE-INVENTORY.org= (each over-load entry drops as its split
+  lands), =plan/NAMING-REGISTER.org=.
+* Depends on new components
+- none; independent of the others.
+* Build order
+- =vault.rkt= and =activate.rkt= last: =backup= and the test-extraction
+  step both touch them first, and a split mid-flight would rebase both.

@@ -1,0 +1,41 @@
+#+TITLE: the OpenCode skill — the surface that is not finished
+#+AUTHOR: Shape
+# One job: finish the skill file so an agent knows when to use each pm
+# command and how to read the feed. Status: planned only; the file
+# exists and is incomplete, tracked as TODO by
+# =plan/OPEN-DECISIONS.org= E-28 and V-4.
+# Source: =plan/OPEN-DECISIONS.org= (E-28, V-4); the plugin half is
+# DONE at =agent/opencode-plugin/=.
+
+* Purpose
+- One of the four surfaces the ecosystem law names is not whole on the
+  OpenCode side: the plugin is DONE, and the skill is unfinished.
+  E-28: =agent/skills/aiu-pm/SKILL.md= with when to use each command.
+  V-4 adds the MCP feed tools it documents.
+* Name and location
+- name: =agent/skills/aiu-pm/SKILL.md= (exists; completed here); any
+  new companion file is registered in step 3
+- code: =agent/skills/aiu-pm/=, beside the OpenCode plugin; the
+  runtime it documents is =src/entry/mcp-tools.rkt=
+- area and layer: docs beside the CLI, not inside the source tree
+- may require: nothing below =entry= that it cannot name in prose
+- may be required by: nothing
+* Public interface, in plain words
+- an agent reading the skill learns: which verb for which intent, what
+  each returns, when a mutation needs the human, and how to read the
+  event feed without polling.
+* What it must never do
+- Never claim a verb MCP does not expose: the feed it documents is the
+  one V-4 adds.
+- Never duplicate the plugin: the skill teaches, the plugin connects.
+* Tests
+- =agent/skills/aiu-pm/skill-examples.rkt= already runs the examples;
+  they extend with the feed examples.
+* Docs it updates
+- =plan/OPEN-DECISIONS.org= (E-28 and V-4 close).
+* Depends on new components
+- =mcp-surface-additions= shares the same MCP file, so the tool rows
+  and the skill text must land as one story.
+* Build order
+- With =hermes-integration= if possible: the four surfaces ship
+  together.

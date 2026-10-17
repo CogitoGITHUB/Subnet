@@ -1,0 +1,35 @@
+#+TITLE: text-lint markdown — the first file a newcomer reads
+#+AUTHOR: Shape
+# One job: text-lint the README, or the prose file nobody lints. Status:
+# planned only; nothing here is built. Source: the gate's text-lint
+# stage covers .org and .nu only; =README.md= runs 60 lines over 102
+# characters today (=plan/new-components/INVENTORY.org=).
+
+* Purpose
+- =README.md= is the first file a newcomer reads and the only prose
+  file with no line rule. Either the lint covers markdown, or the
+  README gets fixed and stays fixed by nothing.
+* Name and location
+- name: =text-lint= keeps its name; its file filter and its report grow
+  a markdown pass
+- code: the text-lint stage script under the gate; the README itself
+- area and layer: tools and gate scripts, beside the existing stages
+- may require: nothing
+- may be required by: nothing
+* Public interface, in plain words
+- the stage's report grows: markdown counted, violations named
+  =file:line=; today markdown is skipped without a word.
+* What it must never do
+- Never skip quietly: a file type the lint does not cover is said out
+  loud, not omitted from the count.
+- Never rewrite the README's prose while fixing its lines; wraps are
+  formatting, the words stay.
+* Tests
+- the stage's self-test: one too-long markdown line must turn it red.
+* Docs it updates
+- =plan/FILE-INVENTORY.org=; the stage list in the gate docs.
+* Depends on new components
+- none.
+* Build order
+- Any time; small; the README fix and the coverage land one commit
+  each.
