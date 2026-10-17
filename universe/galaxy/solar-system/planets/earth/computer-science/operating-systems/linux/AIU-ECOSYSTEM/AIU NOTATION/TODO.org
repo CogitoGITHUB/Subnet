@@ -10,9 +10,9 @@
   - No tests for now: the light gate only (root DECISIONS.org D-001); the full gate arrives with the first test item.
 
 * Items
-# in build order.
+# in build order; twelve numbered items, 1 to 12, then the after-done-line list.
   1. The tree lands — create =notation/= per plan/package-tree.org: INDEX.org, the floor areas (errors, narration, machine) and gate/ with its first stages; done when: the light gate is green on the new tree; deps: none.
-  2. The mark and the first elements (build step 1): direction is decided (D-014 — one tiny consistent mark; elements are named in words); first act: sign candidates and the typing-comfort phone test, the winner recorded; then title, paragraph and code block (D-013) land; done when: the sign and the first three elements are written down and the light gate is green; deps: 1.
+  2. The mark and the first elements (build step 1): FIRST ACT DONE 2026-10-17 — the owner chose the sign { } (notation D-014; root =DECISIONS.org= record pending in ROOT-REQUEST-D014.org), and a code block's body is opaque to the parser, so a { in code never opens an element (history: the sign and its typing comfort were item 2's first act, on a phone); still open: title, paragraph and code block (D-013) land; done when: the first three elements are written down and the light gate is green; deps: 1.
   3. Round trip (build step 2): text/, parser/, elements/, model/, rendering/plain.rs, entry/cli.rkt; done when: parse, render and re-parse agree on a real page (captured output); deps: 1, 2.
   4. Robustness (step 3): incremental reparse and recovery; done when: edit mid-file, the rest stays rendered, a broken element recovers; deps: 3.
   5. Named elements grow (step 4): outlines, tags, properties, tables, planning states, links; done when: each element dispatches by name and the editor completes names while typing; deps: 3.

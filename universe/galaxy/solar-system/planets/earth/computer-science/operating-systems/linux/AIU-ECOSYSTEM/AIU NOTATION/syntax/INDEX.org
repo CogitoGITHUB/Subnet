@@ -1,12 +1,13 @@
 #+TITLE: INDEX — AIU NOTATION/syntax/
 # One job: list every file in this directory and the single job of each.
 # Status: current; updated in the same commit as any change in this directory.
+# History: 2026-10-17 the open-close-mark line said "which sign is an open decision for the owner"; the sign is decided now.
 
 * Files
 # one line per file: its name, then the single job it performs. This index is updated in the same commit as any change here.
 
   - element-names.org — ordinary things use literal names, not symbols: a title is called title, a paragraph is called paragraph
-  - open-close-mark.org — the tiny consistent mark around a named element; which sign is an open decision for the owner
+  - open-close-mark.org — the tiny consistent mark around a named element; the sign is decided: { } (notation D-014, 2026-10-17)
   - file-identity.org — the first heading carries title and tags so a file identifies itself alone and cheaply
   - structure.org — how named elements nest, and what plain reading of the outline looks like
   - properties-and-tags.org — properties and tags from Org, kept only while they stay comfortable to type

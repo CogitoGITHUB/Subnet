@@ -1,17 +1,36 @@
 #+TITLE: The open and close mark
-# One job: the tiny consistent mark around a named element; which sign is an open decision for the owner
-# Status: skeleton; concept only. The exact design is decided in a later conversation.
+# One job: the tiny consistent mark around a named element — the sign is decided: braces { }
+# Status: the sign decided 2026-10-17 by the owner (notation D-014); the parser side starts at TODO item 2.
 
 * What it is for
-# why this exists, in the owner's terms. Concept level only.
+# why this exists, in the owner's terms. The mark exists so a name can be opened and closed without one symbol per element.
+  - Ordinary things are written as names, not as symbols; the same pair of marks
+    opens and closes every named element, so nothing new must be remembered per
+    element (rule 12).
 
 * The shape
-# how it reads or behaves, in words. No examples and no code; the exact design is decided later.
+# how it reads, in words; no code here, the implementation is TODO item 2.
+  - { opens a named element and } closes it; one pair for every element kind.
+  - The body between them is ordinary text; the element's name is written inside,
+    in words: title, paragraph, code block.
+  - A code block's body is opaque to the parser: the parser does not read code as
+    notation text, so a { inside code never opens a notation element.
+  - A { in ordinary prose still opens an element; the first elements and the
+    typing-comfort check inside TODO item 2 decide how that reads for the owner.
 
 * Decisions it needs
 # the questions this area must answer, listed as questions; options welcome with a recommendation.
+  - Closed 2026-10-17: the sign is { } (owner; notation D-014). The root
+    =DECISIONS.org= record is pending, carried in ROOT-REQUEST-D014.org.
+  - Still open, inside TODO item 2: how the first three elements (title,
+    paragraph, code block) are written with the mark, and the light gate that
+    proves it.
+
+* History
+# one line of the old wording, kept so nothing is lost.
+  - Before 2026-10-17 this file said the sign "is an open decision for the owner",
+    and the exact design "is decided in a later conversation".
 
 * Where it is proven
 # the build step or check that shows this works; named 2026-10-16.
   checklist/tier-1 item 18 and checklist/tier-2/notation.org; the design lands first.
-

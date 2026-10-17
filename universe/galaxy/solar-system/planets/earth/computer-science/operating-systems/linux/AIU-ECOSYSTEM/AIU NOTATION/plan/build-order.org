@@ -4,10 +4,13 @@
 
 * Steps
 # one line per step, in build order, each with the proof that proves it.
-  1. The mark and the first elements: the direction is decided (D-014);
-     the sign candidates and the typing-comfort phone test pick the
-     winner (rule 12) — proof: the chosen sign and element list, written
-     down.
+  1. The mark and the first elements: the sign is decided — { } (owner,
+     2026-10-17; notation D-014, root =DECISIONS.org= record pending in
+     ROOT-REQUEST-D014.org) and a code block's body is opaque to the parser,
+     so a { in code never opens an element — proof: the first three
+     elements written down with the mark, and the light gate green.
+  # History (before 2026-10-17): the direction only (notation D-014); the sign
+  # candidates and the typing-comfort phone test were to pick the winner.
   2. Round trip: a page with a title and paragraphs parses and renders
      back with nothing lost; plain writing needs almost no syntax —
      proof: parse, render and re-parse agree on a real page.

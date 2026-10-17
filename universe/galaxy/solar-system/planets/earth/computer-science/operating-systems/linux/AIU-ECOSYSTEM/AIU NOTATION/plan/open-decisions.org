@@ -7,10 +7,14 @@
   - Closed by recommendation: numbering, engine wording, the first
     element set — D-011, D-012 and D-013 in the root =DECISIONS.org=.
   - Closed by the owner's answers (2026-10-17): the mark — one tiny
-    consistent mark, elements named in words (D-014) — the exact sign
-    and its typing comfort are item 2's first act, on a phone — and the
-    title's creation-time source, the owner's own file-creation package
-    (D-015). Nothing blocks the first build step.
+    consistent mark, elements named in words (notation D-014); its sign is
+    decided: { } (owner, 2026-10-17; root =DECISIONS.org= record pending, see
+    ROOT-REQUEST-D014.org), and a code block's body is opaque to the parser so
+    a { in code never opens an element — plus the title's creation-time
+    source, the owner's own file-creation package (notation D-015). Nothing
+    blocks the first build step.
+  - History (before 2026-10-17): "the exact sign and its typing comfort are
+    item 2's first act, on a phone".
 
 * The old text
 # recover it exactly.

@@ -12,9 +12,12 @@
     reparse is table stakes (research).
   - Literate tangling complexity — targets and dependency scanning grow
     edge cases; Org Babel's history is the warning.
-  - The mark choice stalls — the sign and its typing comfort are picked
-    by the phone test inside item 2 (D-014); until a sign types cleanly,
-    the first build step waits.
+  - Mark collision after the sign was chosen — the sign is { } (notation
+    D-014, owner, 2026-10-17); a code block's body is opaque to the parser,
+    so a { in code cannot open an element, but a { in ordinary prose still
+    can, and rule 12 names that collision as the failure the design exists
+    to avoid (history: before 2026-10-17 this risk read "the mark choice
+    stalls — until a sign types cleanly, the first build step waits").
   - Wording drift: "no engine" and "no format unless necessary" read
     against the engine surface the contract needs — decisions block
     before architecture.

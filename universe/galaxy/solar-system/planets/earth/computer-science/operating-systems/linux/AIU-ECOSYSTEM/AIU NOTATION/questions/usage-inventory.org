@@ -1,6 +1,6 @@
 #+TITLE: Usage inventory
 # One job: the owner questionnaire: what is used from Org and Markdown, what is missed, and typing comfort for the sign
-# Status: answered 2026-10-16 on a phone; transcribed in the owner's words; the mark direction closed 2026-10-17 (D-014) — the exact sign and typing comfort are TODO item 2's phone test.
+# Status: answered 2026-10-16 on a phone; transcribed in the owner's words; the mark direction and its sign closed 2026-10-17 (notation D-014) — the sign is { } (owner; root DECISIONS.org record pending in ROOT-REQUEST-D014.org).
 
 * What is used from Org
 # the owner answers on a phone, short lines. Do not guess any of it.
@@ -26,9 +26,8 @@
 
 * Typing comfort for the mark
 # which signs are easy to type on the phone keyboard, and which collide with prose or tags.
-  - Closed 2026-10-17 (D-014): no separate questionnaire — the exact sign
-    and its typing comfort are decided by the phone test inside TODO item 2;
-    the direction is the names-not-signs line under What is wished for.
+  - Closed 2026-10-17 (notation D-014): no separate questionnaire — the owner gave the sign on the phone this session runs in: { }. A code block's body is opaque to the parser, so a { in code never opens an element; the direction is the names-not-signs line under What is wished for.
+  - History (before 2026-10-17): "the exact sign and its typing comfort are decided by the phone test inside TODO item 2".
 
 * Loading preference
 # a loader heading first, or a language line first; still open.
