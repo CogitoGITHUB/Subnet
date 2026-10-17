@@ -1,0 +1,14 @@
+#+TITLE: machine — the machine's shape
+
+* What this area does
+=directories.rkt= is the ONE place that reads HOME or XDG (the other is
+=env.nu= on the Nushell side). =file-lock.rkt= is cross-process exclusion.
+=cancel.rkt= is the cancellation door.
+
+* What it may depend on
+=errors=, =narration=.
+
+* What must never depend on it
+=errors= and =narration= must never require =machine=. Every path read
+outside this area is a second seam onto the filesystem, which is the thing
+this area exists to prevent.

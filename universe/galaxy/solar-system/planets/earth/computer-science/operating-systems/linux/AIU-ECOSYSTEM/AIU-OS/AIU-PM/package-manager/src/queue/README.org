@@ -1,0 +1,11 @@
+#+TITLE: queue — work that outlives one call
+
+* What this area does
+Job record and validation, the queue file, worker exclusion, and the
+journal.
+
+* What it may depend on
+=errors=, =narration=, =machine=, =store=.
+
+* What must never depend on it
+It must not depend on =install= or =entry=.

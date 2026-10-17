@@ -1,0 +1,11 @@
+#+TITLE: build — build steps
+
+* What this area does
+The environment a build step runs in, the executor protocol, and one module
+per build system (make, cmake, cargo, configure, run).
+
+* What it may depend on
+=process=, =errors=, =narration=, =spec=.
+
+* What must never depend on it
+It must not depend on =install=.

@@ -1,0 +1,12 @@
+#+TITLE: git — repositories
+
+* What this area does
+Environment isolation, commit identity, clone, fetch and pin, export of a
+tree, and the vault ref / create / transfer / checks modules. Every git
+call in the whole project goes through here.
+
+* What it may depend on
+=errors=, =narration=, =process=, =machine=.
+
+* What must never depend on it
+It must not depend on =store=, =install=, =queue= or =entry=.

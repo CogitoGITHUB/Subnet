@@ -1,0 +1,11 @@
+#+TITLE: install — making it so
+
+* What this area does
+The apply operation, activation, generation naming, profile flip, reclaim,
+holds, and the local performer.
+
+* What it may depend on
+Everything below it, and its own internals.
+
+* What must never depend on it
+It must not depend on =entry=.

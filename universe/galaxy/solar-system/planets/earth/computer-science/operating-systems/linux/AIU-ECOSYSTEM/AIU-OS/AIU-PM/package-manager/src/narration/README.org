@@ -1,0 +1,15 @@
+#+TITLE: narration — how an operation speaks
+
+* What this area does
+=events.rkt= is the schema, and it decides nothing.
+=narration.rkt= opens and closes a run and carries step, note, warn, skip
+and decide. =wait-door.rkt= is the blocking door: =wait-for= before,
+=wait-done= after, =why= never blank. The console printer lives here and
+nowhere else (D-036).
+
+* What it may depend on
+=errors=.
+
+* What must never depend on it
+=errors= must never require =narration=. And nothing outside this area may
+print to the terminal by itself: the one-printer lint enforces that.

@@ -1,0 +1,13 @@
+#+TITLE: process — everything that spawns
+
+* What this area does
+=spawn.rkt= validates the cwd and spawns. =status-fifo.rkt= owns the fifo
+protocol. =drain.rkt= reads pipes. =kill-tree.rkt= kills a process group.
+=cancel-wait.rkt= decides an outcome. =progress.rkt= bounds captured lines.
+
+* What it may depend on
+=errors=, =narration=, =machine=.
+
+* What must never depend on it
+Nothing above it. It is low because everything that does real work
+eventually spawns something, and the two known fifo hangs lived here.

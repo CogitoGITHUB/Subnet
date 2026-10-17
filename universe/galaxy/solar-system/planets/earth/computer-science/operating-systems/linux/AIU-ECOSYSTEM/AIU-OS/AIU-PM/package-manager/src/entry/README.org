@@ -1,0 +1,12 @@
+#+TITLE: entry — what the user or an agent touches
+
+* What this area does
+Argument parsing, one JSON document per command, dispatch, and the MCP
+server.
+
+* What it may depend on
+Everything below it.
+
+* What must never depend on it
+Nothing may depend on =entry=. It is the ceiling: any area requiring
+=entry= is the second direction ARCHITECTURE.org says must never appear.

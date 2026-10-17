@@ -1,0 +1,13 @@
+#+TITLE: security — policy as total predicates
+
+* What this area does
+Answers questions, and nothing else. =state-changing?= names the one set of
+commands that change machine state; the confirmation gate is built on it.
+
+* What it may depend on
+=errors=.
+
+* What must never depend on it
+Nothing here may perform an effect. A predicate that is defined and never
+called is a contract with no enforcer, so the security-gate-lint stage
+fails when it finds one.

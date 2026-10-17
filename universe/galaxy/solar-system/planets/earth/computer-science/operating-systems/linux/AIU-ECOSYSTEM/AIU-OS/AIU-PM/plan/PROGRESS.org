@@ -30,7 +30,7 @@ Resuming: read the last line, then =plan/MOVE-ORDER.org= for the script.
 | 17 | =banned-words-lint= gate stage, 149 files 0 violations, regexes with file:line | 57c1969 |
 | 18 | =one-way-dependency-lint= gate stage, 34 known unpaid edges, 0 new; gap recorded, decision needed | a97dba1 |
 | 19 | backup feature in =src/backup/= | TODO |
-| 20 | per-area README.org | TODO |
+| 20 | per-area =README.org= in all 12 =src/= areas, one job each | bd9f159 |
 | 21 | ENGINE-CHECKLIST entries reconciled | TODO |
 | 22 | full verification, prove =banned-words-lint=/=one-way-dependency-lint= bite, push | TODO |
 | — | gate stages are named, never numbered (D-043); =--list=; sub-stages | e1c9c55 |

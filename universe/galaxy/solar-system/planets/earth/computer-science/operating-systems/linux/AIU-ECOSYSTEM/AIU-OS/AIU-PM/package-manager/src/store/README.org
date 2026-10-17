@@ -1,0 +1,10 @@
+#+TITLE: store — what is installed, and what it is pinned to
+
+* What this area does
+Store materialisation, manifest, lockfile, query and update.
+
+* What it may depend on
+=spec=, =git=, =errors=, =narration=.
+
+* What must never depend on it
+It must not depend on =install= or =entry=.

@@ -1,0 +1,12 @@
+#+TITLE: spec — what a declaration means, and how it is read
+
+* What this area does
+The struct, the parser (facade plus field, source, build-step and typo
+modules), the plan hash, derivation, LOWERING into install actions, and
+conflict refusal.
+
+* What it may depend on
+=errors=, =security=, and =spec/= itself.
+
+* What must never depend on it
+It must not depend on =process=, =git=, =store=, =install= or =entry=.

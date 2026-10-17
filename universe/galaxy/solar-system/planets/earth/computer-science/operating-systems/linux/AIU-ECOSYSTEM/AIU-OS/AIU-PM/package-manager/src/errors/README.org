@@ -1,0 +1,16 @@
+#+TITLE: errors — the error type, and how it is rendered
+
+* What this area does
+=error-type.rkt= defines =exn:fail:pm= and the kinds.
+=error-message.rkt= renders it and maps a kind to an exit code.
+
+* What it may depend on
+Nothing. This is the floor: =errors= requiring anything is one of the two
+directions ARCHITECTURE.org says must never appear.
+
+* What must never depend on it
+Nothing may require =entry=, which is the other direction that must never
+appear. Every area above the floor may depend on =errors=; ARCHITECTURE.org
+also carries a sentence saying only =narration/= may, and the two cannot
+both be true. Recorded in =plan/OPEN-DECISIONS.org= rather than silently
+picked, because which one wins decides whether the tree is legal today.
