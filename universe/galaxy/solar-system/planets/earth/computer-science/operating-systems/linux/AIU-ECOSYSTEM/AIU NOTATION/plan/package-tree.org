@@ -36,6 +36,16 @@
     in the ecosystem law (no core/, engine/, utils/, manager/,
     handler/, tmp/).
 
+* Names registered
+# one line per name: the name, then what it is for. Registered here before
+# any file uses it; a name not in this list does not exist yet.
+  - =stray-text= — the error name for text found outside any named block:
+    severity error, no off switch, the text kept untouched and the rest of
+    the file still parsed. Carried by the parser as an error node.
+  - =check= — the CLI command that reads a file, lists every error with its
+    line number and exits non-zero when any error is found; the same
+    documents the editor receives through the boundary.
+
 * The tree
 # every planned directory and file, one job each.
 #+begin_example
@@ -95,7 +105,7 @@ AIU NOTATION/            the project: context and docs stay where they are
         comments.rs      comment spans found and kept here; stripped only at rendering
       parser/            the context-free core (hot path)
         INDEX.org
-        parser.rs        the layered parser: the mark, blocks, elements, recovery
+        parser.rs        the layered parser: the mark, blocks, elements, recovery; text found outside any block becomes a =stray-text= error node
         reparse.rs       a keystroke touches only its slice
         partial.rs       a broken element recovers; the rest keeps parsing
       elements/          the element vocabulary: names and what they mean
@@ -105,13 +115,13 @@ AIU NOTATION/            the project: context and docs stay where they are
         literals.rkt     literal names: what a name is, what it is not
       model/             the meaning tree
         INDEX.org
-        nodes.rkt        what a node is; identity
+        nodes.rkt        what a node is; identity; blocks and error nodes only — there is no node kind for loose text
         outline.rkt      the tree built from parsed elements
         addressing.rkt   how a send names a node (contract step 9)
         properties.rkt   tags, properties, planning states on nodes
       diagnostics/       the reports the reader sees
         INDEX.org
-        collect.rkt      parse and model problems gathered, in order
+        collect.rkt      parse and model problems gathered, in order, including every =stray-text= error
         report.rkt       one diagnosis: where, what, what the reader can do
       references/        links and numbering (after the done line)
         INDEX.org
@@ -136,10 +146,10 @@ AIU NOTATION/            the project: context and docs stay where they are
         INDEX.org
         surface.rkt      the calls the editor and the multiplexer make
         answers.rkt      the documents the boundary answers with
-        notices.rkt      what the boundary sends unasked (parsed, did-change)
+        notices.rkt      what the boundary sends unasked (parsed, did-change), errors with it: the same =stray-text= errors the =check= command prints, each with its line number
       entry/             the outside world: argv and MCP
         INDEX.org
-        cli.rkt          argv to a command: one parser, one dispatch
+        cli.rkt          argv to a command: one parser, one dispatch; =check= lists every error with its line number and exits non-zero
         dispatch.rkt     the command table: one name, one function
         mcp.rkt          the MCP server: the same commands, the machine surface
         documents.rkt    the one JSON shape shared by CLI, MCP, skill and plugin

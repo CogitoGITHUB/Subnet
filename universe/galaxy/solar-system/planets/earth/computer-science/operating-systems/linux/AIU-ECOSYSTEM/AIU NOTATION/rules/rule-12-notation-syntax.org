@@ -28,8 +28,19 @@
   Ordinary things use literal names; every element lives inside a named block opened
   by "<name> start" and closed by "<name> end" on their own lines, same name in both
   (notation D-014 REVISED 2026-10-17); there is no default paragraph, and blank lines
-  between blocks carry no meaning; text outside any block is a precise error naming its
-  line, kept untouched, and the rest of the file keeps parsing.
+  between blocks carry no meaning.
+
+* The law of the enclosing block
+# the owner's law, recorded here because rule 12 is where it bites hardest.
+  - Everything in a notation file lives inside a named block. Paragraphs are
+    blocks too; only blank lines and whitespace may sit between blocks.
+  - Text outside any block is an error named "stray text": severity error, no
+    off switch. The text is kept exactly as written — never deleted, never
+    rewritten — and the rest of the file keeps parsing.
+  - The meaning tree has no node kind for loose text: it holds blocks and
+    error nodes, and nothing else.
+  - The engine enforces this, not the editor. The editor only shows what the
+    engine reports, through the boundary.
 
 * What breaks it
 # the failure this rule exists to prevent.
