@@ -70,6 +70,11 @@
   - One by-hand program run per item is allowed: exactly the run that item's
     done-when names. For items 2 and 3 that is a real page with its output
     captured, and TODO.org carries the wording.
+  - Item 3's one allowed run also prints timing, so the cost of each part is a
+    captured fact rather than a memory: the elapsed time for (a) the Rust parse
+    of the page, (b) Racket startup alone (racket -n -e ''), and (c) the whole
+    check command end to end, plus the page's line count and the document's
+    size in bytes.
   - Every other program run is forbidden, and so is every test file, because no
     tests exist yet (root DECISIONS.org D-001).
   - If a cargo check does not finish in reasonable time on the phone, stop and
