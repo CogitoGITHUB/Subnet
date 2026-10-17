@@ -122,3 +122,17 @@ row read =package-package-manager/src/entry/package-info.rkt=. Repaired.
 - One test spawned its lock holder with =(find-system-path 'exec-file)=, which
   answers with the bare word "racket" under proot. =process*= searches no PATH,
   so the holder never started and the test waited out its whole bound.
+
+* The missing-components plan, 2026-10-17
+Every missing component is inventoried, designed, registered and ordered:
+=plan/new-components/INVENTORY.org= (24 entries), one design file each,
+=plan/NAMING-REGISTER.org= (its Planned section), and
+=plan/new-components/BUILD-ORDER.org= (the order). Rows land after their
+commit, per the rule at the top.
+
+| step | what | state |
+|------+------+-------|
+| D1 | inventory: every missing component, 24 entries | 409cfc4 |
+| D4 | owner decisions listed with options and defaults | 50686fd |
+| D2 | architecture file per component + index (24 files) | b5e2f8e |
+| D3 | register + file inventory + architecture planned sections | 8a614b4 |

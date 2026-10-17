@@ -108,6 +108,7 @@
 * Index
 # One line per file in this directory.
   - INVENTORY.org — every component PM does not have yet, one entry each.
+  - BUILD-ORDER.org — the order the missing components are built in.
   - backup.org — the backup area: declarations and sources, off the machine.
   - build-plan-split.org — split done; the stale register line remains.
   - multi-package-fetch.org — three packages, one process, one test (E-16b).
