@@ -222,7 +222,10 @@
       mirror-dir 'exclusive
       (lambda ()
         (parameterize ([held-mirror-locks (cons key (held-mirror-locks))])
-          thunk))
+          ;; (thunk), not thunk: bare `thunk` evaluates to the procedure
+          ;; and RETURNS it, so every clone and fetch under the lock
+          ;; quietly did nothing and handed a procedure back instead.
+          (thunk)))
       (lambda ()
         (raise-pm-error kind op "could not acquire mirror lock"
                         #:fields `(("mirror" . ,(path->string mirror-dir))
@@ -335,7 +338,11 @@
                           "origin" "--" "+refs/*:refs/upstream/*")
                         #:kind 'fetch
                         #:operation "git fetch mirror")))
-          (rename-file-or-directory tmp dir))
+          ;; (void) last, deliberately: dynamic-wind returns its body's
+          ;; value and rename-file-or-directory returns the path, so
+          ;; without this the function broke its own void? contract.
+          (rename-file-or-directory tmp dir)
+          (void))
         (lambda ()
           (when (directory-exists? tmp)
             (delete-directory/files tmp)))))))
@@ -579,8 +586,9 @@
                                       ("mirror" . ,(dir-string dir))
                                       ("history" . "fully fetched")
                                       ("upstream" . ,(mirror-origin-url dir)))
-                           #:hint "the pin does not exist upstream, or the "
-                                  "source moved; check the url and the pin")]
+                           #:hint (string-append
+                                   "the pin does not exist upstream, or the "
+                                   "source moved; check the url and the pin"))]
           [else
            (git-deepen-mirror dir #:to to #:timeout timeout)
            ;; Past the cap, go to 0 exactly once -- that is the request for
@@ -996,8 +1004,14 @@
       (displayln "    (sleep 120))" port)
       (displayln "  (lambda () (displayln \"holder failed\") (exit 1))" port)
       (displayln (format "  #:lock-file ~s)" (path->string lock-file)) port)))
+  ;; find-executable-path, NOT (find-system-path 'exec-file): under proot
+  ;; exec-file answers with the bare word "racket", and process* performs
+  ;; no PATH search, so the child could not exec and this test waited out
+  ;; its whole bound. Both readers of this test are the same racket.
+  (define racket-exe
+    (or (find-executable-path "racket") (find-system-path 'exec-file)))
   (define holder
-    (process* (find-system-path 'exec-file) (path->string holder-path)))
+    (process* racket-exe (path->string holder-path)))
   (define holder-pid (list-ref holder 2))
   (define holder-ctl (list-ref holder 4))
   ;; Wait for the holder to actually hold the lock (bounded).

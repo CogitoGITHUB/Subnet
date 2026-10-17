@@ -143,8 +143,11 @@
   ;; The shipped files read as themselves. core/ is this file's dir,
   ;; its parent is the repo root where ecosystems/ and docs/ live.
   (define-runtime-path core-dir ".")
+  ;; Three ups, not one: src/spec -> src -> package-manager -> the repo
+  ;; root, which is where ecosystems/ actually lives. One up landed on
+  ;; package-manager and the fixture was simply not there.
   (define-values (root _here _here-dir?)
-    (values (simplify-path (build-path core-dir 'up)) #f #f))
+    (values (simplify-path (build-path core-dir 'up 'up 'up)) #f #f))
   (define (rooted rel) (path->string (build-path root rel)))
   (define make-c (read-ecosystem-file (rooted "ecosystems/make-c.rktd")))
   (check-equal? (ecosystem-name make-c) 'make-c)

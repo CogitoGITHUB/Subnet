@@ -31,7 +31,11 @@
 ;; exist, and the nu subprocess failed with module_not_found. A path that
 ;; claims not to depend on the cwd has to be built from something that is
 ;; not the cwd.
-(define-runtime-path checkout-dir "..")
+;;
+;; Three ups, not one: src/machine -> src -> package-manager -> the repo
+;; root. One up landed on package-manager/src and the nu file below was
+;; never found. The restructure then moved scripts/env.nu to gate/env.nu.
+(define-runtime-path checkout-dir "../../..")
 
 ;; ---------------------------------------------------------------------------
 ;; Roots (D-029: store, profile, state, config, cache come from one scope;
@@ -201,7 +205,7 @@
   (define nu-in (open-input-file "/dev/null"))
   (define nu-prog
     (string-append "use " here-dirs
-                   "/scripts/env.nu [scope-roots]; scope-roots | to json | save "
+                   "/gate/env.nu [scope-roots]; scope-roots | to json | save "
                    (path->string nu-json)))
   (define nu-shell
     (string-append "cd /tmp && exec " (path->string nu-bin)

@@ -27,9 +27,10 @@
 
   ;; raco test runs with the MODULE's directory as cwd, so docs/examples
   ;; is resolved from the repo root rather than written relative.
+  ;; Three ups: agent/skills/aiu-pm -> skills -> agent -> the repo root.
   (define-runtime-path skill-dir ".")
   (define repo-root
-    (simplify-path (build-path skill-dir 'up 'up)))
+    (simplify-path (build-path skill-dir 'up 'up 'up)))
   (define example-dir
     (path->string (build-path repo-root "docs" "examples")))
 

@@ -329,7 +329,7 @@
   )
   (define bad-dir
     (simplify-path
-      (build-path spec-core-dir 'up "docs" "examples-bad"
+      (build-path spec-core-dir 'up 'up 'up "docs" "examples-bad"
       )
     )
   )

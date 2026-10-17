@@ -99,3 +99,22 @@ row read =package-package-manager/src/entry/package-info.rkt=. Repaired.
   document those as acting directly. Both surfaces read =state-changing?=.
 - Suite was already red before this work: 73 files, 939 checks, 17 failed,
   in files this work never touched. Recorded in =plan/OPEN-DECISIONS.org=.
+
+* The 17 red checks were fixed, 2026-10-17
+- The suite was red BEFORE any of this work: 73 files, 939 checks, 17 failed.
+  All 17 now pass, and the number of checks that RUN went up, because each bug
+  had been hiding work behind it (apply.rkt 24 -> 84 checks, git-repo 23 -> 54).
+- =with-mirror-lock= never called its thunk: a bare =thunk= where =(thunk)= was
+  meant, so every clone, fetch and deepen taken under the lock returned a
+  procedure and did nothing at all. One line, and it caused 11 of the 17.
+- =raise-pm-error= was handed a hint string as a 4th POSITIONAL argument,
+  because two adjacent string literals were meant to concatenate. They do not,
+  in Racket. So "commit missing from mirror" crashed with an arity error
+  instead of refusing, and it was unreachable until the thunk bug was fixed.
+- Four tests walked up the wrong number of directories and landed on
+  =package-manager/src= instead of the repo root, so their fixtures were
+  missing; one still named =scripts/env.nu= after the restructure moved that
+  file to =gate/env.nu=.
+- One test spawned its lock holder with =(find-system-path 'exec-file)=, which
+  answers with the bare word "racket" under proot. =process*= searches no PATH,
+  so the holder never started and the test waited out its whole bound.
