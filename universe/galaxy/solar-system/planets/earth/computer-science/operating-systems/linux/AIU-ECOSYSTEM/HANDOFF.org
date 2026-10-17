@@ -1,54 +1,61 @@
 #+TITLE: HANDOFF — AIU-ECOSYSTEM
 # One job: everything a fresh conversation needs to start working in this ecosystem.
-# Status: current at the base commit; keep it true when the base changes.
+# Status: current after the ready-up (2026-10-17); keep it true when the base changes.
 
 * What this ecosystem is
 # Four separate programs that share one written contract and nothing else.
   - PM, the package manager, exists already and is in progress on the owner's side.
-  - AIU TERMINAL MULTIPLEXER, AIU EDITOR and AIU NOTATION are planned here and built later.
+  - AIU TERMINAL MULTIPLEXER, AIU EDITOR and AIU NOTATION are planned here; their packages are planned, not built.
 # Each works alone; none knows another's internals; if one crashes the others survive.
 
 * Start here, in this order
-# One line per step, so a fresh conversation knows where to begin.
-  1. Read AGENTS.md in this directory, then HARD-RULES.org.
-  2. Read the INDEX.org of this level for the map, then the program's own HANDOFF.org.
-  3. Read the program's rules/ before designing anything binding.
-  4. Read contract/ before designing anything that crosses programs.
-  5. Read WHEN-ON-LAPTOP.org before promising phone behaviour.
-  6. Read checklist/ for the build order and what is already proven.
+# one line per step, so a fresh conversation knows where to begin.
+  1. Read WORKFLOW.org, DECISIONS.org and SESSION-MAP.org in this directory.
+  2. Read AGENTS.md, then HARD-RULES.org.
+  3. Read the INDEX.org of this level for the map, then the project's own HANDOFF.org.
+  4. Read the project's rules/ before designing anything binding.
+  5. Read contract/ before designing anything that crosses programs.
+  6. Read WHEN-ON-LAPTOP.org before promising phone behaviour.
+  7. Read the project's TODO.org and plan/package-tree.org before building.
 
 * Where everything lives
-# One line per place, each with its single job.
+# one line per place, each with its single job.
+  - WORKFLOW.org — the one workflow every session follows.
+  - DECISIONS.org — the ecosystem decision log, append-only, newest first.
+  - SESSION-MAP.org — which session works what, and in which order.
+  - CLEANUP-LOG.org — retired or deleted docs, with the last live commit.
+  - STATE.org — the ready-up survey; kept for the record.
   - research/ — one file per studied subject; lessons only.
   - contract/ — the one written contract between the programs.
-  - learned/ — what the package manager already proved, read-only.
+  - learned/ — what the package manager already proved; PM is the read-only source.
   - agents/ — build instructions, plus the agent integration design.
   - pm-integration/ — what PM must gain; listed here, never done here.
   - checklist/ — the shared build up to the done line.
   - WHEN-ON-LAPTOP.org — the living list of phone limits.
   - ../text-editors/neomacs/ — the owner's literate config, read-only, for the editor study.
-  - AIU-OS/AIU-PM — the package manager itself; read-only during planning.
+  - AIU-OS/AIU-PM — the package manager itself; read-only here.
 
 * The rule sources, in the order they win
-# When two sources disagree, the earlier one wins.
+# when two sources disagree, the earlier one wins.
   - HARD-RULES.org — ecosystem-wide and checkable.
   - Each program's rules/ — the owner's hard rules, one file each.
-  - Each program's decisions/ — choices already made, newest first.
+  - Each program's decisions/ — program-only decisions; ecosystem ones land in DECISIONS.org.
 
 * Current state
-# What is true right now, and the commit that proves it.
-  - The base is filled through step 10: research, the neomacs study, the agent design, the PM integration plan, the three program plans, the contract working draft and the checklist tiers.
-  - No implementation exists anywhere yet; everything here is planning, committed and not pushed.
-  - PM is still in progress; its integration is planned only, in pm-integration/, run later by the separate PM prompt.
+# what is true right now.
+  - The base is filled through step 10; the ready-up (2026-10-17) closed its leftovers: STATE.org, the eight learned/ topic files, WORKFLOW.org, D-001..D-013, redirected open-decision files, CLEANUP-LOG.org, one TODO.org per project and plan/package-tree.org for each.
+  - The three packages are planned into their own subdirs (notation/, editor/, multiplexer/), every name registered in the package trees; nothing is built yet.
+  - The owner's questions still open: the mark questionnaire and the title's creation-time source (notation), the secrets-for-AI package (editor item 13), the public-naming ask.
+  - PM is still in progress; its integration is planned only, in pm-integration/.
 
 * Next step
-# Where the work stands and where it goes next; no dates.
-  - The planning base is finished: steps 1 through 10, every stop point taken, all committed.
-  - Next: the owner reviews and remasters; then the build starts at checklist/tier-1/, one item per commit, stopping at the done line.
-  - PM's changes wait for their own prompt: pm-integration/pm-change-checklist.org.
+# where the work stands and where it goes next; no dates.
+  - The owner answers the open questions; then the build starts per SESSION-MAP.org: AIU EDITOR item 2 (tier-1 01) leads, AIU TERMINAL MULTIPLEXER item 2 (tier-1 02) beside it, AIU NOTATION as soon as the mark answer lands.
+  - One item one commit, stopping nowhere before the done line.
 
 * How to work here
-# House rules for every conversation that touches this base.
-  - Docs only while planning: no code and no examples inside plans.
+# house rules for every conversation that touches this base.
+  - One session per project; the rest is read-only; no sub-agents.
+  - No test files and no test runs yet (D-001); the light gate only.
   - Small commits, explicit relative paths, never a blanket add, no pushes.
   - Report what was not found or not run; never guess quietly.

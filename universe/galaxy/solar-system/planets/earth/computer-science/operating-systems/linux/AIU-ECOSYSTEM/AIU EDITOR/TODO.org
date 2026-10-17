@@ -1,0 +1,33 @@
+#+TITLE: TODO — AIU EDITOR
+# One job: the single list of what is left for this program, in build order
+# Status: current; one item finishes in the commit that records its hash; nothing else is a task list.
+
+* How this list works
+# the discipline, once.
+  - Item shape: what, done when, dependencies; a finished item records DONE and the commit hash together.
+  - A blocked item is marked BLOCKED with its reason; the run continues (learned/todo-list-practice.org).
+  - Build order here follows checklist/tier-1 items (01, 05–16, 19–20) with the tree first; the package tree and every name are in plan/package-tree.org.
+  - No tests for now: the light gate only (root DECISIONS.org D-001); the full gate arrives with the first test item.
+
+* Items
+# in build order.
+  1. The tree lands — create =editor/= per plan/package-tree.org: INDEX.org, the floor areas and gate/ with its first stages; done when: the light gate is green; deps: none.
+  2. Racket in binary (tier-1 item 01): the probe that decides the join — the minimal Racket inside a baked binary, measuring the start on the phone (the laptop builds where the phone cannot); done when: the baked binary prints its measured start on the phone, or the external-process fallback is forced (D-008); deps: none.
+  3. Plain text slice (item 05): opens a real file, edits it, saves it, through the journal; done when: a real editing session on the phone, every command answering in the one printer; deps: 1, 2.
+  4. Key routing across layers (item 06, shared; the routing itself is built in the multiplexer's list — the editor-in-a-pane half is here); done when: the routing walk passes with the editor in a pane — no mouse anywhere; deps: 3, multiplexer items 3–4.
+  5. Journal and replay (item 07): every edit written as it happens; done when: kill mid-edit, replay, the buffer returns exactly; deps: 3.
+  6. Editor keyboard (item 08): keys in Rust, keymaps and commands in Racket (D-007); done when: the routing walk passes and selection and send have keys; deps: 3, 4.
+  7. Dashboard and placement (item 09): done when: the dashboard renders on the phone and a piece is placed; deps: 3.
+  8. Dev mode in both (item 10, shared): work mode loads config live; the bake keeps last good; done when: a bake cycle on the phone plus each binary's printed start; deps: 3, multiplexer item 3.
+  9. AI-link first adapter (item 11): OpenCode (D-009), after the proot test inside this item; done when: a bundle reaches the agent, events and permission asks come back, a mutation stays gated; deps: 5.
+  10. Second adapter (item 12): Hermes; done when: the boundary's checks pass through it unchanged; deps: 9.
+  11. Live agent audit (item 13): done when: an agent edit appears as it lands and is undone; the conflict test passes; deps: 9, 5.
+  12. Git checkpoints (item 14): checkpoint before agent actions, rollback, and the stop switch (D-010); done when: rollback returns the tree to the checkpoint and the stop switch stops every running agent session for this project; deps: 9.
+  13. Secrets package (item 15): BLOCKED — the owner names the package (research/secrets-for-ai.org says not located; sops and age are the named candidates); done when: the no-secrets check passes on a real bundle and on disk; deps: 9.
+  14. Select and send (item 16, editor side): done when: sends land from the editor to both agents with the context attached; deps: 9, 10, 4.
+  15. Kit conformance (item 19, shared with the multiplexer): done when: the checklist runs green for both; deps: 9–14.
+  16. Done line (item 20, shared): every done-line clause holds; the shared checklist closes; deps: all above and the notation's item 11.
+
+* After the done line
+# what continues on its own.
+  - The program's own checklist from checklist/tier-2/ content; tier 3 stays plan only until the owner opens it.

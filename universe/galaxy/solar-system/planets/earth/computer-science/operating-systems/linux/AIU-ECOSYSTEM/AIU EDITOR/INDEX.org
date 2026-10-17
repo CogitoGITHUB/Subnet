@@ -7,6 +7,7 @@
 
   - HANDOFF.org — everything a fresh conversation needs to start on this program
   - AGENT.md — the session rules: scope, the light gate, building, git
+  - TODO.org — the single list of what is left, in build order
 
 * Subdirectories
 # one line per subdirectory and what it holds; each has its own index.

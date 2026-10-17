@@ -1,0 +1,29 @@
+#+TITLE: TODO — AIU NOTATION
+# One job: the single list of what is left for this program, in build order
+# Status: current; one item finishes in the commit that records its hash; nothing else is a task list.
+
+* How this list works
+# the discipline, once.
+  - Item shape: what, done when, dependencies; a finished item records DONE and the commit hash together.
+  - A blocked item is marked BLOCKED with its reason; the run continues (learned/todo-list-practice.org).
+  - Build order here follows plan/build-order.org; the package tree and every name are in plan/package-tree.org.
+  - No tests for now: the light gate only (root DECISIONS.org D-001); the full gate arrives with the first test item.
+
+* Items
+# in build order.
+  1. The tree lands — create =notation/= per plan/package-tree.org: INDEX.org, the floor areas (errors, narration, machine) and gate/ with its first stages; done when: the light gate is green on the new tree; deps: none.
+  2. BLOCKED — the mark and the first elements (build step 1): the owner answers the questionnaire (the mark and its typing comfort) and it lands D-numbered; blocks the first slice and build-order steps 1–2.
+  3. Round trip (build step 2): text/, parser/, elements/, model/, rendering/plain.rs, entry/cli.rkt; done when: parse, render and re-parse agree on a real page (captured output); deps: 1, 2.
+  4. Robustness (step 3): incremental reparse and recovery; done when: edit mid-file, the rest stays rendered, a broken element recovers; deps: 3.
+  5. Named elements grow (step 4): outlines, tags, properties, tables, planning states, links; done when: each element dispatches by name and the editor completes names while typing; deps: 3.
+  6. Literate code (step 5): chunks, targets, scanning, load and send, skip-on-unchanged; done when: a changed chunk rebuilds, an unchanged one SKIPs naming the matched hash; deps: 3.
+  7. Comments (step 6): first-class in text, stripped by rendering; done when: commented text renders clean and the text keeps every comment; deps: 3.
+  8. Engine surface (step 7): the boundary answers the editor; node addressing stable; loader works with notation absent; done when: the editor's notation mode runs over the contract boundary; deps: 3, editor item 2.
+  9. Rendering tiers (step 8): plain and rich unicode on the phone; done when: shown on the phone; the graphics question stays recorded as unproven; deps: 3.
+  10. The kit (step 9): MCP server, skill with executed examples, read-only plugin; done when: the kit checklist runs green; deps: 8.
+  11. Notation core hosted (tier-1 item 18): notation on and off both work; the trigger chain runs once end to end; done when: captured real output; deps: 8, editor items 2 and 3.
+  12. Done-line share (tier-1 item 20, shared): the notation's share of the done-line state holds; deps: 11.
+
+* After the done line
+# what continues on its own.
+  - The program's own checklist from checklist/tier-2/ content: references and numbering, tables and data, variants and versioning, engine services, kit entries and conformance. Tier 3 stays plan only until the owner opens it.

@@ -1,34 +1,36 @@
 #+TITLE: HANDOFF — AIU NOTATION
 # One job: everything a fresh conversation needs to start on the notation.
-# Status: current at the base commit; plan, contract and checklist filled; nothing built yet.
+# Status: current after the ready-up (2026-10-17); the package is planned, nothing built yet.
 
 * What this project is
 # One plain-text notation replacing Org, Markdown and LaTeX; product name AIU-NOTATION.
-# Ordinary things use literal names; the text is the source of truth; a rendering engine shows it live.
-# From Org: outlines, tags, properties, tables, planning states, links, literate code.
-# From LaTeX (tier 3, the most important): math and physics, units, figures, numbering, citations.
+  - Ordinary things use literal names; the text is the source of truth; a rendering engine shows it live.
+  - From Org: outlines, tags, properties, tables, planning states, links, literate code.
+  - From LaTeX (tier 3, the most important): math and physics, units, figures, numbering, citations.
 
 * What binds it
-# The rules are binding, not guidance; read them before designing anything.
+# the rules are binding, not guidance; read them before designing anything.
   - rules/ — all fourteen hard rules, including rule 12, which lives only here.
   - ../contract/ — the engine boundary and node addressing; read before designing the surface.
   - ../agents/ — how a send names a notation address; comments in the text are first class.
+  - plan/package-tree.org — the register of the package: =notation/= and every file, one job each.
 
 * The owner's answers
-# What the owner has given; the one thing still open.
-  - questions/usage-inventory.org — answered 2026-10-16 in the owner's words; typing comfort for the mark is still open.
+# what the owner has given; what is still open.
+  - questions/usage-inventory.org — answered 2026-10-16 in the owner's words.
+  - Still open: the mark and its typing comfort (the questionnaire), and the title's creation-time source. The mark blocks the first slice (TODO item 2).
 
 * Current state
-# What is true right now.
-  - Base complete: the questionnaire answered, the plan (step 8), the contract working draft (step 9) and the checklist tiers (step 10) are filled; no implementation.
-  - The open decisions — the mark, numbering, the engine wording — sit in plan/open-decisions.org.
+# what is true right now.
+  - Base complete; the ready-up closed the decisions: numbering, engine wording and the first element set are D-011..D-013; plan/open-decisions.org is a redirect stub.
+  - The package is planned at =notation/= per plan/package-tree.org; the work list is TODO.org; nothing is built.
 
 * Next step
-# One line, so a fresh conversation starts in the right place.
-  - No build work yet. The owner reviews and remasters; the open decisions are in plan/open-decisions.org; then the build starts from ../checklist/tier-1/.
+# one line, so a fresh conversation starts in the right place.
+  - TODO.org, top to bottom: item 1 (the tree lands with the light gate) can start now; item 2 waits on the owner's mark answer; then the round trip slice.
 
 * How to work here
-# House rules.
-  - Docs only while planning: no code, no examples inside plans.
+# house rules.
+  - AGENT.md governs the session; no tests for now, the light gate only (root DECISIONS.org D-001).
   - Small commits, explicit paths, never a blanket add, no pushes.
   - Phone limits are recorded in ../WHEN-ON-LAPTOP.org the moment they appear.

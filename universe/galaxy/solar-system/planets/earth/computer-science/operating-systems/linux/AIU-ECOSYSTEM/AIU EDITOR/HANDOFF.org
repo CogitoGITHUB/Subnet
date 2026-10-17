@@ -1,35 +1,35 @@
 #+TITLE: HANDOFF — AIU EDITOR
 # One job: everything a fresh conversation needs to start on the editor.
-# Status: current at the base commit; plan, contract and checklist filled; nothing built yet.
+# Status: current after the ready-up (2026-10-17); the package is planned, nothing built yet.
 
 * What this program is
 # A general editor first, built on the owner's neomacs work, with no daemon and no legacy baggage.
-# It uses CLI tools (fzf, atuin, television) in a Neovim-style UI, keyboard driven.
-# AIU-NOTATION is a pluggable engine it hosts through a boundary, never a dependency.
+  - It uses CLI tools (fzf, atuin, television) in a Neovim-style UI, keyboard driven.
+  - AIU-NOTATION is a pluggable engine it hosts through a boundary, never a dependency.
 
 * What binds it
-# The rules are binding, not guidance; read them before designing anything.
+# the rules are binding; read them before designing anything.
   - rules/ — the owner's hard rules, one file each; rule 12 is not here, it is notation only.
   - ../contract/ — the shared contract; read before designing anything that crosses programs.
   - ../agents/ — the agent design both agents share.
-  - plan/open-decisions.org and decisions/ — what is still open and what was decided.
+  - plan/package-tree.org — the register of the package: =editor/= and every file, one job each.
 
 * Where the study comes from
-# Read-only sources; nothing is modified and nothing is copied.
-  - ../text-editors/neomacs/ — the owner's literate config, about 500 files, read-only.
-  - study/ — the neomacs study, filled in step 4: the map first, then KEYBOARD in depth, then DASHBOARD.
+# read-only sources; nothing is modified and nothing is copied.
+  - ../text-editors/neomacs/ — the owner's literate config, 421 files counted 2026-10-16, read-only.
+  - study/ — the neomacs study: the map, KEYBOARD, then DASHBOARD.
 
 * Current state
-# What is true right now.
-  - Base complete: the plan (step 8), the contract working draft (step 9) and the checklist tiers (step 10) are filled; no implementation.
-  - The contract it obeys sits in ../contract/, the working draft; a piece freezes when a program and an adapter both depend on it.
+# what is true right now.
+  - Base complete; the ready-up closed the decisions: the Racket–Rust seam, the Racket join, the first adapter and the stop switch are D-007..D-010; plan/open-decisions.org is a redirect stub.
+  - The package is planned at =editor/= per plan/package-tree.org; the work list is TODO.org; nothing is built.
 
 * Next step
-# One line, so a fresh conversation starts in the right place.
-  - No build work yet. The owner reviews and remasters; then the build starts from ../checklist/tier-1/, in item order.
+# one line, so a fresh conversation starts in the right place.
+  - TODO.org, top to bottom: item 1 (the tree lands with the light gate), then item 2 — tier-1 01, the Racket-in-binary probe that decides D-008 (the laptop builds where the phone cannot).
 
 * How to work here
-# House rules.
-  - Docs only while planning: no code, no examples inside plans.
+# house rules.
+  - AGENT.md governs the session; no tests for now, the light gate only (root DECISIONS.org D-001).
   - Small commits, explicit paths, never a blanket add, no pushes.
   - Phone limits are recorded in ../WHEN-ON-LAPTOP.org the moment they appear.

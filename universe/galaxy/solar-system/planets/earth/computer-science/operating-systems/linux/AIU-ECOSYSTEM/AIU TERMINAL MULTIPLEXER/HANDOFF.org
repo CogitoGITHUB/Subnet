@@ -1,29 +1,30 @@
 #+TITLE: HANDOFF — AIU TERMINAL MULTIPLEXER
 # One job: everything a fresh conversation needs to start on the multiplexer.
-# Status: current at the base commit; plan, contract and checklist filled; nothing built yet.
+# Status: current after the ready-up (2026-10-17); the package is planned, nothing built yet.
 
 * What this program is
 # Shells, panes, a layout tree, and a session holder with detach and reattach.
-# The holder owns the shells and the screen is a thin client; Nushell command records are first class.
-# Terminals are a facade over tty; what the phone cannot promise is written down, never assumed.
+  - The holder owns the shells and the screen is a thin client; Nushell command records are first class.
+  - Terminals are a facade over tty; what the phone cannot promise is written down, never assumed.
 
 * What binds it
-# The rules are binding, not guidance; read them before designing anything.
+# the rules are binding; read them before designing anything.
   - rules/ — the owner's hard rules, one file each; rule 12 is not here, it is notation only.
-  - ../contract/ — the shared contract; read before designing anything that crosses programs.
+  - ../contract/ — the shared contract; the key routing and the placement model live there (step 9).
   - ../agents/ — the agent design; either agent opens in its own pane beside the work.
+  - plan/package-tree.org — the register of the package: =multiplexer/= and every file, one job each.
 
 * Current state
-# What is true right now.
-  - Base complete: the plan (step 8), the contract working draft (step 9) and the checklist tiers (step 10) are filled; no implementation.
-  - The contract it obeys sits in ../contract/; the adopt-or-own route waits for the proot test, checklist/tier-1 item 02.
+# what is true right now.
+  - Base complete; the ready-up closed the decisions: the route (D-002), herdr as the tested candidate (D-003), the control surface (D-004), the shared key-routing handover (D-005) and the log shape (D-006); plan/open-decisions.org is a redirect stub.
+  - The package is planned at =multiplexer/= per plan/package-tree.org; the work list is TODO.org; nothing is built.
 
 * Next step
-# One line, so a fresh conversation starts in the right place.
-  - No build work yet. The owner reviews and remasters; then the build starts from ../checklist/tier-1/, item 02 first for the route.
+# one line, so a fresh conversation starts in the right place.
+  - TODO.org, top to bottom: item 1 (the tree lands with the light gate); item 2 — tier-1 02, the tiny-binary probe on the phone that decides the route and confirms D-002/D-003; herdr runs the daily panes if it passes.
 
 * How to work here
-# House rules.
-  - Docs only while planning: no code, no examples inside plans.
+# house rules.
+  - AGENT.md governs the session; no tests for now, the light gate only (root DECISIONS.org D-001).
   - Small commits, explicit paths, never a blanket add, no pushes.
   - Phone limits are recorded in ../WHEN-ON-LAPTOP.org the moment they appear.
