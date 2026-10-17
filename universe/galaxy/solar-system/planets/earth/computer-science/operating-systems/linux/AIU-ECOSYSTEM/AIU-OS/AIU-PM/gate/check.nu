@@ -366,10 +366,21 @@ def print-lint-file [f rules] {
 # open-output-file and subprocess may only appear in the audited files
 # below; a new writer or spawner anywhere else fails until it is
 # written down here deliberately.
+# -> list of string, the predicates the policy module PROMISES, from the
+# provide block and nothing else. The first version read every line
+# starting with "[" ANYWHERE in the file, so cond clauses -- "[else",
+# "[(not (x))", "[spent?" -- came back as predicate names and were then
+# reported as uncalled. A gate that invents names is a gate that lies, so
+# the harvest is bounded twice: it stops at the first (define, and it
+# requires the contract arrow, which in this file only a contract entry
+# carries.
 def sec-predicates [] {
     open "package-manager/src/security/security.rkt"
     | lines
-    | where {|l| ($l | str trim | str starts-with "[") }
+    | take while {|l| not ($l | str trim | str starts-with "(define") }
+    | where {|l|
+        ($l | str trim | str starts-with "[") and ($l | str contains "(->")
+      }
     | each {|l|
         $l | str trim | str substring 1.. | split row " " | first
       }
