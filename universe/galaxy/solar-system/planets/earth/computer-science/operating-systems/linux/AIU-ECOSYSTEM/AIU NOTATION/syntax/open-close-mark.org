@@ -15,6 +15,15 @@
     in words: title, paragraph, code block.
   - A code block's body is opaque to the parser: the parser does not read code as
     notation text, so a { inside code never opens a notation element.
+  - A code block closes by repeating its own word: the word that opened it stands
+    again, alone, on its own line, and that line is the closer (owner, 2026-10-17 —
+    the named closer, not a brace).
+  - The hole fix: a word closes a code block only when it stands alone on its own
+    line and matches its own opener; the same word sitting inside a line of prose
+    or inside code is ordinary text, never a closer.
+  - The editor hides the closer when it shows the file; the file itself keeps it.
+  - Whether ordinary elements (title, paragraph) close the same way is still open
+    and is not decided here.
   - A { in ordinary prose still opens an element; the first elements and the
     typing-comfort check inside TODO item 2 decide how that reads for the owner.
 
@@ -22,6 +31,9 @@
 # the questions this area must answer, listed as questions; options welcome with a recommendation.
   - Closed 2026-10-17: the sign is { } (owner; notation D-014). The root
     =DECISIONS.org= record is pending, carried in ROOT-REQUEST-D014.org.
+  - Closed 2026-10-17: a code block closes by repeating its own word, alone on
+    its own line, matching its opener (the named closer); the editor hides it,
+    the file keeps it. Ordinary elements' closer: still open, not decided here.
   - Still open, inside TODO item 2: how the first three elements (title,
     paragraph, code block) are written with the mark, and the light gate that
     proves it.

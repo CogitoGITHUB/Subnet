@@ -14,11 +14,18 @@
   parts (math, graphs) use a more advanced symbolic syntax in the LaTeX tradition, simplified
   a lot, backed by the meaning layer, tier 3, far future. The editor helps typing: completion,
   the keyboard layer inserts names, live rendering hides the marks.
+# Editor's note 2026-10-17: the owner's words above are unchanged, as this file demands.
+# The phrase on line 10 ("the exact sign is worked out later, with options and a
+# recommendation") described what was true when the rule was written. It was worked out
+# later, on the phone: the sign is { } (notation D-014; root =DECISIONS.org= record pending
+# in ROOT-REQUEST-D014.org), and a code block closes by repeating its own word, alone on
+# its own line. Ordinary elements' closer is still open.
 
 * What it demands here
 # how this rule bites in this program. No examples; the plan carries the detail.
-  Ordinary things use literal names; plain lines are a paragraph; the mark is chosen by the
-  owner from options, on a phone keyboard.
+  Ordinary things use literal names; plain lines are a paragraph; the mark is decided
+  by the owner — { } (notation D-014, 2026-10-17) — and a code block closes by
+  repeating its own word, alone on its own line, matching its opener.
 
 * What breaks it
 # the failure this rule exists to prevent.
