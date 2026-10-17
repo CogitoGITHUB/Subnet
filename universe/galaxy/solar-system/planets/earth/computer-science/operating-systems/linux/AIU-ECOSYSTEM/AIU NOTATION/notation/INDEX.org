@@ -1,0 +1,43 @@
+#+TITLE: INDEX — AIU NOTATION/notation/
+# One job: list every directory and file in the package, and the single job of each.
+# Status: current 2026-10-17; updated in the same commit as any change here.
+
+* The package
+# what this directory is.
+  - =notation/= is the whole package: everything a run needs lives inside it,
+    and nothing of it lives anywhere else (plan/package-tree.org).
+
+* Areas, lowest first
+# dependencies point one way; a require may point downward only.
+  - src/errors/ — the error type and how it renders (the floor)
+  - src/narration/ — how work speaks: events, the wait door, the printer
+  - src/machine/ — the machine seam and the block door
+  - src/security/ — what may happen without asking (planned)
+  - src/join/ — the Rust–Racket seam; the only language crossing (planned)
+  - src/text/ — the raw text: bytes, lines, positions (Rust)
+  - src/parser/ — the context-free core (Rust, hot path)
+  - src/elements/ — the element vocabulary: names and what they mean
+  - src/model/ — the meaning tree
+  - src/diagnostics/ — the reports the reader sees
+  - src/references/ — links and numbering (after the done line)
+  - src/literate/ — named chunks and targets (build step 5)
+  - src/generation/ — writing generated files (build step 5)
+  - src/rendering/ — the screen and printer output (build step 8, Rust)
+  - src/surface/ — the notation side of the engine boundary (build step 7)
+  - src/entry/ — the outside world: argv and MCP
+
+* What exists on disk today
+# the areas landed so far, one line each; the rest is planned, not built.
+  - src/errors/ — landed: err.rkt, raise.rkt, render.rkt
+  - src/narration/ — landed: events.rkt, narration.rkt, wait-door.rkt, print-console.rkt
+  - src/machine/ — landed: directories.rkt, locks.rkt, cancel.rkt
+  - src/text/ — landed: buffer.rs, positions.rs (Rust)
+  - src/parser/ — landed: parser.rs (Rust)
+  - Cargo.toml — the crate manifest, one crate, no workspace
+  - src/lib.rs — the module list: which area files belong to the crate
+  - tests/, test-doubles/ — open when tests open (D-001)
+
+* Where the gate lives
+# the gate is not inside the package.
+  - =../gate/= runs the light gate; see its INDEX.org. The gate watches this
+    package, it is not part of it.

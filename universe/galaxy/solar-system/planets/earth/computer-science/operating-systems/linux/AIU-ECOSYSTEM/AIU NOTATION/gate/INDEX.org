@@ -1,0 +1,29 @@
+#+TITLE: INDEX — AIU NOTATION/gate/
+# One job: list every file in this directory and the single job of each.
+# Status: current; updated in the same commit as any change in this directory.
+
+* Files
+# one line per file: its name, then the single job it performs.
+
+  - check.nu — the dispatcher: named stages, one table, --list
+  - need-nu.nu — pinned Nu or exit 3; never fetches
+  - env.nu — the Nushell mirror of the one HOME seam
+  - read-check.rkt — the paren check: READ-BAD file:line, the bad form named
+  - one-way-dependency-lint.nu — the area table above, enforced
+  - security-gate-lint.nu — predicates called, writers audited
+  - banned-words-lint.nu — the naming law, made mechanical
+  - language-split-lint.nu — only join/ may cross Rust and Racket
+
+* How the gate is run
+# the one entry point, and the two rules it keeps.
+  - =nu gate/check.nu= runs every stage in order; =nu gate/check.nu --list=
+    prints the stage table without running anything.
+  - A stage with nothing to check prints NOTHING-TO-CHECK and never PASS; the
+    dispatcher then prints how many stages checked nothing.
+  - A lint starts checking for real by itself as soon as the area it watches
+    exists. No stage needs an edit to the dispatcher to become real.
+
+* Where Racket is called from
+# one path, never PATH.
+  - =/root/home/shape/opt/racket-full/bin/racket=, taken from env.nu. The
+    phone's PATH names =opt/racket/bin=, which does not exist.
