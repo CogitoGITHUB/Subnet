@@ -1,0 +1,15 @@
+#+TITLE: INDEX — AIU NOTATION/notation/src/errors/
+# One job: list every file in this directory and the single job of each.
+# Status: current; updated in the same commit as any change in this directory.
+
+* Files
+# one line per file: its name, then the single job it performs.
+
+  - err.rkt — the error record: what happened, who, where
+  - raise.rkt — the one raise helper; nothing raises around it
+  - render.rkt — how an error prints: one shape, never a dump
+
+* Where it sits
+# why this area is first, and what it may use.
+  - The floor of the package: every other area may use this one; it uses
+    nothing else, so a require from here downward is a mistake.
