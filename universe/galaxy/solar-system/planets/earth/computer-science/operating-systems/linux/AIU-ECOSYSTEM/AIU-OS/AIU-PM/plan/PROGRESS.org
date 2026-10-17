@@ -136,3 +136,4 @@ commit, per the rule at the top.
 | D4 | owner decisions listed with options and defaults | 50686fd |
 | D2 | architecture file per component + index (24 files) | b5e2f8e |
 | D3 | register + file inventory + architecture planned sections | 8a614b4 |
+| D5 | build order for the missing components | 265a8fa |
