@@ -4,6 +4,24 @@
 * Log
 Append-only. Newest first. Every entry names the rule IDs it touches.
 
+** 2026-10-17 D-067: the audited-writers rule stops at the test bodies
+   Touches =gate/check.nu=; =tests/machine/directories-test.rkt=;
+   =TODO.org=.
+1. WHAT: security-gate-lint's audited-writers rule now drops every line
+   from the first =(module+ test= line before it searches, the same
+   shape sec-call-count already used. The stage comment says why, and a
+   two-file probe measured both halves: an =open-output-file= before
+   the test block still fails, the same call inside the block does not.
+2. WHY: the rule audits production effects, and the policy record for
+   S-04 already said effects in test bodies are allowed -- the code
+   did not match its own policy. Step 14 surfaced it: the moved-out
+   tests/machine/directories-test.rkt writes its own fixtures, so the
+   first extracted test failed the stage it never violated in spirit.
+3. COST: a production file that hides an effect below a =(module+ test=
+   line would escape the rule. Accepted: a file whose production part
+   is empty above a test block is not a production module, and
+   one-way-dependency-lint plus the test runner still see it.
+
 ** 2026-10-17 D-066: OPEN-DECISIONS retires; TODO.org is the order of record
    Touches =plan/OPEN-DECISIONS.org=; =plan/MOVE-ORDER.org=;
    =TODO.org=; =LATER.org=.

@@ -85,32 +85,3 @@
 ;; dirs: it needs plan-hash.rkt (store-dir) and plan-derive.rkt (the
 ;; plans), and plan-hash.rkt cannot require plan-derive.rkt without
 ;; cycling, because derivation hashes what it produces.
-
-(module+ test
-  (require rackunit
-           "spec.rkt"
-           "../entry/version.rkt")
-
-  ;; E-04 fixture: pkg-alpha on pkg-beta, synthetic and local (T-10).
-  (define alpha-spec
-    (spec 'pkg-alpha (string->version "2.0") "Alpha"
-          (source "https://example.org/alpha.git"
-                  "9edb3f66fd807b096b48283debdcddccfea34bad")
-          (list (dep 'pkg-beta (string->version "1.0")))
-          '()
-          (list (build-step 'copy '("a" "b")))
-          (install-spec 'prefix '((bin "alpha" "bin/alpha")
-                                  (check "bin/alpha" "--version")))
-          'mit "https://example.org/alpha" #f '() '()
-          'default
-          (list (flag-spec 'gui #t "GUI" '() '()))))
-
-  ;; Two slots of one package plan to two store dirs.
-  (define alpha-alt
-    (struct-copy spec alpha-spec [slot 'lts]))
-  (check-false (equal? (package-plan-store-dir
-                        (derive-package-plan alpha-spec '((gui . #t))
-                                             '("pkg-beta 1.0")))
-                       (package-plan-store-dir
-                        (derive-package-plan alpha-alt '((gui . #t))
-                                             '("pkg-beta 1.0"))))))

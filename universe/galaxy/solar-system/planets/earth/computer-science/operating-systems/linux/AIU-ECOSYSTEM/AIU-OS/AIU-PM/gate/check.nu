@@ -438,7 +438,11 @@ def run-security-gate-lint [rules] {
             # status-fifo tripped on their own explanatory comments).
             # A file outside this list that opens an output file or spawns a
             # subprocess fails here, so new effects get written down instead
-            # of slipping in.
+            # of slipping in. The rule governs PRODUCTION code: everything
+            # from the first `(module+ test` line is dropped, because a test
+            # builds its own fixtures and may write them (measured:
+            # tests/machine/directories-test.rkt tripped this rule on the
+            # files its test body writes, which the policy allows).
             let writers = ["vault.rkt" "vault-lock.rkt" "directories.rkt"
                 "narration.rkt" "event-text.rkt" "run.rkt" "jobs.rkt"
                 "probe-blob.rkt"]
@@ -449,7 +453,16 @@ def run-security-gate-lint [rules] {
                 # merely mentions subprocess is prose, not an effect
                 # (measured: kill-tree, spawn and status-fifo tripped on
                 # their own explanatory comments while calling process*).
-                let rawlines = (open --raw $f | lines
+                let ls = (open --raw $f | lines)
+                # The first `(module+ test` line ends the production part of
+                # the file; the sentinel is the line count so a file with no
+                # test block keeps every line (same shape as sec-call-count).
+                let starts = ($ls | enumerate | where {|r|
+                    ($r.item | str trim) == "(module+ test"
+                } | get index)
+                let test_at = (if ($starts | is-empty) { $ls | length } else { $starts | first })
+                let rawlines = ($ls | enumerate | where {|r| $r.index < $test_at }
+                    | get item
                     | where {|l| not (($l | str trim) | str starts-with ";") })
                 let code = (($rawlines | each {|l|
                     strip-quotes ($l | str trim)

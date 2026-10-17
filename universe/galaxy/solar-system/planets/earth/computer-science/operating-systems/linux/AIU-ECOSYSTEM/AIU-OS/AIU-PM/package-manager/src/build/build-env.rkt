@@ -150,15 +150,3 @@
   b)
 
 ;; ---------------------------------------------------------------------------
-(module+ test
-  (require rackunit)
-
-  ;; G-09: the build env carries no ambient network configuration.
-  ;; Proxy variables are present but empty, so no proxy (and no proxy
-  ;; credentials) reaches a build step. Synthetic dirs only (T-10).
-  (define work (make-temporary-directory "pm-buildenv~a"))
-  (define benv (build-env #:prefix work #:source work #:work work))
-  (for ([v (in-list '("http_proxy" "https_proxy"
-                      "HTTP_PROXY" "HTTPS_PROXY"))])
-    (check-equal? (cdr (assoc v benv)) ""))
-  (delete-directory/files work))

@@ -16,18 +16,6 @@
 # =~/opt/nushell/0.116.1/nu --no-config-file gate/check.nu=.
 
 * PHASE A -- foundation and gates
-** step 14 to green
-what: finish the staged extraction: the 26 inline (module+ test ...)
-  blocks move to =package-manager/tests/<area>/= with TEST-END; each
-  require list is the module under test plus only the copied modules
-  that do not overlap its provides (=activate.rkt= and
-  =profile-holds.rkt= both provide =profile-held?=); the test headers
-  stop citing MOVE-ORDER (retired) and cite this item.
-done when: the full gate is green on the moved state; every extracted
-  file ends with TEST-END; no header cites a retired plan file.
-tests: the 26 files already staged under =tests/<area>/=.
-deps: none -- the work is staged and red.
-
 ** exit codes (sysexits)
 what: =config= becomes 78 (EX_CONFIG), =internal= 70 (EX_SOFTWARE) in
   =errors/error-type.rkt=; =docs/ERRORS.org= follows; the "E-15
@@ -60,7 +48,7 @@ what: =run-command= -> =spawn-and-wait=; =run-result-exit= ->
   comment and every contract row.
 done when: grep finds neither old name anywhere in the tree.
 tests: the install, build and process suites that use them.
-deps: after step 14 (same files move).
+deps: step 14 (done; the same files move).
 
 ** safety-test scratch cleanup
 what: the git-repo safety test removes the
@@ -84,7 +72,7 @@ what: =one-printer-lint= and =security-gate-lint= scan
   =(module+ test ...)= bodies too, not only non-test paths (D-060).
 done when: a planted violation in a test body fails the gate.
 tests: those two stages.
-deps: after step 14 (test bodies move).
+deps: step 14 (done; the test bodies move).
 
 ** S-03 check names the violated rule
 what: =pm check= names the violated rule from S-01's named set, not
@@ -128,7 +116,7 @@ what: move the modules so the ranking holds (D-044): the 34 crossings
 done when: =one-way-dependency-lint= reports zero known unpaid edges
   and the gate is green; ARCHITECTURE.org matches the tree.
 tests: =gate/one-way-dependency-lint.nu= + the suites of moved areas.
-deps: after step 14 and the two renames (stable tree).
+deps: step 14 (done) and the two renames (stable tree).
 
 ** G-01 dependency resolution and path conflicts
 what: resolve a closure; two packages claiming one path fail at plan

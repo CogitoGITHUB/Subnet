@@ -78,29 +78,3 @@
               (lambda ()
                 (wait-command line-ch (or cancel never-evt)
                               (lambda () (kill-tree pgid)))))))
-
-(module+ test
-  (require rackunit
-           "../machine/cancel.rkt")
-
-  ;; wait-command decision matrix, no children: line wins, EOF without a
-  ;; line is died, cancel kills through the given thunk exactly once.
-  (define matrix-line (make-channel))
-  (void (thread (lambda () (channel-put matrix-line "EXIT:0"))))
-  (check-equal? (wait-command matrix-line never-evt
-                              (lambda () (error "must not kill")))
-                "EXIT:0")
-  (define matrix-cancelled (make-channel))
-  (define killed-box (box #f))
-  (define-values (matrix-cancel matrix-fire!) (make-cancel-source))
-  (matrix-fire!)
-  (check-equal? (wait-command matrix-cancelled matrix-cancel
-                              (lambda () (set-box! killed-box #t)))
-                'cancelled)
-  (check-true (unbox killed-box))
-  ;; A line that arrived with cancel still counts as completion.
-  (define matrix-both (make-channel))
-  (void (thread (lambda () (channel-put matrix-both "EXIT:5"))))
-  (check-equal? (wait-command matrix-both matrix-cancel
-                              (lambda () (error "must not kill")))
-                "EXIT:5"))

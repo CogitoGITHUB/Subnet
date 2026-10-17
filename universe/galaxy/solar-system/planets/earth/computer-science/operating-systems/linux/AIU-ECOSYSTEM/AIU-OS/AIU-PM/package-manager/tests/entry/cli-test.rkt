@@ -1,7 +1,8 @@
 #lang racket/base
 ;; cli-test.rkt -- the CLI suite, moved out of the module it tests
-;; (step 8; step 14 brings the rest of the inline tests out the same
-;; way). It checks the promise cli.rkt keeps: parsing and rendering,
+;; (step 8; step 14, done 2026-10-17, brought the rest of the inline
+;; tests out the same way). It checks the promise cli.rkt keeps:
+;; parsing and rendering,
 ;; the check runner, every --format json document, and the docs/API.org
 ;; goldens. The runtime path crosses three levels up from tests/entry
 ;; to the repo root, where docs/ sits.

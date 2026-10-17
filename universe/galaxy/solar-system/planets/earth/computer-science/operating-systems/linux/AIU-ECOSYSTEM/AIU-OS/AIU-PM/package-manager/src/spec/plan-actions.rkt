@@ -265,35 +265,3 @@
 ;; ---------------------------------------------------------------------------
 ;; Guards reject with kind 'internal (programmer-side construction) or
 ;; 'spec (a declaration that cannot become a plan).
-
-(module+ test
-  (require rackunit
-           "../errors/error-type.rkt")
-
-  ;; Every action builds and predicates sort them.
-  (define fetch-1
-    (fetch-action "https://example.org/r.git" (make-string 40 #\a) "/tmp/s"))
-  (check-true (action? fetch-1))
-  (check-false (action? "fetch"))
-  (check-false (action? 42))
-
-  ;; Guards reject with kind 'internal (programmer-side construction).
-  (define (internal-kind thunk)
-    (with-handlers ([exn:fail:pm? exn:fail:pm-kind])
-      (thunk)
-      #f))
-  (check-eq? (internal-kind (lambda () (fetch-action 42 "c" "d")))
-             'internal)
-  (check-eq? (internal-kind
-              (lambda () (run-step-action "n" '() "d")))
-             'internal)
-  (check-eq? (internal-kind
-              (lambda () (run-step-action "n" "not-a-list" "d")))
-             'internal)
-  (check-eq? (internal-kind
-              (lambda () (install-file-action "s" "d" #o1000)))
-             'internal)
-  (check-eq? (internal-kind (lambda () (plan '(1 2 3)))) 'internal)
-  (check-pred internal-error?
-              (with-handlers ([exn:fail:pm? (lambda (e) e)])
-                (plan '(oops)))))

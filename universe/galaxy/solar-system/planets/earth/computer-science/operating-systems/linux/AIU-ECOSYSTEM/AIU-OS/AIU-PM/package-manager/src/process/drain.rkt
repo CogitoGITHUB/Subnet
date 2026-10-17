@@ -66,18 +66,3 @@
           (when log-port (displayln clean log-port))
           (when on-progress (on-progress clean))
           (loop (bounded-tail (cons clean grown) limit))))))
-
-(module+ test
-  (require rackunit)
-
-  ;; Direct unit pins for redact-credentials (the redaction check). The
-  ;; end-to-end proof that a secret never reaches a tail or a log file
-  ;; stays in run.rkt, because it needs a real child.
-  (check-equal? (redact-credentials "https://user:s3cret@example.com/x")
-                "https://<redacted>@example.com/x")
-  (check-equal? (redact-credentials "token=abc123")
-                "token=<redacted>")
-  (check-equal? (redact-credentials "https://example.com/x")
-                "https://example.com/x")
-  (check-equal? (redact-credentials "https://<redacted>@example.com/x")
-                "https://<redacted>@example.com/x"))
