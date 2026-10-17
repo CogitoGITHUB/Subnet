@@ -4,8 +4,8 @@
 ;; entries builder that feeds activate and remove, run-command-json
 ;; (the exact --format json document), and run-cli, the executable
 ;; entry that turns argv into an exit code. Thin over the core verbs;
-;; every failure becomes an exit code here (E-5 narrow handlers, E-15
-;; codes), and unwired commands refuse loudly.
+;; every failure becomes an exit code here (E-5 narrow handlers, the
+;; codes in docs/ERRORS.org), and unwired commands refuse loudly.
 
 (require racket/file
          racket/list
@@ -141,7 +141,8 @@
 
 ;; (listof string?) -> (values symbol? (listof string?)), --format in ONE
 ;; place (E-01). Default 'sexp; a missing value, a duplicate flag, or
-;; anything but sexp|json raises kind 'config (exit 2 via pm-error-exit-code).
+;; anything but sexp|json raises kind 'config (exit 78, EX_CONFIG, via
+;; pm-error-exit-code).
 (define (parse-format args)
   (define (loop rest format seen?)
     (cond [(null? rest) (values format rest)]

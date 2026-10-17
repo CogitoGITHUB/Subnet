@@ -16,14 +16,6 @@
 # =~/opt/nushell/0.116.1/nu --no-config-file gate/check.nu=.
 
 * PHASE A -- foundation and gates
-** exit codes (sysexits)
-what: =config= becomes 78 (EX_CONFIG), =internal= 70 (EX_SOFTWARE) in
-  =errors/error-type.rkt=; =docs/ERRORS.org= follows; the "E-15
-  [PROPOSAL]" citation retires (D-045, closes D-008).
-done when: tests pin both codes; ERRORS.org matches; no E-15 citation
-  remains.
-tests: =tests/errors/error-type-test.rkt= + the entry suite.
-deps: none.
 
 ** refusal wording
 what: each confirmation refusal's next step is its own; the wrong-plan

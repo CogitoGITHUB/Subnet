@@ -44,13 +44,14 @@
              (lambda ()
                ((contract pm-kind/c (lambda (x) x) 'test 'test) 'fetsh)))
 
-  ;; Exit codes per E-15 [PROPOSAL], incl. the config/internal mapping.
+  ;; Exit codes per docs/ERRORS.org: config is 78 (EX_CONFIG), internal
+;; is 70 (EX_SOFTWARE).
   (define (code-for kind)
     (pm-error-exit-code
      (exn:fail:pm "m" (current-continuation-marks) kind '() #f #f)))
   (check-equal? (map code-for '(spec resolve fetch verify build install
                                 activate config cancelled internal))
-                '(3 4 5 6 7 8 9 2 130 70))
+                '(3 4 5 6 7 8 9 78 130 70))
 
   ;; Cancelled carries operation, completed and remaining-state (D-015 sample).
   (check-equal?

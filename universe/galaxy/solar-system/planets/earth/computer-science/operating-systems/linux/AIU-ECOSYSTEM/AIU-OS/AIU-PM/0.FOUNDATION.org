@@ -222,20 +222,11 @@ syntax/parse docs)
 - *E-13* Messages are written for a phone screen: short lines, one fact per line.
 - *E-14* Every network call and subprocess has a timeout, and the timeout error names the
   operation and the limit.
-- *E-15* [PROPOSAL] Exit codes, frozen in ERRORS.org:
-
-| Code | Meaning                         |
-|------+---------------------------------|
-|    0 | success                         |
-|    2 | usage (bad command line)        |
-|    3 | spec invalid                    |
-|    4 | resolve (dependencies)          |
-|    5 | fetch (network / source)        |
-|    6 | verify (hash mismatch)          |
-|    7 | build failed                    |
-|    8 | install failed                  |
-|   70 | internal bug                    |
-|  130 | interrupted (Ctrl-C)            |
+- *E-15* Exit codes, frozen in =docs/ERRORS.org= -- that file is the
+  one table, and a second copy here would drift. The kinds keep their
+  own numbers below 10, =cancelled= is 130, and the two kinds that
+  used to invent numbers took the outside names in D-045: =config= is
+  78 (EX_CONFIG), =internal= is 70 (EX_SOFTWARE).
 
 ** =package-manager/src/errors/error-type.rkt= (shape, not final code)
 #+begin_src racket
@@ -429,7 +420,7 @@ build: step failed;
 | D-005 | Install layout: versioned dirs, current link (decided)                      |
 | D-006 | git ONLY; full history, one monorepo vault; export at pin (decided)|
 | D-007 | Exact commit id only (git); versions match by equality (decided) |
-| D-008 | Exit-code table (E-15)                                                     |
+| D-008 | Exit-code table (sysexits, D-045; decided)                              |
 | D-009 | Trust model for third-party specs (S-1)                                    |
 | D-010 | Where =raco test= comes from in minimal Racket (section 1)                 |
 | D-011 | Vault monorepo vault.git, per-package namespaces (decided)      |

@@ -129,7 +129,7 @@ by explicit command, never by time or age (D-015). Rollback = repoint
 =profile= at a previous generation (=pm rollback N=).
 Conflicts: two active packages owning the same relative path fail
 closed BEFORE anything changes: no precedence rules, no last-wins.
-Exact message, exit 9 (activate failed; E-15 table gains 9 in STEP 5):
+Exact message, exit 9 (activate failed; docs/ERRORS.org has the table):
 #+begin_example
 activate: file conflict, nothing changed;
   file: bin/bats

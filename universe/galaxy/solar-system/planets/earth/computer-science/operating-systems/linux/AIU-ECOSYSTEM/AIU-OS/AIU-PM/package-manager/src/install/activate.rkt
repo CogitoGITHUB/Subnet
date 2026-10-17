@@ -5,8 +5,8 @@
 ;; are profile-NNN/ dirs of absolute symlinks; activate validates
 ;; everything first, builds the next generation, then flips the
 ;; profile link with store.rkt's atomic swap: a conflict fails closed
-;; with kind 'activate (exit 9) before anything changes. E-15's
-;; rollback and remove are here too; hold pins slots in
+;; with kind 'activate (exit 9, docs/ERRORS.org) before anything
+;; changes. Its rollback and remove are here too; hold pins slots in
 ;; profile/holds.rktd.
 ;;
 ;; This facade must not add logic of its own; the jobs live in

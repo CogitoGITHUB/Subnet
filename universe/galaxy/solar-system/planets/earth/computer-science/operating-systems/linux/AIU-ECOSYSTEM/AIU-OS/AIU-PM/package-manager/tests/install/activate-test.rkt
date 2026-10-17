@@ -144,7 +144,7 @@
                                   prof)
                 'no-error))
 
-  ;; E-15: remove builds a generation minus the package and frees no
+  ;; remove builds a generation minus the package and frees no
   ;; disk. Owner naming reads store-layout targets, so these fixtures
   ;; live under a synthetic store (E-19 extends naming to dev trees).
   (define sroot (build-path test-root "store15"))

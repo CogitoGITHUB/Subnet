@@ -270,7 +270,7 @@
                  (string-append
                   "{\"name\":\"apply\",\"format\":\"sexp\","
                   "\"operands\":[\"specs\", \"pm.lock\", \"yes\"]}"))
-  ;; Wrong arity refuses; unknown commands exit 2 (D-008).
+  ;; Wrong arity refuses; unknown commands exit 78 (EX_CONFIG, D-045).
   (check-pred config-error?
               (with-handlers ([exn:fail:pm? (lambda (e) e)])
                 (parse-args #("plan"))
@@ -283,7 +283,7 @@
                  (with-handlers ([exn:fail:pm? (lambda (e) e)])
                    (parse-args #("frobnicate"))
                    'no-error))
-                2)
+                78)
 
   ;; ---------------------------------------------------------------
   ;; docs/API.org is the golden (E-26). Every "** =pm ...=" header is

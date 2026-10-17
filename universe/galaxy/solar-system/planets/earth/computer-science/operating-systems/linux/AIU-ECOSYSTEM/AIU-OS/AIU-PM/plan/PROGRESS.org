@@ -28,7 +28,7 @@ Resuming: read the last line, then =TODO.org= for what is left.
 | 11 | =backends/*.rkt= into src areas; fake/dry-run into test-doubles | same commit as 9-13 |
 | 12 | =cli/= and =mcp/= into =src/entry/= | same commit as 9-13 |
 | 13 | =scripts/= into =gate/= and =tools/= | same commit as 9-13 |
-| 14 | inline tests into =package-manager/tests/= | TODO.org A |
+| 14 | inline tests into =package-manager/tests/=, gate green on the moved state | 06779ce |
 | 15 | =gate/check.nu= learns the new root and every allowlist path | done in 9-13 |
 | 16 | identifier renames from =NAMING-REGISTER=, =mcp-server.rkt= becomes =mcp-tools.rkt= | 8ad0c30 |
 | 17 | =banned-words-lint= gate stage, 149 files 0 violations, regexes with file:line | b21a983 |

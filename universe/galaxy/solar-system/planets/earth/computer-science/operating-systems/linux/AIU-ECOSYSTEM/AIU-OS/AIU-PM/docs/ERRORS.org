@@ -10,21 +10,26 @@ full context plus a bug banner (E-7).
 Message shape (E-1, E-2): =who: message;= then =  field: value= lines,
 then =  hint:=. Every error answers WHAT, WHERE, WHY, NEXT.
 
-* Exit codes (E-15 proposal, see D-008)
+* Exit codes (frozen table, D-045)
 
-| Code | Meaning              |
-|------+----------------------|
-|    0 | success              |
-|    2 | usage (bad CLI)      |
-|    3 | spec invalid         |
-|    4 | resolve (deps)       |
-|    5 | fetch (network)      |
-|    6 | verify (hash)        |
-|    7 | build failed         |
-|    8 | install failed       |
-|    9 | activate (conflict)    |
-|   70 | internal bug         |
-|  130 | interrupted (Ctrl-C) |
+| Code | Meaning                      |
+|------+------------------------------|
+|    0 | success                      |
+|    3 | spec invalid                 |
+|    4 | resolve (deps)               |
+|    5 | fetch (network)              |
+|    6 | verify (hash)                |
+|    7 | build failed                 |
+|    8 | install failed               |
+|    9 | activate (conflict)          |
+|   70 | internal bug (EX_SOFTWARE)   |
+|   78 | config (bad CLI or config)   |
+|  130 | interrupted (Ctrl-C)         |
+
+The two sysexits rows carry their outside names on purpose: 78 is
+EX_CONFIG and 70 is EX_SOFTWARE, so a reader does not have to look
+them up. Code 2 is gone with the last invented number -- a bad
+command line raises kind =config=, which is 78.
 
 Samples will be collected here as error paths are implemented (E-12).
 

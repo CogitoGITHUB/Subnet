@@ -3,7 +3,7 @@
 ;; entry first, builds the next generation, then flips the profile
 ;; link with store.rkt's atomic swap (a conflict fails closed with
 ;; kind 'activate, exit 9, before anything changes); rollback repoints
-;; at a numbered generation (E-15); remove builds a generation minus
+;; at a numbered generation; remove builds a generation minus
 ;; one package and never touches store dirs (D-024). The writer lock
 ;; is a caller (CLI) concern per E-12c, not this module's.
 

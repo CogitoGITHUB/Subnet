@@ -15,7 +15,7 @@
                         #:hint (or/c string? #f)
                         #:cause (or/c exn? #f))
                        any)]
-  ;; exn:fail:pm -> exit code per E-15 [PROPOSAL] (D-008 open)
+  ;; exn:fail:pm -> exit code per docs/ERRORS.org (D-045)
   [pm-error-exit-code (-> exn:fail:pm? exact-nonnegative-integer?)]
   ;; exn:fail:syntax kind -> exn:fail:pm, for the spec-read boundary (D-4)
   [syntax-error->pm-error (->* (exn:fail:syntax? pm-kind/c)
@@ -70,12 +70,13 @@
                        (current-continuation-marks)
                        kind fields hint cause)))
 
-;; exn:fail:pm -> exit code per E-15 [PROPOSAL] (D-008 open).
-;; 'config' and 'internal' are absent from E-15; mapped to 2 and 70 here.
+;; exn:fail:pm -> exit code per docs/ERRORS.org (D-045). Sysexits gave
+;; the two kinds that had invented numbers their outside names:
+;; 'config is 78 (EX_CONFIG), 'internal is 70 (EX_SOFTWARE).
 (define (pm-error-exit-code e)
   (case (exn:fail:pm-kind e)
     [(spec) 3] [(resolve) 4] [(fetch) 5] [(verify) 6]
-    [(build) 7] [(install) 8] [(activate) 9] [(config) 2] [(cancelled) 130] [(internal) 70]
+    [(build) 7] [(install) 8] [(activate) 9] [(config) 78] [(cancelled) 130] [(internal) 70]
     [else 70]))
 
 ;; any -> boolean, one predicate per kind (E-3)

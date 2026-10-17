@@ -1,10 +1,8 @@
 #+TITLE: exit-code wording — two invented codes, one decision
 #+AUTHOR: Shape
-# One job: close D-008: =config= and =internal= either adopt the
-# sysexits numbers or keep theirs and cite the decision by name instead
-# of "E-15 [PROPOSAL]". Status: planned only; nothing here is built.
-# Source: =plan/OPEN-DECISIONS.org= (exit-code wording, ASKED) and
-# =plan/DECISIONS.org= D-008.
+# One job: close D-008: =config= and =internal= adopt the sysexits
+# numbers and cite the decision by name. Status: built 2026-10-17 by
+# D-045. Source: =plan/DECISIONS.org= D-045.
 
 * Purpose
 - =error-message.rkt= maps an error kind to an exit code; two of those
@@ -13,9 +11,9 @@
 - The owner's pick sets the numbers; this component is the mapping and
   wording change that lands afterwards.
 * Name and location
-- name: none new; the wording inside =error-kind->exit-code= changes,
-  and with it the pinned tests
-- code: =src/errors/error-message.rkt=
+- name: none new; the wording inside =pm-error-exit-code= changes, and
+  with it the pinned tests
+- code: =src/errors/error-type.rkt=
 - area and layer: =errors= (area 1 of 13)
 - may require: nothing
 - may be required by: everything: the floor reports through it
