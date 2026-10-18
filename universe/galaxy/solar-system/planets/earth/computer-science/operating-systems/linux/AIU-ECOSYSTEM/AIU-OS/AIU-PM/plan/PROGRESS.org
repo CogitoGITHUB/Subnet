@@ -33,6 +33,10 @@ Resuming: read the last line, then =TODO.org= for what is left.
 - =613eef13= the maak study take: the REPL is sold in the README, fish joins the
   completions, and D-073 records the dry-run scope and sequence runs
   (the editor tasks part =e59558ca= rides the same push).
+- =5d62d5b4= the safety test removes its scratch vault on every path: the body
+  runs inside =dynamic-wind=, so a raise still deletes the vault and the empty
+  =src/tmp= the suite created (D-059). 54=54 checks green, light gate green, no
+  leak before or after the run.
 - Then: the rest of =TODO.org= phase A, then B, C, D, F.
 - The list with its deps is =TODO.org=; the choices are
   =plan/DECISIONS.org=, newest first.
