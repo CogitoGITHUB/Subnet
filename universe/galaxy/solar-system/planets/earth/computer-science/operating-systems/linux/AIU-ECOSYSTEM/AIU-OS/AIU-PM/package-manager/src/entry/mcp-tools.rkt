@@ -188,6 +188,24 @@
                         (equal? (plan-digest name argv)
                                 (session-plan-digest sess))))
 
+;; string string -> string
+;; The next step for a refusal is the refusal's own: telling an
+;; already-spent caller to "pass the token" taught the wrong habit, so
+;; each of the four reasons names its own way forward (D-070).
+(define (refusal-text name refusal)
+  (string-append
+   name " changes state: " refusal "; "
+   (cond
+     [(string=? refusal "needs a confirmation token")
+      "pass it as the confirmationToken argument"]
+     [(string=? refusal "wrong confirmation token")
+      "use the token initialize handed out"]
+     [(string=? refusal "confirmation token already used")
+      "it approves one call, so ask for a fresh token"]
+     [(string=? refusal "confirmation token is for a different plan")
+      "re-read the plan the token was issued for"]
+     [else "ask for a human-approved token"])))
+
 ;; ---------------------------------------------------------------------------
 ;; JSON-RPC envelopes
 
@@ -282,8 +300,10 @@
         (if refusal
             ;; WAIT door: a HUMAN is being asked here, so the feed says so
             ;; before the refusal goes out. Each of the four refusals keeps
-            ;; its own name, so a caller can tell "nothing sent" from
-            ;; "wrong secret" from "already spent" from "wrong plan".
+            ;; its own name and its own next step (refusal-text), so a
+            ;; caller can tell "nothing sent" from "wrong secret" from
+            ;; "already spent" from "wrong plan" -- and "already spent"
+            ;; never tells it to pass the token again.
             (wait-for (string->symbol name) "confirmation token"
                       (string-append name " changes state and was refused: "
                                      refusal)
@@ -291,9 +311,7 @@
                       (lambda ()
                         (rpc-error
                          id -32001
-                         (string-append
-                          name " changes state: " refusal
-                          "; pass it as the confirmationToken argument"))))
+                         (refusal-text name refusal))))
             ;; Approved: spend the token NOW, before the call runs. One
             ;; approval, one call; a retry must ask again.
             (begin

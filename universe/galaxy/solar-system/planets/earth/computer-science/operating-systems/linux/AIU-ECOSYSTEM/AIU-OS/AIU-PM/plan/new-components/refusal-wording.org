@@ -1,10 +1,9 @@
 #+TITLE: refusal wording — the next step must be the right one
 #+AUTHOR: Shape
 # One job: give each confirmation refusal its own reason and its own
-# next step. Status: planned only; nothing here is built. Source:
-# =TODO.org= phase A (found while reading); the text
-# lives at =src/entry/mcp-tools.rkt=, which appends one sentence to
-# every refusal today.
+# next step. Status: built 2026-10-18 (D-070); the texts live at
+# =src/entry/mcp-tools.rkt= =refusal-text=. Source: =TODO.org= phase A
+# (found while reading).
 
 * Purpose
 - The confirmation refusal always appends "pass it as the
@@ -27,10 +26,11 @@
 - Never one sentence for every case: a refusal that lies is worse than
   a bare no.
 * Tests
-- =tests/entry/=: one test per refusal reason; the already-used and
-  wrong-plan cases assert their own next step.
+- =tests/security/confirmation-test.rkt= section 7: one test per refusal
+  reason; the already-used and wrong-plan cases assert their own next
+  step.
 * Docs it updates
-- the entry README's refusal section, if it copies the sentence.
+- none: the entry README has no refusal section (checked 2026-10-18).
 * Depends on new components
 - none.
 * Build order

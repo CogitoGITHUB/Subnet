@@ -4,6 +4,27 @@
 * Log
 Append-only. Newest first. Every entry names the rule IDs it touches.
 
+** 2026-10-18 D-070: each confirmation refusal names its own next step
+   Touches =package-manager/src/entry/mcp-tools.rkt=;
+   =package-manager/tests/security/confirmation-test.rkt=.
+1. WHAT: the -32001 message a refused MCP caller reads is composed by
+   =refusal-text=: the refusal's own name plus that refusal's own next
+   step. Only "needs a confirmation token" still says to pass the token;
+   "wrong confirmation token" points at the token initialize handed out;
+   "confirmation token already used" says one approval is one call, ask
+   again; "confirmation token is for a different plan" says re-read the
+   plan the token was issued for.
+2. WHY: one appended sentence ("pass it as the confirmationToken
+   argument") rode on all four refusals. For "already spent" and
+   "different plan" that advice cannot work -- the token the caller
+   holds is exactly what is wrong -- so the message taught the wrong
+   habit at the moment the caller is most confused. The four names were
+   already distinct because a caller must be able to tell them apart;
+   the next step now matches.
+3. COST: none; section 7 of =confirmation-test.rkt= pins the whole
+   text, one check per reason, and two checks that spent and
+   different-plan never contain the old sentence.
+
 ** 2026-10-18 D-069: the --changed gate hands raco real paths, and its verdict reaches the exit
    Touches =gate/check.nu=.
 1. WHAT: changed-rkt resolves the git paths against `git rev-parse

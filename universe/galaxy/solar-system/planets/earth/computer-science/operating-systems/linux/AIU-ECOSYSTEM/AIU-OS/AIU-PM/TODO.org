@@ -17,14 +17,6 @@
 
 * PHASE A -- foundation and gates
 
-** refusal wording
-what: each confirmation refusal's next step is its own; the wrong-plan
-  and already-used refusals stop telling callers to pass the token
-  again (=src/entry/mcp-tools.rkt='s appended sentence).
-done when: one test per refusal reason shows its own text.
-tests: the security suite around the confirmation token.
-deps: none.
-
 ** text-lint for .md and README line lengths
 what: text-lint covers .md (README.md included); README.md's
   over-length lines are wrapped. Phase F rewrites the README Status

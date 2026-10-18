@@ -4,8 +4,10 @@
 ;;
 ;; Every refusal is checked by NAME, because a caller that cannot tell
 ;; "you sent nothing" from "wrong secret" from "already spent" from
-;; "wrong plan" cannot act on any of them. The happy path is checked too:
-;; a gate that refuses everything passes every refusal test.
+;; "wrong plan" cannot act on any of them -- and section 7 checks the
+;; caller-facing SENTENCE, because each refusal's next step is its own.
+;; The happy path is checked too: a gate that refuses everything passes
+;; every refusal test.
 ;;
 ;; The session struct is provided as struct-out, so spent? and the plan
 ;; binding can be set directly and the gate asked without spawning a tool
@@ -130,3 +132,63 @@
   ;; the CLI's documented --confirm command is in that same set, so the two
   ;; surfaces cannot disagree about WHICH commands change the machine
   (check-true (state-changing? "apply")))
+
+;; ---------------------------------------------------------------------------
+;; 7. The caller-facing text, one sentence per refusal reason (D-070).
+;;    The four refusals come from section 4; what is pinned HERE is the
+;;    whole -32001 message a caller reads, because "pass the token again"
+;;    was wrong advice for "already spent" and for "different plan".
+
+(module+ test
+  ;; session, list of strings -> the message from the JSON-RPC error
+  ;; object handle-message returns for a tools/call that is refused.
+  (define (refusal-message sess arguments #:confirmation [confirmation #f])
+    (define inner (if confirmation
+                      (hasheq 'name "apply" 'arguments arguments
+                              'confirmation confirmation)
+                      (hasheq 'name "apply" 'arguments arguments)))
+    (define reply (handle-message
+                   (hasheq 'jsonrpc "2.0" 'id 1 'method "tools/call"
+                           'params inner)
+                   sess))
+    (hash-ref (hash-ref reply 'error) 'message))
+
+  ;; nothing sent: the one case where "pass the token" IS the next step
+  (check-equal?
+   (refusal-message (fresh-session) (list "state"))
+   (string-append "apply changes state: needs a confirmation token; "
+                  "pass it as the confirmationToken argument"))
+
+  ;; wrong secret: the token initialize handed out is the one to use
+  (check-equal?
+   (refusal-message (fresh-session) (list "state") #:confirmation "nope")
+   (string-append "apply changes state: wrong confirmation token; "
+                  "use the token initialize handed out"))
+
+  ;; already spent: one approval is one call, so ask again
+  (define spent-session (fresh-session))
+  (session-authorise! spent-session (plan-digest "apply" (list "state")))
+  (set-mcp-session-spent! spent-session #t)
+  (define spent-text
+    (refusal-message spent-session (list "state")
+                     #:confirmation (session-token spent-session)))
+  (check-equal?
+   spent-text
+   (string-append "apply changes state: confirmation token already used; "
+                  "it approves one call, so ask for a fresh token"))
+  (check-false (regexp-match? #rx"pass it as the confirmationToken" spent-text)
+               "a spent token never sends the caller back to pass it again")
+
+  ;; different plan: re-read the plan the token was issued for
+  (define mismatched-session (fresh-session))
+  (session-authorise! mismatched-session (plan-digest "apply" (list "state")))
+  (define mismatched-text
+    (refusal-message mismatched-session (list "other")
+                     #:confirmation (session-token mismatched-session)))
+  (check-equal?
+   mismatched-text
+   (string-append
+    "apply changes state: confirmation token is for a different plan; "
+    "re-read the plan the token was issued for"))
+  (check-false (regexp-match? #rx"pass it as the confirmationToken" mismatched-text)
+               "a different-plan refusal never sends the caller back to the token"))
