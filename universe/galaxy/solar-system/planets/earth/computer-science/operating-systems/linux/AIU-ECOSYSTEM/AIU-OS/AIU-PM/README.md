@@ -88,6 +88,14 @@ kept/deleted) live on the library surface, not behind a CLI verb yet.
   read the feed.
 - Unwired commands refuse loudly.
 
+## Developing pm
+
+`racket tools/repl.rkt` starts a persistent Racket REPL with pm's core modules loaded once.
+A fresh Racket process measures 0.29–1.12s on this phone for the same empty program, so the REPL
+pays that once and stays resident: every expression after the first is a probe that costs
+microseconds. A module that fails to load names itself and is skipped, so one broken file never
+takes the session down. One expression per line; blank and `;` lines are ignored; EOF ends it.
+
 ## Planned amplifications (still to land)
 
 Ordered as specified. Each group moves from “Planned” to “Current” in this file the moment it
@@ -192,13 +200,13 @@ ever softened to make one of them land.
 ### 11. Config and completions
 - **`pm config`** — a read-only view of the effective settings and which layer each came from;
   `--detail` adds the file each value was written in.
-- **Completions generated from the command table** — Nushell first, then bash, then zsh, so a
-  verb that exists is a verb you can complete.
+- **Completions generated from the command table** — Nushell first, then bash, zsh and fish,
+  so a verb that exists is a verb you can complete.
 - **The generated files are a test** — a check regenerates them and fails when a committed
   file differs, exactly as the `docs/API.org` goldens do.
 - **pm never installs them** — it prints or copies the files and never writes outside its
-  state root; the one manual step is copying `pm.nu`, `pm.bash` or `pm.zsh` into your shell's
-  completion directory.
+  state root; the one manual step is copying `pm.nu`, `pm.bash`, `pm.zsh` or `pm.fish` into
+  your shell's completion directory.
 
 ### Later, from the earlier nine
 - **Content-addressed overlay** — git clones remain the history; every build product is also

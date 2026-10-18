@@ -298,8 +298,8 @@ deps: none.
 ** config and completions
 what: the settings' home and the shell hints (step 29):
   =entry/config-report.rkt=, =entry/completion.rkt=; pm config never
-  writes; completions cover verbs, flags and directory operands
-  (D-063).
+  writes; completions cover verbs, flags and directory operands for Nu,
+  bash, zsh and fish; the generated files are a test (D-063, D-073).
 done when: config reads a file and never writes; completions render
   in a test.
 tests: =tests/entry/=.

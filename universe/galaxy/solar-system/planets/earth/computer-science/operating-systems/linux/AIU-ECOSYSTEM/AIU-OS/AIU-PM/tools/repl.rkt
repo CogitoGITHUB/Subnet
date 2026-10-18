@@ -1,5 +1,5 @@
 #lang racket/base
-;; scripts/repl.rkt -- a persistent Racket namespace for this project.
+;; tools/repl.rkt -- a persistent Racket namespace for this project.
 ;;
 ;; WHY: on this phone a bare `racket -n -e ''` measures anywhere between
 ;; 0.29s and 1.12s for the SAME empty program. That spread is filesystem
@@ -10,7 +10,7 @@
 ;; stdin and print each result. After the first line, probes are
 ;; microseconds instead of a fresh process.
 ;;
-;; Use: racket scripts/repl.rkt, then type one expression per line.
+;; Use: racket tools/repl.rkt, then type one expression per line.
 ;; No timers, no polling, no sleeps (D-015): the loop blocks on read-line
 ;; and EOF (#f) is the only exit.
 

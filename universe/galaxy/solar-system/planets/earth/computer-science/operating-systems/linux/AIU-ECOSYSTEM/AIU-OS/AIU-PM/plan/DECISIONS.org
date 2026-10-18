@@ -4,6 +4,27 @@
 * Log
 Append-only. Newest first. Every entry names the rule IDs it touches.
 
+** 2026-10-18 D-073: the maak study take -- the REPL is sold, fish joins the completions
+   Touches =tools/repl.rkt=; =README.md=; =TODO.org=; =AIU EDITOR/plan/tasks.org=.
+1. WHAT: the maak study (a Guile task runner) is harvested deliberately.
+   (a) The persistent REPL becomes a sold feature: the README gains a
+   '## Developing pm' section, and the tool's stale =scripts/repl.rkt= header
+   becomes =tools/repl.rkt=. (b) Completions widen to fish beside Nu,
+   bash and zsh (README section 11 and the TODO.org item). (c) The
+   dry-run scope (a lexical parameter over the helpers) is recorded as
+   the pattern every mutating verb's preview uses: plan/apply preview at
+   command level today; backup, gc and user-writes adopt the inner
+   scope when they land. (d) Sequence runs (several tasks in one
+   invocation) live in the editor's tasks part, which took the
+   task-runner features into the system in Racket (editor e59558ca).
+   Refused: the Emacs bridge and a non-Racket runner.
+2. WHY: the owner asked on 2026-10-18 for the features in the system,
+   in Racket. The editor is the Racket home (plan/tasks.org,
+   =editor/src/commands/tasks.rkt=); pm keeps law 4 (Nu for gates) and
+   gains documentation-level takes only.
+3. COST: docs only in pm; text-lint green; the editor commit e59558ca
+   rides the next push.
+
 ** 2026-10-18 D-072: spawn-and-wait, result, command-json; the process names speak plainly
    Touches =package-manager/src/process/=; =git/=; =install/=;
    =build/=; =entry/=; =narration/=; =agent/skills/aiu-pm/=;
