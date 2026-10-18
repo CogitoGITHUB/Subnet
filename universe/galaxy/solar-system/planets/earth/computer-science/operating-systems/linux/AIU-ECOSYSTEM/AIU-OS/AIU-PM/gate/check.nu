@@ -172,8 +172,19 @@ def require-pinned-version [] {
     }
 }
 
+# -> bool, true when f sits inside a vendored third-party tree.
+# WHY: node_modules first reached this project as a symlink, which glob
+# did not walk, so no lint stage ever read it. A fresh clone installs it
+# as a real directory (agent/opencode-plugin) and text-lint then reported
+# 456 violations inside fast-check's own README, 2026-10-18. We lint
+# what we own; npm owns the rest, and git ignores it.
+def vendored-path? [f] {
+    $f | path split | any {|p| $p == "node_modules" }
+}
+
 # -> list, lint targets under root: every .org, .rkt, .sh, .nu and .md,
-# compiled output excluded, sorted like the old `find | sort`.
+# compiled output and vendored trees excluded, sorted like the old
+# `find | sort`.
 # .md joined 2026-10-18 (TODO.org phase A), the same day README.md was
 # wrapped to <=102 so the rule could land on a clean tree.
 def lint-files [root] {
@@ -181,7 +192,9 @@ def lint-files [root] {
     let found = ($pats | each {|p| glob $"($root)/($p)"} | flatten)
     # old find was `-type f`; a glob can also match a directory
     let files = ($found | where {|f| ($f | path type) == "file"})
-    $files | where {|f| not ($f | str contains "/compiled/")} | sort
+    $files | where {|f| not ($f | str contains "/compiled/")}
+    | where {|f| not (vendored-path? $f)}
+    | sort
 }
 
 # -> list, 1-based line numbers of every line containing a tab
