@@ -29,24 +29,23 @@ if a rule seems wrong, say so deliberately and change it on purpose —
 do not drift from it quietly.
 
 * The plugin
-=agent/opencode-plugin/node_modules= is NOT tracked in git and is excluded
-from every gate scan. It is a SYMLINK to
-=/root/home/shape/.config/opencode/node_modules=, the shared OpenCode
-install, and that is deliberate: one copy of the dependencies serves
-every plugin on this machine rather than one per checkout.
-
-It was tracked as a symlink before this directory moved. It is now
-untracked (the path is already in =.gitignore=), so a fresh checkout
-does NOT get it, and the plugin will not run until the link is made:
+=agent/opencode-plugin/node_modules= is NOT tracked in git and is
+excluded from every gate scan. It is generated, not shared: a fresh
+clone runs one step, from =agent/opencode-plugin/=, to make it:
 
 #+BEGIN_EXAMPLE
 cd AIU-PM/agent/opencode-plugin
-ln -s /root/home/shape/.config/opencode/node_modules node_modules
+npm install --no-audit --no-fund
+node test.mjs
 #+END_EXAMPLE
 
-=package.json= declares the dependencies; =npm install= is what would
-produce a real directory here instead of a link, if a machine ever
-needs one.
+=package.json= declares the one dependency the plugin imports,
+=@opencode-ai/plugin=, pinned to 1.18.31. =npm install= writes a real
+=node_modules/= here; the transitive =zod=, =effect= and
+=@opencode-ai/sdk= come with it. No path outside this directory is
+read, so the checkout is self-contained and a new machine needs only
+Node and this one command. =node test.mjs= proves it offline, with no
+OpenCode and no pm.
 
 * What the plugin must not do
 It must not reach past the JSON surface. Read is free; mutate needs a

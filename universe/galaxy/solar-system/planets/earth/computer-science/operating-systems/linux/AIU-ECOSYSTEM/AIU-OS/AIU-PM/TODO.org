@@ -57,17 +57,6 @@ done when: the test exists and passes in the shared runner.
 tests: =tests/git/= (vault-lock's home).
 deps: none.
 
-** opencode-plugin node_modules on a fresh clone
-what: =agent/opencode-plugin/node_modules= is a symlink to
-  =/root/home/shape/.config/opencode/node_modules= -- an absolute path
-  outside the repo, so a fresh clone cannot run the plugin. Make it
-  work: generate it (=package.json= + a documented =npm install=) or
-  document the one step; no absolute path remains in the tree.
-done when: a fresh clone that follows the README can run the plugin's
-  test; =find . -type l -lname '/*'= finds nothing.
-tests: none (documentation); the plugin's own =test.mjs= unaffected.
-deps: none.
-
 * PHASE B -- structure and safety
 ** one-way law gap
 what: move the modules so the ranking holds (D-044): the 34 crossings

@@ -83,7 +83,9 @@ kept/deleted) live on the library surface, not behind a CLI verb yet.
   Read tools run free; every tool flagged as mutating refuses with `-32001` unless the call carries
   the confirmation token `initialize` handed out.
 - OpenCode plugin (`agent/opencode-plugin/`): two read-only tools, `aiu_run_status` and
-  `aiu_events_tail`, over the same feed; it registers no state-changing tool.
+  `aiu_events_tail`, over the same feed; it registers no state-changing tool. Run
+  `npm install` in that directory once — it declares the single dependency the plugin
+  imports, `@opencode-ai/plugin` — then `node test.mjs` checks it offline.
 - Skill (`agent/skills/aiu-pm/SKILL.md`): tells an AI when to use each command and how to
   read the feed.
 - Unwired commands refuse loudly.

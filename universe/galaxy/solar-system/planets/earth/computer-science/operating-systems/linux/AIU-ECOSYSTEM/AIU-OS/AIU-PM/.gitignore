@@ -3,7 +3,9 @@ compiled/
 *.dep
 tmp/
 sources/vault.git/
-opencode-plugin/node_modules/
+# npm installs the plugin's one dependency here; the directory is
+# generated, never tracked (agent/opencode-plugin/README.org).
+agent/opencode-plugin/node_modules/
 .probe-scratch/
 # Safety net: compiled output goes to $PLTCOMPILEDROOTS (see scripts/env.nu),
 # so nothing should ever create these inside the tree. If one appears, it is

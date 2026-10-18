@@ -62,8 +62,33 @@ exposes =Part=, move the digest there and keep the tools unchanged.
 - =aiu-pm.js= -- the plugin.
 - =test.mjs= -- offline test: synthetic JSON Lines, no OpenCode, no pm.
   =node test.mjs= prints "all assertions passed".
-- =package.json= -- declares the =@opencode-ai/plugin= peer dependency.
+- =package.json= -- declares the one dependency the plugin imports,
+  =@opencode-ai/plugin=, pinned to 1.18.31, the version whose API the
+  file above was read from. Pinned, not ranged, so a fresh clone
+  installs the same bytes this code was written against.
+- =package-lock.json= -- the exact resolved tree =npm install= wrote.
 
-** Installing
+** Dependencies, and the one install step
+The only third-party import in the plugin is
+=@opencode-ai/plugin/tool=; everything else is a Node builtin
+(=node:fs=, =node:os=, =node:path=). =test.mjs= needs the same module,
+because it imports =aiu-pm.js=, which imports it at the top level.
+So before either can run, one step, from this directory:
+
+#+BEGIN_EXAMPLE
+npm install --no-audit --no-fund
+#+END_EXAMPLE
+
+That writes a real =node_modules/= here. The transitive dependencies
+(=zod=, =effect=, =@opencode-ai/sdk= and the rest) come with it.
+Nothing reads a path outside this directory, so a fresh clone on a
+new machine needs only Node and this one command. Prove it offline,
+with no OpenCode and no pm:
+
+#+BEGIN_EXAMPLE
+node test.mjs      # prints: all assertions passed
+#+END_EXAMPLE
+
+** Installing into OpenCode
 =tools/install-opencode-plugin.nu= PRINTS the commands; it writes
 nothing. Run it, read it, run it yourself.

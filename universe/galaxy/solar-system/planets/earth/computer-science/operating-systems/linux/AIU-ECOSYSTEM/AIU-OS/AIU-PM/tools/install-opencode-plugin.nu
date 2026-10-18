@@ -17,7 +17,7 @@ def main [
     } else {
         $config
     })
-    let src = ($cwd | path join "opencode-plugin")
+    let src = ($cwd | path join "agent" "opencode-plugin")
     let dest = ($config | path join "plugins" "aiu-pm.mjs")
 
     print $"plugin source: ($src)"
@@ -27,9 +27,9 @@ def main [
     print $"  mkdir -p ($config | path join 'plugins')"
     print $"  ln -sfn ($src | path expand) ($dest)"
     print ""
-    print "The @opencode-ai/plugin dependency must resolve from the"
-    print "plugin; link it once if it is not already visible:"
-    print $"  ln -sfn ($config | path join 'node_modules') ($src | path join 'node_modules')"
+    print "The @opencode-ai/plugin dependency is installed by npm inside"
+    print "the plugin directory, once per clone; it is never symlinked"
+    print $"  cd ($src) && npm install --no-audit --no-fund"
     print ""
     print "Then check the tools are registered:"
     print "  opencode run 'list the pm tools you have'"
