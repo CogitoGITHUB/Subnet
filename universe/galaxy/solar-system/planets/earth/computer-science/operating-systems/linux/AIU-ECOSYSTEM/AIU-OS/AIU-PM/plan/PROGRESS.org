@@ -23,6 +23,10 @@ Resuming: read the last line, then =TODO.org= for what is left.
   one test per reason.
 - =ca4ed730= text-lint covers .md; README and the skill were wrapped to <=102
   and the bite is proved (D-071).
+- =1091a6b6= the README says what works and what is left ("Working now" /
+  "Still to land"); PROGRESS records the D-071 hash.
+- Full gate on =1091a6b6=: ALL GREEN (parked: 2) -- 101 files, 1371 checks,
+  0 failed, rc=0 (29 min). The parks stay P-01 and P-03.
 - Then: the rest of =TODO.org= phase A, then B, C, D, F.
 - The list with its deps is =TODO.org=; the choices are
   =plan/DECISIONS.org=, newest first.
