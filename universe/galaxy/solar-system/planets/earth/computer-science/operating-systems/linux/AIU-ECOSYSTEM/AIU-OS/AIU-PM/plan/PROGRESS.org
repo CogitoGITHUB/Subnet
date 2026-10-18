@@ -19,8 +19,10 @@ Resuming: read the last line, then =TODO.org= for what is left.
   Same commit: the =--changed= gate stopped collapsing git paths, fed its compile
   codes into the verdict, and let a red stage set the exit (D-069). The push also
   carried =bb65b88f= (another session's AIU NOTATION commit) up to origin.
-- refusal wording: each -32001 refusal carries its own next step (D-070), one
-  test per reason; the hash lands next commit.
+- =f6e394c1= refusal wording: each -32001 refusal carries its own next step (D-070),
+  one test per reason.
+- text-lint now covers .md; README and the skill were wrapped to <=102 and the
+  bite is proved (D-071); the hash lands next commit.
 - Then: the rest of =TODO.org= phase A, then B, C, D, F.
 - The list with its deps is =TODO.org=; the choices are
   =plan/DECISIONS.org=, newest first.

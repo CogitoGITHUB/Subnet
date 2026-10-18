@@ -27,7 +27,7 @@ use ./env.nu [scope-roots]
 #   - no line over 102 characters (0.FOUNDATION.org is exempt: user contract)
 #   - final newline required
 # Now covering .nu files as well as .org, .rkt and .sh, because this file
-# is one of the things being linted.
+# is one of the things being linted, and .md as of 2026-10-18.
 #
 # Stage map. Stages are NAMED by what they check, never numbered: with
 # sixteen numbered stages "what is stage 6?" cost a read of this file,
@@ -172,10 +172,12 @@ def require-pinned-version [] {
     }
 }
 
-# -> list, lint targets under root: every .org, .rkt, .sh and .nu,
+# -> list, lint targets under root: every .org, .rkt, .sh, .nu and .md,
 # compiled output excluded, sorted like the old `find | sort`.
+# .md joined 2026-10-18 (TODO.org phase A), the same day README.md was
+# wrapped to <=102 so the rule could land on a clean tree.
 def lint-files [root] {
-    let pats = ["**/*.org" "**/*.rkt" "**/*.sh" "**/*.nu"]
+    let pats = ["**/*.org" "**/*.rkt" "**/*.sh" "**/*.nu" "**/*.md"]
     let found = ($pats | each {|p| glob $"($root)/($p)"} | flatten)
     # old find was `-type f`; a glob can also match a directory
     let files = ($found | where {|f| ($f | path type) == "file"})
@@ -1207,7 +1209,8 @@ def verdict [records parked_n] {
 def changed-rkt [] {
     let d = (do { run-external "git" "diff" "--name-only" "HEAD" } | complete)
     let tracked = (if $d.exit_code == 0 { $d.stdout | lines } else { [] })
-    let u = (do { run-external "git" "ls-files" "--others" "--exclude-standard" "--full-name" } | complete)
+    let uargs = ["ls-files" "--others" "--exclude-standard" "--full-name"]
+    let u = (do { run-external "git" ...$uargs } | complete)
     let untracked = (if $u.exit_code == 0 { $u.stdout | lines } else { [] })
     let all = ($tracked | append $untracked)
     # git prints paths relative to the REPO root, which is above this

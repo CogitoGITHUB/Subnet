@@ -79,18 +79,25 @@ pm check docs/examples --format json
 **What comes back* (real output from this repository):
 
 #+begin_src json
-{"name":"check","format":"json","operands":["docs/examples"],"ok":["ok: bats-core 1.14.0","ok: cjson 1.7.19","ok: hello 2.12.3","ok: lua 5.5.1","ok: television 0.4.21"]}
+{
+  "name": "check",
+  "format": "json",
+  "operands": ["docs/examples"],
+  "ok": ["ok: bats-core 1.14.0", "ok: cjson 1.7.19", "ok: hello 2.12.3",
+         "ok: lua 5.5.1", "ok: television 0.4.21"]
+}
 #+end_src
+
+*(The JSON blocks in this file are re-indented to stay readable; pm
+prints compact one-line JSON. The content is the real output.)*
 
 **What the feed said* while that ran:
 
 #+begin_src
 [10:47:17 +0.028s] START pm   | what: run | why: session start
 [10:47:17 +0.038s] START cli  | what: pm  | why: a command was requested | how: check docs/examples
-  [10:47:18 +0.056s] STEP check | what: bats-core 1.14.0 | why: the spec parsed and passed every field check
-  [10:47:18 +0.056s] STEP check | what: cjson 1.7.19   | why: the spec parsed and passed every field check
-  [10:47:18 +0.057s] STEP check | what: hello 2.12.3    | why: the spec parsed and passed every field check
-  [10:47:18 +0.058s] STEP check | what: lua 5.5.1       | why: the spec parsed and passed every field check
+  [10:47:18 +0.056s] STEP check | what: lua 5.5.1 | why: the spec parsed and passed every field check
+  ... one STEP like this per package, once each has passed its field checks ...
 [10:47:18 +0.061s] END run    | what: run | why: session end
 #+end_src
 
@@ -108,7 +115,18 @@ pm plan docs/examples --format json
 **What comes back*:
 
 #+begin_src json
-{"name":"plan","format":"json","operands":["docs/examples"],"packages":[{"deps":[],"name":"bats-core","version":"1.14.0"},{"deps":[],"name":"cjson","version":"1.7.19"},{"deps":[],"name":"hello","version":"2.12.3"},{"deps":[],"name":"lua","version":"5.5.1"},{"deps":[],"name":"television","version":"0.4.21"}]}
+{
+  "name": "plan",
+  "format": "json",
+  "operands": ["docs/examples"],
+  "packages": [
+    {"deps": [], "name": "bats-core", "version": "1.14.0"},
+    {"deps": [], "name": "cjson", "version": "1.7.19"},
+    {"deps": [], "name": "hello", "version": "2.12.3"},
+    {"deps": [], "name": "lua", "version": "5.5.1"},
+    {"deps": [], "name": "television", "version": "0.4.21"}
+  ]
+}
 #+end_src
 
 **How to read it:* =packages= is the declarations as written, in file
@@ -129,19 +147,29 @@ tail -n 20 ~/.local/share/aiu-pm/events/pm-7040.jsonl
 -1 means "from the beginning"; afterwards pass back =next-seq=):
 
 #+begin_src json
-{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"events.tail","arguments":["pm-7040","-1"]}}
+{"jsonrpc": "2.0", "id": 1, "method": "tools/call",
+ "params": {"name": "events.tail", "arguments": ["pm-7040", "-1"]}}
 #+end_src
 
-**What comes back* (abridged, one line per event):
+**What comes back* (abridged, one event per line):
 
 #+begin_src json
-{"run-id":"pm-7040","from-seq":-1,"count":10,"lines":["#0 START pm | what: run | why: session start","#4 STEP check | what: bats-core 1.14.0 | why: the spec parsed and passed every field check","#9 END run | what: run | why: session end"],"next-seq":9}
+{
+  "run-id": "pm-7040",
+  "from-seq": -1,
+  "count": 10,
+  "lines": ["#0 START pm | what: run | why: session start",
+            "#4 STEP check | what: lua 5.5.1 | why: the spec parsed and passed every field check",
+            "#9 END run | what: run | why: session end"],
+  "next-seq": 9
+}
 #+end_src
 
 **And for the summary only:*
 
 #+begin_src json
-{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"run.get","arguments":["pm-7040"]}}
+{"jsonrpc": "2.0", "id": 2, "method": "tools/call",
+ "params": {"name": "run.get", "arguments": ["pm-7040"]}}
 #+end_src
 
 =run.get= answers =events=, =started=, =ended=, =end-result= and

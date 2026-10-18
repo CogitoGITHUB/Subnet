@@ -4,6 +4,26 @@
 * Log
 Append-only. Newest first. Every entry names the rule IDs it touches.
 
+** 2026-10-18 D-071: text-lint covers .md; the README's hard breaks became joins
+   Touches =gate/check.nu=; =README.md=; =agent/skills/aiu-pm/SKILL.md=.
+1. WHAT: the text-lint file set now includes =**/*.md=. README.md was
+   wrapped to <=102 so the rule could land on a clean tree; its markdown
+   hard breaks (trailing double spaces on the last-updated line, the
+   blockquote and the closing line) became plain lines and one
+   blockquote joined with the house ` · ` separator; README's exit-code
+   line catches up with D-045 (2 is gone, 78 is in). SKILL.md's example
+   JSON blocks were re-indented one field per line inside the same
+   blocks, with one honest note: re-indented for width, pm prints
+   compact one-line JSON.
+2. WHY: the trailing-space rule and hard breaks cannot coexist, and a
+   hard break is invisible in the source; the audit asked the stage to
+   report 0 on the whole tree with .md included, and wrapping beats
+   exempting. JSON is whitespace-insensitive, so the re-indentation
+   cannot change what the example says.
+3. COST: none; the bite was proven 2026-10-18 with a two-file probe --
+   a 151-char .md line failed the stage naming bad.md:1, the same tree
+   without that line exited 0.
+
 ** 2026-10-18 D-070: each confirmation refusal names its own next step
    Touches =package-manager/src/entry/mcp-tools.rkt=;
    =package-manager/tests/security/confirmation-test.rkt=.

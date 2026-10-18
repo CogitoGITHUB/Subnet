@@ -17,15 +17,6 @@
 
 * PHASE A -- foundation and gates
 
-** text-lint for .md and README line lengths
-what: text-lint covers .md (README.md included); README.md's
-  over-length lines are wrapped. Phase F rewrites the README Status
-  section later and keeps it lint-clean.
-done when: the stage reports 0 on the whole tree with .md included,
-  and is proven to bite on a long line.
-tests: =gate/check.nu= text-lint stage.
-deps: none.
-
 ** the two renames
 what: =run-command= -> =spawn-and-wait=; =run-result-exit= ->
   =result-exit=: =src/install/local-perform.rkt=, every caller, every
