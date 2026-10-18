@@ -45,7 +45,7 @@
   (make-directory test-home)
   (define (fixture-git dir . args)
     (define res
-      (run-command (git-executable-path) args
+      (spawn-and-wait (git-executable-path) args
                    #:cwd (path->string dir)
                    #:kind 'fetch #:operation "update-fixture"
                    #:env `(("GIT_AUTHOR_NAME" . "t")
@@ -54,7 +54,7 @@
                             ("GIT_COMMITTER_EMAIL" . "t@t")
                             ("HOME" . ,(path->string test-home))
                             ("GIT_CONFIG_NOSYSTEM" . "1"))))
-    (unless (zero? (run-result-exit res))
+    (unless (zero? (result-exit res))
       (error 'update-fixture "git failed: ~a" args))
     res)
   (define up (build-path test-root "upstream"))
@@ -65,7 +65,7 @@
   (fixture-git up "add" "-A")
   (fixture-git up "commit" "-qm" "init")
   (define (head-now)
-    (car (run-result-stdout-lines (fixture-git up "rev-parse" "HEAD"))))
+    (car (result-stdout-lines (fixture-git up "rev-parse" "HEAD"))))
   (define pin-a (head-now))
   (define vault-git (build-path test-root "vault" "vault.git"))
   (make-directory* (build-path test-root "vault"))

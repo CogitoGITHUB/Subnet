@@ -17,14 +17,6 @@
 
 * PHASE A -- foundation and gates
 
-** the two renames
-what: =run-command= -> =spawn-and-wait=; =run-result-exit= ->
-  =result-exit=: =src/install/local-perform.rkt=, every caller, every
-  comment and every contract row.
-done when: grep finds neither old name anywhere in the tree.
-tests: the install, build and process suites that use them.
-deps: step 14 (done; the same files move).
-
 ** safety-test scratch cleanup
 what: the git-repo safety test removes the
   =<cyberdeck-dir>/tmp/pm-safety-<millis>= repo it creates (D-059).
@@ -91,7 +83,7 @@ what: move the modules so the ranking holds (D-044): the 34 crossings
 done when: =one-way-dependency-lint= reports zero known unpaid edges
   and the gate is green; ARCHITECTURE.org matches the tree.
 tests: =gate/one-way-dependency-lint.nu= + the suites of moved areas.
-deps: step 14 (done) and the two renames (stable tree).
+deps: step 14 (done) and the two renames (done 2026-10-18).
 
 ** G-02 + G-07 closure lock + idempotent apply
 what: the lock covers the whole closure; a second apply cannot

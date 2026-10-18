@@ -142,7 +142,7 @@
   ;; Fetch plus extract against a file:// fixture mirror, end to end.
   (define (fixture-git-local dir . args)
     (define res
-      (run-command (git-executable-path) args
+      (spawn-and-wait (git-executable-path) args
                    #:cwd (path->string dir)
                    #:kind 'fetch #:operation "test-fixture"
                    #:env `(("GIT_AUTHOR_NAME" . "t")
@@ -151,7 +151,7 @@
                            ("GIT_COMMITTER_EMAIL" . "t@t")
                            ("HOME" . ,(path->string test-home))
                            ("GIT_CONFIG_NOSYSTEM" . "1"))))
-    (unless (zero? (run-result-exit res))
+    (unless (zero? (result-exit res))
       (error 'local-fixture "git failed: ~a" args))
     res)
   (define fixture-up (build-path test-root "upstream"))
@@ -162,7 +162,7 @@
   (fixture-git-local fixture-up "add" "-A")
   (fixture-git-local fixture-up "commit" "-qm" "init")
   (define upstream-head
-    (car (run-result-stdout-lines
+    (car (result-stdout-lines
           (fixture-git-local fixture-up "rev-parse" "HEAD"))))
   (define mirror-path (build-path test-vault "demo.git"))
   (define staging-path (build-path test-root "staging"))

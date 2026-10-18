@@ -21,7 +21,7 @@
 ;; string (listof string) (listof string) -> never returns, kind 'cancelled
 ;; operation completed remaining-state
 (define (raise-cancelled operation completed remaining)
-  (raise-pm-error 'cancelled 'run-command "cancelled"
+  (raise-pm-error 'cancelled 'spawn-and-wait "cancelled"
                   #:fields `(("operation" . ,operation)
                              ("completed" . ,completed)
                              ("remaining-state" . ,remaining))))

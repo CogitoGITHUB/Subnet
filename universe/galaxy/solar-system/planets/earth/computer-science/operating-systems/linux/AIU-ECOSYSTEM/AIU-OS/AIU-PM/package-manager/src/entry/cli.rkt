@@ -2,7 +2,7 @@
 ;; cli.rkt -- the public promise of the pm command line: the command
 ;; structs, the parser, the renderers and the helpers, re-provided
 ;; with their contracts. The jobs live in dispatch.rkt (commands,
-;; parsing, rendering, run-command-json, run-cli) and documents.rkt
+;; parsing, rendering, command-json, run-cli) and documents.rkt
 ;; (the result documents and the help text); this facade must not add
 ;; logic of its own, and the module+ main below is the executable door.
 
@@ -43,7 +43,7 @@
   ;; command -> string, the exact --format json document: the envelope
   ;; from command->json plus that command's result keys. Raises kind
   ;; 'config for a command that is not executable yet (E-18 debt).
-  [run-command-json (-> command? string?)]
+  [command-json (-> command? string?)]
   ;; jsexpr -> string, the value as JSON text (write-json alone
   ;; prints and returns void)
   [json-text (-> jsexpr? string?)]

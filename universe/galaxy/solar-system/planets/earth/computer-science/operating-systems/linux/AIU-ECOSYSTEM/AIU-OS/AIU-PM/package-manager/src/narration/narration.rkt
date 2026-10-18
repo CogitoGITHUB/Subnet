@@ -331,8 +331,8 @@
 ;; that never came back.
 ;;
 ;; wait-for pushes the depth/parent of the blocking operation for the
-;; duration of the call, so a thread-wait nested inside a run-command
-;; reports as a child of that run-command rather than of the whole run.
+;; duration of the call, so a thread-wait nested inside a spawn-and-wait
+;; reports as a child of that spawn-and-wait rather than of the whole run.
 ;;
 ;; wait-done closes the pair. Its duration-ms is the measured wait,
 ;; taken off the monotonic clock, so a slow block is visible as a slow

@@ -37,7 +37,7 @@
   ;; --- example 1: pm check --format json ------------------------------
   ;; The skill shows the whole document, so compare the whole document.
   (define check-doc
-    (run-command-json
+    (command-json
      (parse-args (list->vector (list "check" example-dir "--format" "json")))))
   (check-equal? (hash-ref (string->json check-doc) 'name) "check")
   (check-equal? (hash-ref (string->json check-doc) 'format) "json")
@@ -57,7 +57,7 @@
 
   ;; --- example 2: pm plan --format json -------------------------------
   (define plan-doc
-    (run-command-json
+    (command-json
      (parse-args (list->vector (list "plan" example-dir "--format" "json")))))
   (define plan-j (string->json plan-doc))
   (check-equal? (hash-ref plan-j 'name) "plan")

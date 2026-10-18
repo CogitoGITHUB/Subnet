@@ -81,21 +81,21 @@
                     #:fields `(("step" . ,step-name)
                                ("directory" . ,(path->string cwd)))))
   (define res
-    (run-command prog argv
+    (spawn-and-wait prog argv
                  #:cwd cwd
                  #:kind 'build
                  #:operation step-name
                  #:env extras))
-  (unless (zero? (run-result-exit res))
+  (unless (zero? (result-exit res))
     (raise-pm-error 'build 'execute-build-step "step failed"
                     #:fields `(("step" . ,step-name)
                                 ("command" . ,(string-join
                                                (cons exe argv) " "))
                                 ("directory" . ,(path->string cwd))
                                 ("exit-code" . ,(number->string
-                                                 (run-result-exit res)))
+                                                 (result-exit res)))
                                 ("stderr" . ,(string-join
-                                              (run-result-stderr-lines res)
+                                              (result-stderr-lines res)
                                               "\n"))))))
 
 ;; ---------------------------------------------------------------------------

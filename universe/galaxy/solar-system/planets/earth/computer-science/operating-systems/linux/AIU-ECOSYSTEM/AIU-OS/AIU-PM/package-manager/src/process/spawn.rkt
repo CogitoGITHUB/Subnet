@@ -39,7 +39,7 @@
 (define (check-env-names extras)
   (for ([p (in-list extras)])
     (unless (regexp-match? #rx"^[A-Za-z_][A-Za-z0-9_]*$" (car p))
-      (raise-pm-error 'internal 'run-command "invalid environment variable name"
+      (raise-pm-error 'internal 'spawn-and-wait "invalid environment variable name"
                       #:fields `(("name" . ,(car p)))))))
 
 ;; (listof (cons string string)) -> (listof string), NAME=value assignments
@@ -68,7 +68,7 @@
 ;; -> path, helper binary or kind 'config when missing
 (define (find-helper name)
   (or (find-executable-path name)
-      (raise-pm-error 'config 'run-command "helper executable missing"
+      (raise-pm-error 'config 'spawn-and-wait "helper executable missing"
                       #:fields `(("helper" . ,name)))))
 
 ;; string, the wrapper all children run under. Argv carries the fifo path,
@@ -101,7 +101,7 @@
   (define env-exe (find-helper "env"))
   (define sh-exe (find-helper "sh"))
   (unless (file-exists? exe)
-    (raise-pm-error 'config 'run-command "executable not found"
+    (raise-pm-error 'config 'spawn-and-wait "executable not found"
                     #:fields `(("exe" . ,exe))))
   ;; A cwd that is not an existing directory is refused HERE, before the
   ;; temp dir and the fifo are created and before anything is spawned.
@@ -116,7 +116,7 @@
   ;; valid pid for that child, so the claim that a spawn failure raises
   ;; synchronously was false in this case.
   (unless (directory-exists? cwd)
-    (raise-pm-error 'config 'run-command "cwd is not an existing directory"
+    (raise-pm-error 'config 'spawn-and-wait "cwd is not an existing directory"
                     #:fields `(("cwd" . ,(if (path? cwd)
                                             (path->string cwd)
                                             cwd))
@@ -140,7 +140,7 @@
                        extras cwd operation)
   (with-handlers ([exn:fail?
                    (lambda (e)
-                     (raise-pm-error 'config 'run-command "spawn failed"
+                     (raise-pm-error 'config 'spawn-and-wait "spawn failed"
                                      #:fields `(("operation" . ,operation)
                                                 ("command" . ,(command-text
                                                                exe-string argv)))

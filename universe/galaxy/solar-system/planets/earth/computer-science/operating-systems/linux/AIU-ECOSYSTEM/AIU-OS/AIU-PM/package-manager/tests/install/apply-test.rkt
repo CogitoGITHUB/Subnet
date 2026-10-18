@@ -215,7 +215,7 @@
   (make-directory e12-home)
   (define (e12-git dir . args)
     (define res
-      (run-command (git-executable-path) args
+      (spawn-and-wait (git-executable-path) args
                    #:cwd (path->string dir)
                    #:kind 'fetch #:operation "e12-fixture"
                    #:env `(("GIT_AUTHOR_NAME" . "t")
@@ -224,7 +224,7 @@
                             ("GIT_COMMITTER_EMAIL" . "t@t")
                             ("HOME" . ,(path->string e12-home))
                             ("GIT_CONFIG_NOSYSTEM" . "1"))))
-    (unless (zero? (run-result-exit res))
+    (unless (zero? (result-exit res))
       (error 'e12-fixture "git failed: ~a" args))
     res)
   (define e12-up (build-path state-root "upstream"))
@@ -293,13 +293,13 @@
   ;; The count is the diagnostic; the assertions above already check the
   ;; journal, and the tree is checked by the install assertions.
   (define e12-ls
-    (run-command (find-executable-path "ls")
+    (spawn-and-wait (find-executable-path "ls")
                  (list "-lR" (path->string (build-path state-root "store")))
                  #:cwd state
                  #:kind 'build #:operation "e12-ls"))
   (note 'e12 (format "store tree: ~a line(s) from ls -lR, exit ~a"
-                     (length (run-result-stdout-lines e12-ls))
-                     (run-result-exit e12-ls)))
+                     (length (result-stdout-lines e12-ls))
+                     (result-exit e12-ls)))
 
   ;; E-12c: one writer. The outer apply holds (id outer-apply) while
   ;; its performer runs the inner apply on the same state: the inner
@@ -427,7 +427,7 @@
   (make-directory e2e-home)
   (define (e2e-git dir . args)
     (define res
-      (run-command (git-executable-path) args
+      (spawn-and-wait (git-executable-path) args
                    #:cwd (path->string dir)
                    #:kind 'fetch #:operation "apply-e2e-fixture"
                    #:env (list (cons "GIT_AUTHOR_NAME" "t")
@@ -436,7 +436,7 @@
                                (cons "GIT_COMMITTER_EMAIL" "t@t")
                                (cons "HOME" (path->string e2e-home))
                                (cons "GIT_CONFIG_NOSYSTEM" "1"))))
-    (unless (zero? (run-result-exit res))
+    (unless (zero? (result-exit res))
       (error 'apply-e2e "git failed: ~a" args))
     res)
   (define (e2e-upstream name)
@@ -453,7 +453,7 @@
   ;; pair and destructuring afterwards silently lost the pin. A list
   ;; survives narration intact, which is why this returns (list dir pin).
   (list d
-        (car (run-result-stdout-lines
+        (car (result-stdout-lines
                (e2e-git d "rev-parse" "HEAD")))))
   ;; The fixture repos are made with four git spawns each. Narrated as one
   ;; case so a park in a fixture git call is attributable too.

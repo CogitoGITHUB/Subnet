@@ -445,7 +445,7 @@
     [else (rpc-error id -32602 (format "not a feed tool: ~a" name))]))
 
 ;; string (listof string) any -> jsexpr. Runs through the same parse
-;; and run-command-json the CLI uses, so a refusal here is the refusal
+;; and command-json the CLI uses, so a refusal here is the refusal
 ;; a user would see on the command line.
 (define (run-tool name argv id)
   ;; Three classes of failure, three different answers.
@@ -472,7 +472,7 @@
         (lambda (e)
           (rpc-error id -32000 (exn-message e)))])
     (define words (append (list name) argv (list "--format" "json")))
-    (define doc (run-command-json (parse-args (list->vector words))))
+    (define doc (command-json (parse-args (list->vector words))))
     (rpc-ok id
             (hasheq 'content (list (hasheq 'type "text" 'text doc))
                     'isError #f))))
@@ -623,7 +623,7 @@
   (define plan-doc (rpc-content-text plan-reply))
   (check-equal?
    plan-doc
-   (run-command-json
+   (command-json
     (parse-args
      (list->vector (list "plan" (path->string fixture) "--format" "json")))))
   (check-true (regexp-match? #rx"\"name\":\"pkg-alpha\"" plan-doc))

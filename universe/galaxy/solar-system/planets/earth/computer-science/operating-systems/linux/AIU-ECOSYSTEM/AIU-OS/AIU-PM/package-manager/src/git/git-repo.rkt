@@ -98,11 +98,11 @@
 ;; ---------------------------------------------------------------------------
 ;; Running git with uniform failure handling
 
-;; string run-result -> run-result, dubious ownership means kind 'config (15)
+;; string result -> result, dubious ownership means kind 'config (15)
 (define (check-dubious op res)
   (define lines
-    (append (run-result-stdout-lines res) (run-result-stderr-lines res)))
-  (when (and (not (zero? (run-result-exit res)))
+    (append (result-stdout-lines res) (result-stderr-lines res)))
+  (when (and (not (zero? (result-exit res)))
              (ormap (lambda (l) (regexp-match? #rx"dubious ownership" l))
                     lines))
     (raise-pm-error 'config op "git reports unsafe repository ownership"
@@ -117,7 +117,7 @@
 ;; do not accept `--` in these positions, so blanket separators would
 ;; break commands for zero gain. Say the word and it gets re-tested.
 
-;; path symbol path-string (listof string) -> run-result
+;; path symbol path-string (listof string) -> result
 ;; Explicit --git-dir plus ceiling on every call (STEP B safety); only
 ;; creation (init) passes #:git-dir #f and relies on ceiling alone.
 (define (git-run git op dir argv #:kind kind
@@ -125,7 +125,7 @@
   (define full-argv
     (if git-dir (cons (git-dir-flag git-dir) argv) argv))
   (define res
-    (run-command git full-argv
+    (spawn-and-wait git full-argv
                  #:cwd dir
                  #:kind kind
                  #:operation operation
@@ -133,15 +133,15 @@
   (check-dubious op res)
   res)
 
-;; symbol path string run-result pm-kind -> never returns (E-8 fields)
+;; symbol path string result pm-kind -> never returns (E-8 fields)
 (define (raise-git-failure op dir command res kind)
   (raise-pm-error kind op "git command failed"
                   #:fields `(("mirror" . ,(path->string dir))
                              ("command" . ,command)
                              ("exit-code"
-                              . ,(number->string (run-result-exit res)))
+                              . ,(number->string (result-exit res)))
                              ("stderr" . ,(string-join
-                                           (run-result-stderr-lines res)
+                                           (result-stderr-lines res)
                                            "\n")))))
 
 ;; path symbol path-string (listof string) -> void, nonzero raises kind (E-8)
@@ -149,15 +149,15 @@
                   #:operation operation #:git-dir [git-dir dir])
   (define res (git-run git op dir argv #:kind kind
                        #:operation operation #:git-dir git-dir))
-  (unless (zero? (run-result-exit res))
+  (unless (zero? (result-exit res))
     (raise-pm-error kind op "git command failed"
                     #:fields `(("command" . ,(string-join
                                                (cons (path->string git) argv)
                                                " "))
                                ("exit-code"
-                                . ,(number->string (run-result-exit res)))
+                                . ,(number->string (result-exit res)))
                                ("stderr" . ,(string-join
-                                             (run-result-stderr-lines res)
+                                             (result-stderr-lines res)
                                              "\n"))))))
 
 ;; string -> boolean, ssh:// or scp-like user@host:path
@@ -248,9 +248,9 @@
   (define res
     (git-run git 'mirror-origin-url dir '("config" "--get" "remote.origin.url")
              #:kind 'fetch #:operation "read remote url"))
-  (and (zero? (run-result-exit res))
-       (pair? (run-result-stdout-lines res))
-       (car (run-result-stdout-lines res))))
+  (and (zero? (result-exit res))
+       (pair? (result-stdout-lines res))
+       (car (result-stdout-lines res))))
 
 ;; ---------------------------------------------------------------------------
 ;; Operations
@@ -395,8 +395,8 @@
   (define exists
     (git-run git 'git-has-commit? dir `("cat-file" "-e" "--" ,commit)
              #:kind 'fetch #:operation "git cat-file"))
-  (cond [(not (zero? (run-result-exit exists)))
-         (if (= 1 (run-result-exit exists))
+  (cond [(not (zero? (result-exit exists)))
+         (if (= 1 (result-exit exists))
              #f
              (raise-git-failure 'git-has-commit? dir
                                 (string-append "cat-file -e " commit)
@@ -406,10 +406,10 @@
                 (git-run git 'git-has-commit? dir `("cat-file" "-t" "--" ,commit)
                          #:kind 'fetch
                          #:operation "git cat-file")])
-           (cond [(and (zero? (run-result-exit typed))
-                       (equal? (run-result-stdout-lines typed) '("commit")))
+           (cond [(and (zero? (result-exit typed))
+                       (equal? (result-stdout-lines typed) '("commit")))
                   #t]
-                 [(zero? (run-result-exit typed)) #f]
+                 [(zero? (result-exit typed)) #f]
                  [else
                   (raise-git-failure 'git-has-commit? dir
                                      (string-append "cat-file -t " commit)
@@ -457,9 +457,9 @@
              #:kind 'fetch
              #:operation "git ls-files export"
              #:git-dir (build-path work ".git")))
-  (if (not (zero? (run-result-exit res)))
+  (if (not (zero? (result-exit res)))
       (raise-git-failure 'git-export-commit work "ls-files -s" res 'fetch)
-      (for ([line (in-list (run-result-stdout-lines res))])
+      (for ([line (in-list (result-stdout-lines res))])
         (when (string-prefix? line "160000 ")
           (raise-pm-error 'fetch 'git-export-commit
                           "submodule in source tree"
@@ -647,11 +647,11 @@
   ;; Run git for fixtures; nonzero raises.
   (define (fixture-git dir . args)
     (define res
-      (run-command git-exe args
+      (spawn-and-wait git-exe args
                    #:cwd (path->string dir)
                    #:kind 'fetch #:operation "test-fixture"
                    #:env (fixture-env)))
-    (unless (zero? (run-result-exit res))
+    (unless (zero? (result-exit res))
       (error 'fixture "git failed: ~a" args))
     res)
 
@@ -666,7 +666,7 @@
     (fixture-git dir "add" "-A")
     (fixture-git dir "commit" "-qm" "init")
     (values dir
-            (car (run-result-stdout-lines
+            (car (result-stdout-lines
                   (fixture-git dir "rev-parse" "HEAD")))))
 
   (define file-url
@@ -705,7 +705,7 @@
     ;; Well-formed but absent id, and tree id: both #f.
     (check-false (git-has-commit? mirror (make-string 40 #\a)))
     (define tree-id
-      (car (run-result-stdout-lines
+      (car (result-stdout-lines
             (fixture-git upstream "rev-parse" (string-append head-commit
                                                              "^{tree}")))))
     (check-false (git-has-commit? mirror tree-id))
@@ -721,7 +721,7 @@
     (git-pin-commit mirror head-commit)
     (define pin-ref (string-append "refs/cyberdeck/pinned/" head-commit))
     (check-equal?
-     (run-result-exit
+     (result-exit
       (fixture-git mirror "rev-parse" "--verify" "--quiet" pin-ref))
      0)
     (define missing-exn
@@ -741,7 +741,7 @@
     (fixture-git upstream "add" "-A")
     (fixture-git upstream "commit" "-qm" "doomed")
     (define doomed
-      (car (run-result-stdout-lines
+      (car (result-stdout-lines
             (fixture-git upstream "rev-parse" "HEAD"))))
     (fixture-git upstream "checkout" "-q" "main")
     (git-fetch-mirror mirror)
@@ -793,17 +793,17 @@
   ;; without explicit --git-dir plus GIT_CEILING_DIRECTORIES.
   (parameterize ([current-allow-file-urls #t])
     (define top-res
-      (run-command git-exe
+      (spawn-and-wait git-exe
                    (list "-C" (dir-string cyberdeck-dir)
                          "rev-parse" "--show-toplevel")
                    #:cwd (dir-string cyberdeck-dir)
                    #:kind 'fetch
                    #:operation "test-outer-top"))
-    (when (zero? (run-result-exit top-res))
-      (define outer-top (car (run-result-stdout-lines top-res)))
+    (when (zero? (result-exit top-res))
+      (define outer-top (car (result-stdout-lines top-res)))
       (define (outer-run . args)
-        (run-result-stdout-lines
-         (run-command git-exe (cons "-C" (cons outer-top args))
+        (result-stdout-lines
+         (spawn-and-wait git-exe (cons "-C" (cons outer-top args))
                       #:cwd (dir-string cyberdeck-dir)
                       #:kind 'fetch
                       #:operation "test-outer-snapshot")))
@@ -852,7 +852,7 @@
   (fixture-git export-up "add" "-A")
   (fixture-git export-up "commit" "-qm" "good")
   (define good-commit
-    (car (run-result-stdout-lines
+    (car (result-stdout-lines
           (fixture-git export-up "rev-parse" "HEAD"))))
   (define export-mirror (vault-mirror-dir fixture-root "exportpkg"))
   (parameterize ([current-allow-file-urls #t])
@@ -889,7 +889,7 @@
   (fixture-git export-up "add" "-A")
   (fixture-git export-up "commit" "-qm" "escape")
   (define escape-commit
-    (car (run-result-stdout-lines
+    (car (result-stdout-lines
           (fixture-git export-up "rev-parse" "HEAD"))))
   (fixture-git export-up "checkout" "-q" "main")
   (define subrepo (build-path fixture-root "subrepo"))
@@ -903,7 +903,7 @@
   (fixture-git export-up "add" "-A")
   (fixture-git export-up "commit" "-qm" "sub")
   (define sub-commit
-    (car (run-result-stdout-lines
+    (car (result-stdout-lines
           (fixture-git export-up "rev-parse" "HEAD"))))
   (git-fetch-mirror export-mirror)
   (define staging-escape (build-path fixture-root "staging-escape"))
@@ -951,22 +951,22 @@
       (displayln "\tname = pm-probe-value" port))
     #:exists 'truncate/replace)
   (define probe-res
-    (run-command git-exe '("config" "user.name")
+    (spawn-and-wait git-exe '("config" "user.name")
                  #:cwd (path->string fixture-root)
                  #:kind 'fetch #:operation "test-global"
                  #:env `(("GIT_CONFIG_NOSYSTEM" . "1")
                          ("GIT_CONFIG_GLOBAL" . ,(path->string global-probe))
                          ("HOME" . ,(path->string fixture-home)))))
-  (check-equal? (run-result-stdout-lines probe-res) '("pm-probe-value"))
+  (check-equal? (result-stdout-lines probe-res) '("pm-probe-value"))
   (delete-file global-probe)
 
   ;; Dubious ownership maps to kind 'config; clean failures pass through.
   (define dubious
-    (run-result 128 '() '("fatal: detected dubious ownership in repository")))
+    (result 128 '() '("fatal: detected dubious ownership in repository")))
   (check-pred config-error?
               (with-handlers ([exn:fail:pm? (lambda (e) e)])
                 (check-dubious 'git-fetch dubious)))
-  (define clean-res (run-result 1 '("x") '()))
+  (define clean-res (result 1 '("x") '()))
   (check-eq? (check-dubious 'git-fetch clean-res) clean-res)
 
   ;; SSH timeouts gain the host-key hint; others re-raise unchanged (14).

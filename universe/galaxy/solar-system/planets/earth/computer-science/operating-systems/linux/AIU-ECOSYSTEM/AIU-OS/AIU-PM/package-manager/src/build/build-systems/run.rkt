@@ -3,7 +3,7 @@
 ;; every $PREFIX expanded; the escape hatch for steps the vocabulary
 ;; cannot name. It builds the command only; build-executor.rkt spawns
 ;; it. The builder is named run-step-command so process/run.rkt's
-;; run-command (the spawner itself) stays unambiguous.
+;; spawn-and-wait (the spawner itself) stays unambiguous.
 
 (require racket/list
          "../build-env.rkt"

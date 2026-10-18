@@ -1,7 +1,7 @@
 #lang racket/base
 ;; vault.rkt -- the monorepo vault (D-011, D-012, docs/VAULT-SPEC.org).
 ;; One bare repo, per-package namespaces, try-lock writers (vault-lock),
-;; lock-free readers. All git traffic runs through run-command with
+;; lock-free readers. All git traffic runs through spawn-and-wait with
 ;; #:cancel and #:on-progress; no timeouts anywhere (D-015). Git children
 ;; hold a sibling child.lock via flock so a kill -9 orphan is observable.
 ;; The per-package mirrors in git.rkt die with the migration; new code
@@ -184,7 +184,7 @@
                        (string->number (caddr m))
                        (progress-bytes line))))
 
-;; path-string (listof string) -> run-result, flock-held git child.
+;; path-string (listof string) -> result, flock-held git child.
 ;; #:git-dir #f only for creation (init); every URL/path takes -- first
 ;; at the call site. Locking the child means a kill -9 orphan keeps
 ;; child.lock held, which writers observe (needs-verify).
@@ -212,7 +212,7 @@
                   [else (list (string-append "--git-dir="
                                              (dir-string git-dir)))])
             argv))
-  (run-command flock-exe
+  (spawn-and-wait flock-exe
                (cons (dir-string (vault-child-lock vault-root))
                      (cons (path->string git) git-argv))
                #:cwd (vault-cwd vault-root)
@@ -225,20 +225,20 @@
                                     (define p (parse-progress-line line))
                                     (when p (on-progress p))))))
 
-;; symbol path-string run-result string -> never returns (E-8 fields)
+;; symbol path-string result string -> never returns (E-8 fields)
 (define (raise-git-failure op vault-root command res kind)
   (raise-pm-error kind op "git command failed"
                   #:fields `(("vault" . ,(dir-string vault-root))
                              ("command" . ,command)
                              ("exit-code"
-                              . ,(number->string (run-result-exit res)))
+                              . ,(number->string (result-exit res)))
                              ("stderr" . ,(string-join
-                                           (run-result-stderr-lines res)
+                                           (result-stderr-lines res)
                                            "\n")))))
 
-;; path-string symbol string run-result pm-kind -> void, nonzero raises
+;; path-string symbol string result pm-kind -> void, nonzero raises
 (define (vault-git! vault-root op argv res kind command)
-  (unless (zero? (run-result-exit res))
+  (unless (zero? (result-exit res))
     (raise-git-failure op vault-root command res kind)))
 
 ;; ---------------------------------------------------------------------------
@@ -254,7 +254,7 @@
                #:operation "list namespace refs"))
   (vault-git! vault-root 'vault-refmap '("for-each-ref") res 'internal
               "for-each-ref")
-  (for/hash ([line (in-list (run-result-stdout-lines res))]
+  (for/hash ([line (in-list (result-stdout-lines res))]
              #:when (regexp-match? #rx"\0" line))
     (define parts (string-split line "\0"))
     (values (car parts) (cadr parts))))
@@ -305,10 +305,10 @@
     (vault-git vault-root '("config" "--get-regexp" "^remote\\.")
                #:op 'vault-init #:kind 'config
                #:operation "check no remotes"))
-  (when (zero? (run-result-exit remotes))
+  (when (zero? (result-exit remotes))
     (raise-pm-error 'config 'vault-init "vault has remote config"
                     #:fields `(("detail" . ,(string-join
-                                              (run-result-stdout-lines remotes)
+                                              (result-stdout-lines remotes)
                                               "\n")))
                     #:hint "no remote.* config ever; URLs live in the manifest")))
 
@@ -318,8 +318,8 @@
     (vault-git vault-root '("rev-parse" "--is-bare-repository")
                #:op 'ensure-vault #:kind 'config
                #:operation "check vault present"))
-  (unless (and (zero? (run-result-exit res))
-               (equal? (run-result-stdout-lines res) '("true")))
+  (unless (and (zero? (result-exit res))
+               (equal? (result-stdout-lines res) '("true")))
     (raise-pm-error 'config 'ensure-vault "vault not initialized"
                     #:fields `(("vault" . ,(dir-string vault-root)))
                     #:hint "run vault-init first")))
@@ -335,14 +335,14 @@
         (raise-pm-error 'config 'vault-add "true executable not found"
                         #:hint "install coreutils so the lock probe can run")))
   (define res
-    (run-command flock-exe
+    (spawn-and-wait flock-exe
                  (list "-n" (dir-string (vault-child-lock vault-root))
                        (path->string true-exe))
                  #:cwd (vault-cwd vault-root)
                  #:kind 'config
                  #:operation "probe child lock"
                  #:env (vault-env vault-root)))
-  (unless (zero? (run-result-exit res))
+  (unless (zero? (result-exit res))
     (raise-pm-error 'config 'vault-add "vault needs verify"
                     #:fields `(("vault" . ,(dir-string vault-root)))
                     #:hint "a git child may be orphaned; wait for it or run pm vault verify")))
@@ -380,8 +380,8 @@
 ;; ---------------------------------------------------------------------------
 ;; Fetch
 
-;; path-string string string (listof string) evt/#f proc/#f -> run-result
-;; path-string string string (listof string) evt/#f proc/#f -> run-result.
+;; path-string string string (listof string) evt/#f proc/#f -> result
+;; path-string string string (listof string) evt/#f proc/#f -> result.
 ;; #:refspecs replaces the default heads+tags pair (restore fetches
 ;; pinned and superseded too, never with remote-head).
 (define (vault-fetch-run vault-root url ns fsck-allow cancel on-progress
@@ -457,7 +457,7 @@
                #:op 'vault-add #:kind 'fetch
                #:operation "resolve remote HEAD"))
   (vault-git! vault-root 'vault-add '("ls-remote") res 'fetch "ls-remote")
-  (define lines (run-result-stdout-lines res))
+  (define lines (result-stdout-lines res))
   (define m (and (pair? lines) (regexp-match #rx"^([0-9a-f]+)\tHEAD" (car lines))))
   (unless m
     (raise-pm-error 'fetch 'vault-add "empty remote or unresolvable HEAD"
@@ -471,7 +471,7 @@
                #:op 'vault-add #:kind 'fetch
                #:operation "list upstream refs"))
   (vault-git! vault-root 'vault-add '("ls-remote") res 'fetch "ls-remote")
-  (for/list ([line (in-list (run-result-stdout-lines res))]
+  (for/list ([line (in-list (result-stdout-lines res))]
              #:when (regexp-match? #rx"\trefs/(heads|tags)/" line)
              #:unless (string-suffix? line "^{}"))
     (define m (regexp-match #rx"\trefs/(heads|tags)/(.+)$" line))
@@ -486,7 +486,7 @@
         (vault-git vault-root `("merge-base" "--is-ancestor" "--" ,pin ,tip)
                    #:op 'vault-add #:kind 'fetch
                    #:operation "check pin reachability"))
-      (zero? (run-result-exit res))))
+      (zero? (result-exit res))))
   (unless ok?
     (raise-pm-error 'fetch 'vault-add "pin not on any branch or tag"
                     #:fields `(("commit" . ,pin) ("url" . ,url))
@@ -505,7 +505,7 @@
                                         ,old ,new)
                           #:op 'vault-add #:kind 'fetch
                           #:operation "check fast-forward")))
-      (unless (zero? (run-result-exit ff?))
+      (unless (zero? (result-exit ff?))
         (let-values ([(sup warn)
                       (vault-rescue-ref vault-root ns r old
                                         #:delete? #f)])
@@ -531,7 +531,7 @@
   (define res (vault-fetch-run vault-root url ns fsck-allow cancel
                                on-progress #:refspecs refspecs))
   (define warns '())
-  (define fetch-failed? (not (zero? (run-result-exit res))))
+  (define fetch-failed? (not (zero? (result-exit res))))
   (define collisions
     (and fetch-failed?
          (vault-df-collisions vault-root ns url before)))
@@ -546,7 +546,7 @@
              (set! warns (cons warn warns))))
          (let ((retry (vault-fetch-run vault-root url ns fsck-allow
                                        cancel on-progress)))
-           (unless (zero? (run-result-exit retry))
+           (unless (zero? (result-exit retry))
              (vault-git! vault-root 'vault-fetch '("fetch") retry
                          'fetch "fetch"))
            (set! warns (cons "retried fetch after ref rescue" warns))
@@ -704,11 +704,11 @@
                               '("fsck" "--connectivity-only"))
                #:op 'vault-verify #:kind 'verify
                #:operation "verify vault"))
-  (unless (zero? (run-result-exit res))
+  (unless (zero? (result-exit res))
     (raise-pm-error 'verify 'vault-verify "vault fsck failed"
                     #:fields `(("vault" . ,(dir-string vault-root))
                                ("detail" . ,(string-join
-                                              (run-result-stderr-lines res)
+                                              (result-stderr-lines res)
                                               "\n"))))))
 
 ;; path-string -> void, explicit pack with bounded memory
@@ -728,11 +728,11 @@
                    #:op 'vault-gc #:kind 'build
                    #:operation "collect vault garbage"
                    #:cancel cancel #:on-progress on-progress))
-      (unless (zero? (run-result-exit res))
+      (unless (zero? (result-exit res))
         (raise-pm-error 'build 'vault-gc "vault gc failed"
                         #:fields `(("vault" . ,(dir-string vault-root))
                                    ("detail" . ,(string-join
-                                                  (run-result-stderr-lines res)
+                                                  (result-stderr-lines res)
                                                   "\n"))))))))
 
 ;; path-string string string path-string -> void, pin to empty staging.
@@ -759,7 +759,7 @@
                #:op 'vault-export-commit #:kind 'verify
                #:operation "check pin present"
                #:cancel cancel #:on-progress on-progress))
-  (unless (zero? (run-result-exit present?))
+  (unless (zero? (result-exit present?))
     (raise-pm-error 'verify 'vault-export-commit "commit missing from vault"
                     #:fields (list (cons "commit" pin)
                                    (cons "namespace" ns))))
@@ -784,7 +784,7 @@
                    #:cancel cancel #:on-progress on-progress))
       (vault-git! vault-root 'vault-export-commit '("ls-tree") tree-res
                   'fetch "ls-tree")
-      (for ([line (in-list (run-result-stdout-lines tree-res))])
+      (for ([line (in-list (result-stdout-lines tree-res))])
         (when (regexp-match? #rx"^160000 " line)
           (raise-pm-error 'fetch 'vault-export-commit "submodules refused"
                           #:fields (list (cons "commit" pin)))))
@@ -797,13 +797,13 @@
       (vault-git! vault-root 'vault-export-commit '("archive") archive-res
                   'fetch "archive")
       (define untar-res
-        (run-command tar (list "-x" "-f" (dir-string tar-staging)
+        (spawn-and-wait tar (list "-x" "-f" (dir-string tar-staging)
                                "-C" (dir-string staging))
                      #:cwd (dir-string parent)
                      #:kind 'fetch #:operation "unpack export tree"
                      #:env (vault-env vault-root)
                      #:cancel cancel #:on-progress on-progress))
-      (unless (zero? (run-result-exit untar-res))
+      (unless (zero? (result-exit untar-res))
         (raise-pm-error 'fetch 'vault-export-commit "unpack failed"
                         #:fields (list (cons "staging"
                                              (dir-string staging)))))
@@ -823,7 +823,7 @@
   (vault-git! vault-root 'vault-list '("for-each-ref") res 'internal
               "for-each-ref")
   (sort (remove-duplicates
-         (for/list ([line (in-list (run-result-stdout-lines res))]
+         (for/list ([line (in-list (result-stdout-lines res))]
                     #:when (regexp-match? #rx"^refs/vault/" line))
            (cadr (regexp-match #rx"^refs/vault/([^/]+)/" line))))
         string<?))
@@ -838,7 +838,7 @@
   (vault-git! vault-root 'vault-size '("count-objects") res 'internal
               "count-objects -v")
   (define kv
-    (for/hash ([line (in-list (run-result-stdout-lines res))]
+    (for/hash ([line (in-list (result-stdout-lines res))]
                #:when (regexp-match? #rx": " line))
       (define parts (regexp-match #rx"^([^:]+): (.+)$" line))
       (values (car parts) (string->number (cadr parts)))))
@@ -883,11 +883,11 @@
     (if (or (null? revs) (not revs))
         (list->seteqv '())
         (list->seteqv
-         (for/list ([line (in-list (run-result-stdout-lines revs))]
+         (for/list ([line (in-list (result-stdout-lines revs))]
                     #:when (regexp-match? #rx"^[0-9a-f]{40}( |$)" line))
            (car (string-split line " "))))))
   (define big
-    (for/list ([line (in-list (run-result-stdout-lines batch))]
+    (for/list ([line (in-list (result-stdout-lines batch))]
                #:when (vault-big-line? line reachable))
       (car (string-split line " "))))
   big)
@@ -901,9 +901,9 @@
                #:operation "list namespace tips"))
   (vault-git! vault-root 'vault-large-blobs '("for-each-ref") res 'internal
               "for-each-ref")
-  (run-result-stdout-lines res))
+  (result-stdout-lines res))
 
-;; path-string (listof string) -> (or/c #f run-result?), objects or #f
+;; path-string (listof string) -> (or/c #f result?), objects or #f
 (define (vault-rev-objects vault-root tips)
   (if (null? tips)
       #f
@@ -970,11 +970,11 @@
                    #:op 'vault-backup-push #:kind 'fetch
                    #:operation "push namespace backup"
                    #:cancel cancel #:on-progress on-progress))
-      (unless (zero? (run-result-exit res))
+      (unless (zero? (result-exit res))
         (raise-pm-error 'fetch 'vault-backup-push "backup push failed"
                         #:fields (list (cons "name" name)
                                        (cons "detail" (string-join
-                                                        (run-result-stderr-lines res)
+                                                        (result-stderr-lines res)
                                                         "\n")))))
       (backup-push-result name #t #f (reverse specs)))))
 
@@ -992,7 +992,7 @@
   (vault-git! vault-root 'vault-backup-status '("ls-remote") res 'fetch
               "ls-remote")
   (define remote
-    (for/hash ([line (in-list (run-result-stdout-lines res))]
+    (for/hash ([line (in-list (result-stdout-lines res))]
                #:when (regexp-match? #rx"\trefs/vault/" line)
                #:unless (string-suffix? line "^{}"))
       (define m (regexp-match #rx"^([0-9a-f]+)\t(.+)$" line))
@@ -1095,11 +1095,11 @@
   ;; path (listof string) -> void, fixture git must succeed
   (define (fixture-git dir . args)
     (define res
-      (run-command git-exe args
+      (spawn-and-wait git-exe args
                    #:cwd (path->string dir)
                    #:kind 'fetch #:operation "test-fixture"
                    #:env (fixture-env)))
-    (unless (zero? (run-result-exit res))
+    (unless (zero? (result-exit res))
       (error 'vault-fixture "git failed: ~a" args))
     (void))
 
@@ -1129,11 +1129,11 @@
   ;; string -> string, HEAD sha of a fixture work repo
   (define (fixture-head dir)
     (define res
-      (run-command git-exe '("rev-parse" "HEAD")
+      (spawn-and-wait git-exe '("rev-parse" "HEAD")
                    #:cwd (path->string dir)
                    #:kind 'fetch #:operation "test-fixture"
                    #:env (fixture-env)))
-    (car (run-result-stdout-lines res)))
+    (car (result-stdout-lines res)))
 
   ;; path-string string string -> vault-add-result, fresh vault each call
   (define (fresh-add vname uname #:pin [pin #f])
@@ -1166,12 +1166,12 @@
     (check-exn exn:fail:pm?
                (lambda () (vault-namespace bad))))
   (define fmt-res
-    (run-command git-exe '("check-ref-format" "--print"
+    (spawn-and-wait git-exe '("check-ref-format" "--print"
                            "refs/vault/demo/heads/main")
                  #:cwd (path->string test-root)
                  #:kind 'fetch #:operation "test-fixture"
                  #:env (fixture-env)))
-  (check-equal? (run-result-exit fmt-res) 0)
+  (check-equal? (result-exit fmt-res) 0)
 
   ;; URL change is kind 'config pointing at D-013.
   (check-exn exn:fail:pm?
@@ -1186,13 +1186,13 @@
   (vault-init (build-path init-dir "vault.git"))
   (check-equal? (vault-list (build-path init-dir "vault.git")) '())
   (define cfg-res
-    (run-command git-exe `("--git-dir"
+    (spawn-and-wait git-exe `("--git-dir"
                            ,(path->string (build-path init-dir "vault.git"))
                            "config" "gc.auto")
                  #:cwd (path->string test-root)
                  #:kind 'fetch #:operation "test-fixture"
                  #:env (fixture-env)))
-  (check-equal? (run-result-stdout-lines cfg-res) '("0"))
+  (check-equal? (result-stdout-lines cfg-res) '("0"))
 
   ;; Two fixtures both tagged v1.0 do not collide.
   (define up-a (make-upstream "up-a"))
@@ -1229,7 +1229,7 @@
   (vault-init (build-path bad-vault "vault.git"))
   (vault-add (build-path bad-vault "vault.git") "demo" (file-url up-a))
   (define before-refs
-    (run-command git-exe `("--git-dir" ,(path->string
+    (spawn-and-wait git-exe `("--git-dir" ,(path->string
                                          (build-path bad-vault "vault.git"))
                            "for-each-ref" "refs/vault/demo")
                  #:cwd (path->string test-root)
@@ -1242,14 +1242,14 @@
                            #:pin (make-string 40 #\0))
                 'no-error))
   (define after-refs
-    (run-command git-exe `("--git-dir" ,(path->string
+    (spawn-and-wait git-exe `("--git-dir" ,(path->string
                                          (build-path bad-vault "vault.git"))
                            "for-each-ref" "refs/vault/demo")
                  #:cwd (path->string test-root)
                  #:kind 'fetch #:operation "test-fixture"
                  #:env (fixture-env)))
-  (check-equal? (run-result-stdout-lines after-refs)
-                (run-result-stdout-lines before-refs))
+  (check-equal? (result-stdout-lines after-refs)
+                (result-stdout-lines before-refs))
 
   ;; Empty remote is kind 'fetch.
   (define empty-dir (build-path test-root "up-empty"))
@@ -1298,8 +1298,8 @@
   (check-false (member tip1b (list (vault-add-result-pin ff2))))
   ;; The new tip survives the rescue; only the old tip moves.
   (define ff2-pin-line
-    (car (run-result-stdout-lines
-          (run-command git-exe
+    (car (result-stdout-lines
+          (spawn-and-wait git-exe
                        `("--git-dir" ,(path->string
                                        (build-path ff-vault "vault.git"))
                          "show-ref" "refs/vault/demo/heads/main")
@@ -1340,7 +1340,7 @@
                          (file-url df-dir)))
   (check-true (> (length (vault-add-result-warnings df2)) 0))
   (define df-refs
-    (run-command git-exe
+    (spawn-and-wait git-exe
                  `("--git-dir" ,(path->string
                                  (build-path df-vault "vault.git"))
                    "for-each-ref" "--format=%(refname)" "refs/vault/demo")
@@ -1348,11 +1348,11 @@
                  #:kind 'fetch #:operation "test-fixture"
                  #:env (fixture-env)))
   (check-true (if (member "refs/vault/demo/heads/a/b"
-                         (run-result-stdout-lines df-refs))
+                         (result-stdout-lines df-refs))
                   #t #f))
   (check-true (if (ormap (lambda (r)
                            (regexp-match? #rx"superseded/.*/heads/a$" r))
-                         (run-result-stdout-lines df-refs))
+                         (result-stdout-lines df-refs))
                   #t #f))
 
   ;; on-progress fires with parsed fields on a real fetch.
@@ -1444,12 +1444,12 @@
   (check-equal? (vault-fetch-result-gone-upstream fn1) '())
 
   ;; fetch-namespace: non-fast-forward rescues with a warning.
-  (define fn-f1 (car (let ((r (run-command
+  (define fn-f1 (car (let ((r (spawn-and-wait
                                git-exe '("rev-parse" "HEAD~1")
                                #:cwd (path->string fn-dir)
                                #:kind 'fetch #:operation "test-fixture"
                                #:env (fixture-env))))
-                       (run-result-stdout-lines r))))
+                       (result-stdout-lines r))))
   (fixture-git fn-dir "update-ref" "refs/heads/main" fn-f1)
   (call-with-output-file (build-path fn-dir "f")
     (lambda (out) (displayln "three" out)) #:exists 'truncate)
@@ -1467,8 +1467,8 @@
                              (file-url fn-dir))))
   (vault-gc (build-path fn-vault "vault.git"))
   (define (vault-has? vault ref)
-    (zero? (run-result-exit
-            (run-command git-exe
+    (zero? (result-exit
+            (spawn-and-wait git-exe
                          (list "--git-dir" (path->string vault)
                                "show-ref" "--verify" "--quiet" ref)
                          #:cwd (path->string test-root)
@@ -1481,7 +1481,7 @@
   (fixture-git fn-dir "commit" "-qam" "amended" "--amend")
   (vault-fetch-namespace (build-path fn-vault "vault.git") "demo"
                          (file-url fn-dir))
-  (run-command git-exe
+  (spawn-and-wait git-exe
                (list "--git-dir"
                      (path->string (build-path fn-vault "vault.git"))
                      "gc" "--prune=now" "--quiet")
@@ -1493,7 +1493,7 @@
 
   ;; export: faithful file list, vault untouched, staging rules.
   (define ex-lines
-    (run-command git-exe
+    (spawn-and-wait git-exe
                  (list "--git-dir"
                        (path->string (build-path fn-vault "vault.git"))
                        "for-each-ref" "refs/vault/demo")
@@ -1509,15 +1509,15 @@
                 '("f"))
   (check-false (directory-exists? (build-path ex-stage ".git")))
   (define ex-lines-after
-    (run-command git-exe
+    (spawn-and-wait git-exe
                  (list "--git-dir"
                        (path->string (build-path fn-vault "vault.git"))
                        "for-each-ref" "refs/vault/demo")
                  #:cwd (path->string test-root)
                  #:kind 'fetch #:operation "test-fixture"
                  #:env (fixture-env)))
-  (check-equal? (run-result-stdout-lines ex-lines-after)
-                (run-result-stdout-lines ex-lines))
+  (check-equal? (result-stdout-lines ex-lines-after)
+                (result-stdout-lines ex-lines))
   (check-pred config-error?
               (with-handlers ([exn:fail:pm? (lambda (e) e)])
                 (vault-export-commit (build-path fn-vault "vault.git")

@@ -124,11 +124,6 @@ would double it. Recorded in =plan/OPEN-DECISIONS.org=.
 
 * Identifiers to rename, and why each lies
 
-- =run.rkt=: =run-result-exit= -> =result-exit=
-  the struct carries exit, stdout and stderr; "run" says nothing
-- =run-command= -> =spawn-and-wait=
-  it spawns, waits and collects; the old name sounds like it only
-  builds a command line
 - =package-manager/src/entry/mcp-tools.rkt= -> =entry/mcp-tools.rkt=
   "server" and "main" are banned and say nothing about the job
 - =package-manager/src/entry/cli.rkt= -> =entry/cli.rkt=
@@ -189,6 +184,22 @@ plans, never identifiers that already exist.
   Renaming them would be a lie: git documents this word, and pm really
   does mirror the upstream. The reader test settles it -- mirror is the
   accurate name there, backup would say something else entirely.
+
+* Renamed: spawn-and-wait and result
+The section above listed both of these until 2026-10-18 (D-072).
+"run" on a process helper says nothing: the call spawns, waits and
+collects what comes back, and the struct it returns carries exit,
+stdout and stderr. Racket derives accessor names from the struct name,
+so =result-exit= requires the struct to be named =result=.
+
+- =run-command= -> =spawn-and-wait=; =run-command/redirect= ->
+  =spawn-and-wait/redirect=: it spawns, waits and collects
+- =run-result= -> =result=: =result-exit=, =result-stdout-lines=,
+  =result-stderr-lines= -- the exit, stdout and stderr of that call
+- =run-command-json= -> =command-json=: it never ran anything; it
+  renders a command's exact --format json document
+- the error context ='run-command= -> ='spawn-and-wait=: a refusal
+  renders as =spawn-and-wait: ...=
 
 * Planned: names the new components will use (docs step 3)
 # Registered here BEFORE code uses them, per the standing rule. Nothing

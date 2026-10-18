@@ -56,11 +56,11 @@
   ;; Cancelled carries operation, completed and remaining-state (D-015 sample).
   (check-equal?
    (with-handlers ([exn:fail:pm? exn-message])
-     (raise-pm-error 'cancelled 'run-command "cancelled"
+     (raise-pm-error 'cancelled 'spawn-and-wait "cancelled"
                      #:fields '(("operation" . "fetch demo")
                                 ("completed" . ("spawned" "tree killed"))
                                 ("remaining-state" . ("temp files removed" "no result")))))
-   (string-join '("run-command: cancelled;"
+   (string-join '("spawn-and-wait: cancelled;"
                   "  operation: fetch demo"
                   "  completed: (spawned tree killed)"
                   "  remaining-state: (temp files removed no result)")

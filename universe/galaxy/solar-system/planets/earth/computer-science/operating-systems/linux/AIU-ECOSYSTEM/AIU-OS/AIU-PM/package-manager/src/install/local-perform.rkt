@@ -115,19 +115,19 @@
                     #:fields `(("step" . ,(run-step-action-name a))
                                ("directory" . ,(run-step-action-cwd a)))))
   (define res
-    (run-command exe (cdr argv)
+    (spawn-and-wait exe (cdr argv)
                  #:cwd (run-step-action-cwd a)
                  #:kind 'build
                  #:operation (run-step-action-name a)))
-  (unless (zero? (run-result-exit res))
+  (unless (zero? (result-exit res))
     (raise-pm-error 'build 'local-perform! "step failed"
                     #:fields `(("step" . ,(run-step-action-name a))
                                ("command" . ,(string-join argv " "))
                                ("directory" . ,(run-step-action-cwd a))
                                ("exit-code"
-                                . ,(number->string (run-result-exit res)))
+                                . ,(number->string (result-exit res)))
                                ("stderr" . ,(string-join
-                                             (run-result-stderr-lines res)
+                                             (result-stderr-lines res)
                                              "\n"))))))
 
 ;; ---------------------------------------------------------------------------
@@ -277,19 +277,19 @@
                     #:fields `(("step" . "check")
                                 ("directory" . ,cwd))))
   (define res
-    (run-command exe (cdr argv)
+    (spawn-and-wait exe (cdr argv)
                  #:cwd cwd
                  #:kind 'build
                  #:operation "check"))
-  (unless (zero? (run-result-exit res))
+  (unless (zero? (result-exit res))
     (raise-pm-error 'build 'local-perform! "check failed"
                     #:fields `(("step" . "check")
                                 ("command" . ,(string-join argv " "))
                                 ("directory" . ,cwd)
                                 ("exit-code"
-                                 . ,(number->string (run-result-exit res)))
+                                 . ,(number->string (result-exit res)))
                                 ("stderr" . ,(string-join
-                                              (run-result-stderr-lines res)
+                                              (result-stderr-lines res)
                                               "\n"))))))
 
 ;; mark-incomplete-action -> void, the marker appears (store owns it)

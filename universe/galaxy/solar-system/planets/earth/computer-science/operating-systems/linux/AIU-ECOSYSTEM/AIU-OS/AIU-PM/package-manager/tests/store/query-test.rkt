@@ -150,7 +150,7 @@
   (make-directory home)
   (define (qgit dir . args)
     (define res
-      (run-command (git-executable-path) args
+      (spawn-and-wait (git-executable-path) args
                    #:cwd (path->string dir)
                    #:kind 'fetch #:operation "query-fixture"
                    #:env `(("GIT_AUTHOR_NAME" . "t")
@@ -159,7 +159,7 @@
                             ("GIT_COMMITTER_EMAIL" . "t@t")
                             ("HOME" . ,(path->string home))
                             ("GIT_CONFIG_NOSYSTEM" . "1"))))
-    (unless (zero? (run-result-exit res))
+    (unless (zero? (result-exit res))
       (error 'query-fixture "git failed: ~a" args))
     res)
   (qgit up "init" "-b" "main" ".")

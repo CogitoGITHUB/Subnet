@@ -61,7 +61,7 @@
   (close-output-port (list-ref maker 1))
   (close-input-port (list-ref maker 3))
   (unless (file-exists? fifo-path)
-    (raise-pm-error 'config 'run-command "could not create status fifo"
+    (raise-pm-error 'config 'spawn-and-wait "could not create status fifo"
                     #:fields `(("operation" . ,operation))))
   (void))
 

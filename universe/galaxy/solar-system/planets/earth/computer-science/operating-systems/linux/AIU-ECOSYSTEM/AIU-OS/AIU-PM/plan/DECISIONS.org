@@ -4,6 +4,31 @@
 * Log
 Append-only. Newest first. Every entry names the rule IDs it touches.
 
+** 2026-10-18 D-072: spawn-and-wait, result, command-json; the process names speak plainly
+   Touches =package-manager/src/process/=; =git/=; =install/=;
+   =build/=; =entry/=; =narration/=; =agent/skills/aiu-pm/=;
+   =tools/build-lua.rkt=; the package-manager tests that name them.
+1. WHAT: =run-command= and =run-command/redirect= are =spawn-and-wait=
+   and =spawn-and-wait/redirect=; the struct =run-result= is =result=,
+   so its accessors are =result-exit=, =result-stdout-lines= and
+   =result-stderr-lines=; the error context ='run-command= is
+   ='spawn-and-wait=; =run-command-json= is =command-json=. Racket
+   derives accessor names from the struct name, so =result-exit= needs
+   the struct named =result= -- checked, no bare =result= identifier
+   exists to collide with.
+2. WHY: both register entries had said the same thing since the
+   register was written -- "run" says nothing; the call spawns, waits
+   and collects, and the struct carries exit, stdout and stderr. The
+   JSON renderer never ran anything: it renders a command's exact
+   --format json document, so the register's gap for =run-command-json=
+   was closed as =command-json= rather than keeping "run" in a name.
+   The apply suite's local =rerun-results= is a different word and
+   stays.
+3. COST: none; 230 replacements in 23 .rkt files; word-boundary
+   =grep -rnwE 'run-command|run-result'= over the tree finds neither
+   name in code; the install, build and process suites stay green in
+   the changed gate.
+
 ** 2026-10-18 D-071: text-lint covers .md; the README's hard breaks became joins
    Touches =gate/check.nu=; =README.md=; =agent/skills/aiu-pm/SKILL.md=.
 1. WHAT: the text-lint file set now includes =**/*.md=. README.md was

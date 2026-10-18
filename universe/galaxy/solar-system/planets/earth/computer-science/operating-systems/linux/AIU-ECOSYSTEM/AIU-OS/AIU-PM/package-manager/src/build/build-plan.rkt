@@ -14,7 +14,7 @@
 
 (provide
  (contract-out
-  ;; keyword dirs -> env extras for run-command (D-025, SPEC-NEUTRAL 5)
+  ;; keyword dirs -> env extras for spawn-and-wait (D-025, SPEC-NEUTRAL 5)
   [build-env (-> #:prefix path-string?
                  #:source path-string?
                  #:work path-string?

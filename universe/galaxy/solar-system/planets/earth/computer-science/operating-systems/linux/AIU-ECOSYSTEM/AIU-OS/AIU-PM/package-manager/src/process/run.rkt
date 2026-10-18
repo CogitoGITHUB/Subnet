@@ -35,7 +35,7 @@
 ;; The provide below is the public promise and has not changed: the
 ;; require calls of build.rkt, git.rkt and the rest are untouched. The
 ;; contracts stay HERE, on the facade, so blame still lands on the caller
-;; of run-command and not on a piece of the substrate.
+;; of spawn-and-wait and not on a piece of the substrate.
 
 (require racket/contract/base
          racket/system
@@ -52,7 +52,7 @@
          "cancel-wait.rkt"
          "spawn.rkt")
 
-(provide (struct-out run-result)
+(provide (struct-out result)
  (contract-out
   ;; Lines of tail output kept per stream; default 20.
   [current-captured-lines (parameter/c exact-positive-integer?)]
@@ -60,7 +60,7 @@
   [current-run-log-port (parameter/c (or/c #f output-port?))]
   ;; exe argv #:cwd #:kind #:operation [#:env #:cancel #:on-progress]
   ;; -> result; ends on child status line, EOF, or cancel (D-015)
-  [run-command
+  [spawn-and-wait
    (->* (path-string? (listof string?)
          #:cwd path-string?
          #:kind pm-kind/c
@@ -68,10 +68,10 @@
         (#:env (listof (cons/c string? string?))
          #:cancel (or/c evt? #f)
          #:on-progress (or/c (-> string? any/c) #f))
-        run-result?)]
+        result?)]
   ;; Same contract through output files instead of pipes: immune to
   ;; pipe-EOF starvation (batch tools whose output pipes never close).
-  [run-command/redirect
+  [spawn-and-wait/redirect
    (->* (path-string? (listof string?)
          #:cwd path-string?
          #:kind pm-kind/c
@@ -79,9 +79,9 @@
         (#:env (listof (cons/c string? string?))
          #:cancel (or/c evt? #f)
          #:on-progress (or/c (-> string? any/c) #f))
-        run-result?)]))
+        result?)]))
 
-(struct run-result (exit stdout-lines stderr-lines) #:transparent)
+(struct result (exit stdout-lines stderr-lines) #:transparent)
 ;; exit         : exact-integer?    process exit code
 ;; stdout-lines : (listof string?)  last N lines, oldest first
 ;; stderr-lines : (listof string?)  last N lines, oldest first
@@ -92,9 +92,9 @@
 ;; open past the EXIT line and the drainers would never finish). Tools
 ;; that fork like that use redirect mode instead (proven by the daemon test).
 
-;; path-string (listof string) -> run-result
+;; path-string (listof string) -> result
 ;; exe argv cwd kind operation extras cancel on-progress
-(define (run-command exe argv
+(define (spawn-and-wait exe argv
                       #:cwd cwd
                       #:kind kind
                       #:operation operation
@@ -112,7 +112,7 @@
   (define line-ch (make-channel))
   (define kill-tree (make-killer pkill-exe))
   (define (command-failed what)
-    (raise-pm-error kind 'run-command what
+    (raise-pm-error kind 'spawn-and-wait what
                     #:fields `(("operation" . ,operation)
                                ("command" . ,(command-text exe argv)))))
   (dynamic-wind
@@ -151,7 +151,7 @@
                (close-input-port err-port)
                (when log-port (flush-output log-port))
                (print-run-end exe (format "exit:~a" code) start-ms)
-               (run-result code
+               (result code
                            (reverse (unbox out-box))
                            (reverse (unbox err-box)))]
               [(eq? outcome 'cancelled) (cancelled-here)]
@@ -226,8 +226,8 @@
                                              " after=" (number->string ms)
                                              "ms " (trace-arg-string exe))))))
 
-;; path-string (listof string) -> run-result, batch tools via files
-(define (run-command/redirect exe argv
+;; path-string (listof string) -> result, batch tools via files
+(define (spawn-and-wait/redirect exe argv
                               #:cwd cwd
                               #:kind kind
                               #:operation operation
@@ -245,7 +245,7 @@
   (define line-ch (make-channel))
   (define kill-tree (make-killer pkill-exe))
   (define (command-failed what)
-    (raise-pm-error kind 'run-command what
+    (raise-pm-error kind 'spawn-and-wait what
                     #:fields `(("operation" . ,operation)
                                ("command" . ,(command-text exe argv)))))
   (dynamic-wind
@@ -287,7 +287,7 @@
                (close-output-port out-file)
                (close-output-port err-file)
                (print-run-end exe (format "exit:~a" code) start-ms)
-               (run-result code
+               (result code
                            (call-with-input-file out-path
                              (lambda (p) (collect-lines p log-port limit on-progress)))
                            (call-with-input-file err-path
@@ -316,16 +316,16 @@
   (define cwd (current-directory))
 
   (define (run-ok exe argv)
-    (run-command exe argv
+    (spawn-and-wait exe argv
                  #:cwd cwd #:kind 'fetch #:operation "test"))
 
   ;; Basic success: exit code and split streams.
   (define basic (run-ok echo-exe '("hi")))
-  (check-equal? (run-result-exit basic) 0)
-  (check-equal? (run-result-stdout-lines basic) '("hi"))
-  (check-equal? (run-result-stderr-lines basic) '())
+  (check-equal? (result-exit basic) 0)
+  (check-equal? (result-stdout-lines basic) '("hi"))
+  (check-equal? (result-stderr-lines basic) '())
 
-  ;; REGRESSION, found by hanging backends/git.rkt: run-command must not
+  ;; REGRESSION, found by hanging backends/git.rkt: spawn-and-wait must not
   ;; park for ever when #:cwd names a directory that does not exist.
   ;;
   ;; What happened: process* chdirs the CHILD into cwd. With a missing
@@ -338,7 +338,7 @@
   ;;
   ;; The fix is in spawn.rkt, where spawn-prelude refuses the cwd before a
   ;; temp dir, a fifo or a process exists; the test is here because what
-  ;; must never come back is a parked run-command, not a helper.
+  ;; must never come back is a parked spawn-and-wait, not a helper.
   ;;
   ;; The test bounds ITSELF. A hang in the code under test must not become
   ;; a hang in the suite, or the suite cannot report the very thing it
@@ -353,17 +353,17 @@
      (lambda ()
        (channel-put cwd-ch
                     (with-handlers ([exn? (lambda (e) e)])
-                      (run-command echo-exe '("unreachable")
+                      (spawn-and-wait echo-exe '("unreachable")
                                    #:cwd missing-cwd
                                    #:kind 'fetch
                                    #:operation "nonexistent cwd regression"))))))
   ;; sync/timeout returns #f when the event never becomes ready, and the
-  ;; channel below can only ever carry a run-result or an exn, so #f is
+  ;; channel below can only ever carry a result or an exn, so #f is
   ;; an unambiguous "it parked".
   (define cwd-outcome (sync/timeout 20 cwd-ch))
   (when (eq? cwd-outcome #f) (kill-thread cwd-thread))
   (check-not-equal? #f cwd-outcome
-                    "run-command parked for ever on a nonexistent #:cwd")
+                    "spawn-and-wait parked for ever on a nonexistent #:cwd")
   ;; and it must be a NAMED refusal, not a result and not a silence
   (check-pred exn:fail:pm? cwd-outcome)
 
@@ -375,8 +375,8 @@
   ;; capture cannot pass.
   (define big (parameterize ([current-captured-lines 40000])
                (run-ok sh-exe '("-c" "yes ABCDEFGHIJ | head -n 30000"))))
-  (check-equal? (run-result-exit big) 0)
-  (define big-lines (run-result-stdout-lines big))
+  (check-equal? (result-exit big) 0)
+  (define big-lines (result-stdout-lines big))
   (check-equal? (length big-lines) 30000)
   (check-equal? (for/sum ([l big-lines]) (add1 (string-length l))) 330000)
 
@@ -410,7 +410,7 @@
 
   ;; on-progress fires once per output line received.
   (define progress-lines (box '()))
-  (run-command echo-exe '("one")
+  (spawn-and-wait echo-exe '("one")
                #:cwd cwd #:kind 'fetch #:operation "test-progress"
                #:on-progress (lambda (line)
                                (set-box! progress-lines
@@ -419,18 +419,18 @@
 
   ;; File redirect mode: same shapes without pipes.
   (define (run-redirect-ok exe argv)
-    (run-command/redirect exe argv
+    (spawn-and-wait/redirect exe argv
                           #:cwd cwd #:kind 'fetch
                           #:operation "test-redirect"))
   (define redirect-basic
     (run-redirect-ok echo-exe '("hi-redirect")))
-  (check-equal? (run-result-exit redirect-basic) 0)
-  (check-equal? (run-result-stdout-lines redirect-basic) '("hi-redirect"))
-  (check-equal? (run-result-stderr-lines redirect-basic) '())
+  (check-equal? (result-exit redirect-basic) 0)
+  (check-equal? (result-stdout-lines redirect-basic) '("hi-redirect"))
+  (check-equal? (result-stderr-lines redirect-basic) '())
 
   ;; Redirect on-progress fires per collected line.
   (define redirect-progress (box '()))
-  (run-command/redirect echo-exe '("a" "b")
+  (spawn-and-wait/redirect echo-exe '("a" "b")
                         #:cwd cwd #:kind 'fetch
                         #:operation "test-redirect-progress"
                         #:on-progress (lambda (line)
@@ -460,7 +460,7 @@
   (pre-trigger!)
   (define pre-cancelled
     (with-handlers ([exn:fail:pm? (lambda (e) e)])
-      (run-command sh-exe (list "-c"
+      (spawn-and-wait sh-exe (list "-c"
                                    (string-append "read x < "
                                                   (path->string block-path)))
                    #:cwd cwd #:kind 'fetch #:operation "test-cancel-now"
@@ -487,7 +487,7 @@
     (lambda ()
       (define outcome
         (with-handlers ([exn:fail:pm? (lambda (e) e)])
-          (run-command sh-exe
+          (spawn-and-wait sh-exe
                        (list "-c"
                              (string-append "echo up > "
                                             (path->string up-path)
@@ -522,7 +522,7 @@
     (lambda ()
       (define outcome
         (with-handlers ([exn:fail:pm? (lambda (e) e)])
-          (run-command sh-exe
+          (spawn-and-wait sh-exe
                        (list "-c"
                              (string-append "echo $$ > " (path->string dead-pids)
                                             "; sleep 60 & echo $! >> "
@@ -547,7 +547,7 @@
          (string-split (file->string dead-pids) "\n" #:trim? #f)))
   (define live
     (map string-trim
-         (run-result-stdout-lines
+         (result-stdout-lines
           (run-ok ps-exe '("-eo" "pid=")))))
   (for ([p (in-list pids)]
         #:unless (string=? p ""))
@@ -563,14 +563,14 @@
     (open-output-file gp-fifo #:exists 'update))
   (define gp-in (open-input-file gp-fifo))
   (define daemon-done
-    (run-command/redirect sh-exe
+    (spawn-and-wait/redirect sh-exe
                  (list "-c"
                        (string-append "setsid sh -c 'echo $$ > "
                                       (path->string gp-fifo)
                                       "; exec sleep 60 </dev/null >/dev/null 2>&1"
                                       "' & exit 7"))
                  #:cwd cwd #:kind 'fetch #:operation "test-daemon"))
-  (check-equal? (run-result-exit daemon-done) 7)
+  (check-equal? (result-exit daemon-done) 7)
   (define grandchild-pid (read-line gp-in))
   (close-input-port gp-in)
   (close-output-port gp-held)
@@ -601,7 +601,7 @@
        (define outcome
          (with-handlers ([exn:break? (lambda (e) e)]
                          [exn:fail:pm? (lambda (e) e)])
-           (run-command sh-exe
+           (spawn-and-wait sh-exe
                         (list "-c"
                               (string-append "echo $$ > "
                                              (path->string break-pid-file)
@@ -622,19 +622,19 @@
     (string-trim (file->string break-pid-file)))
   (define break-live
     (map string-trim
-         (run-result-stdout-lines
+         (result-stdout-lines
           (run-ok ps-exe '("-eo" "pid=")))))
   (check-false (if (member break-pid break-live) #t #f)
                (format "break survivor: ~a" break-pid))
   (close-output-port break-held)
 
   ;; Exit codes pass through.
-  (check-equal? (run-result-exit
+  (check-equal? (result-exit
                  (run-ok sh-exe '("-c" "exit 3")))
                 3)
 
   ;; Stdin is always empty: read gets EOF at once.
-  (check-equal? (run-result-stdout-lines
+  (check-equal? (result-stdout-lines
                  (run-ok sh-exe '("-c" "read x || echo got-eof")))
                 '("got-eof"))
 
@@ -646,7 +646,7 @@
   ;; Bad env names are our bug: kind 'internal.
   (check-exn exn:fail:pm?
              (lambda ()
-               (run-command echo-exe '("hi")
+               (spawn-and-wait echo-exe '("hi")
                             #:cwd cwd #:kind 'fetch
                             #:operation "test"
                             #:env '(("HAS SPACE" . "x")))))
@@ -654,7 +654,7 @@
   ;; Spawn failure raises synchronously with the cause attached.
   (check-pred config-error?
               (with-handlers ([exn:fail:pm? (lambda (e) e)])
-                (run-command (build-path cwd "is-a-directory")
+                (spawn-and-wait (build-path cwd "is-a-directory")
                              '()
                              #:cwd cwd #:kind 'fetch
                              #:operation "test-spawn-fail")))
@@ -667,7 +667,7 @@
     (parameterize ([current-run-log-port redact-out])
       (run-ok echo-exe (list secret-url "token=abc123"))))
   (close-output-port redact-out)
-  (for ([line (in-list (run-result-stdout-lines r))])
+  (for ([line (in-list (result-stdout-lines r))])
     (check-false (regexp-match? #rx"s3cret|abc123" line)))
   (define logged (file->string redact-log))
   (check-false (regexp-match? #rx"s3cret" logged))
@@ -687,9 +687,9 @@
                  [current-captured-lines 20])
     (define big (run-ok sh-exe (list "-c" big-loop)))
     (close-output-port big-log-port)
-    (check-equal? (run-result-exit big) 0)
-    (check-true (<= (length (run-result-stdout-lines big)) 20))
-    (check-true (<= (length (run-result-stderr-lines big)) 20))
+    (check-equal? (result-exit big) 0)
+    (check-true (<= (length (result-stdout-lines big)) 20))
+    (check-true (<= (length (result-stderr-lines big)) 20))
     (check-true (> (file-size big-log) (* 1024 1024))))
   (delete-file big-log)
 

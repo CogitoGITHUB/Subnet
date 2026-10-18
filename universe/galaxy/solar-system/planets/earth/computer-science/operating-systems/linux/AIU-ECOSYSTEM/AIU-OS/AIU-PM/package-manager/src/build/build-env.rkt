@@ -1,6 +1,6 @@
 #lang racket/base
 ;; build-env.rkt -- the environment a build step runs in: its args as
-;; data, where it may run, and the extras handed to run-command (D-025,
+;; data, where it may run, and the extras handed to spawn-and-wait (D-025,
 ;; SPEC-NEUTRAL section 5). LANG, a staging-fake HOME inside work, and
 ;; the three directory pointers; PATH and CC come from the parent; this
 ;; module never reads the environment itself, and no HOME, XDG or
@@ -20,7 +20,7 @@
          "../errors/error-type.rkt")
 
 (provide
- ;; #:prefix #:source #:work -> env extras for run-command
+ ;; #:prefix #:source #:work -> env extras for spawn-and-wait
  build-env
  ;; small datum helpers: spec args are plain data (keywords, strings,
  ;; lists of strings or pairs)

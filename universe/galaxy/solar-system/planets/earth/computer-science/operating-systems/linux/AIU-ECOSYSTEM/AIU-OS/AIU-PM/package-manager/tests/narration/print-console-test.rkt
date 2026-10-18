@@ -44,7 +44,7 @@
   (define cancel-out (open-output-string))
   (display-pm-error
    (with-handlers ([exn:fail:pm? (lambda (e) e)])
-     (raise-pm-error 'cancelled 'run-command "cancelled"
+     (raise-pm-error 'cancelled 'spawn-and-wait "cancelled"
                      #:fields '(("operation" . "fetch demo"))))
    #:port cancel-out)
   (check-regexp-match #rx"fetch demo" (get-output-string cancel-out))

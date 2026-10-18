@@ -1,7 +1,7 @@
 #lang racket/base
 ;; dispatch.rkt -- the command line dispatcher: the command structs and
 ;; their parser, the renderers (sexp and json), the check runner, the
-;; entries builder that feeds activate and remove, run-command-json
+;; entries builder that feeds activate and remove, command-json
 ;; (the exact --format json document), and run-cli, the executable
 ;; entry that turns argv into an exit code. Thin over the core verbs;
 ;; every failure becomes an exit code here (E-5 narrow handlers, the
@@ -50,7 +50,7 @@
          command->sexp
          command->json
          run-check
-         run-command-json
+         command-json
          run-cli
          command-table
          profile-entries)
@@ -499,7 +499,7 @@
 ;; from command->json, then the command's result keys. A STRING, not a
 ;; jsexpr: the envelope order is documented and must not be left to
 ;; the hash printer.
-(define (run-command-json cmd)
+(define (command-json cmd)
   (define envelope (command-envelope cmd))
   (cond
     [(command-plan? cmd)
@@ -665,7 +665,7 @@
              (run-check (command-check-dir cmd))]
             [(command-fetch? cmd)
              (if (eq? 'json (command-fetch-format cmd))
-                 (begin (display-result (list (run-command-json cmd))) 0)
+                 (begin (display-result (list (command-json cmd))) 0)
                  (begin
                    (display-result
                     (update-report
@@ -674,7 +674,7 @@
                    0))]
             [(command-plan? cmd)
              (if (eq? 'json (command-plan-format cmd))
-                 (begin (display-result (list (run-command-json cmd))) 0)
+                 (begin (display-result (list (command-json cmd))) 0)
                  (begin
                    (for ([p (in-list (plan-document
                                       (command-plan-specs cmd)))])
@@ -682,7 +682,7 @@
                    0))]
             [(command-status? cmd)
              (if (eq? 'json (command-status-format cmd))
-                 (begin (display-result (list (run-command-json cmd))) 0)
+                 (begin (display-result (list (command-json cmd))) 0)
                  (begin
                    (for ([p (in-list (status-document
                                       (command-status-profile cmd)
@@ -695,7 +695,7 @@
                    0))]
             [(command-held? cmd)
              (if (eq? 'json (command-held-format cmd))
-                 (begin (display-result (list (run-command-json cmd))) 0)
+                 (begin (display-result (list (command-json cmd))) 0)
                  (begin
                    (for ([h (in-list (held-document
                                       (command-held-profile cmd)))])
@@ -711,7 +711,7 @@
                            (command-hold-name cmd)
                            (command-hold-slot cmd))
              (if (eq? 'json (command-hold-format cmd))
-                 (begin (display-result (list (run-command-json cmd))) 0)
+                 (begin (display-result (list (command-json cmd))) 0)
                  (begin
                    (display-result
                     (list (format "pinned ~a [~a] in ~a"
@@ -724,7 +724,7 @@
                                        (command-verify-lockfile cmd)
                                        (command-verify-name cmd))])
                (if (eq? 'json (command-verify-format cmd))
-                   (begin (display-result (list (run-command-json cmd))) 0)
+                   (begin (display-result (list (command-json cmd))) 0)
                    (begin
                      (display-result (list (verify->text
                                             (list (hash-ref v 'verdict)
@@ -733,7 +733,7 @@
                      0)))]
             [(command-update? cmd)
              (if (eq? 'json (command-update-format cmd))
-                 (begin (display-result (list (run-command-json cmd))) 0)
+                 (begin (display-result (list (command-json cmd))) 0)
                  (begin
                    (for ([r (in-list
                              (outdated-document (command-update-vault cmd)
@@ -743,7 +743,7 @@
                    0))]
             [(command-lock? cmd)
              (if (eq? 'json (command-lock-format cmd))
-                 (begin (display-result (list (run-command-json cmd))) 0)
+                 (begin (display-result (list (command-json cmd))) 0)
                  (begin
                    (for ([e (in-list (lockfile-entries
                                       (read-lockfile
@@ -760,7 +760,7 @@
                                    (command-why-manifest cmd)
                                    (command-why-name cmd))])
                (if (eq? 'json (command-why-format cmd))
-                   (begin (display-result (list (run-command-json cmd))) 0)
+                   (begin (display-result (list (command-json cmd))) 0)
                    (begin (display-result (list (why->text
                                                 (list (hash-ref w 'verdict)
                                                       (hash-ref w 'declared-by)
@@ -771,7 +771,7 @@
                           0)))]
             [(command-owner? cmd)
              (if (eq? 'json (command-owner-format cmd))
-                 (begin (display-result (list (run-command-json cmd))) 0)
+                 (begin (display-result (list (command-json cmd))) 0)
                  (begin
                    (display-result
                     (list (owner->text
@@ -784,7 +784,7 @@
                                        #:lock (command-apply-lock cmd)
                                        #:cancel cancel-evt)])
                    (if (eq? 'json (command-apply-format cmd))
-                       (begin (display-result (list (run-command-json cmd))) 0)
+                       (begin (display-result (list (command-json cmd))) 0)
                        (begin
                          (display-result
                           (list (format "applied ~a package(s) from ~a"
@@ -797,14 +797,14 @@
                  (let ([rows (apply-document (command-apply-specs cmd)
                                              (command-apply-lock cmd))])
                    (if (eq? 'json (command-apply-format cmd))
-                       (begin (display-result (list (run-command-json cmd))) 0)
+                       (begin (display-result (list (command-json cmd))) 0)
                        (begin
                          (display-result
                           (apply-preview (command-apply-specs cmd) rows))
                          0))))]
             [(command-outdated? cmd)
              (if (eq? 'json (command-outdated-format cmd))
-                 (begin (display-result (list (run-command-json cmd))) 0)
+                 (begin (display-result (list (command-json cmd))) 0)
                  (begin
                    (display-result
                     (outdated-document (command-outdated-vault cmd)
@@ -815,7 +815,7 @@
              (let ([gen (rollback-generation (command-rollback-profile cmd)
                                              (command-rollback-n cmd))])
                (if (eq? 'json (command-rollback-format cmd))
-                   (begin (display-result (list (run-command-json cmd))) 0)
+                   (begin (display-result (list (command-json cmd))) 0)
                    (begin
                      (display-result
                       (list (format "profile now points at ~a"
@@ -830,7 +830,7 @@
                          #:specs (command-activate-specs cmd)
                          #:lock (command-activate-lock cmd))])
                (if (eq? 'json (command-activate-format cmd))
-                   (begin (display-result (list (run-command-json cmd))) 0)
+                   (begin (display-result (list (command-json cmd))) 0)
                    (begin
                      (display-result
                       (list (format "activated; profile now points at ~a"
@@ -843,7 +843,7 @@
                          (profile-entries (command-remove-specs cmd)
                                           (command-remove-state cmd)))])
                (if (eq? 'json (command-remove-format cmd))
-                   (begin (display-result (list (run-command-json cmd))) 0)
+                   (begin (display-result (list (command-json cmd))) 0)
                    (begin
                      (display-result
                       (list (format "removed ~a; profile now points at ~a"
