@@ -27,13 +27,6 @@ done when: the stage runs by default and a planted violation fails.
 tests: the stage itself + the gate stage list.
 deps: none.
 
-** S2-11 lint blind spot on test submodules
-what: =one-printer-lint= and =security-gate-lint= scan
-  =(module+ test ...)= bodies too, not only non-test paths (D-060).
-done when: a planted violation in a test body fails the gate.
-tests: those two stages.
-deps: step 14 (done; the test bodies move).
-
 ** S-03 check names the violated rule
 what: =pm check= names the violated rule from S-01's named set, not
   just "refused" (D-060).

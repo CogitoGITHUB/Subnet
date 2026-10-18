@@ -318,6 +318,43 @@ def run-obs-ok-lint [rules] {
     if $violations > 0 { exit $EXIT_VIOLATIONS }
 }
 
+# --- the test-code boundary, stated exactly once ---------------------------
+# Two structural facts define test code, and every lint below gets its
+# boundary from these two helpers and nowhere else:
+#   * By LOCATION: a file whose path has a `tests` directory component and
+#     ends in .rkt is test code in full, marker or not (measured:
+#     package-manager/tests/park.rkt carries no marker; its 29 siblings do).
+#   * By MARKER: inside any other file, everything from the
+#     `(module+ test` line onward is test code.
+# Which lint uses which:
+#   * one-printer-lint (print-lint-file) and audited-writers
+#     (run-security-gate-lint) govern PRODUCTION code, so they skip test
+#     code entirely: for a tests/ file every line is skipped.
+#   * uncalled-predicates (sec-call-count) keeps counting calls in
+#     PRODUCTION code only, and that is deliberate: a predicate called only
+#     from a test is not enforced, so a test call must NOT make it look
+#     called.
+#   * test-body-print-lint (test-print-hits) governs TEST code: from the
+#     cut to end of file, or from line 0 for a tests/ file.
+
+# WHY: location alone makes a file test code. `tests` is the directory the
+# test runner owns, and .rkt keeps source files in scope by extension.
+def test-path? [f] {
+    ($f | path split | any {|p| $p == "tests" }) and ($f | str ends-with ".rkt")
+}
+
+# WHY: the marker is the in-file boundary and this is the ONLY place its
+# index is computed. The sentinel is the line count, never -1: with -1 the
+# `>=` guard in every caller skipped EVERY line of a file with no test
+# block, silently passing a whole class of files (measured: 12 files, and
+# spec-fields.rkt's only source-pinned? call counted as zero).
+def test-line-cut [ls] {
+    let starts = ($ls | enumerate | where {|r|
+        ($r.item | str trim) == "(module+ test"
+    } | get index)
+    if ($starts | is-empty) { $ls | length } else { $starts | first }
+}
+
 # V-3: one printer for the user. A raw print outside package-manager/src/narration/narration.rkt
 # and package-manager/src/narration/print-console.rkt means some command is talking to the terminal by
 # itself, which is exactly what D-036 removed. Quoted text is stripped
@@ -326,16 +363,10 @@ def run-obs-ok-lint [rules] {
 def print-lint-file [f rules] {
     let ls = (open --raw $f | lines)
     mut out = []
-    # Non-test code only: everything from (module+ test onwards is a test
-    # block, and a test may print whatever it needs to assert on. The
-    # line index of that form is found once, then used as the cut.
-    let starts = ($ls | enumerate | where {|r|
-        ($r.item | str trim) == "(module+ test"
-    } | get index)
-    # sentinel is the line count, never -1: with -1 the `>=` guard below
-    # skipped EVERY line of a file with no test block, so the lint
-    # silently passed a whole class of files (measured: 12 files).
-    let test_at = (if ($starts | is-empty) { $ls | length } else { $starts | first })
+    # Production code only; the boundary comes from the helpers above.
+    # A tests/ file is test code in full, so its cut is 0 and every line
+    # is skipped; otherwise the cut is the `(module+ test` line.
+    let test_at = (if (test-path? $f) { 0 } else { test-line-cut $ls })
     for l in ($ls | enumerate) {
         let n = ($l.index + 1)
         let t = ($l.item | str trim)
@@ -405,14 +436,9 @@ def sec-call-count [pred, files] {
     mut n = 0
     for f in $files {
         let ls = (open --raw $f | lines)
-        let starts = ($ls | enumerate | where {|r|
-            ($r.item | str trim) == "(module+ test"
-        } | get index)
-        # sentinel is the line count, never -1: with -1 the `>=` guard
-        # below skips EVERY line of a file that has no test block
-        # (measured: spec-fields.rkt's only source-pinned? call was
-        # counted as zero that way).
-        let test_at = (if ($starts | is-empty) { $ls | length } else { $starts | first })
+        # Production code only. A test call must not make a predicate look
+        # called, so a tests/ file counts zero calls (cut 0).
+        let test_at = (if (test-path? $f) { 0 } else { test-line-cut $ls })
         for l in ($ls | enumerate) {
             if ($l.index >= $test_at) { continue }
             let t = ($l.item | str trim)
@@ -453,11 +479,11 @@ def run-security-gate-lint [rules] {
             # status-fifo tripped on their own explanatory comments).
             # A file outside this list that opens an output file or spawns a
             # subprocess fails here, so new effects get written down instead
-            # of slipping in. The rule governs PRODUCTION code: everything
-            # from the first `(module+ test` line is dropped, because a test
-            # builds its own fixtures and may write them (measured:
-            # tests/machine/directories-test.rkt tripped this rule on the
-            # files its test body writes, which the policy allows).
+            # of slipping in. The rule governs PRODUCTION code, so the
+            # boundary comes from the helpers: a tests/ file is test code in
+            # full and is skipped. That is the decision recorded at length
+            # above (test-body-print-lint's EFFECTS IN TESTS paragraph), and
+            # it is why this rule no longer judges test files as production.
             let writers = ["vault.rkt" "vault-lock.rkt" "directories.rkt"
                 "narration.rkt" "event-text.rkt" "run.rkt" "jobs.rkt"
                 "probe-blob.rkt"]
@@ -469,13 +495,10 @@ def run-security-gate-lint [rules] {
                 # (measured: kill-tree, spawn and status-fifo tripped on
                 # their own explanatory comments while calling process*).
                 let ls = (open --raw $f | lines)
-                # The first `(module+ test` line ends the production part of
-                # the file; the sentinel is the line count so a file with no
-                # test block keeps every line (same shape as sec-call-count).
-                let starts = ($ls | enumerate | where {|r|
-                    ($r.item | str trim) == "(module+ test"
-                } | get index)
-                let test_at = (if ($starts | is-empty) { $ls | length } else { $starts | first })
+                # The cut: 0 for a tests/ file (all of it is test code),
+                # else the `(module+ test` line, else the line count so a
+                # marker-less production file keeps every line.
+                let test_at = (if (test-path? $f) { 0 } else { test-line-cut $ls })
                 let rawlines = ($ls | enumerate | where {|r| $r.index < $test_at }
                     | get item
                     | where {|l| not (($l | str trim) | str starts-with ";") })
@@ -572,9 +595,11 @@ def test-print-names-port [t] {
 
 def test-print-hits [f] {
     let ls = (open --raw $f | lines)
-    let markers = ($ls | enumerate | where {|r| ($r.item | str trim) == "(module+ test" } | get index)
-    if ($markers | is-empty) { return [] }
-    let at = ($markers | first)
+    # Test code only. A tests/ file is test code from line 0, marker or
+    # not; otherwise the scan starts at the `(module+ test` line. A
+    # production file with no marker cuts at the line count, so the loop
+    # below is empty and this returns no hits, exactly as before.
+    let at = (if (test-path? $f) { 0 } else { test-line-cut $ls })
     let total = ($ls | length)
     let raw_prints = ["displayln" "display" "printf" "print" "newline"]
     mut hits = []
