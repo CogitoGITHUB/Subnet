@@ -1,0 +1,39 @@
+#+TITLE: Tasks — AIU EDITOR
+# One job: the tasks part — what the editor declares, lists and runs; taken from the maak study
+# Status: planned 2026-10-18 (owner call); names land in plan/package-tree.org.
+
+* The owner call
+# once, with the date and the words that matter.
+  On 2026-10-18 the owner said: take the task-runner features from the
+  maak study into the system, in Racket, and give the editor its part.
+  This is that part: the editor declares tasks, lists them and runs
+  them. The Emacs bridge from the study is refused — the editor hosts
+  itself. The ecosystem decision number folds at the next ready-up.
+
+* What a task is
+# the shape, once.
+  A task is a Racket procedure on the meaning side (rule 09): one
+  name, one function, the reader test on the name. Its doc line is
+  its help line. A task may call other tasks. The task table lives in
+  =commands/tasks.rkt=, registered in plan/package-tree.org.
+
+* What the study proved, and what is taken
+# the harvest, one line per feature; what is refused, one line.
+  - A task is a plain function: any procedure can be one.
+  - Visibility is all or exports: no =#:export= means every function
+    is a task; with an export list, only exports are.
+  - =--list= and help come from the doc line, never a second list.
+  - Runs take string arguments, exactly as typed after the task name.
+  - Several runs in one invocation, in order (a sequence).
+  - Dry-run, quiet and verbose as lexical scopes (parameterize) —
+    with the wait door (rule 04) and work mode as the real safety.
+  - Shell completions shipped as artifacts, landing with =entry/cli=.
+  - The REPL workflow is =devloop/= work mode (rule 02) extended to
+    tasks: redefine live, run again.
+  Refused: the Emacs bridge; a runner in anything but Racket.
+
+* What lands first
+# the smallest slice, per rule 11; the done-when lives in TODO.org.
+  The task table, one task, =--list=, and one run with arguments
+  through print-console.rkt — the one printer. Then sequences; then
+  the dry-run scope.

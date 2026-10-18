@@ -27,6 +27,7 @@
   14. Select and send (item 16, editor side): done when: sends land from the editor to both agents with the context attached; deps: 9, 10, 4.
   15. Kit conformance (item 19, shared with the multiplexer): done when: the checklist runs green for both; deps: 9–14.
   16. Done line (item 20, shared): every done-line clause holds; the shared checklist closes; deps: all above and the notation's item 11.
+  17. The tasks part (owner addition, 2026-10-18; =plan/tasks.org=): the editor declares, lists and runs tasks in Racket; done when: the task table lists every task with its doc line, one task runs with string arguments through the one printer, two tasks run as one sequence, and a dry-run scope prints instead of acting; deps: 3 (independent of 4–16).
 
 * After the done line
 # what continues on its own.

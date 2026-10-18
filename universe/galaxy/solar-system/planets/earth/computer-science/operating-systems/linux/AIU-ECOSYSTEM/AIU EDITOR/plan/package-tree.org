@@ -104,6 +104,7 @@ AIU EDITOR/              the project: context and docs stay where they are
         commands.rkt     the command table: one name, one function
         config.rkt       the config the commands read
         effects.rkt      effects only at the edges, through machine and security
+        tasks.rkt        the task table and the runner: declare, list, run, sequence
       routes/            which layer sees a key first (rules 09, 13)
         INDEX.org
         routes.rkt       the routing: focused program first; the reserved prefix
