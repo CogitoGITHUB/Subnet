@@ -61,10 +61,10 @@ anything except =narration/=, which reports through it.
 ** =narration/=
 How an operation speaks. =events.rkt= is the schema and must not
 decide anything. =narration.rkt= opens and closes a run and carries
-step, note, warn, skip, decide. =wait-door.rkt= is the blocking door:
-=wait-for= before, =wait-done= after, =why= never blank. The console
-printer lives here and nowhere else. Depends on: =errors=. Must never
-be required by =errors=.
+step, note, warn, skip, decide. It also carries the blocking door
+(D-041): =wait-for= before, =wait-done= after, =why= never blank. The
+console printer lives here and nowhere else. Depends on: =errors=. Must
+never be required by =errors=.
 
 ** =machine/=
 The machine's shape. =directories.rkt= is the ONE place that reads
@@ -159,6 +159,7 @@ to respect the one-way law as it stands.
 
 * Reading order for a newcomer
 1. =errors/error-type.rkt= — what can go wrong and how it is named.
-2. =narration/wait-door.rkt= — why nothing blocks silently.
+2. =narration/narration.rkt= — the wait door, why nothing blocks
+   silently.
 3. =machine/directories.rkt= — the one seam onto the filesystem.
 4. Then follow the numbering above.

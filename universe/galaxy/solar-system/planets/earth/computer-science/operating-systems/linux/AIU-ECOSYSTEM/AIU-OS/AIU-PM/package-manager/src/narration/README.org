@@ -2,10 +2,10 @@
 
 * What this area does
 =events.rkt= is the schema, and it decides nothing.
-=narration.rkt= opens and closes a run and carries step, note, warn, skip
-and decide. =wait-door.rkt= is the blocking door: =wait-for= before,
-=wait-done= after, =why= never blank. The console printer lives here and
-nowhere else (D-036).
+=narration.rkt= opens and closes a run and carries step, note, warn,
+skip and decide. It also carries the blocking door (D-041): =wait-for=
+before, =wait-done= after, =why= never blank. The console printer lives
+here and nowhere else (D-036).
 
 * What it may depend on
 =errors=.
