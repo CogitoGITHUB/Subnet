@@ -37,6 +37,21 @@ Resuming: read the last line, then =TODO.org= for what is left.
   runs inside =dynamic-wind=, so a raise still deletes the vault and the empty
   =src/tmp= the suite created (D-059). 54=54 checks green, light gate green, no
   leak before or after the run.
+- =cec70228= the lint stages read the repo, not its vendored trees: a real
+  =node_modules= in the plugin sent npm's own 456 line-length violations
+  through text-lint. =vendored-path?= keeps =node_modules= out and
+  =lint-files= is the one place the file walk happens, so all three
+  file-walking stages inherit the fix. 184 files, 0 violations, rc=0.
+- =e7ec6527= the plugin installs its dependency instead of symlinking it:
+  the tracked absolute symlink into =~/.config/opencode/node_modules= is
+  deleted, so a fresh clone no longer inherits a dangling path;
+  =package.json= and the lock pin =@opencode-ai/plugin= 1.18.31, and the
+  README, =agent/README.org= and =tools/install-opencode-plugin.nu= all
+  name the one =npm install= step. =find . -type l -lname '/*'= is empty
+  and =node test.mjs= passes on the generated tree.
+- =6de89817= two documents named a module that was never built: three
+  stale =wait-door.rkt= references now point at =narration.rkt=, which is
+  where the blocking door actually lives (D-041).
 - Then: the rest of =TODO.org= phase A, then B, C, D, F.
 - The list with its deps is =TODO.org=; the choices are
   =plan/DECISIONS.org=, newest first.
