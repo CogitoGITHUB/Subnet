@@ -49,14 +49,6 @@ done when: the proof is in the commit.
 tests: =security-gate-lint= stage.
 deps: none.
 
-** vault-lock re-acquire test
-what: prove the writer lock can be re-acquired after release inside one
-  process (the parked phenomenon, D-054); a wedge here sharpens the
-  E-16b hunt.
-done when: the test exists and passes in the shared runner.
-tests: =tests/git/= (vault-lock's home).
-deps: none.
-
 * PHASE B -- structure and safety
 ** one-way law gap
 what: move the modules so the ranking holds (D-044): the 34 crossings
