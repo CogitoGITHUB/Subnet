@@ -2,6 +2,11 @@
 ;; plan-conflicts.rkt -- the destination paths each spec claims at plan
 ;; time, and the refusal when two claim one. It must not lower, derive
 ;; or render anything.
+;;
+;; The suite moved to
+;; package-manager/tests/spec/plan-conflicts-test.rkt (phase A step 14,
+;; 2026-10-17, where it also drives the refusal through the plan path
+;; the plan command runs; D-068).
 
 (require
  "../errors/error-type.rkt"
@@ -52,55 +57,3 @@
                                    ("owned-by" . ,prior)
                                    ("claimed-by" . ,name))))
       (hash-set! seen d name))))
-
-;; ---------------------------------------------------------------------------
-;; Two specs claiming one path is the whole subject here, so these tests
-;; build their specs from the spec constructor and never lower anything.
-
-(module+ test
-  (require rackunit
-           "../errors/error-type.rkt"
-           "spec.rkt"
-           "../entry/version.rkt")
-
-  ;; E-04 fixture: pkg-alpha claims bin/alpha and owns one check form
-  ;; (T-10), the same declaration plan-derive.rkt turns into a plan.
-  (define alpha-spec
-    (spec 'pkg-alpha (string->version "2.0") "Alpha"
-          (source "https://example.org/alpha.git"
-                  "9edb3f66fd807b096b48283debdcddccfea34bad")
-          (list (dep 'pkg-beta (string->version "1.0")))
-          '()
-          (list (build-step 'copy '("a" "b")))
-          (install-spec 'prefix '((bin "alpha" "bin/alpha")
-                                  (check "bin/alpha" "--version")))
-          'mit "https://example.org/alpha" #f '() '()
-          'default
-          (list (flag-spec 'gui #t "GUI" '() '()))))
-
-  ;; G-01: dests mirror lowering (second rel wins); a shared
-  ;; destination refuses with kind 'activate naming both packages.
-  (check-equal? (spec-install-dests alpha-spec) '("bin/alpha"))
-  (define clash-a
-    (struct-copy spec alpha-spec
-                 [name 'pkg-clash-a]
-                 [install (install-spec 'prefix '((bin "tool" "bin/tool")))]))
-  (define clash-b
-    (struct-copy spec alpha-spec
-                 [name 'pkg-clash-b]
-                 [install (install-spec 'prefix '((bin "tool" "bin/tool")))]))
-  (check-true (with-handlers ([exn:fail:pm? (lambda (e) #f)])
-                (check-spec-conflicts (list alpha-spec clash-a))
-                #t))
-  (define clash-err
-    (with-handlers ([exn:fail:pm? (lambda (e) e)])
-      (check-spec-conflicts
-       (list clash-a clash-b
-             (struct-copy spec alpha-spec
-                          [name 'pkg-clash-c]
-                          [install (install-spec 'prefix '((bin "tool")))])))
-      'no-error))
-  (check-pred activate-error? clash-err)
-  (check-regexp-match #rx"pkg-clash-a" (exn-message clash-err))
-  (check-regexp-match #rx"pkg-clash-b" (exn-message clash-err))
-  (check-regexp-match #rx"bin/tool" (exn-message clash-err)))

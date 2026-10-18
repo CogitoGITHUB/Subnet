@@ -11,6 +11,17 @@ hash before the work commit exists is what makes a row lie; do not do it.
 
 Resuming: read the last line, then =TODO.org= for what is left.
 
+* Where the work is NOW (2026-10-17/18 run; the table below is the move, not the run)
+- =06779ce= step 14 green: 26 inline suites moved into =package-manager/tests/=.
+- =894bec5c= exit codes: config leaves as 78, internal stays 70 (D-045).
+- G-01: the conflict suite moved to =tests/spec/plan-conflicts-test.rkt= and the
+  refusal is proved through the plan path the =plan= command runs (D-068). In
+  the same commit the =--changed= gate stopped collapsing git paths, fed its
+  compile codes into the verdict, and let a red stage set the exit (D-069).
+- Then: the rest of =TODO.org= phase A, then B, C, D, F.
+- The list with its deps is =TODO.org=; the choices are
+  =plan/DECISIONS.org=, newest first.
+
 | step | what | state |
 |------+------+-------|
 | 1 | =plan/= and =agent/= created, references updated, symlink untracked | 9fe48f8 |

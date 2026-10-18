@@ -110,21 +110,13 @@ done when: =one-way-dependency-lint= reports zero known unpaid edges
 tests: =gate/one-way-dependency-lint.nu= + the suites of moved areas.
 deps: step 14 (done) and the two renames (stable tree).
 
-** G-01 dependency resolution and path conflicts
-what: resolve a closure; two packages claiming one path fail at plan
-  time, kind =activate=, naming both packages (D-058).
-done when: a conflict fixture refuses at plan time; a closure
-  resolves.
-tests: =tests/spec/= (plan).
-deps: none.
-
 ** G-02 + G-07 closure lock + idempotent apply
 what: the lock covers the whole closure; a second apply cannot
   interleave; apply SKIPs a step whose input hash already landed.
 done when: an interleave is refused naming the holder; a re-run skips
   with reasons.
 tests: =tests/install/= (apply).
-deps: G-01.
+deps: G-01 (done 2026-10-17).
 
 ** G-03 to G-12
 what: the spine, each piece its own commit (D-038, D-058): G-03 verify

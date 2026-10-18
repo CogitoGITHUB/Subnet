@@ -1018,6 +1018,9 @@ def main [--changed, --list] {
     if (stage-on? $todo "changed-files") {
         let chrc = (run-changed-files)
         print $"[check] changed-files exit=($chrc)"
+        if $chrc != 0 {
+            $verdict_code = 1
+        }
     }
     if (stage-on? $todo "compile") {
         print $"[check] compile ($full | length) files"
@@ -1200,21 +1203,25 @@ def verdict [records parked_n] {
 # SAME one-process shared runner as the full gate, never per-file raco.
 # A parked file is named and skipped, never dropped silently.
 
-# -> list of changed .rkt paths, tracked-diff plus untracked
+# -> list of changed .rkt paths, tracked-diff plus untracked, absolute
 def changed-rkt [] {
     let d = (do { run-external "git" "diff" "--name-only" "HEAD" } | complete)
     let tracked = (if $d.exit_code == 0 { $d.stdout | lines } else { [] })
-    let u = (do { run-external "git" "ls-files" "--others" "--exclude-standard" } | complete)
+    let u = (do { run-external "git" "ls-files" "--others" "--exclude-standard" "--full-name" } | complete)
     let untracked = (if $u.exit_code == 0 { $u.stdout | lines } else { [] })
     let all = ($tracked | append $untracked)
     # git prints paths relative to the REPO root, which is above this
-    # directory; strip everything up to and including the last component
-    # so the path resolves from here.
+    # directory. They must come back absolute: a collapsed DIR/NAME.rkt
+    # cannot say whether it means src/ or tests/, and raco make fails the
+    # whole call on the wrong half (measured: the G-01 run, 2026-10-18).
+    # --full-name because plain ls-files from this subdirectory prints
+    # paths relative to the CURRENT directory, not the repo root
+    # (measured in the same run: the untracked file resolved one root
+    # too high while the tracked one resolved right).
+    let root = (do { run-external "git" "rev-parse" "--show-toplevel" } | complete)
+    let repo = (if $root.exit_code == 0 { $root.stdout | str trim } else { "" })
     $all | where {|p| ($p | str ends-with ".rkt")} | each {|p|
-        # keep the last two components: DIR/NAME.rkt
-        let parts = ($p | split row "/")
-        let n = ($parts | length)
-        $parts | skip ($n - 2) | path join }
+        if $repo == "" { $p } else { $repo | path join $p } }
 }
 
 # list -> list, modules whose source directly requires any of them
@@ -1253,7 +1260,10 @@ def run-changed-files [] {
         print ("PARKED: " ++ ($x | path basename) ++ " - " ++ $why)
     }
     let unparked_deps = ($deps | where {|d| not (file-parked? $d) })
-    let runset = ($changed | where {|c| not (file-parked? $c) } | append $unparked_deps)
+    # absolute paths now, so a changed file can arrive twice (itself and
+    # as a dependent); run each once.
+    let runset = ($changed | where {|c| not (file-parked? $c) }
+                 | append $unparked_deps | sort | uniq)
     if ($runset | is-empty) {
         print "[changed-files] nothing to run"
         return 0
@@ -1261,6 +1271,9 @@ def run-changed-files [] {
     let ccodes = (compile-all $runset)
     let recs = (run-runner $runset)
     let bad = ($ccodes | any {|c| $c != 0}) or ($recs | any {|r| $r.exit != 0})
-    (verdict $recs ($parked | length))
+    # compile failures enter the verdict the same way the full gate feeds
+    # them: a file that did not compile must never read as ALL GREEN.
+    let crecs = ($ccodes | each {|c| {file: "(compile)", exit: $c, ms: 0} })
+    (verdict ($recs | append $crecs) ($parked | length))
     (if $bad { 1 } else { 0 })
 }

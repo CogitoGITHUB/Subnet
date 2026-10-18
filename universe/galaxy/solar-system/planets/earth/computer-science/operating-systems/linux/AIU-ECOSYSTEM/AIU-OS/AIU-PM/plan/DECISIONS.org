@@ -4,6 +4,47 @@
 * Log
 Append-only. Newest first. Every entry names the rule IDs it touches.
 
+** 2026-10-18 D-069: the --changed gate hands raco real paths, and its verdict reaches the exit
+   Touches =gate/check.nu=.
+1. WHAT: changed-rkt resolves the git paths against `git rev-parse
+   --show-toplevel` and returns absolute files, instead of collapsing
+   every path to DIR/NAME.rkt; the runset is deduplicated (a changed
+   file can also arrive as its own dependent); the compile codes enter
+   the stage's verdict; and a non-zero changed-files code now sets the
+   run's exit code.
+2. WHY: the G-01 run (2026-10-18) measured the hole. The collapsed
+   =spec/plan-conflicts-test.rkt= did not exist, so =raco make= failed
+   the stage's compile step ("file does not exist") while the runner
+   still ran everything green, and the run read as ALL GREEN with
+   `changed-files exit=1` buried in the log -- the same shape had
+   shipped in the exit-codes and step-14 commits. The tests themselves
+   did run (the absolute twin arrived as a dependent), but a changed
+   test file with no dependent would have been collapsed-only, and a
+   nonexistent path makes the runner report NO-TESTS without failing.
+   A gate whose red is invisible is not a gate.
+3. COST: none; the stage still runs only the changed files plus their
+   direct dependents.
+
+** 2026-10-17 D-068: G-01's proof lives at the command's plan path
+   Touches =package-manager/tests/spec/plan-conflicts-test.rkt=;
+   =package-manager/src/spec/plan-conflicts.rkt=; =TODO.org=.
+1. WHAT: the conflict suite moves out of =spec/plan-conflicts.rkt= into
+   =tests/spec/plan-conflicts-test.rkt= and gains the half that was
+   missing: the refusal is driven through =plan-document=, the same
+   function the =plan= command calls in either format, on two real
+   =.rktd= files, asserting kind =activate=, both package names, the
+   path, the three fields, and that nothing landed in the directory.
+   =plan-derive.rkt= keeps its stated boundary ("must not check spec
+   conflicts"), so the policy stays in the pure checker and the plan
+   path stays the choke point that calls it; =apply= keeps its own.
+   The remaining inline suites move as their areas are touched, not in
+   a sweep.
+2. WHY: "fails at plan time" is a promise about the command, and a unit
+   test of the checker alone keeps passing if the command stops calling
+   it. The probe that decided this (two specs claiming =bin/tool=,
+   2026-10-17) refused with =path conflict: pkg-a and pkg-b both claim
+   bin/tool= and left the directory holding only the two specs.
+
 ** 2026-10-17 D-067: the audited-writers rule stops at the test bodies
    Touches =gate/check.nu=; =tests/machine/directories-test.rkt=;
    =TODO.org=.

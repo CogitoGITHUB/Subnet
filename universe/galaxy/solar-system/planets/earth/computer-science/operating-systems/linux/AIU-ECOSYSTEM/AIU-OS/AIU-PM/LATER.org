@@ -5,6 +5,10 @@
 # =TODO.org= never builds it. Each entry says why it waits and what
 # would unpark it. Decisions: =plan/DECISIONS.org= D-053, D-056.
 # README.md's "In plan" list points here for these items.
+#
+# 2026-10-17: G-01 has landed, so the two entries that name it as their
+# unpark trigger are ready. Un-parking them is the owner's call; this
+# loop still does not build them.
 
 * The jobs queue -- P-03/P-04
 - what: a job queue for long or multi-package operations, with
