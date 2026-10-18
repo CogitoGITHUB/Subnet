@@ -30,6 +30,9 @@ Resuming: read the last line, then =TODO.org= for what is left.
 - =668f0b45= the two renames: run-command -> spawn-and-wait, run-result -> result
   (json -> command-json); grep finds neither name in code (D-072). The full gate on
   it: ALL GREEN (parked: 2), 101 files, 1371 checks, rc=0.
+- =613eef13= the maak study take: the REPL is sold in the README, fish joins the
+  completions, and D-073 records the dry-run scope and sequence runs
+  (the editor tasks part =e59558ca= rides the same push).
 - Then: the rest of =TODO.org= phase A, then B, C, D, F.
 - The list with its deps is =TODO.org=; the choices are
   =plan/DECISIONS.org=, newest first.
