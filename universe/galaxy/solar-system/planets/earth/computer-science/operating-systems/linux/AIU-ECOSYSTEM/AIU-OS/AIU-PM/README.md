@@ -1,7 +1,12 @@
 # pm — generational package manager for the AIU ecosystem
 
-**Last updated:** 2026-10-16
-**Status:** core surface complete; amplification layers planned (see below)
+**Last updated:** 2026-10-18
+**Status:** core surface complete and gated — the full gate runs the whole test suite and
+every lint.
+
+**Working now:** the everyday commands except `pm backup`, the why/owner surface, profiles
+and generations, and the machine surface.
+**Still to land:** `pm backup`, the planned amplifications below, then acceptance.
 
 `pm` treats disk mutation as irreversible entropy and therefore refuses to perform it without an
 explicit human `--confirm`. Read paths are free. Activation is atomic and fail-closed. The vault is
@@ -83,7 +88,7 @@ kept/deleted) live on the library surface, not behind a CLI verb yet.
   read the feed.
 - Unwired commands refuse loudly.
 
-## Planned amplifications (to be implemented after current restructure)
+## Planned amplifications (still to land)
 
 Ordered as specified. Each group moves from “Planned” to “Current” in this file the moment it
 lands — command tables, machine-surface list and the “Last updated” line included. No refusal is
