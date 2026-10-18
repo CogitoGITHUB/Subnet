@@ -629,7 +629,7 @@
   (define fixture-root (make-temporary-directory "pm-git~a"))
   (define fixture-home (build-path fixture-root "home"))
   (make-directory fixture-home)
-  ;; CyberDeck dir: backends/ is this file's dir, its parent is the root.
+  ;; CyberDeck dir: src/git/ is this file's dir, its parent (src/) is the root.
   (define-runtime-path test-dir ".")
   (define-values (cyberdeck-dir _here-name _here-dir?)
     (split-path test-dir))
@@ -812,26 +812,39 @@
               (outer-run "status" "--porcelain")
               (outer-run "for-each-ref" "--format=%(refname)")))
       (define before (outer-snapshot))
+      (define scratch-parent (build-path cyberdeck-dir "tmp"))
+      (define scratch-parent-was? (directory-exists? scratch-parent))
       (define safety-vault
-        (build-path cyberdeck-dir "tmp"
+        (build-path scratch-parent
                     (format "pm-safety-~a" (current-milliseconds))))
-      (make-directory* safety-vault)
-      (define-values (safety-up safety-head)
-        (make-upstream "safety-up" '(("s.txt" . "S"))))
-      (parameterize ([current-directory cyberdeck-dir])
-        (define smirror (vault-mirror-dir safety-vault "safety"))
-        (git-clone-mirror (string-append "file://" (dir-string safety-up))
-                          smirror)
-        (git-fetch-mirror smirror)
-        (check-true (git-has-commit? smirror safety-head))
-        (git-pin-commit smirror safety-head)
-        (define not-repo (build-path safety-vault "plain"))
-        (make-directory not-repo)
-        (check-pred fetch-error?
-                    (with-handlers ([exn:fail:pm? (lambda (e) e)])
-                      (git-fetch-mirror not-repo))))
-      (check-equal? (outer-snapshot) before)
-      (delete-directory/files safety-vault)))
+      ;; dynamic-wind so vault and empty-parent removal also run when a
+      ;; check inside the body raises.
+      (dynamic-wind
+       void
+       (lambda ()
+         (make-directory* safety-vault)
+         (define-values (safety-up safety-head)
+           (make-upstream "safety-up" '(("s.txt" . "S"))))
+         (parameterize ([current-directory cyberdeck-dir])
+           (define smirror (vault-mirror-dir safety-vault "safety"))
+           (git-clone-mirror (string-append "file://" (dir-string safety-up))
+                             smirror)
+           (git-fetch-mirror smirror)
+           (check-true (git-has-commit? smirror safety-head))
+           (git-pin-commit smirror safety-head)
+           (define not-repo (build-path safety-vault "plain"))
+           (make-directory not-repo)
+           (check-pred fetch-error?
+                       (with-handlers ([exn:fail:pm? (lambda (e) e)])
+                         (git-fetch-mirror not-repo))))
+         (check-equal? (outer-snapshot) before))
+       (lambda ()
+         (when (directory-exists? safety-vault)
+           (delete-directory/files safety-vault))
+         (when (and (not scratch-parent-was?)
+                    (directory-exists? scratch-parent)
+                    (null? (directory-list scratch-parent)))
+           (delete-directory scratch-parent))))))
 
   ;; Export fixtures shared by the export tests below (good tree only;
   ;; refusal branches are built inside their own tests further down).

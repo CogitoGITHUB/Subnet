@@ -17,13 +17,6 @@
 
 * PHASE A -- foundation and gates
 
-** safety-test scratch cleanup
-what: the git-repo safety test removes the
-  =<cyberdeck-dir>/tmp/pm-safety-<millis>= repo it creates (D-059).
-done when: nothing is left under the scratch prefix after the suite.
-tests: =tests/git/git-repo-test.rkt= (the safety case).
-deps: none.
-
 ** S2-04 no un-narrated blocking primitive
 what: a lint stage over non-test sources: every blocking primitive
   (=sync=, =thread-wait=, =semaphore-wait=, =channel-get/put=,
