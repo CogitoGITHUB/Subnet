@@ -4,6 +4,12 @@
 The apply operation, activation, generation naming, profile flip, reclaim,
 holds, and the local performer.
 
+=closure-lock.rkt= is the lock that spans one whole install closure: it
+says which parts of an apply are inside the lock and which are
+deliberately outside, and it turns the vault lock's busy signal into a
+refusal that names the holder in install's own words. =apply.rkt= takes
+it, and so the lock covers a whole apply rather than one step.
+
 * What it may depend on
 Everything below it, and its own internals.
 

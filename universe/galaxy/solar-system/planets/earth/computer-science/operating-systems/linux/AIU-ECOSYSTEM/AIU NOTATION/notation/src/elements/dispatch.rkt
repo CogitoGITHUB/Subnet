@@ -10,6 +10,9 @@
 (require "register.rkt"
          "literals.rkt")
 
+(provide meaning-of opaque? dispatch dispatch-line)
+
+
 ;; meaning-of returns the registered meaning of a name, and raises when the
 ;; name is not registered. The caller is a stage, so the error names the file's
 ;; problem and what to do.

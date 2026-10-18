@@ -4,6 +4,9 @@
 
 (require "events.rkt")
 
+(provide print-ev print-line print-nothing)
+
+
 ;; print-ev writes one event as one line, then flushes, so a run that is
 ;; cancelled still shows what it said last.
 (define (print-ev e)

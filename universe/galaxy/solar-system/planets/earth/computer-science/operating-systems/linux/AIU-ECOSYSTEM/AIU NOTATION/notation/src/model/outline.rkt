@@ -7,8 +7,12 @@
 ;; parser printed — and builds the node tree. It reads only the shape frozen in
 ;; join/INDEX.org, so the two sides cannot drift without one of them failing.
 
-(require "nodes.rkt"
+(require racket/string
+         "nodes.rkt"
          "../errors/raise.rkt")
+
+(provide read-outline outline-errors outline-document (struct-out outline) document-header)
+
 
 (struct outline (version file nodes) #:transparent)
 
@@ -91,8 +95,8 @@
     (when (< i (length chars))
       (if (and (char=? (list-ref chars i) #\") (< (+ i 1) (length chars))
                (char=? (list-ref chars (+ i 1)) #\"))
-          (begin (write-char out #\") (loop (+ i 2)))
-          (begin (write-char out (list-ref chars i)) (loop (+ i 1))))))
+          (begin (write-char #\" out) (loop (+ i 2)))
+          (begin (write-char (list-ref chars i) out) (loop (+ i 1))))))
   (get-output-string out))
 
 ;; outline-errors lists the error nodes in the tree, in order.

@@ -5,6 +5,9 @@
 
 (require "../errors/raise.rkt")
 
+(provide make-cancel-door cancel! cancelled? check-cancel guard-cancel (struct-out door))
+
+
 ;; A door is one mutable fact: cancelled, or not. It carries no reason and no
 ;; history; the reason belongs to whoever pressed the door, and the run that
 ;; was waiting says why it stopped.

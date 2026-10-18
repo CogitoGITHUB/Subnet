@@ -6,6 +6,8 @@
 ;; A block name is written as a bare lowercase word: no symbol, no quotes, no
 ;; angle brackets. This file is the one place that decides what counts.
 
+(require racket/string)
+
 ;; name-char? says whether a character may appear in a name. Names stay plain
 ;; lowercase words so they read the same in text, in a message and on a phone
 ;; keyboard.

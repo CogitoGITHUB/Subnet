@@ -7,21 +7,17 @@
 ;; turns the returned exit code into the process exit code. It decides nothing
 ;; about what a command means.
 
-(require racket/file
-         "dispatch.rkt")
+(require "dispatch.rkt")
 
-;; cli-read-file reads a document as text and refuses a file it cannot read,
-;; naming the file. The bytes are read as written: no line ending is changed,
-;; so the offsets in the document still point at the same bytes.
-(define (cli-read-file path)
-  (unless (file-exists? path)
-    (error 'cli (format "check: no such file: ~a" path)))
-  (file->string path #:mode 'text))
+(provide cli-args cli-main)
+
 
 ;; cli-args turns the process arguments into one list: the command name and its
-;; arguments, in that order. It drops the executable name and nothing else.
+;; arguments, in that order. Nothing is dropped. Racket hands a script the
+;; arguments after the script name, so "racket cli.rkt check page" arrives as
+;; ("check" "page") — the command is already first.
 (define (cli-args argv)
-  (if (null? argv) '() (cdr argv)))
+  argv)
 
 ;; cli-main is the whole program: parse, dispatch, exit with the code that came
 ;; back. A code of 0 means the command found nothing wrong; anything else is a

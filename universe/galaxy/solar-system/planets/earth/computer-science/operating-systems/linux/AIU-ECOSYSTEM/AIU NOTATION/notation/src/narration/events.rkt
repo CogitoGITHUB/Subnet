@@ -14,9 +14,12 @@
 (define (ev-kind-of? kind)
   (and (memq kind ev-kinds) #t))
 
-;; make-ev builds one event. what is a short sentence; detail may be #f when
-;; there is nothing more to say.
-(define (make-ev kind what [detail #f])
+;; make-ev builds one event. what is a short sentence. detail is always given
+;; explicitly, as #f when there is nothing more to say: this Racket build
+;; counts an optional bracket parameter as required and answers "arity
+;; mismatch; expected 4, given 3" when it is left out (found by the first
+;; by-hand run, 2026-10-17).
+(define (make-ev kind what detail)
   (ev kind what detail))
 
 ;; ev-line renders an event as one terminal line. Rendering text is the
@@ -28,3 +31,5 @@
   (if detail
       (format "~a: ~a — ~a" kind what detail)
       (format "~a: ~a" kind what)))
+
+(provide make-ev ev-line ev-kinds (struct-out ev))

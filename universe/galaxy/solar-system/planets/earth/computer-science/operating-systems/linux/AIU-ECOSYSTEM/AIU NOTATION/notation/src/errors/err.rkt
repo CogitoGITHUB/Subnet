@@ -23,3 +23,5 @@
 (define (err-who e)   (exn:notation-who e))
 (define (err-where e) (exn:notation-where e))
 (define (err-what e)  (exn-message e))
+
+(provide make-err err-who err-where err-what (struct-out exn:notation))

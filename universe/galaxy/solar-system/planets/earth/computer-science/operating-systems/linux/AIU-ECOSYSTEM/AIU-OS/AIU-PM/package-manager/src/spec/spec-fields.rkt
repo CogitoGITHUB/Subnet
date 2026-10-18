@@ -25,7 +25,9 @@
 (provide
  ;; syntax -> string, file:line:col of STX for messages
  loc-string
- ;; syntax string -> never returns (E-1, E-2, E-4)
+ ;; syntax string -> never returns (E-1, E-2, E-4); #:rule is a rule of
+ ;; the named set (S2-03) and rides out in the message as a "rule:"
+ ;; line, so no printer has to know that rules exist
  fail
  ;; (listof syntax) -> void, unknown keys and duplicates are errors (D-2)
  check-keys
@@ -55,9 +57,18 @@
           (let ((c (syntax-column stx))) (if c (+ c 1) "?"))))
 
 ;; syntax string -> never returns (E-1, E-2, E-4)
-(define (fail stx hint)
+;; #:rule is the named rule the refusal enforces (S2-03). It goes into
+;; the fields, not the hint, because the printer already writes fields
+;; out as "  key: value" lines: error-type.rkt's render-message builds
+;; the message and print-console.rkt prints that message whole, so the
+;; name reaches the terminal with no new printing code anywhere. A
+;; refusal with no rule behind it prints exactly as it always did.
+(define (fail stx hint #:rule [rule #f])
   (raise-pm-error 'spec 'read-spec "invalid declaration"
-                  #:fields `(("at" . ,(loc-string stx)))
+                  #:fields (if rule
+                               `(("at" . ,(loc-string stx))
+                                 ("rule" . ,(security-rule-id rule)))
+                               `(("at" . ,(loc-string stx))))
                   #:hint hint))
 
 ;; ---------------------------------------------------------------------------
@@ -125,9 +136,13 @@
 ;; syntax -> string, validated commit id or a located error
 (define (convert-commit stx)
   (define c (syntax->datum stx))
-  ;; S-01: a declaration pins or it refuses.
+  ;; S-01: a declaration pins or it refuses. The bracketed name in the
+  ;; hint and the rule field are the SAME id, read from the one
+  ;; definition in security.rkt, never a string typed twice here.
   (unless (source-pinned? c)
-    (fail stx (format "[source-trust] not a commit id ~s" c)))
+    (fail stx (format "[~a] not a commit id ~s"
+                      (security-rule-id rule-source-trust) c)
+          #:rule rule-source-trust))
   c)
 
 ;; syntax -> string, validated git URL or a located error
@@ -139,7 +154,9 @@
           (define reason
             (let ([cell (assoc "reason" (exn:fail:pm-fields e))])
               (if cell (cdr cell) "?")))
-          (fail stx (format "[origin] rejected git URL ~s (~a" u reason)))])
+          (fail stx (format "[~a] rejected git URL ~s (~a"
+                            (security-rule-id rule-origin) u reason)
+                #:rule rule-origin))])
     (unless (string? u)
       (fail stx "URL must be a string"))
     (check-git-url u)

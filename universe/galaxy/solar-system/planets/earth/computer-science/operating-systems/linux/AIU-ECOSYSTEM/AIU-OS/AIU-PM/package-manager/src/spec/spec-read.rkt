@@ -28,6 +28,7 @@
          racket/port
          racket/runtime-path
          "../errors/error-type.rkt"
+         "../security/security.rkt"
          "spec.rkt"
          "spec-typos.rkt"
          "spec-fields.rkt"
@@ -50,6 +51,15 @@
 ;; 1MB cap like the foundation sketch; unreadable without code execution.
 (define max-spec-bytes 1000000)
 
+;; The fields every refusal below carries: the file it refused, and the
+;; rule (S2-03). They ride in the fields because render-message in
+;; error-type.rkt already writes each field out as a "  key: value" line
+;; and display-pm-error prints that whole message: no new printer code,
+;; and the feed the skip event quotes gets the name the screen shows.
+(define (declaration-rule-fields file)
+  `(("file" . ,file)
+    ("rule" . ,(security-rule-id rule-readable-declaration))))
+
 ;; path-string -> syntax, one datum safely with source locations
 (define (read-one path)
   (call-with-input-file path
@@ -63,16 +73,19 @@
             ([exn:fail:read?
               (lambda (e)
                 (raise-pm-error 'spec 'read-spec "cannot read declaration"
-                                #:fields `(("file" . ,(path-string path)))
+                                #:fields (declaration-rule-fields
+                                          (path-string path))
                                 #:cause e))])
           (define first-datum (read-syntax path limited))
           (cond [(eof-object? first-datum)
                  (raise-pm-error 'spec 'read-spec "empty declaration"
-                                 #:fields `(("file" . ,(path-string path))))]
+                                 #:fields (declaration-rule-fields
+                                           (path-string path)))]
                 [(eof-object? (read-syntax path limited)) first-datum]
                 [else
                  (raise-pm-error 'spec 'read-spec "trailing data"
-                                 #:fields `(("file" . ,(path-string path)))
+                                 #:fields (declaration-rule-fields
+                                           (path-string path))
                                  #:hint "one (spec ...) form per file")]))))))
 
 ;; path-string -> string, for fields (paths and strings both allowed in)

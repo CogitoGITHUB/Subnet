@@ -2,7 +2,8 @@
 ;; One job: how an error prints — one shape, never a dump.
 ;; Lands with TODO item 1 (the tree lands).
 
-(require "err.rkt")
+(require racket/string
+         "err.rkt")
 
 ;; render-err returns the one line an error is allowed to become:
 ;;   ERR <who> at <where>: <what>

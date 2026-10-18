@@ -9,6 +9,9 @@
 
 (require "../errors/raise.rkt")
 
+(provide node-line node-span node->document (struct-out block-node) (struct-out error-node))
+
+
 ;; A block node: a name, where it is, what it declares, and what is inside it.
 (struct block-node (name line start end declarations children) #:transparent)
 

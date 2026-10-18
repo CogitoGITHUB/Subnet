@@ -111,7 +111,8 @@ state phase percent bytes started updated error.
 
 * Manifest and backup
 manifest.rktd = vault INVENTORY only: name url namespace added
-last-fetched fsck-allow. NO pin. Atomic tmp+rename appends. Single owner
+last-fetched fsck-allow allow-large?. NO pin. Atomic tmp+rename appends.
+Single owner
 per datum: the spec declares the source url, the lockfile holds
 resolved pins, the manifest holds the inventory. pm vault status
 cross-checks the three and reports drift (the Org drawer from older

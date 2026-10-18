@@ -112,7 +112,9 @@
 ;; syntax string -> string, confined DST or a located error
 (define (confine-dst stx p)
   (unless (prefix-confined? p)
-    (fail stx (format "[path-escape] install path '~a escapes the prefix" p)))
+    (fail stx (format "[~a] install path '~a escapes the prefix"
+                      (security-rule-id rule-path-escape) p)
+          #:rule rule-path-escape))
   p)
 
 ;; syntax (listof syntax) -> install-spec, one check form at most
@@ -147,8 +149,10 @@
            (fail f "mode takes a path and an exact integer"))
          (confine-dst f (car args))
          (unless (install-mode-allowed? (cadr args))
-           (fail f (format "[install-mode] mode ~a refused; pm writes only 755 and 644"
-                           (cadr args))))]
+           (fail f (format "[~a] mode ~a refused; pm writes only 755 and 644"
+                           (security-rule-id rule-install-mode)
+                           (cadr args))
+                 #:rule rule-install-mode))]
         [(check)
          (when seen-check?
            (fail f "only one check form per install"))

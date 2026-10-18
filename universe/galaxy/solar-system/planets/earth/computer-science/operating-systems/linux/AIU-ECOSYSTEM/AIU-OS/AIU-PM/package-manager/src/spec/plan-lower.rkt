@@ -96,10 +96,15 @@
     [(mode)
      ;; S-01: a requested mode outside 755 and 644 refuses here, at the
      ;; lowering step, rather than being widened or narrowed downstream.
+     ;; install-mode-allowed? is the same rule spec-build-steps.rkt
+     ;; enforces while reading, so both refuse by one name (S2-03) and
+     ;; the fields carry it: render-message already prints them.
      (define want (cadr args))
      (unless (install-mode-allowed? want)
        (raise-pm-error 'spec 'lower-package-plan "install mode refused"
-                       #:fields `(("mode" . ,(format "~s" want)))
+                       #:fields (list (cons "mode" (format "~s" want))
+                                      (cons "rule" (security-rule-id
+                                                    rule-install-mode)))
                        #:hint "pm writes only 755 and 644"))
      (list #f want)]
     [else

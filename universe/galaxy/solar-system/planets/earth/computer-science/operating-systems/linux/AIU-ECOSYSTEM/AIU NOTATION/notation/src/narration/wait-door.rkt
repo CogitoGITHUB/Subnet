@@ -7,6 +7,9 @@
          "print-console.rkt"
          "../errors/raise.rkt")
 
+(provide wait-for wait-done with-wait)
+
+
 ;; why-blank? is the whole point of this file: a wait without a reason is a
 ;; silence, and a silence is the failure this door exists to prevent.
 (define (why-blank? why)

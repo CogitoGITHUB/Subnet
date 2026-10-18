@@ -24,7 +24,7 @@
             "../../src/machine/directories.rkt"
             "../../src/spec/spec.rkt"
             "../../src/spec/spec-read.rkt"
-            "../../src/git/vault-lock.rkt"
+            "../../src/install/closure-lock.rkt"
             "../../src/narration/narration.rkt"
             "../../src/entry/version.rkt"
          "../../src/install/apply.rkt")
@@ -44,6 +44,7 @@
            "../../src/machine/cancel.rkt"
            "../../src/git/git-env.rkt"
            "../../src/errors/error-type.rkt"
+           "../../src/install/closure-lock.rkt"
            "../../src/spec/plan.rkt")
 
   ;; All fixtures are synthetic (T-10): plans over fake actions, one
@@ -571,7 +572,10 @@
     (check-true (> (length (third r)) 0))
     (for ([row (in-list (third r))])
       (check-equal? (second row) 'skipped)
-      (check-regexp-match #rx"matches the journal" (fourth row))))
+      (check-regexp-match #rx"matches the journal" (fourth row))
+      ;; G-07: the reason is checkable, not just true -- it names the
+      ;; journal entry the landed record was read from.
+      (check-regexp-match #rx"journal/pkg-[a-z]+/default.jsonl" (fourth row))))
   ;; (d) cancel stops before anything is performed; rerun completes.
   (define e2e-state2 (path->string (build-path e2e-root "state2")))
   (define e2e-prefix2 (path->string (build-path e2e-root "prefix2")))
@@ -608,10 +612,11 @@
   (check-pred cancelled-error? e2e-cancel-err)
   ;; "Nothing was performed" is proved by the store, the current link and
   ;; the journal. It is NOT proved by the absence of prefix/<package>:
-  ;; pm-apply makes every package's prefix dir before it takes the writer
-  ;; lock (its own "prefix-dirs" wait says why: a current link cannot land
-  ;; without it), and the cancel only fires inside apply-plan, long after.
-  ;; Asserting that dir's absence tested a precondition, not the law.
+  ;; pm-apply makes every package's prefix dir inside the closure and
+  ;; before it applies a single plan (its own "prefix-dirs" wait says
+  ;; why: a current link cannot land without it), and the cancel only
+  ;; fires inside apply-plan, long after. Asserting that dir's absence
+  ;; tested a precondition, not the law.
   (check-false (directory-exists? (build-path e2e-state2 "store")))
   (check-false (link-exists? (build-path e2e-prefix2 "pkg-alpha" "current")))
   (check-equal? (journal-completions e2e-state2 "pkg-alpha" "default") '())
@@ -681,22 +686,26 @@
   (check-true
     (file-exists? (build-path bad-versioned new-gen ".pm-incomplete")))
   ;; (g) a second concurrent apply is refused naming the holder.
+  ;; G-02: what is held is the INSTALL ROOT's closure, which is the
+  ;; scope pm apply itself takes, so this refusal is the real one and
+  ;; not an accident of two roots happening to share a parent.
   (define busy-err
     (e2e-case "(g) second writer refused"
               "the refusal only means something once the inner apply has had its chance"
               (lambda ()
                 (with-handlers ([exn:fail:pm? (lambda (e) e)])
-                  (call-with-vault-lock e2e-state
-                                        "holder"
-                                        "test holds the lock"
-                                        (lambda ()
-                                          (e2e-live #:state e2e-state
-                                                    #:manifest e2e-manifest
-                                                    #:prefix e2e-prefix
-                                                    #:case "(g) inner apply")))
+                  (call-with-closure-lock e2e-state
+                                          "holder"
+                                          "test holds the lock"
+                                          (lambda ()
+                                            (e2e-live #:state e2e-state
+                                                      #:manifest e2e-manifest
+                                                      #:prefix e2e-prefix
+                                                      #:case "(g) inner apply")))
                   'no-error))))
   (check-pred exn:fail:pm? busy-err)
   (check-regexp-match #rx"holder" (exn-message busy-err))
+  (check-regexp-match #rx"install closure busy" (exn-message busy-err))
   ;; The two cleanups are narrated for the same reason the cases are: a
   ;; park in a delete-directory over a real git tree used to be
   ;; indistinguishable from a park in an apply. This tree also holds a

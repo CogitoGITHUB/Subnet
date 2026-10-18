@@ -6,6 +6,9 @@
 (require racket/file
          "../errors/raise.rkt")
 
+(provide home-dir xdg-dir notation-data-dir notation-state-dir ensure-dir)
+
+
 ;; home-dir reads HOME once per call and says so plainly when it is missing,
 ;; because a package that guesses a home directory is a package that writes
 ;; files where nobody can find them.

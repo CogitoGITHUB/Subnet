@@ -7,6 +7,10 @@
 ;; Seven named rules. Each predicate is total (never raises) over its
 ;; contract; refusal with a message is the caller's job (S-02), so the
 ;; policy stays testable without fixtures.
+;;
+;; Section 9 holds the SAME rules as DATA: every rule has an id, and a
+;; refusal cites that id instead of typing a name of its own, so a user
+;; can look the name up and two copies of one policy cannot drift.
 
 (require racket/contract/base
          racket/string
@@ -34,7 +38,24 @@
 
   ;; the four confirmation refusals, in one total predicate
   [confirmation-refusal (-> boolean? boolean? boolean? boolean?
-                            (or/c string? #f))]))
+                            (or/c string? #f))])
+
+   ;; section 9: the rule as data. struct-out brings the three accessors,
+  ;; so a reader (a test, a doc, the MCP server) can ask a rule what it
+  ;; stands for; rule-set is the whole list, in predicate order. The nine
+  ;; constants are DATA, not predicates, so they are provided plain: a
+  ;; raise site cites one and nothing has to call it.
+ (struct-out security-rule)
+ rule-set
+ rule-commit-pinned
+ rule-source-trust
+ rule-origin
+ rule-path-escape
+ rule-symlink-target
+ rule-install-mode
+ rule-credential-safe
+ rule-state-changing
+ rule-readable-declaration)
 
 ;; ---------------------------------------------------------------------------
 ;; 1. Source trust. A git source is pinned to an exact commit id,
@@ -153,5 +174,91 @@
     [spent?           "confirmation token already used"]
     [(not same-plan?) "confirmation token is for a different plan"]
     [else             #f]))
+
+;; ---------------------------------------------------------------------------
+;; 9. The named rule set, as DATA (S2-03).
+;;
+;; A refusal that names the mistake but not the RULE leaves the reader
+;; hunting: "not a commit id" says what happened, "source-trust" says
+;; which promise was broken and where the full rule is written down. So
+;; every rule here is one value with three parts:
+;;
+;;   id          the kebab-case name a refusal cites and a user greps for.
+;;               Spelled the way the refusal sites ALREADY spelled it
+;;               ("[source-trust]", "[origin]", "[path-escape]",
+;;               "[install-mode]"), so no message changes what it means.
+;;   predicate   the policy predicate that answers this rule, or #f when
+;;               the rule is a table the reader checks instead of a
+;;               question one predicate answers.
+;;   condition   the one sentence the rule stands for, so the data says
+;;               what it is for and not only what it is called.
+;;
+;; One definition, no second copy: a raise site writes
+;; (security-rule-id rule-install-mode), never the string it names. The
+;; set is pure data, so a test can ask it the questions a user asks.
+
+(struct security-rule (id predicate condition) #:transparent)
+
+(define rule-commit-pinned
+  (security-rule
+   "commit-pinned" 'commit-pinned?
+   "a git source pins one exact commit id, never a ref that can move"))
+
+(define rule-source-trust
+  (security-rule
+   "source-trust" 'source-pinned?
+   "a declaration either pins an exact commit id or pins nothing at all"))
+
+(define rule-origin
+  (security-rule
+   "origin" 'origin-allowed?
+   "over the network or not at all; file:// only when the caller says test?"))
+
+(define rule-path-escape
+  (security-rule
+   "path-escape" 'path-contained?
+   "an install destination stays under the prefix: no absolute, no .."))
+
+(define rule-symlink-target
+  (security-rule
+   "symlink-target" 'symlink-target-ok?
+   "a symlink resolves inside the prefix and its target exists"))
+
+(define rule-install-mode
+  (security-rule
+   "install-mode" 'install-mode-allowed?
+   "pm writes only 755 for bin and libexec and 644 for everything else"))
+
+(define rule-credential-safe
+  (security-rule
+   "credential-safe" 'credential-safe?
+   "no user:password in a URL, before any destination can see it"))
+
+(define rule-state-changing
+  (security-rule
+   "state-changing" 'state-changing?
+   "the commands that change the machine need the human token"))
+
+;; The one rule with no predicate behind it. A declaration is a FILE pm
+;; reads as data (D-014), and exactly one (spec ...) form lives in it, so
+;; an unreadable file, an empty file and a file with a second top-level
+;; form all break THIS rule and refuse by its name.
+(define rule-readable-declaration
+  (security-rule
+   "readable-declaration" #f
+   "a declaration is one file pm reads as data, holding one (spec ...) form"))
+
+;; Every rule above, in predicate order. The list exists so the set can be
+;; counted and checked as one thing; a raise site cites a member.
+(define rule-set
+  (list rule-commit-pinned
+        rule-source-trust
+        rule-origin
+        rule-path-escape
+        rule-symlink-target
+        rule-install-mode
+        rule-credential-safe
+        rule-state-changing
+        rule-readable-declaration))
 
 ;; ---------------------------------------------------------------------------

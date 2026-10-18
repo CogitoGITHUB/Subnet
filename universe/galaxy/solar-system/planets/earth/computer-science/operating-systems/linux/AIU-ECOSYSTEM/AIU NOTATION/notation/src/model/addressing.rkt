@@ -17,6 +17,9 @@
 
 (require "nodes.rkt")
 
+(provide address-of address-of-at addresses)
+
+
 ;; address-of builds the address of one node: its kind, its name and its
 ;; 1-based line. Nothing else goes into it.
 (define (address-of n)

@@ -8,11 +8,15 @@
 ;; cannot be added by accident. Reading is free; this only reads a document and
 ;; reports what is wrong with it. Nothing here writes.
 
-(require "../errors/raise.rkt"
+(require racket/file
+         racket/list
+         "../errors/raise.rkt"
          "../narration/print-console.rkt"
          "../model/outline.rkt"
-         "../model/nodes.rkt"
-         "cli.rkt")
+         "../model/nodes.rkt")
+
+(provide check commands command-names command-for run)
+
 
 ;; check reads a parse-tree-document text and reports every error in it. It
 ;; returns the exit code: 0 when the document holds no error, 1 when it holds at
@@ -25,7 +29,17 @@
      (print-line "check: name one document to read")
      2]
     [else
-     (define text (cli-read-file path))
+     ;; The document is read here, not in cli.rkt: dispatch is the command and
+     ;; owns what a command needs; cli.rkt only reads argv. Reading it here also
+     ;; keeps the two modules from requiring each other.
+     (unless (file-exists? path)
+       (print-line (format "check: no such file: ~a" path))
+       (exit 2))
+     ;; Read the file as text. file->string returns a string even with
+     ;; #:mode 'binary on this build, so the mode keyword is kept and the result
+     ;; is used as the string it is; no bytes->string/utf-8 conversion is
+     ;; applied, because there are no bytes to convert.
+     (define text (file->string path #:mode 'binary))
      (define o (read-outline text))
      (define errors (outline-errors o))
      (define file-name (or (outline-file o) path))

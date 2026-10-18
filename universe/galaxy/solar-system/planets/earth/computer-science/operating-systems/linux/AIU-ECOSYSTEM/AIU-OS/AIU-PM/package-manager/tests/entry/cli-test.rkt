@@ -166,6 +166,21 @@
   (call-with-output-file (build-path check-dir "bad.rktd")
     (lambda (port)
       (displayln "(spec (format-version 2) (bogus 1))" port)))
+  ;; S2-03: a second bad file, and this one is not malformed -- it is a
+  ;; well-formed declaration that breaks a NAMED rule (a git source that
+  ;; does not pin a commit). The refusal has to carry the rule's own
+  ;; name, or a user who reads "not a commit id" still does not know
+  ;; which promise was broken. Nothing new prints it: the name rides out
+  ;; in the error's fields, which the one error printer already shows.
+  (call-with-output-file (build-path check-dir "unpinned.rktd")
+    (lambda (port)
+      (displayln "(spec (format-version 2) (name loose) (version \"1.0\")" port)
+      (displayln "  (summary \"s\")" port)
+      (displayln "  (source (git \"https://example.org/l.git\"" port)
+      (displayln "                  \"main\"))" port)
+      (displayln "  (build (steps (copy \"a\" \"b\")))" port)
+      (displayln "  (install (prefix (bin \"b\")))" port)
+      (displayln "  (license mit) (homepage \"https://example.org\"))" port)))
   (define bad-err (open-output-string))
   (define bad-out (open-output-string))
   (check-equal? (parameterize ([current-output-port bad-out]
@@ -173,6 +188,9 @@
                   (run-check check-dir))
                 3)
   (check-regexp-match #rx"unknown key" (get-output-string bad-err))
+  ;; the same refusal stream, and the name a user greps for
+  (check-regexp-match #rx"rule: source-trust" (get-output-string bad-err))
+  (check-regexp-match #rx"\\[source-trust\\]" (get-output-string bad-err))
   (check-regexp-match #rx"ok: demo 1.0" (get-output-string bad-out))
 
   ;; Missing directories fail at the boundary, kind 'config.

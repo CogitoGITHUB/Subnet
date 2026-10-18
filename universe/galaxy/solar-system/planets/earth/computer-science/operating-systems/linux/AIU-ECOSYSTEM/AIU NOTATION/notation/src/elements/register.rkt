@@ -8,6 +8,9 @@
 
 (require "../errors/raise.rkt")
 
+(provide register known-name? element-for element-names require-known (struct-out element))
+
+
 (struct element (name kind opaque?) #:transparent)
 
 ;; The one table. Nothing else in the package may decide what a name means.

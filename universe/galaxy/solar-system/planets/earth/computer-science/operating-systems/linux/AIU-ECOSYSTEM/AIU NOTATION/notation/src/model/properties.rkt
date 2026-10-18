@@ -7,7 +7,8 @@
 ;; **hint**, never meaning (syntax/first-slice-freeze.org, rule B). A tag read
 ;; here may inform a reader; it may never change what an element is.
 
-(require "nodes.rkt"
+(require racket/string
+         "nodes.rkt"
          "../errors/raise.rkt")
 
 ;; The registered declaration keywords. A line whose keyword is not here is

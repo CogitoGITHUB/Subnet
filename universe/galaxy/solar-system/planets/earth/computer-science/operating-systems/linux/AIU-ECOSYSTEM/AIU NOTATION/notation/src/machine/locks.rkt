@@ -9,6 +9,9 @@
          "../narration/wait-door.rkt"
          "cancel.rkt")
 
+(provide acquire-lock release-lock with-lock (struct-out wlock))
+
+
 (struct wlock (path door) #:transparent)
 
 ;; A lock is stale when it is older than stale-seconds. A stale lock is never

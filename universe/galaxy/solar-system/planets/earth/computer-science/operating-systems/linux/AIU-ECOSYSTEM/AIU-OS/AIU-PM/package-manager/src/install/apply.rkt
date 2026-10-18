@@ -8,11 +8,15 @@
 ;; hash. A step whose recorded end hash still matches is skipped, so
 ;; a killed run resumes exactly where it stopped; anything else
 ;; re-runs. #:cancel raises kind 'cancelled between steps, never
-;; mid-step. One writer lock (E-12c): #:writer (id note) takes
-;; core/vault-lock.rkt's try-only lock on the state dir first, failing
-;; fast naming the holder; try-only never blocks, so it is safe even
-;; in-process (P-04). Readers (journal queries) never lock; jobs keep
-;; queue-time concerns. #:manifest + #:manifest-entry upsert the
+;; mid-step. One writer lock (E-12c, G-02): #:writer (id note) takes
+;; ./closure-lock.rkt's try-only lock on the install root first,
+;; failing fast naming the holder; try-only never blocks, so it is
+;; safe even in-process (P-04). pm-apply takes the SAME lock, and
+;; takes it before the first thing that changes the machine, so the
+;; lock covers the whole closure rather than one package: what is
+;; inside it and what is deliberately outside is written out in
+;; closure-lock.rkt's header. Readers (journal queries) never lock;
+;; jobs keep queue-time concerns. #:manifest + #:manifest-entry upsert the
 ;; declaration on success only: apply is the only manifest writer
 ;; (E-14; jobs.rkt:595 retires in Phase C, vault's use is fixtures).
 ;;
@@ -40,14 +44,14 @@
          "../machine/directories.rkt"
          "../spec/spec.rkt"
          "../spec/spec-read.rkt"
-         "../git/vault-lock.rkt"
+         "./closure-lock.rkt"
          "../narration/narration.rkt"
          "../entry/version.rkt")
 
 (provide
  (contract-out
   ;; plan string performer -> void, journaled run, resume by hash.
-  ;; #:writer (id note) takes the try-only store writer lock first.
+  ;; #:writer (id note) takes the install root's closure lock first.
   [apply-plan (->* (plan? string? (-> action? void?)
                           #:state path-string?
                           #:package string?
@@ -140,6 +144,13 @@
                     #:manifest-entry [entry #f])
   (define (run)
     (define actions (plan-actions p))
+    ;; G-07: a landed step is not re-verified and not re-applied, and
+    ;; the SKIP says WHERE the landed record is, not only that it
+    ;; landed. A reader who asks "why was this not performed" gets the
+    ;; input hash AND the journal entry it was read from, so the skip
+    ;; is checkable rather than merely asserted.
+    (define journal-entry
+      (path->string (journal-file state package slot)))
     ;; D-036: the whole apply is one narrated operation, and EVERY
     ;; action is narrated -- including the ones the journal says are
     ;; already done, which is the skip reason a resumed run must show.
@@ -167,10 +178,10 @@
                                  (journal-step-done? state package slot
                                                     step-id input-hash)))
                      (skip 'apply
-                           (format "step-~a-~a" i (action-kind a))
-                           (string-append
-                            "the journal already records this step as done"
-                            " under input hash " input-hash))
+                            step-id
+                            (format
+                             "input hash ~a already landed in ~a as ~a"
+                             input-hash journal-entry step-id))
                      (begin
                        (step 'apply
                              (format "step-~a-~a" i (action-kind a))
@@ -209,11 +220,17 @@
                               manifest
                               (manifest-upsert existing entry))))))))
   (if writer
-      (wait-for 'apply "writer-lock"
-                "only one writer may hold the store, so the lock is taken before any step"
-                #:how (format "lock ~a as ~a" state (first writer))
+      ;; G-02: one apply holds one install root's closure for the whole
+      ;; pass, taken before the first step and released after the last,
+      ;; so a second apply on the same root cannot interleave anywhere
+      ;; inside it. The lock is try-only, so the refusal is immediate
+      ;; and names the holder; D-041 is why the attempt below says
+      ;; itself before it is made.
+      (wait-for 'apply "closure-lock"
+                "only one apply may touch one install root, so the lock comes before any step"
+                #:how (format "lock the closure at ~a as ~a" state (first writer))
                 (lambda ()
-                  (call-with-vault-lock state (first writer) (second writer) run)))
+                  (call-with-closure-lock state (first writer) (second writer) run)))
       (run))
   ;; D-041 GC. Every spawned child leaves a custodian and two or three
   ;; threads behind, and they are only reclaimed by a collection. This is
@@ -367,8 +384,13 @@
 
 ;; path-string -> results. Derive on the spot and apply for real, one
 ;; package at a time in resolve order, fail closed at the first
-;; failure. One writer lock spans the whole run: a second apply fails
-;; at once naming the holder instead of interleaving.
+;; failure. G-02: the closure lock is taken BEFORE the first thing
+;; this run changes and released after the last, so a second apply on
+;; the same install root is refused at once, naming the holder,
+;; instead of interleaving anywhere inside the first one. A dry run
+;; takes no lock and makes no directories: it changes nothing, so
+;; there is nothing for another apply to interleave with
+;; (closure-lock.rkt states the whole scope from the lock's side).
 (define (pm-apply specs-dir
                   #:state [state #f]
                   #:manifest [manifest #f]
@@ -386,82 +408,102 @@
   (define vault-git
     (if vault (as-dir vault)
         (path->string (build-path (default-state-dir) "vault" "vault.git"))))
-  (wait-for 'apply "state-dir"
-            "the state root must exist before a journal or a store dir can live under it"
-            #:how (format "create ~a" state-dir)
-            (lambda ()
-              (make-directory* state-dir)
-              (void)))
   (with-op 'apply (as-dir specs-dir)
            (if dry-run "the plan is shown and nothing changes"
                "every package installs in resolve order")
            (lambda ()
-             (unless (or dry-run (directory-exists? vault-git))
-               (step 'apply "vault-init"
-                     "the vault does not exist yet, so it is created empty")
-               (define vault-parent
-                 (or (path-only (string->path vault-git))
-                     (string->path vault-git)))
-               (wait-for 'apply "vault-init"
-                         "the empty vault cannot exist until git has made the bare repo"
-                         #:how (format "vault-init ~a" vault-git)
-                         (lambda ()
-                           (make-directory* vault-parent)
-                           (vault-init vault-git))))
-             ;; scan-specs narrates its own dir listing, per-spec reads and
-             ;; per-package vault preflight, so this only names the phase.
-             (define specs (scan-specs specs-dir vault-git #:preflight (not dry-run)))
-             (wait-for 'apply "prefix-dirs"
-                       "each package needs its own prefix dir before a current link can land there"
-                       #:how (format "create ~a/<package>" prefix-dir)
-                       (lambda ()
-                         (for ([s (in-list specs)])
-                           (make-directory*
-                            (build-path prefix-dir
-                                        (symbol->string (spec-name s)))))
-                         (void)))
-             (when lock
-               (step 'apply "lock"
-                     "the declaration must agree with the lockfile")
-               (check-lock specs lock))
-             (define pps (resolve-and-derive specs))
-             (wait-for 'apply "gc"
-                       "the custodians and threads each spawned child left behind are reclaimed here"
-                       #:how "collect-garbage after the run"
-                       (lambda () (collect-garbage) (void)))
-             (if dry-run
-                 (for/list ([pp (in-list pps)])
-                   (list (symbol->string (package-plan-name pp))
-                         'planned
-                         '()))
-                 (wait-for 'apply "writer-lock"
-                           "only one writer may hold the store, so the try-only lock is taken first"
-                           #:how (format "lock ~a as pm-apply" state-dir)
-                           (lambda ()
-                             (call-with-vault-lock
-                              state-dir "pm-apply" (format "apply ~a" specs-dir)
-                              (lambda ()
-                                (define by-name
-                                  (for/hash ([s (in-list specs)])
-                                    (values (symbol->string (spec-name s)) s)))
-                                (for/list ([pp (in-list pps)])
-                                  (wait-for
-                                   'apply
-                                   (format "apply-package ~a"
-                                           (symbol->string
-                                            (package-plan-name pp)))
-                                   "one package is fully installed before the next one starts"
-                                   #:how (format "package-plan slot ~a"
-                                                 (symbol->string
-                                                  (package-plan-slot pp)))
-                                   (lambda ()
-                                     (apply-one
-                                      pp
-                                      (hash-ref by-name
-                                                (symbol->string
-                                                 (package-plan-name pp)))
-                                      state-dir manifest-path prefix-dir
-                                      vault-git cancel))))))))))))
+             (cond
+               [dry-run (dry-run-rows specs-dir vault-git lock)]
+               [else
+                ;; D-041: the attempt says itself before it is made.
+                ;; The closure lock is try-only so this cannot block,
+                ;; and "cannot block" is a claim the feed keeps.
+                (wait-for 'apply "closure-lock"
+                          "only one apply may touch one install root, so the lock comes first"
+                          #:how (format "lock the closure at ~a as pm-apply" state-dir)
+                          (lambda ()
+                            (call-with-closure-lock
+                             state-dir "pm-apply" (format "apply ~a" specs-dir)
+                             (lambda ()
+                               (live-apply specs-dir lock state-dir manifest-path
+                                            prefix-dir vault-git cancel)))))]))))
+
+;; specs-dir vault lock -> results. The dry branch of pm-apply: scan
+;; the declarations, compare them to the lockfile, derive, and report
+;; what each package would be. No state root, no prefix dirs, no vault
+;; write and no lock -- a dry run changes nothing, so there is nothing
+;; in it for another apply to interleave with (D-040).
+(define (dry-run-rows specs-dir vault lock)
+  (define specs (scan-specs specs-dir vault #:preflight #f))
+  (when lock
+    (step 'apply "lock"
+          "the declaration must agree with the lockfile")
+    (check-lock specs lock))
+  (define pps (resolve-and-derive specs))
+  (for/list ([pp (in-list pps)])
+    (list (symbol->string (package-plan-name pp))
+          'planned
+          '())))
+
+;; specs-dir lock state manifest prefix vault cancel -> results. The
+;; whole live apply, every part of which the caller's closure lock
+;; already covers (G-02): the state root, the empty vault, the specs
+;; scan and its per-package preflight, the prefix dirs, the lockfile
+;; comparison, the resolve, and then each package's journalled steps
+;; in resolve order. This function takes no lock of its own: a second
+;; acquisition would refuse against this same run.
+(define (live-apply specs-dir lock state manifest prefix vault cancel)
+  (wait-for 'apply "state-dir"
+            "the state root must exist before a journal or a store dir can live under it"
+            #:how (format "create ~a" state)
+            (lambda ()
+              (make-directory* state)
+              (void)))
+  (unless (directory-exists? vault)
+    (step 'apply "vault-init"
+          "the vault does not exist yet, so it is created empty")
+    (define vault-parent
+      (or (path-only (string->path vault))
+          (string->path vault)))
+    (wait-for 'apply "vault-init"
+              "the empty vault cannot exist until git has made the bare repo"
+              #:how (format "vault-init ~a" vault)
+              (lambda ()
+                (make-directory* vault-parent)
+                (vault-init vault))))
+  ;; scan-specs narrates its own dir listing, per-spec reads and
+  ;; per-package vault preflight, so this only names the phase.
+  (define specs (scan-specs specs-dir vault #:preflight #t))
+  (wait-for 'apply "prefix-dirs"
+            "each package needs its own prefix dir before a current link can land there"
+            #:how (format "create ~a/<package>" prefix)
+            (lambda ()
+              (for ([s (in-list specs)])
+                (make-directory*
+                 (build-path prefix (symbol->string (spec-name s)))))
+              (void)))
+  (when lock
+    (step 'apply "lock"
+          "the declaration must agree with the lockfile")
+    (check-lock specs lock))
+  (define pps (resolve-and-derive specs))
+  (wait-for 'apply "gc"
+            "the custodians and threads each spawned child left behind are reclaimed here"
+            #:how "collect-garbage after the run"
+            (lambda () (collect-garbage) (void)))
+  (define by-name
+    (for/hash ([s (in-list specs)])
+      (values (symbol->string (spec-name s)) s)))
+  (for/list ([pp (in-list pps)])
+    (define pkg-name (symbol->string (package-plan-name pp)))
+    (wait-for 'apply
+              (format "apply-package ~a" pkg-name)
+              "one package is fully installed before the next one starts"
+              #:how (format "package-plan slot ~a"
+                            (symbol->string (package-plan-slot pp)))
+              (lambda ()
+                (apply-one pp (hash-ref by-name pkg-name)
+                           state manifest prefix vault cancel)))))
 
 ;; path-or-string -> string
 (define (as-dir d)
@@ -574,8 +616,14 @@
              (list id 'failed 0 (unbox failed-message))]
             [(hash-ref outcomes id #f)
              => (lambda (r) (list id 'applied (second r) "performed for real"))]
+            ;; G-07: the row says WHICH hash and WHICH journal
+            ;; entry, so a row is enough to check the skip without
+            ;; re-reading the journal by hand.
             [else (list id 'skipped 0
-                        (format "input hash ~a matches the journal" input-hash))])))
+                        (format "input hash ~a matches the journal entry ~a"
+                                input-hash
+                                (path->string
+                                 (journal-file state name slot))))])))
   (list name
         (if (for/and ([r (in-list rows)]) (eq? (second r) 'skipped))
             'skipped
