@@ -1,0 +1,15 @@
+#+TITLE: INDEX — AIU EDITOR/editor/src/errors/
+# One job: list every file in this directory and the single job of each.
+# Status: current; updated in the same commit as any change in this directory.
+
+* Files
+# one line per file: its name, then the single job it performs. This index is updated in the same commit as any change here.
+
+  - err.rkt — the error record: what happened, who, where, and what to do
+  - raise.rkt — the one raise helper; nothing raises around it
+  - render.rkt — how an error prints: one shape, never a dump
+
+* Later
+# errors is the floor of the program: every other area may require it, and
+# it requires nothing. The error travels as a record, is raised by one helper
+# and is printed by the one printer in the narration area.

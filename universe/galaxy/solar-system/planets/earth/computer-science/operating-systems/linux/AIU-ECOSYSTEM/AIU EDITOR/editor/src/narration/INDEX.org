@@ -1,0 +1,16 @@
+#+TITLE: INDEX — AIU EDITOR/editor/src/narration/
+# One job: list every file in this directory and the single job of each.
+# Status: current; updated in the same commit as any change in this directory.
+
+* Files
+# one line per file: its name, then the single job it performs. This index is updated in the same commit as any change here.
+
+  - events.rkt — the event record: the schema, and the clock that fills it
+  - narration.rkt — a run's voice: open, step, note, warn, skip, decide
+  - wait-door.rkt — wait-for / wait-done; why is never blank
+  - print-console.rkt — the ONE printer to the terminal
+
+* Later
+# narration is how work speaks. Every line a run says carries who and why
+# (rule 05) and the UTC time (rule 06), and every line goes through the one
+# printer, so the log reads in one voice.

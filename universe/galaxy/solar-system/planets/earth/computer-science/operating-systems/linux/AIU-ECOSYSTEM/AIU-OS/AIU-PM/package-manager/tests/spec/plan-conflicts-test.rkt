@@ -9,7 +9,7 @@
 ;;
 ;; The require list is the module's OWN list (racket/file and rackunit
 ;; for the fixture directory) plus the names the fixture and the plan
-;; path need: entry/version.rkt's string->version, documents.rkt's
+;; path need: spec/version.rkt's string->version, documents.rkt's
 ;; plan-document and git-env.rkt's current-allow-file-urls, the
 ;; parameter the specs are read under (D-046: the module's list, minus
 ;; whatever it re-provides, plus the module itself).
@@ -27,7 +27,7 @@
            racket/file
            "../../src/errors/error-type.rkt"
            "../../src/spec/spec.rkt"
-           "../../src/entry/version.rkt")
+           "../../src/spec/version.rkt")
 
   ;; E-04 fixture: pkg-alpha claims bin/alpha and owns one check form
   ;; (T-10), the same declaration plan-derive.rkt turns into a plan.

@@ -108,7 +108,7 @@
 (module+ test
   (require rackunit
            "../errors/error-type.rkt"
-           "../entry/version.rkt")
+           "./version.rkt")
 
   ;; Synthetic package declaring three flags with defaults (T-10).
   (define demo-spec

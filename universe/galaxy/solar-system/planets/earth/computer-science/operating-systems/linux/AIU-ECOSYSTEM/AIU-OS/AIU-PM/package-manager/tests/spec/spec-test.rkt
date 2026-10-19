@@ -10,7 +10,7 @@
 (require rackunit
    racket/contract/base
             "../../src/errors/error-type.rkt"
-            "../../src/entry/version.rkt"
+            "../../src/spec/version.rkt"
             "../../src/git/git-commit.rkt"
          "../../src/spec/spec.rkt")
 

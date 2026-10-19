@@ -17,9 +17,9 @@
             "../../src/store/manifest.rkt"
             "../../src/git/vault.rkt"
             "../../src/errors/error-type.rkt"
-            "../../src/machine/file-lock.rkt"
+            "../../src/store/lockfile.rkt"
             "../../src/spec/plan.rkt"
-            "../../src/entry/version.rkt"
+            "../../src/spec/version.rkt"
             "../../src/narration/narration.rkt"
          "../../src/store/query.rkt")
 
@@ -32,8 +32,8 @@
            "../../src/process/run.rkt"
            "../../src/errors/error-type.rkt"
            "../../src/git/git-env.rkt"
-           "../../src/machine/file-lock.rkt"
-           "../../src/entry/version.rkt")
+           "../../src/store/lockfile.rkt"
+           "../../src/spec/version.rkt")
 
   ;; All fixtures are synthetic (T-10) under one temp root: a lock plus
   ;; manifest entry, a profile generation with links, a vault holding

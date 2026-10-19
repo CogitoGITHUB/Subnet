@@ -50,7 +50,7 @@
          "../errors/error-type.rkt"
          "../narration/narration.rkt"
          "../machine/directories.rkt"
-         "../machine/file-lock.rkt"
+         "../store/lockfile.rkt"
          "../store/store.rkt"
          "../store/manifest.rkt"
          "../install/activate.rkt"
@@ -240,22 +240,33 @@
            'store-marker-stuck)))
 
 ;; path-string -> (listof doctor-finding). A lockfile that does not
-;; read leaves every install state above it unverifiable.
+;; read leaves every install state above it unverifiable. ABSENT and
+;; UNREADABLE are two kinds and two levels: FAILING-KINDS says a machine
+;; with no lockfile yet is a WARN (nothing has been pinned), while a file
+;; that is there and does not parse is a FAIL.
 (define (lockfile-findings lockfile)
   (with-op 'doctor "lockfile" "a lock that cannot be read is not a pin"
            #:how (dir-text lockfile)
            (lambda ()
-             (with-handlers ([exn:fail:pm?
-                              (lambda (e)
-                                (list (found "lockfile" lockfile
-                                             (string-append
-                                              "the lockfile could not be read: "
-                                              (exn-message e))
-                                             'lockfile-unreadable)))])
-               (define lf (read-lockfile lockfile))
-               (note 'doctor (format "~a pin(s) in the lockfile"
-                                      (length (lockfile-entries lf))))
-               '()))))
+             (cond
+               [(not (file-exists? lockfile))
+                (list (found "lockfile" lockfile
+                             "there is no lockfile here, so nothing is pinned
+                              yet; every install until one is written is
+                              unpinned"
+                             'lockfile-absent))]
+               [else
+                (with-handlers ([exn:fail:pm?
+                                 (lambda (e)
+                                   (list (found "lockfile" lockfile
+                                                (string-append
+                                                 "the lockfile could not be read: "
+                                                 (exn-message e))
+                                                'lockfile-unreadable)))])
+                  (define lf (read-lockfile lockfile))
+                  (note 'doctor (format "~a pin(s) in the lockfile"
+                                         (length (lockfile-entries lf))))
+                  '())]))))
 
 ;; path-string -> (listof doctor-finding). The manifest is the vault's
 ;; inventory: does it exist, does it read, does every entry name the
@@ -288,7 +299,7 @@
                            (format "entry ~a names no namespace, so the vault
                                     cannot answer for it"
                                    (manifest-entry-name e))
-                           'manifest-namespace-absent))])))))
+                           'manifest-namespace-absent))]))))
 
 ;; path-string -> (listof doctor-finding). The lock record sits BESIDE
 ;; the vault root, and its owner record beside that. A record there
@@ -344,7 +355,11 @@
                 (for/list ([e (in-list entries)]
                            #:unless (vault-holds-ref?
                                      vault
-                                     (vault-namespace (lock-entry-name e))))
+                                     ;; a lock row names its package with a
+                                     ;; symbol; the namespace naming is taken
+                                     ;; on strings (D-8)
+                                     (vault-namespace
+                                      (symbol->string (lock-entry-name e)))))
                   (found "vault-clone" vault
                          (format "the lock pins ~a at ~a but the vault holds
                                   no ref for it"

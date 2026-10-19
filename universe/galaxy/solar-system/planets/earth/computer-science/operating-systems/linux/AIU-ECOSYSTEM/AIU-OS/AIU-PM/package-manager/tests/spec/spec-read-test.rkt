@@ -31,7 +31,7 @@
            racket/file
            "../../src/errors/error-type.rkt"
            "../../src/spec/spec.rkt"
-           "../../src/entry/version.rkt")
+           "../../src/spec/version.rkt")
 
   ;; S-03: every negative fixture in docs/examples-bad refuses with its
   ;; rule's own name. These files are the declarations pm must never

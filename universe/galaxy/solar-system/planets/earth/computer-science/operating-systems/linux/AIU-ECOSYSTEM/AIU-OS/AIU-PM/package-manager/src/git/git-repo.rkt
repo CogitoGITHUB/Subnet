@@ -509,7 +509,8 @@
                     (raise-pm-error 'fetch 'git-export-commit
                                     "symlink escapes the exported tree"
                                     #:fields `(("commit" . ,commit)
-                                               ("link" . ,(dir-string full))))]
+                                               ("link" . ,(dir-string full)))
+                                    #:rule rule-symlink-target)]
                    [(not (or (file-exists? target)
                              (directory-exists? target)))
                     (raise-pm-error 'fetch 'git-export-commit

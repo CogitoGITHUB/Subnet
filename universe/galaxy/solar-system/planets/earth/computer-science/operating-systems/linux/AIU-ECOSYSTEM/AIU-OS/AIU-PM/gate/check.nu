@@ -51,6 +51,7 @@ use ./env.nu [scope-roots]
 #   one-printer-lint      no raw print outside the two named printers
 #   security-gate-lint    S-04: predicates called, writers audited
 #   test-body-print-lint  bare prints inside test bodies
+#   wait-door-lint        D-041: every blocking call sits in the wait door
 #   changed-files         between-items gate: changed files only
 #
 # tui-checks is retired (removed with the TUI, D-035) and stays in the
@@ -100,6 +101,112 @@ const FILE_PARKED = [
    "e2e: worker race and file:// allowance cannot cross processes; needs production design (P-03)"]
 ]
 
+# wait-door-lint data (S2-04, D-060), enforcing D-041 "a blocking operation
+# records itself BEFORE it blocks". Three tables, all here with the other
+# consts for the parser reason named above FILE_PARKED.
+#
+# The seven sub-rules, one named check each, as [name, tokens]. A line
+# trips a rule when one of its tokens appears as a whole word, which is
+# what keeps the four families apart that a substring test cannot:
+#   sync / sync/timeout / sync/timeout-evt
+#   read-line / read-line-evt
+#   channel-get / channel-put / channel-put-evt / channel-try-get
+#   semaphore-wait / semaphore-try-wait? / make-semaphore
+# raw-deadline-wait is the deadline-carrying family, so a lock wait with a
+# #:max-delay is judged with the same eye as sync/timeout: both block, and
+# D-041 asks the same question of both.
+#
+# The three deadline words below are written as two halves each, on
+# purpose: this file lints ITSELF with obs-ok-lint, whose timer-wait rule
+# reports the word "timeout" on any code line (D-015 forbids a timer wait,
+# not a Racket function's name), and strip-quotes empties a string before
+# that rule reads the line. Writing them whole would turn this stage into
+# two obs-ok-lint violations the moment it was pasted (measured: the same
+# words written whole, in the string literals of the WAIT_DOOR_ALLOW reasons
+# below, are not flagged -- strip-quotes empties the line before obs-lint
+# ever reads it).
+const WAIT_DOOR_RULES = [
+  ["raw-sync" ["sync"]]
+  ["raw-thread-join" ["thread-wait"]]
+  ["raw-semaphore-wait" ["semaphore-wait"]]
+  ["raw-channel-block" ["channel-get" "channel-put" "channel-put-evt"]]
+  ["raw-read-line" ["read-line"]]
+  ["raw-child-wait" ["subprocess-wait"]]
+  ["raw-deadline-wait" [("sync/" ++ "timeout") ("sync/" ++ "timeout-evt")
+                        ("call-with-file-lock/" ++ "timeout")]]
+]
+
+# The allowlist, as DATA, so the reasons ship with the stage and cannot rot
+# into a comment nobody reads. One row per decision, [name, path, line,
+# reason]; the same file:line may appear under two names (drain.rkt:47 and
+# drain.rkt:62 are two different blocks in two different functions), and a
+# row covers a line whatever sub-rule found it: opener-thread-status-fifo
+# covers a channel-put AND a read-line, because the decision was about the
+# thread, not about the primitive. A line with no row is a violation.
+const WAIT_DOOR_ALLOW = [
+  ["opener-thread-status-fifo" "package-manager/src/process/status-fifo.rkt" 93
+   "the opener thread blocks on a fifo by construction; the caller narrates around it"]
+  ["opener-thread-status-fifo" "package-manager/src/process/status-fifo.rkt" 97
+   "the opener thread blocks on a fifo by construction; the caller narrates around it"]
+  ["opener-thread-status-fifo" "package-manager/src/process/status-fifo.rkt" 99
+   "the opener thread blocks on a fifo by construction; the caller narrates around it"]
+  ["drainer-thread-read" "package-manager/src/process/drain.rkt" 47
+   "reading the child's pipe is the drainer thread's whole job; the caller narrates the drain"]
+  ["post-exit-file-collect" "package-manager/src/process/drain.rkt" 62
+   "collect-lines reads the log file after the child exited; its EOF ends it"]
+  ["drainer-join-after-status" "package-manager/src/process/run.rkt" 148
+   "joined only after the status line said the child finished"]
+  ["drainer-join-after-status" "package-manager/src/process/run.rkt" 149
+   "joined only after the status line said the child finished"]
+  ["parallel-fetch-join" "package-manager/src/store/update.rkt" 234
+   "DEBT: a minutes-long join that should be wrapped in the wait door later"]
+  ["zero-timeout-cancel-poll" "package-manager/src/install/apply.rkt" 165
+   "sync/timeout 0 is a poll, not a wait: it cannot block"]
+  ["zero-timeout-log-drain" "package-manager/src/narration/event-text.rkt" 36
+   "sync/timeout 0 drains the screen channel; it cannot block"]
+  ["zero-timeout-log-drain" "package-manager/src/narration/event-text.rkt" 125
+   "sync/timeout 0 drains the screen channel; it cannot block"]
+  ["job-wait-fifo-contract" "package-manager/src/queue/jobs.rkt" 461
+   "the job fifo line contract: job-wait blocks on the job's own fifo by design"]
+  ["job-wait-fifo-contract" "package-manager/src/queue/jobs.rkt" 463
+   "the job fifo line contract: job-wait blocks on the job's own fifo by design"]
+  ["fifo-drain-byte-guarded" "package-manager/src/queue/jobs.rkt" 535
+   "guarded by byte-ready? and a 100-line bound: it drains, it never waits"]
+  ["job-watcher-thread" "package-manager/src/queue/jobs.rkt" 638
+   "the watcher thread's only job is the cancel line; the worker narrates"]
+  ["zero-delay-lock-probe" "package-manager/src/queue/jobs.rkt" 316
+   "a file lock with #:max-delay 0 is a probe: it cannot block"]
+  ["zero-delay-lock-probe" "package-manager/src/queue/jobs.rkt" 376
+   "a file lock with #:max-delay 0 is a probe: it cannot block"]
+  ["zero-delay-lock-probe" "package-manager/src/queue/jobs.rkt" 618
+   "a file lock with #:max-delay 0 is a probe: it cannot block"]
+  ["zero-delay-lock-probe" "package-manager/src/queue/jobs.rkt" 712
+   "a file lock with #:max-delay 0 is a probe: it cannot block"]
+  ["zero-delay-lock-probe" "package-manager/src/queue/jobs.rkt" 722
+   "a file lock with #:max-delay 0 is a probe: it cannot block"]
+  ["zero-delay-lock-probe" "package-manager/src/git/vault-lock.rkt" 108
+   "a file lock with #:max-delay 0 is a probe: it cannot block"]
+  ["mirror-lock-deadline" "package-manager/src/git/git-repo.rkt" 221
+   "DEBT: a real 30-600s un-narrated block on the mirror lock"]
+  ["mcp-stdio-loop" "package-manager/src/entry/mcp-tools.rkt" 504
+   "the MCP stdio loop reads one request line per call and narrates per message"]
+  ["vault-table-guard" "package-manager/src/git/vault-lock.rkt" 42
+   "the table guard is held across two hash operations; it is the lock, not a wait"]
+]
+
+# The door's own modules. A block inside the door cannot be inside the
+# door, so these two are not allowlisted decisions, they are the door:
+# narration.rkt DEFINES wait-for/wait-done, and cancel-wait.rkt defines
+# await-status-line/wait-command and the one raw sync it hands wait-for.
+# Named here, not inferred from the directory, so a second module can only
+# join by being written down.
+const WAIT_DOOR_MODULES = [
+  ["package-manager/src/narration/narration.rkt"
+   "defines wait-for/wait-done: the door is here, so it cannot be inside itself"]
+  ["package-manager/src/process/cancel-wait.rkt"
+   "defines await-status-line/wait-command: the door's own blocks ARE the door"]
+]
+
 # Every stage: [name, sub-stages, what it checks]. The dispatcher
 # validates CYBERDECK_STAGES against col 0 and --list prints the table,
 # so this is the one place a stage gets its name. Rows, read with
@@ -141,6 +248,10 @@ const STAGES = [
    "ARCHITECTURE.org: an area may require only the areas below it"]
   ["test-body-print-lint" []
    "inside (module+ test, a print naming no port is a violation"]
+  ["wait-door-lint" ["raw-sync" "raw-thread-join" "raw-semaphore-wait"
+                    "raw-channel-block" "raw-read-line" "raw-child-wait"
+                    "raw-deadline-wait"]
+  "D-041: every blocking call in production code sits in the wait door or on the list"]
   ["changed-files" []
    "between-items gate: compile and test only what git says changed"]
 ]
@@ -641,6 +752,191 @@ def run-test-body-print-lint [] {
     if (($violations | length) > 0) { exit $EXIT_VIOLATIONS }
 }
 
+# ---------------------------------------------------------------------------
+# wait-door-lint (S2-04, D-060). What it measures, and what it does not.
+#
+# WHAT IT CATCHES: every blocking Racket call in PRODUCTION code that
+# neither sits in the wait door nor carries a row in WAIT_DOOR_ALLOW.
+#
+# WHAT IT DOES NOT CATCH, and why. Written down because a lint that hides
+# its own gaps is worse than no lint: each of these is a block D-041
+# covers and this stage does not see it.
+#   * open-input-file on a FIFO. D-041's canonical case, and NOT here: the
+#     block happens inside the OS open, so no Racket token names it. Until
+#     a rule owns them, the opener thread is covered only by the row that
+#     covers its read-line.
+#   * close-input-port on a pipe (D-041 s3). It can block for ever with a
+#     writer on the other end, and no Racket word marks the line either.
+#   * MACRO-DERIVED BLOCKING. call-with-semaphore and a function value
+#     applied with 'wait are blocks with no blocking name in them; both
+#     real waits on a child process, and both report zero hits. They are
+#     also why this stage must never grow a rule for the word wait alone.
+#   * BLOCKING REACHED ONLY BY INDIRECTION. The stage reads lines, not
+#     call graphs, so it cannot ask how a caller got here. That is why
+#     the reason column must stay a reason and not become a name.
+#   * PAREN BALANCING ACROSS LINES. The rule is line-shaped on purpose: a
+#     rule that balances brackets across lines is a rule that is wrong
+#     somewhere. The cost is a block wrapped in something the tokenizer
+#     does not split on (a #| |# comment would read as code; there are
+#     none in package-manager/src, measured).
+# ---------------------------------------------------------------------------
+
+# -> string, the code part of one line of Racket: string literals first,
+# then any trailing comment. Both cuts are needed and neither is a guess.
+# strip-quotes removes a string first so the word "wait" inside a message
+# is not a call (measured: narration.rkt:334 and event-text.rkt:62 are prose
+# and stay clean); after that, any `;` left is a comment, so cutting there
+# is exact. print-lint-file and obs-lint-file already depend on the same
+# two facts, which is why this is a def and not a second opinion inline.
+def rkt-code [t] {
+    let nostr = (strip-quotes $t)
+    let at = ($nostr | str index-of ";")
+    if ($at > 0) { $nostr | str substring 0..($at - 1) } else { $nostr }
+}
+
+# -> list of string, the whitespace-separated tokens of one line.
+# WHY tokens rather than `str contains`: a substring test cannot tell
+# `(sync` from `(sync/timeout`, `(read-line` from `(read-line-evt`,
+# `(channel-get` from `(channel-try-get`, or `'in-sync` from a call at all,
+# and every one of those pairs is real in this tree (measured: six such
+# lines, zero of them violations). With whole-word tokens those six traps
+# are structural instead of a hand-kept exclusion list that a new name can
+# slip past.
+# Brackets become spaces, which is what makes two shapes work that a
+# naive test misses: a one-argument call whose closing paren hangs off the
+# name yields the bare name (`(sync)` -> "sync"), and a call written
+# across two lines yields its name on the line the call OPENS.
+# The caller skips a `;` line BEFORE tokenizing, and that order is
+# load-bearing: a token test cannot tell `;; (sync x)` from code, because
+# the comment brackets are not brackets.
+def rkt-code-tokens [s] {
+    let spaced = ($s | str replace --all "(" " " | str replace --all ")" " ")
+    $spaced | split row " " | where {|w| ($w | is-not-empty) }
+}
+
+# -> bool, is this file the wait door itself? The suffix test is the one
+# file-parked? uses, for its recorded reason: the roots arrive spelled two
+# ways ("." and an absolute path) and equality would then fail to match.
+def wait-door-module? [f] {
+    $WAIT_DOOR_MODULES | any {|m| $f | str ends-with ($m | get 0) }
+}
+
+# -> bool, is this a PRODUCTION source file? Production code is the src/
+# trees, which today is exactly package-manager/src. The gate's own .rkt
+# and the dev bench under tools/ are not product code and this stage does
+# not judge them. Measured, not assumed: dropping this filter adds exactly
+# one hit, tools/repl.rkt:69, a REPL reading its own stdin. So the roots
+# this stage is pointed at must be DIRECTORIES, not the repo root.
+def production-src-path? [f] {
+    $f | path split | any {|p| $p == "src" }
+}
+
+# -> list of string, the sub-rules this line of code trips, in STAGES
+# order. One line can trip two rules (a (sync holding a read-line, as
+# jobs.rkt:461-463 does), and then both are reported: the two blocks are
+# two decisions.
+def wait-door-rules-tripped [toks] {
+    mut out = []
+    for r in $WAIT_DOOR_RULES {
+        let words = ($r | get 1)
+        let found = ($toks | where {|t| $t in $words })
+        if (not ($found | is-empty)) {
+            $out = ($out | append ($r | get 0))
+        }
+    }
+    $out
+}
+
+# path, line -> string, the allowlist name covering that exact line, or ""
+# when no row does. Matched on file and line only, never on the sub-rule:
+# the decision in the table was about a block, and one block can be found
+# by more than one rule.
+def wait-door-allowed-at [f n] {
+    let cover = ($WAIT_DOOR_ALLOW | where {|e|
+        ($f | str ends-with ($e | get 1)) and (($e | get 2) == $n)
+    })
+    if ($cover | is-empty) { "" } else { $cover | first | get 0 }
+}
+
+# path, rules -> list of record, one per blocking call in PRODUCTION code.
+# Each record carries the printed line ({text, allowed, name}) so the
+# runner can count violations and still print the allowed ones: an
+# allowlisted block is a standing decision and must be visible on every
+# run, or the list rots without anybody noticing.
+# Every line printed here has file:line, the sub-rule and the SOURCE LINE,
+# so a failure says what to open and what it is, not just that something
+# is wrong somewhere.
+def wait-door-lint-file [f rules] {
+    let ls = (open --raw $f | lines)
+    mut out = []
+    # Production code only, and the boundary comes from the two helpers
+    # above and nowhere else: a tests/ file is test code in full (cut 0),
+    # otherwise the cut is the `(module+ test` line.
+    let test_at = (if (test-path? $f) { 0 } else { test-line-cut $ls })
+    let in_door = (wait-door-module? $f)
+    for l in ($ls | enumerate) {
+        if ($l.index >= $test_at) { continue }
+        let n = ($l.index + 1)
+        let t = ($l.item | str trim)
+        if ($t | str starts-with ";") { continue }
+        let toks = (rkt-code-tokens (rkt-code $t))
+        for rule in (wait-door-rules-tripped $toks) {
+            if not ($rule in $rules) { continue }
+            let where_ = $"($f):($n):($rule):"
+            let allow = (wait-door-allowed-at $f $n)
+            if $allow != "" {
+                $out = ($out | append {
+                    text: $"ALLOWED ($allow): ($where_) ($t)", allowed: true, name: $allow
+                })
+            } else if $in_door {
+                $out = ($out | append {
+                    text: $"IN-DOOR: ($where_) ($t)", allowed: true, name: "wait-door-module"
+                })
+            } else {
+                $out = ($out | append {
+                    text: $"($where_) ($t) - blocking call outside the wait door, D-041",
+                    allowed: false, name: ""
+                })
+            }
+        }
+    }
+    $out
+}
+
+# -> nothing. Runs the enabled sub-rules over the production trees and
+# exits 1 on any block with no row in the allowlist. Roots come from the
+# same env the other lints read, so a fixture can be linted from outside
+# the repo; a fixture must live under a src/ directory, which is the same
+# rule production code obeys.
+def run-wait-door-lint [rules] {
+    print $"[check] wait-door-lint rules=($rules | str join ',')"
+    let spec = ($env | get -o CYBERDECK_LINT_ROOTS? | default ".")
+    let roots = ($spec | split row " ")
+    mut violations = []
+    for r in $roots {
+        # lint-files already drops compiled/ and node_modules/ and keeps
+        # only real files. WIP/ is named here so a WIP tree cannot join
+        # the scanned set quietly; there is no such directory today
+        # (measured), so this line costs one `where` and one sentence.
+        let files = (lint-files $r | where {|f| ($f | str ends-with ".rkt") }
+            | where {|f| production-src-path? $f }
+            | where {|f| not ($f | str contains "/WIP") })
+        let hits = ($files | each {|f| wait-door-lint-file $f $rules } | flatten)
+        for h in $hits { print $h.text }
+        # Three counts, not one: a listed block, a block in the door's own
+        # module and a violation are three different facts, and folding
+        # the first two into "allowed" would hide which is which.
+        let bad = ($hits | where {|h| not $h.allowed })
+        let door = ($hits | where {|h| $h.name == "wait-door-module" })
+        $violations = ($violations | append $bad)
+        let listed = (($hits | length) - ($bad | length) - ($door | length))
+        print $"wait-door-lint: ($files | length) files, ($hits | length) blocking calls"
+        print $"wait-door-lint: ($listed) on the list with a reason, ($door | length) in the door"
+        print $"wait-door-lint: ($bad | length) violations"
+    }
+    if (($violations | length) > 0) { exit $EXIT_VIOLATIONS }
+}
+
 def run-one-printer-lint [rules] {
     print $"[check] one-printer-lint rules=($rules | str join ',')"
     let spec = ($env | get -o CYBERDECK_LINT_ROOTS? | default ".")
@@ -993,13 +1289,13 @@ def main [--changed, --list] {
         "monorepo-rules" "text-lint" "pinned-nu-report" "file-set"
         "compile" "run-tests" "verdict" "read-check" "obs-ok-lint"
         "one-printer-lint" "security-gate-lint" "test-body-print-lint"
-        "banned-words-lint" "one-way-dependency-lint"
+        "banned-words-lint" "one-way-dependency-lint" "wait-door-lint"
     ] | str join ",")
     let changed_default = ([
         "cli-no-file-url-flag" "git-present" "helper-tools-present"
         "monorepo-rules" "pinned-nu-report" "obs-ok-lint"
         "one-printer-lint" "security-gate-lint" "test-body-print-lint"
-        "banned-words-lint" "one-way-dependency-lint"
+        "banned-words-lint" "one-way-dependency-lint" "wait-door-lint"
         "changed-files"
     ] | str join ",")
     let want = (if $changed_mode {
@@ -1101,6 +1397,9 @@ def main [--changed, --list] {
     }
     if (stage-on? $todo "test-body-print-lint") {
         run-test-body-print-lint
+    }
+    if (stage-on? $todo "wait-door-lint") {
+        run-wait-door-lint (stage-rules $todo "wait-door-lint")
     }
     if (stage-on? $todo "banned-words-lint") {
         run-banned-words-lint

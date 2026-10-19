@@ -7,7 +7,7 @@
          openssl/sha1
          "plan-actions.rkt"
          "spec.rkt"
-         "../entry/version.rkt")
+         "./version.rkt")
 
 (provide
  ;; string -> string, sha1 hex of the full content

@@ -19,7 +19,7 @@
          "../package-manager/src/spec/spec.rkt"
          "../package-manager/src/spec/spec-read.rkt"
          "../package-manager/src/narration/print-console.rkt"
-         "../package-manager/src/entry/version.rkt"
+         "../package-manager/src/spec/version.rkt"
          "../package-manager/src/install/apply.rkt"
          "../package-manager/src/queue/journal.rkt"
          "../package-manager/src/install/local-perform.rkt"

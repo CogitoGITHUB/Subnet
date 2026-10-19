@@ -27,8 +27,7 @@
          racket/string
          json
          "../errors/error-type.rkt"
-         "./event-text.rkt"
-         "../machine/directories.rkt")
+         "./event-text.rkt")
 
 (provide
  (struct-out verbose-run)
@@ -46,10 +45,6 @@
   ;; narrating into the feed and printing their legacy line, never to
   ;; print both.
   [run-open? (-> boolean?)]
-  ;; string -> path, the feed file for a run, under the real events dir
-  [events-file (-> path-string? path?)]
-  ;; -> path, <state>/events, resolved through core/scope.rkt only
-  [default-events-dir (-> path?)]
   ;; the emitting verbs
   [with-op (->* (symbol? string? string?)
                 ((-> any)
@@ -111,13 +106,13 @@
                  "-"
                  (number->string (mono-ms))))
 
-;; -> path, <state>/events. Only core/scope.rkt reads HOME or XDG_*.
-(define (default-events-dir)
-  (build-path (roots-data (scope-roots 'user)) "aiu-pm" "events"))
-
-;; string -> path, the feed for RUN-ID under the real events dir
-(define (events-file run-id)
-  (build-path (default-events-dir) (string-append run-id ".jsonl")))
+;; path string -> path, the feed file for RUN-ID under DIR. The DIRECTORY
+;; is given, never resolved here: where the feed lives is filesystem
+;; location, owned by machine/events-dir.rkt through the one HOME/XDG
+;; seam, and narration/ sits below machine/ and may not reach up for it
+;; (one-way law, D-044). A caller that knows neither must name a dir.
+(define (feed-file dir run-id)
+  (build-path dir (string-append run-id ".jsonl")))
 
 ;; ---------------------------------------------------------------------------
 ;; Clocks. Two of them, each read once per event.
@@ -428,6 +423,13 @@
 ;; (-> void) -> string. Opens the feed, writes `current` atomically,
 ;; makes this the active run. A second begin-run! while one is open is
 ;; a caller bug and raises, so two runs never share a file.
+;;
+;; #:events-dir is the feed's directory and the caller MUST name it:
+;; this module sits below machine/ and may not resolve a path itself
+;; (one-way law, D-044), so #f no longer means a default location but a
+;; refusal that names machine/events-dir.rkt. A run with no file would
+;; be the silent one, which is the failure this project costs the most
+;; to avoid.
 (define (begin-run! #:who [who 'pm] #:events-dir [events-dir #f])
   (when (current-verbose-run)
     (raise-pm-error
@@ -435,12 +437,17 @@
      'begin-run!
      "a run is already open"
      #:fields `(("run" . ,(verbose-run-id (current-verbose-run))))))
-  (define dir (cond [(not events-dir) (default-events-dir)]
-                  [(path? events-dir) events-dir]
+  (unless events-dir
+    (raise-pm-error
+     'config
+     'begin-run!
+     "no events directory was given: pass #:events-dir, or compute one"
+     #:fields `(("where" . "machine/events-dir.rkt"))))
+  (define dir (cond [(path? events-dir) events-dir]
                   [else (string->path events-dir)]))
   (make-directory* dir)
   (define run-id (make-run-id who))
-  (define port (open-output-file (build-path dir (string-append run-id ".jsonl"))
+  (define port (open-output-file (feed-file dir run-id)
                                 #:exists 'truncate/replace))
   (current-verbose-run (verbose-run run-id (box 0) #f 0 (mono-ms) port))
   ;; current: the active run id, written then renamed, never half-written

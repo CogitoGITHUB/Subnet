@@ -8,7 +8,7 @@
          "flags.rkt"
          "resolve.rkt"
          "spec.rkt"
-         "../entry/version.rkt"
+         "./version.rkt"
          "plan-actions.rkt"
          "plan-hash.rkt")
 

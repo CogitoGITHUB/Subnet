@@ -55,7 +55,8 @@
       (raise-pm-error 'config 'local-perform! "path escapes the prefix"
                       #:fields `(("field" . ,what)
                                  ("path" . ,abs-text)
-                                 ("prefix" . ,pre-text)))))
+                                 ("prefix" . ,pre-text))
+                      #:rule rule-path-escape)))
 
 ;; string (listof pair) (-> any) -> any, raw faults become install errors
 (define (with-install-errors what fields thunk)
@@ -190,12 +191,14 @@
                                  (directory-exists? resolved)))))
   (cond [(not resolved)
          (raise-pm-error 'config 'local-perform! "symlink loop detected"
-                         #:fields `(("link" . ,(path->string link))))]
+                         #:fields `(("link" . ,(path->string link)))
+                         #:rule rule-symlink-target)]
         [(and resolved
               (not (or (file-exists? resolved) (directory-exists? resolved))))
          (raise-pm-error 'config 'local-perform! "dangling symlink"
                          #:fields `(("link" . ,(path->string link))
-                                    ("target" . ,raw-target)))]
+                                    ("target" . ,raw-target))
+                         #:rule rule-symlink-target)]
         [(not target-ok?)
          (raise-pm-error 'config 'local-perform!
                          "symlink escapes the prefix"

@@ -17,7 +17,7 @@
             "../../src/store/manifest.rkt"
             "../../src/git/vault.rkt"
             "../../src/errors/error-type.rkt"
-            "../../src/machine/file-lock.rkt"
+            "../../src/store/lockfile.rkt"
             "../../src/spec/plan.rkt"
             "../../src/narration/narration.rkt"
          "../../src/store/update.rkt")
@@ -33,9 +33,9 @@
            "../../src/git/vault.rkt"
            "../../src/git/git-env.rkt"
            "../../src/errors/error-type.rkt"
-           "../../src/machine/file-lock.rkt"
+           "../../src/store/lockfile.rkt"
            "../../src/spec/plan.rkt"
-           "../../src/entry/version.rkt")
+           "../../src/spec/version.rkt")
 
   ;; All fixtures are synthetic (T-10): a tiny upstream repo, a vault
   ;; over file:// URLs, lock entries with real pins. Nothing leaves

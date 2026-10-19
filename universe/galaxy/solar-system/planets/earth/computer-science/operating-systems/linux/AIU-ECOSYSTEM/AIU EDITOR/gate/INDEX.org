@@ -1,0 +1,23 @@
+#+TITLE: INDEX — AIU EDITOR/gate/
+# One job: list every file in this directory and the single job of each.
+# Status: current; updated in the same commit as any change in this directory.
+
+* Files
+# one line per file: its name, then the single job it performs. This index is updated in the same commit as any change here.
+
+  - INDEX.org — this index: every file of the gate and its one job
+  - check.nu — the dispatcher: named stages, one table, --list
+  - need-nu.nu — pinned Nu or exit 3; never fetches
+  - env.nu — the Nushell mirror of the one HOME seam
+  - read-check.rkt — the paren check: READ-BAD file:line, the bad form named
+  - one-way-dependency-lint.nu — the area table above, enforced
+  - security-gate-lint.nu — predicates called, writers audited
+  - banned-words-lint.nu — the naming law, made mechanical
+  - language-split-lint.nu — only join/ may cross Rust and Racket
+  - comment-lint.nu — every file has a header, every definition a comment
+
+* Later
+# The gate lives outside editor/ on purpose: the gate checks the package, so
+# it must not be part of what it checks. check.nu is the only entry point, and
+# a stage with nothing to check prints NOTHING-TO-CHECK and never PASS, so a
+# green run never hides a rule that did not look at anything.

@@ -20,8 +20,7 @@
          "../spec/spec.rkt"
          "./vault-lock.rkt"
          "../narration/narration.rkt"
-         "../process/run.rkt"
-         "../store/manifest.rkt")
+         "../process/run.rkt")
 
 (provide
  (struct-out fetch-progress)
@@ -88,9 +87,9 @@
          #:on-progress (or/c (-> fetch-progress? any/c) #f)
          #:holder (or/c #f string?))
         restore-result?)]
-  ;; path-string path-string -> (listof vault-drift?), manifest vs refs
+  ;; path-string (listof string) -> (listof vault-drift?), names vs refs
   [vault-status
-   (-> path-string? path-string? (listof vault-drift?))]
+   (-> path-string? (listof string?) (listof vault-drift?))]
   ;; path-string string string path-string -> void, pin to empty staging
   [vault-export-commit
    (->* (path-string? string? string? path-string?)
@@ -624,7 +623,8 @@
     ;; S-01: only an exact pinned commit is a pin.
     (unless (commit-pinned? pin)
       (raise-pm-error 'spec 'vault-add "not a commit id"
-                      #:fields `(("value" . ,pin)))))
+                      #:fields `(("value" . ,pin))
+                      #:rule rule-commit-pinned)))
   (for ([id (in-list fsck-allow)])
     (unless (and (string? id)
                  (regexp-match? #rx"^[a-zA-Z][a-zA-Z0-9]*$" id))
@@ -1045,20 +1045,24 @@
                 string<?))
         (restore-result name #t #f restored)))))
 
-;; path-string path-string -> (listof vault-drift?), inventory vs refs
-(define (vault-status vault-root manifest-path)
+;; path-string (listof string) -> (listof vault-drift?), inventory vs
+;; refs. INVENTORY-NAMES arrive already read, not as a manifest path:
+;; the manifest is store/'s format and git/ sits BELOW store, so it may
+;; not reach up to read one (one-way law, D-044). The question this
+;; answers -- "does every name we declare have refs, and every ref a
+;; declared name?" -- is git's alone, and the caller that may see both
+;; areas supplies the names.
+(define (vault-status vault-root inventory-names)
   (ensure-vault vault-root)
-  (define entries (manifest-read manifest-path))
   (define names (vault-list vault-root))
   (define missing
-    (for/list ([e (in-list entries)]
-               #:unless (member (manifest-entry-name e) names))
+    (for/list ([n (in-list inventory-names)]
+               #:unless (member n names))
       (vault-drift 'missing-namespace
-                   (format "~a has inventory but no refs"
-                           (manifest-entry-name e)))))
+                   (format "~a has inventory but no refs" n))))
   (define unlisted
     (for/list ([n (in-list names)]
-               #:unless (manifest-get entries n))
+               #:unless (member n inventory-names))
       (vault-drift 'unlisted-namespace
                    (format "~a has refs but no inventory" n))))
   (append missing unlisted))
@@ -1602,6 +1606,9 @@
   (check-true (> (length (restore-result-refs-restored restored)) 2))
 
   ;; Status drift: inventory without refs, and refs without inventory.
+  ;; The names are read HERE, in the test, because the test may see
+  ;; store/ and vault.rkt may not: that is the inversion the signature
+  ;; now spells out.
   (define drift-vault (build-path test-root "v-drift"))
   (make-directory drift-vault)
   (vault-init (build-path drift-vault "vault.git"))
@@ -1612,8 +1619,9 @@
                                         "refs/vault/demo" 1 2 '() #f)
                         (manifest-entry "ghost" (file-url bk-dir)
                                         "refs/vault/ghost" 3 #f '() #f)))
-  (define drifts (vault-status (build-path drift-vault "vault.git")
-                               drift-manifest))
+  (define drifts
+    (vault-status (build-path drift-vault "vault.git")
+                  (map manifest-entry-name (manifest-read drift-manifest))))
   (check-equal? (length drifts) 1)
   (check-eq? (vault-drift-kind (car drifts)) 'missing-namespace)
 

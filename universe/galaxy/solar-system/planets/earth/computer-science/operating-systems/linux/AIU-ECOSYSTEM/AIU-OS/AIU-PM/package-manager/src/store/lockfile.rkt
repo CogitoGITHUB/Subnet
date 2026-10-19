@@ -1,5 +1,9 @@
 #lang racket/base
-;; lock.rkt -- lockfile read and write (atomic, sorted). No network.
+;; lockfile.rkt -- lockFILE read and write (atomic, sorted). No network.
+;; The name is the record, not the lock: cross-process exclusion is
+;; racket/file's call-with-file-lock/timeout, taken by git/vault-lock.rkt
+;; and queue/jobs.rkt. This file is the pinned-state FORMAT (D-028), so
+;; it lives beside the manifest it is read with, in store/.
 ;; Format (D-004): (lockfile (format-version 2) (pins (ENTRY ...)))
 ;; with ENTRY = (NAME VERSION COMMIT URL SLOT FLAGS SPEC-HASH INPUT-HASH
 ;;                (DEPS ...)), sorted by NAME then SLOT for diffs.
@@ -12,7 +16,7 @@
          racket/port
          openssl/sha1
          "../errors/error-type.rkt"
-         "../entry/version.rkt"
+         "../spec/version.rkt"
          "../git/git-commit.rkt"
          "../git/git-env.rkt"
          "../spec/spec.rkt"
@@ -461,7 +465,7 @@
   (require rackunit
            racket/file
            "../errors/error-type.rkt"
-           "../entry/version.rkt"
+           "../spec/version.rkt"
            "../spec/spec.rkt")
 
   ;; Guards reject with kind 'spec.

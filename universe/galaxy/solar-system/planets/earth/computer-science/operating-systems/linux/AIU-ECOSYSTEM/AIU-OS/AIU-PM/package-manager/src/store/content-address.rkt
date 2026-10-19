@@ -106,9 +106,14 @@
 ;; ---------------------------------------------------------------------------
 ;; The tree hash: per-file digests combined, sorted, one value out.
 
-;; string string string -> string, one canonical line: kind, mode, fact.
-(define (entry-line kind mode fact)
-  (string-append kind " " mode " " fact))
+;; string string string string -> string, one canonical line: the path
+;; relative to the tree root FIRST, then kind, mode, fact. The path is
+;; hashed, not merely sorted on: a tree holding the same bytes under a
+;; different name is a different tree, and a key that dropped the name
+;; would call the two the same build. PATH is written with ~s so a name
+;; holding a newline cannot run past the end of its own line.
+(define (entry-line path kind mode fact)
+  (format "~s ~s ~a ~a" path kind mode fact))
 
 ;; path -> (listof (cons string string)), relative path and its line.
 ;; A symlink is hashed AS a link (its target, no mode bits, never
@@ -125,21 +130,20 @@
        (cond
          [(link-exists? full)
           (list (cons here
-                      (entry-line "l" "-"
+                      (entry-line here "l" "-"
                                   (path->string (read-symlink full)))))]
          [(directory-exists? full)
-          (cons (cons here (entry-line "d" (mode-of full) ""))
+          (cons (cons here (entry-line here "d" (mode-of full) ""))
                 (walk full here))]
          [(file-exists? full)
           (list (cons here
-                      (entry-line "f" (mode-of full) (file-sha1hex full))))]
+                      (entry-line here "f" (mode-of full) (file-sha1hex full))))]
          [else
           (raise-pm-error 'config 'tree-hash "tree entry is unreadable"
                           #:fields `(("path" . ,(path->string full))
                                      ("tree" . ,(path->string root)))
-                          #:hint "the address cannot be computed, so the "
-                          "build must run"))])))
-  (walk root ""))
+                          #:hint "the address cannot be computed, so the build must run")])))
+  (walk root "")))
 
 ;; path-string -> string, sha1 hex over every entry's path, mode and
 ;; bytes. Sorted by path, so two machines that list one directory in

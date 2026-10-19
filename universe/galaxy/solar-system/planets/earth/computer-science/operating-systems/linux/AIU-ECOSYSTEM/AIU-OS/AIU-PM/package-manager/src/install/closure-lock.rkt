@@ -137,7 +137,7 @@
 ;; (refusal-wording.org): this one changed nothing, so the answer is to
 ;; wait for the named apply and run again, never to force the lock.
 (define (raise-closure-busy install-root id e)
-  (define holder-cell (assoc "holder" (exn-fail:pm-fields e)))
+  (define holder-cell (assoc "holder" (exn:fail:pm-fields e)))
   (raise-pm-error
    'config
    'call-with-closure-lock

@@ -2,8 +2,11 @@
 
 * What this area does
 =directories.rkt= is the ONE place that reads HOME or XDG (the other is
-=env.nu= on the Nushell side). =file-lock.rkt= is cross-process exclusion.
-=cancel.rkt= is the cancellation door.
+=env.nu= on the Nushell side). =cancel.rkt= is the cancellation door.
+Cross-process exclusion is =racket/file='s =call-with-file-lock/timeout=,
+called where the lock is taken (=git/vault-lock.rkt=, =queue/jobs.rkt=).
+The lockFILE reader once named =file-lock.rkt= here now lives in
+=store/lockfile.rkt=, beside the manifest it is read with.
 
 * What it may depend on
 =errors=, =narration=.

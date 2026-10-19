@@ -7,7 +7,7 @@
  "../errors/error-type.rkt"
  "../git/git-commit.rkt"
  "spec.rkt"
- "../entry/version.rkt")
+ "./version.rkt")
 
 (provide
  ;; The twelve actions (A-3: values first, effects at the edge)

@@ -2,18 +2,22 @@
 ;; errors.rkt -- the only module that defines exception types and formats messages.
 
 (require racket/contract/base
-         racket/string)
+         racket/string
+         racket/struct)
 
 (provide
  (struct-out exn:fail:pm)
  (contract-out
   ;; The set of error kinds (E-3).
   [pm-kind/c contract?]
-  ;; kind who message -> never returns (E-4, E-1, E-2)
+  ;; kind who message -> never returns (E-4, E-1, E-2). #:rule is the
+  ;; security-rule a refusal enforces; without it nothing is added, so a
+  ;; rule-less refusal renders byte-identically to one raised before.
   [raise-pm-error (->* (pm-kind/c symbol? string?)
                        (#:fields (listof (cons/c string? any/c))
                         #:hint (or/c string? #f)
-                        #:cause (or/c exn? #f))
+                        #:cause (or/c exn? #f)
+                        #:rule any/c)
                        any)]
   ;; exn:fail:pm -> exit code per docs/ERRORS.org (D-045)
   [pm-error-exit-code (-> exn:fail:pm? exact-nonnegative-integer?)]
@@ -63,12 +67,35 @@
       (format "~a: ~a" who message)
       (format "~a: ~a;~a" who message tail)))
 
+;; security-rule -> its id string, or the value itself when it is already
+;; one. WHY not security-rule-id: security.rkt requires THIS module, so
+;; requiring it back would close a cycle, and the policy module stays the
+;; only one that names the struct. The id is field 0 of a transparent
+;; struct and struct->vector is Racket's generic field reader, so the rule
+;; travels whole from the choke point and only its name is written down.
+(define (rule-id-of r)
+  (define fields (and (struct? r) (struct->vector r)))
+  (if (and fields (positive? (vector-length fields)))
+      (vector-ref fields 0)
+      r))
+
 ;; pm-kind symbol string -> never returns (E-4)
+;; #:rule is the named rule this refusal enforces (S2-03, D-037). It goes
+;; into the FIELDS, not the hint, because render-message already writes
+;; fields out as "  key: value" lines and print-console.rkt prints that
+;; message whole -- so the name reaches the terminal with no new printing
+;; code anywhere, and a refusal that cites no rule prints exactly as it
+;; always did (the field is not added at all).
 (define (raise-pm-error kind who message
-                        #:fields [fields '()] #:hint [hint #f] #:cause [cause #f])
-  (raise (exn:fail:pm (render-message who message fields hint cause)
+                        #:fields [fields '()] #:hint [hint #f] #:cause [cause #f]
+                        #:rule [rule #f])
+  (define all-fields
+    (if rule
+        (append fields (list (cons "rule" (rule-id-of rule))))
+        fields))
+  (raise (exn:fail:pm (render-message who message all-fields hint cause)
                        (current-continuation-marks)
-                       kind fields hint cause)))
+                       kind all-fields hint cause)))
 
 ;; exn:fail:pm -> exit code per docs/ERRORS.org (D-045). Sysexits gave
 ;; the two kinds that had invented numbers their outside names:

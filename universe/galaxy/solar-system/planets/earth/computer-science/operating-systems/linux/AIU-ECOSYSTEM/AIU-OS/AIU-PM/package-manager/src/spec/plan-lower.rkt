@@ -7,7 +7,7 @@
          "../errors/error-type.rkt"
          "../security/security.rkt"
          "spec.rkt"
-         "../entry/version.rkt"
+         "./version.rkt"
          "plan-actions.rkt"
          "plan-hash.rkt")
 
@@ -269,7 +269,7 @@
            rackunit
            "../errors/error-type.rkt"
            "spec.rkt"
-           "../entry/version.rkt"
+           "./version.rkt"
            "plan-derive.rkt")
 
   ;; Every action builds and predicates sort them.

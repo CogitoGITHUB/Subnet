@@ -23,14 +23,14 @@
         "package-manager/src/git/git-commit.rkt"
         "package-manager/src/git/git-env.rkt"
         "package-manager/src/git/vault-lock.rkt"
-        "package-manager/src/entry/version.rkt"
+        "package-manager/src/spec/version.rkt"
         "package-manager/src/spec/spec.rkt"
         "package-manager/src/spec/spec-read.rkt"
         "package-manager/src/spec/resolve.rkt"
         "package-manager/src/spec/plan.rkt"
         "package-manager/src/narration/print-console.rkt"
         "package-manager/src/narration/event-text.rkt"
-        "package-manager/src/machine/file-lock.rkt"
+        "package-manager/src/store/lockfile.rkt"
         "package-manager/src/machine/cancel.rkt"))
 
 (printf "CyberDeck REPL. Loading ~a core modules...\n" (length *core*))

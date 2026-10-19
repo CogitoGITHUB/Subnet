@@ -72,7 +72,7 @@
   ;; returned tree is the cache's own on a hit and the fresh one on a
   ;; miss; either way it is the artifact this build would have produced.
   [cache-with-build
-   (->* (path-string? string? (-> path? any) (-> path-string? string?))
+   (->* (path-string? string? (-> path? path?) (-> path-string? string?))
         ((values boolean? path?)))]))
 
 ;; ---------------------------------------------------------------------------
@@ -142,19 +142,20 @@
      (define tree (build-path entry artifact-leaf))
      (cond
        [(not rec)
-        (warn 'build (path->string entry)
-              "the cache entry has no readable record; it is not trusted")
+        (warn 'build (string-append (path->string entry)
+                                    ": no readable record; the entry is not trusted"))
         #f]
        [(not (string=? (entry-record-address rec) address))
-        (warn 'build (path->string entry)
-              (string-append
-               "the entry at this leaf records another address ("
-               (entry-record-address rec) " vs " address
-               "); it is not trusted"))
+        (warn 'build
+              (string-append (path->string entry)
+                             ": this leaf records another address ("
+                             (entry-record-address rec) " vs " address
+                             "); the entry is not trusted"))
         #f]
        [(not (directory-exists? tree))
-        (warn 'build (path->string tree)
-              "the cache entry has no stored tree; it is not trusted")
+        (warn 'build
+              (string-append (path->string tree)
+                             ": the entry has no stored tree; it is not trusted"))
         #f]
        [else
         ;; The re-hash: a cache is never a source of truth, so the bytes
@@ -168,11 +169,12 @@
                     #:inputs (list on-disk))
               tree)
             (begin
-              (warn 'build (path->string tree)
-                    (string-append
-                     "the stored tree does not hash to its record ("
-                     (entry-record-artifact-digest rec)
-                     " recorded, " on-disk " on disk); it is not trusted"))
+              (warn 'build
+                    (string-append (path->string tree)
+                                   ": the stored tree does not hash to its record ("
+                                   (entry-record-artifact-digest rec)
+                                   " recorded, " on-disk
+                                   " on disk); the entry is not trusted"))
               #f))])]))
 
 ;; ---------------------------------------------------------------------------
@@ -216,10 +218,13 @@
 ;; ---------------------------------------------------------------------------
 ;; The decision.
 
-;; cache-root string (-> path? any) (-> path-string? string?)
+;; cache-root string (-> path? path?) (-> path-string? string?)
 ;;   -> (values boolean? path)
 (define (cache-with-build cache-root address produce hash-of)
-  (define hit (cache-lookup cache-root address))
+  ;; The lookup gets HASH-OF: without it there is no re-hash to do, and
+  ;; a hit would rest on the record alone, which is the guess this file
+  ;; refuses to make (NEVER A HIT WITHOUT A MATCH).
+  (define hit (cache-lookup cache-root address hash-of))
   (if hit
       (begin
         (decide 'build "reuse"

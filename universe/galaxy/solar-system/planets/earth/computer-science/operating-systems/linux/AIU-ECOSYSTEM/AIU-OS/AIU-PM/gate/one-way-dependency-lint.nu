@@ -33,44 +33,37 @@ const MAY_USE = {
 const ANY_BELOW = [install entry]
 
 # The law above is what ARCHITECTURE.org SAYS. This is what the tree DOES,
-# measured on 2026-10-17: 34 edges cross it, in 14 area-pairs. That is a
-# real finding, not a lint bug -- spec/ and git/ require each other, and
-# ten modules reach up into entry/. Fixing them means moving modules and
-# breaking a cycle, which is a decision, recorded in plan/OPEN-DECISIONS.org.
+# remeasured on 2026-10-19 after D-044: 15 edges cross it, in 7 area-pairs.
+# Nineteen are gone. entry/version.rkt moved DOWN to spec/ (a version is a
+# declaration field), machine/file-lock.rkt moved to store/lockfile.rkt (it
+# read the lockFILE, not the lock, so store/ is where lockfiles live),
+# narration/ takes the events dir as an argument instead of reaching up to
+# machine/, git/vault.rkt takes the inventory names instead of a store/ path,
+# and store/update.rkt's require of queue/journal.rkt was never used.
+#
+# What is left is ONE cycle and three reaches. git/ and security/ each need
+# the other's shape predicates (git-id?, origin-allowed?), and under the
+# ranking in ARCHITECTURE.org the only area both may name is errors/, so
+# this cannot be moved without changing the ranking itself. queue/jobs.rkt
+# runs vault work, and store/query.rkt reads a generation. Those are finds,
+# not lint bugs.
 #
 # They are listed here so the debt is VISIBLE ON EVERY RUN and so that a
 # NEW crossing still fails the gate. Deleting a pair from this list is the
 # fix; adding one is how the debt grows, and it should hurt.
 const KNOWN_PAIRS = [
-    [git security] [git spec] [git store]
-    [machine git] [machine spec] [narration machine]
+    [git security] [git spec]
     [queue git] [queue spec] [security git]
-    [spec git] [store install] [store machine] [store queue]
+    [spec git] [store install]
 ]
-# The ceiling rule is crossed by exactly these ten modules, measured
-# 2026-10-17. Named file by file rather than waved through, so an
-# ELEVENTH module reaching into entry/ still fails the gate: a blanket
-# "the ceiling is known debt" would have been a loophole, not a ledger.
-const KNOWN_CEILING = [
-    "install/apply.rkt"
-    "machine/file-lock.rkt"
-    "spec/plan-actions.rkt"
-    "spec/plan-derive.rkt"
-    "spec/plan-hash.rkt"
-    "spec/plan-lower.rkt"
-    "spec/resolve.rkt"
-    "spec/spec-fields.rkt"
-    "spec/spec.rkt"
-    "store/query.rkt"
-]
+# The ceiling rule is PAID. On 2026-10-17 ten modules reached up into
+# entry/; naming the move rather than waving it through retired all ten,
+# so the list and the entry/ branch of known-crossing are gone. entry/ is
+# the ceiling now as a law, and the next module that reaches into it fails
+# the gate with no way to be excused.
 
-# string string string -> bool, is this crossing already counted as debt.
-# rel is the path relative to package-manager/src/, which is the form the
-# ceiling list is written in.
-def known-crossing [from: string, to: string, rel: string] {
-    if $to == 'entry' {
-        return ($KNOWN_CEILING | any {|r| $r == $rel })
-    }
+# string string -> bool, is this crossing already counted as debt.
+def known-crossing [from: string, to: string] {
     ($KNOWN_PAIRS | any {|p| ($p | get 0) == $from and ($p | get 1) == $to })
 }
 
@@ -105,7 +98,6 @@ def main [] {
     mut known = 0
     for f in $files {
         let area = ($f | path split | get 2)
-        let rel = ($f | str replace 'package-manager/src/' '')
         let ls = (open --raw $f | lines)
         # A (module+ test) block may reach anywhere it needs to assert on:
         # the one-printer-lint set that precedent, and an inline test
@@ -124,7 +116,7 @@ def main [] {
                 if $t == $area { continue }
                 let why = (violation-of $area $t)
                 if $why == '' { continue }
-                if (known-crossing $area $t $rel) {
+                if (known-crossing $area $t) {
                     $known = ($known + 1)
                     continue
                 }

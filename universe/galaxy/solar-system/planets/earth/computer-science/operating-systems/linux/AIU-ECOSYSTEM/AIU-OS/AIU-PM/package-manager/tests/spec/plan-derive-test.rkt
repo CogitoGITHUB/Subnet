@@ -13,7 +13,7 @@
             "../../src/spec/flags.rkt"
             "../../src/spec/resolve.rkt"
             "../../src/spec/spec.rkt"
-            "../../src/entry/version.rkt"
+            "../../src/spec/version.rkt"
             ;; check-string-fields is provided by plan-actions.rkt and
             ;; re-provided by plan-derive.rkt; the module under test's
             ;; copy wins, so the copied module gives it up (D-046).
@@ -26,7 +26,7 @@
   (require rackunit
            "../../src/errors/error-type.rkt"
            "../../src/spec/spec.rkt"
-           "../../src/entry/version.rkt")
+           "../../src/spec/version.rkt")
 
   ;; E-04 fixtures: pkg-alpha on pkg-beta, synthetic and local (T-10).
   (define alpha-spec

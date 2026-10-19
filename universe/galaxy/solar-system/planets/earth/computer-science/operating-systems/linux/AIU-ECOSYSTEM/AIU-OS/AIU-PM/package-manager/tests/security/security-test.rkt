@@ -5,13 +5,16 @@
 ;; area to one area. The require list below is the module's OWN
 ;; list, redirected at src/ where it used to point at a sibling
 ;; area, plus the module itself: this body could already see
-;; everything it uses, so nothing new can reach in.
+;; everything it uses, so nothing new can reach in. S-01 adds exactly
+;; one more: git-env.rkt, because a refusal is only proven by a raise
+;; from a real choke point, not by calling the predicate again.
 
 (require rackunit
    racket/contract/base
             racket/string
             "../../src/errors/error-type.rkt"
             "../../src/git/git-commit.rkt"
+            "../../src/git/git-env.rkt"
          "../../src/security/security.rkt")
 
 (module+ test
@@ -73,5 +76,35 @@
     (check-true (state-changing? c) c))
   (for ([c (in-list '("plan" "check" "lock" "why" "owner" "verify"
                       "status" "held" "outdated" "help" ""))])
-    (check-false (state-changing? c) c)))
+    (check-false (state-changing? c) c))
+
+  ;; 8. The four ways a confirmation is refused, each with its OWN name,
+  ;; and the one set of facts that lets a token be spent.
+  (check-equal? (confirmation-refusal #f #t #t #t) "needs a confirmation token")
+  (check-equal? (confirmation-refusal #t #f #t #t) "wrong confirmation token")
+  (check-equal? (confirmation-refusal #t #t #t #t)
+                "confirmation token already used")
+  (check-equal? (confirmation-refusal #t #t #t #f)
+                "confirmation token is for a different plan")
+  (check-false (confirmation-refusal #t #t #f #t))
+
+  ;; 9. rule-by-id is the one lookup from an id back to the rule: every
+  ;; rule in rule-set answers to its own id, and an id nobody wrote down
+  ;; is #f rather than a rule invented on the spot.
+  (for ([r (in-list rule-set)])
+    (check-equal? (rule-by-id (security-rule-id r)) r))
+  (check-false (rule-by-id "no-such-rule"))
+  (check-false (rule-by-id ""))
+
+  ;; 10. The end the table exists for: a refusal raised at a real choke
+  ;; point carries its rule id into the message the user reads, because
+  ;; raise-pm-error puts the id in the fields and render-message prints
+  ;; the fields (D-037). file:// outside a test root is rule-origin, and
+  ;; this asks the one entry point every URL passes through.
+  (define refused-url
+    (with-handlers ([exn:fail:pm? (lambda (e) (exn-message e))])
+      (check-git-url "file:///tmp/pm-never-fetches-this")
+      "check-git-url allowed it: the rule was not wired"))
+  (check-true (regexp-match? #rx"rejected git URL" refused-url))
+  (check-true (regexp-match? #rx"rule: origin" refused-url)))
 

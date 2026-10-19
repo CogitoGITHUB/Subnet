@@ -2,6 +2,9 @@
 
 * What this area does
 Store materialisation, manifest, lockfile, query and update.
+=lockfile.rkt= reads and writes the D-004/D-028 lockFILE record; it used
+to be =machine/file-lock.rkt=, which was cross-process exclusion's name
+for a format reader and so pulled =git= and =spec= up into =machine=.
 
 * What it may depend on
 =spec=, =git=, =errors=, =narration=.

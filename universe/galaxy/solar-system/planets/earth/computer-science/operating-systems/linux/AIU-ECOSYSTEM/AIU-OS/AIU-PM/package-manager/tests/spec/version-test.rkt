@@ -1,5 +1,5 @@
 #lang racket/base
-;; version-test.rkt -- the moved-out test submodule of src/entry/version.rkt.
+;; version-test.rkt -- the moved-out test submodule of src/spec/version.rkt.
 ;; Step 14 of TODO.org phase A: inline tests live under
 ;; package-manager/tests/, mirroring package-manager/src/ one
 ;; area to one area. The require list below is the module's OWN
@@ -11,7 +11,7 @@
    racket/contract/base
             racket/string
             "../../src/errors/error-type.rkt"
-         "../../src/entry/version.rkt")
+         "../../src/spec/version.rkt")
 
 (module+ test
   (require rackunit)

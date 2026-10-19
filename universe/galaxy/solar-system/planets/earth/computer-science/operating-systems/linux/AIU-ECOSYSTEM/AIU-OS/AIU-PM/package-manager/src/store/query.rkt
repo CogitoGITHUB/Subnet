@@ -15,9 +15,9 @@
          "manifest.rkt"
          "../git/vault.rkt"
          "../errors/error-type.rkt"
-         "../machine/file-lock.rkt"
+         "./lockfile.rkt"
          "../spec/plan.rkt"
-         "../entry/version.rkt"
+         "../spec/version.rkt"
          "../narration/narration.rkt")
 
 (provide

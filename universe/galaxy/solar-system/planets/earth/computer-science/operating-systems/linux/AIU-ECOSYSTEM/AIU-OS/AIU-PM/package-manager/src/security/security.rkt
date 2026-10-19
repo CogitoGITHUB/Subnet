@@ -47,6 +47,8 @@
   ;; raise site cites one and nothing has to call it.
  (struct-out security-rule)
  rule-set
+ ;; string -> (or/c security-rule? #f). Total, so provided plain.
+ rule-by-id
  rule-commit-pinned
  rule-source-trust
  rule-origin
@@ -260,5 +262,16 @@
         rule-credential-safe
         rule-state-changing
         rule-readable-declaration))
+
+;; string -> (or/c security-rule? #f), or #f when no rule carries that id.
+;; WHY this exists: a refusal goes out carrying the id alone ("origin"),
+;; because that is what fits in a message line and what a user greps for.
+;; The reader who has that id and wants the whole rule -- what it stands
+;; for, which predicate answers it, where it is enforced -- asks here, so
+;; id -> rule is one lookup in one place instead of a switch each reader
+;; writes. Pure: the answer comes from rule-set, never from a module that
+;; might have loaded a different policy.
+(define (rule-by-id id)
+  (findf (lambda (r) (string=? (security-rule-id r) id)) rule-set))
 
 ;; ---------------------------------------------------------------------------

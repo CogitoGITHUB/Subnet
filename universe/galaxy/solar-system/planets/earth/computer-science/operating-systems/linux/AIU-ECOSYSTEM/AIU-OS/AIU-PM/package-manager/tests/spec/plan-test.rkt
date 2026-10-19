@@ -18,7 +18,7 @@
 (module+ test
   (require rackunit
            "../../src/spec/spec.rkt"
-           "../../src/entry/version.rkt")
+           "../../src/spec/version.rkt")
 
   ;; E-04 fixture: pkg-alpha on pkg-beta, synthetic and local (T-10).
   (define alpha-spec

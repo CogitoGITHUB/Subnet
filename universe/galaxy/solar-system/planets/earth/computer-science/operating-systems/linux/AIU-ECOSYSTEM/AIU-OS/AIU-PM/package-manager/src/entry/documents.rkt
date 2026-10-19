@@ -16,7 +16,7 @@
          "../spec/spec.rkt"
          "../spec/spec-read.rkt"
          "../spec/plan.rkt"
-         "../machine/file-lock.rkt"
+         "../store/lockfile.rkt"
          "../store/query.rkt"
          "../store/update.rkt"
          "../store/manifest.rkt"
@@ -25,7 +25,7 @@
          "../machine/directories.rkt"
          "../narration/narration.rkt"
          "../narration/print-console.rkt"
-         "./version.rkt")
+         "../spec/version.rkt")
 
 (provide display-help
          require-dir

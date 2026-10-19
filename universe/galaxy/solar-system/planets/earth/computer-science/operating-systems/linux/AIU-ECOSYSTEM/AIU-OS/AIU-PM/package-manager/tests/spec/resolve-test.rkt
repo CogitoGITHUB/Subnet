@@ -11,14 +11,14 @@
    racket/contract/base
             racket/string
             "../../src/errors/error-type.rkt"
-            "../../src/entry/version.rkt"
+            "../../src/spec/version.rkt"
             "../../src/spec/spec.rkt"
          "../../src/spec/resolve.rkt")
 
 (module+ test
   (require rackunit
            "../../src/errors/error-type.rkt"
-           "../../src/entry/version.rkt"
+           "../../src/spec/version.rkt"
            "../../src/spec/spec.rkt")
 
   ;; spec symbol string (listof (list symbol string)) -> spec

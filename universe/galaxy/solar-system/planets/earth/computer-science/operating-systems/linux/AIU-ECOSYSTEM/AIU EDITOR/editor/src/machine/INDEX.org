@@ -1,0 +1,16 @@
+#+TITLE: INDEX — AIU EDITOR/editor/src/machine/
+# One job: list every file in this directory and the single job of each.
+# Status: current; updated in the same commit as any change in this directory.
+
+* Files
+# one line per file: its name, then the single job it performs. This index is updated in the same commit as any change here.
+
+  - directories.rkt — the one place HOME and XDG are read
+  - locks.rkt — one-writer locks: wait and retry, never force
+  - cancel.rkt — the cancellation door every blocking call passes
+
+* Later
+# machine holds the effects that touch the world: the environment, the
+# filesystem and the door a caller uses to stop a wait. It is above the
+# narration area, so it may not print; it says what it did and lets the
+# narration area speak.

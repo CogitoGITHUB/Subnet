@@ -18,7 +18,7 @@
 (require "../errors/error-type.rkt"
          "../git/git-env.rkt"
          "../security/security.rkt"
-         "../entry/version.rkt"
+         "./version.rkt"
          "spec.rkt"
          "spec-typos.rkt")
 

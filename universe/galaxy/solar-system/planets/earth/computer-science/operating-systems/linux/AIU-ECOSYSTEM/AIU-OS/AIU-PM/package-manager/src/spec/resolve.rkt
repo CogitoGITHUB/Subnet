@@ -6,7 +6,7 @@
 (require racket/contract/base
          racket/string
          "../errors/error-type.rkt"
-         "../entry/version.rkt"
+         "./version.rkt"
          "spec.rkt")
 
 (provide

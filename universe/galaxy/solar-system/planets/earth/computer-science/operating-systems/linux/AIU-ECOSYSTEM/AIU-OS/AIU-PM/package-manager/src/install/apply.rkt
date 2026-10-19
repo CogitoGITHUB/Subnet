@@ -39,14 +39,14 @@
          "../store/query.rkt"
          "../git/vault.rkt"
          "../errors/error-type.rkt"
-         "../machine/file-lock.rkt"
+         "../store/lockfile.rkt"
          "../spec/plan.rkt"
          "../machine/directories.rkt"
          "../spec/spec.rkt"
          "../spec/spec-read.rkt"
          "./closure-lock.rkt"
          "../narration/narration.rkt"
-         "../entry/version.rkt")
+         "../spec/version.rkt")
 
 (provide
  (contract-out

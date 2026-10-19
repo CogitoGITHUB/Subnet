@@ -27,6 +27,7 @@
          json
          "./cli.rkt"
          "../errors/error-type.rkt"
+         "../machine/events-dir.rkt"
          "../narration/narration.rkt"
          "../security/security.rkt")
 
@@ -154,7 +155,7 @@
 
 ;; string-stringlist -> string, the plan digest a token is bound to: sha1
 ;; over the tool name and its arguments, using openssl/sha1 exactly as
-;; machine/file-lock.rkt already does, so the tree keeps ONE hashing idiom.
+;; store/lockfile.rkt already does, so the tree keeps ONE hashing idiom.
 ;; This is an IDENTIFIER, not a MAC and not a signature: the safety rests
 ;; on the token being a secret and on it being single-use. It exists so a
 ;; token approved for one call cannot be presented for a different one.
@@ -304,9 +305,17 @@
             ;; caller can tell "nothing sent" from "wrong secret" from
             ;; "already spent" from "wrong plan" -- and "already spent"
             ;; never tells it to pass the token again.
+            ;;
+            ;; S-01: the rule is named HERE and not in refusal-text, because
+            ;; refusal-text is the JSON-RPC payload a client parses and its
+            ;; wording is asserted by the suite; this line is the one a human
+            ;; reads, and a human is the reader who needs to know WHICH
+            ;; promise was broken before deciding what to do next.
             (wait-for (string->symbol name) "confirmation token"
-                      (string-append name " changes state and was refused: "
-                                     refusal)
+                      (string-append
+                       (format "[~a] " (security-rule-id rule-state-changing))
+                       name " changes state and was refused: "
+                       refusal)
                       #:how "the token initialize handed out"
                       (lambda ()
                         (rpc-error
@@ -329,7 +338,7 @@
 (define current-feed-dir (make-parameter #f))
 
 (define (feed-dir)
-  (or (current-feed-dir) (default-events-dir)))
+  (or (current-feed-dir) (events-dir 'user)))
 
 ;; path-string -> boolean
 (define (feed-exists? run-id)

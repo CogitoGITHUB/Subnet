@@ -19,14 +19,14 @@
             "../../src/store/query.rkt"
             "../../src/git/vault.rkt"
             "../../src/errors/error-type.rkt"
-            "../../src/machine/file-lock.rkt"
+            "../../src/store/lockfile.rkt"
             "../../src/spec/plan.rkt"
             "../../src/machine/directories.rkt"
             "../../src/spec/spec.rkt"
             "../../src/spec/spec-read.rkt"
             "../../src/install/closure-lock.rkt"
             "../../src/narration/narration.rkt"
-            "../../src/entry/version.rkt"
+            "../../src/spec/version.rkt"
          "../../src/install/apply.rkt")
 
 (module+ test

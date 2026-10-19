@@ -13,13 +13,14 @@
          racket/string
          json
          "../machine/cancel.rkt"
+         "../machine/events-dir.rkt"
          "../errors/error-type.rkt"
          "../spec/spec.rkt"
          "../spec/spec-read.rkt"
          "../narration/print-console.rkt"
          "../narration/narration.rkt"
-         "./version.rkt"
-         "../machine/file-lock.rkt"
+         "../spec/version.rkt"
+         "../store/lockfile.rkt"
          "../spec/plan.rkt"
          "../store/query.rkt"
          "../store/update.rkt"
@@ -643,8 +644,10 @@
   (define-values (cancel-evt trigger-cancel!) (make-cancel-source))
   ;; D-036: every pm invocation is a run. Opening it here is what makes
   ;; the feed real for every command at once: without this, nothing
-  ;; downstream has a file to write to and nothing can be silent.
-  (void (begin-run! #:who 'pm))
+  ;; downstream has a file to write to and nothing can be silent. The
+  ;; directory is named here, at the one caller that may see machine/,
+  ;; because narration/ sits below machine/ and may not resolve it.
+  (void (begin-run! #:who 'pm #:events-dir (events-dir 'user)))
   (define code
     (with-handlers ([exn:break? (lambda (_) (trigger-cancel!) 130)]
                     [exn:fail:pm?

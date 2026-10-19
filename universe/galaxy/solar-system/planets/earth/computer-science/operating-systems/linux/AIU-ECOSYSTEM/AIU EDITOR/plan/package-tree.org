@@ -48,6 +48,7 @@ AIU EDITOR/              the project: context and docs stay where they are
     security-gate-lint.nu       predicates called, writers audited
     banned-words-lint.nu        the naming law, made mechanical
     language-split-lint.nu      only join/ may cross Rust and Racket
+    comment-lint.nu             every file has a header, every definition a comment
   tools/                 dev scripts; empty until the first needs a home
   agent/                 the kit's agent side (ships with the package, rule 2)
     INDEX.org

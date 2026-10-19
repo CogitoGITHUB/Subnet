@@ -18,11 +18,10 @@
          racket/list
          "../install/activate.rkt"
          "../install/apply.rkt"
-         "../queue/journal.rkt"
          "manifest.rkt"
          "../git/vault.rkt"
          "../errors/error-type.rkt"
-         "../machine/file-lock.rkt"
+         "./lockfile.rkt"
          "../spec/plan.rkt"
          "../narration/narration.rkt")
 

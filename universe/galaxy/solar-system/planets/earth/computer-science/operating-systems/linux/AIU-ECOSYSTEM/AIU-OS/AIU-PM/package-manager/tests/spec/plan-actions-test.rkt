@@ -11,7 +11,7 @@
    "../../src/errors/error-type.rkt"
     "../../src/git/git-commit.rkt"
     "../../src/spec/spec.rkt"
-    "../../src/entry/version.rkt"
+    "../../src/spec/version.rkt"
          "../../src/spec/plan-actions.rkt")
 
 (module+ test

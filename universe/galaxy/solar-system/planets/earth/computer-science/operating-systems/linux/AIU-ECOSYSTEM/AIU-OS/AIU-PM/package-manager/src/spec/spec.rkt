@@ -5,7 +5,7 @@
 
 (require racket/contract/base
          "../errors/error-type.rkt"
-         "../entry/version.rkt"
+         "./version.rkt"
          "../git/git-commit.rkt")
 
 (provide
