@@ -15,6 +15,34 @@
 # item says otherwise. The gate runs with
 # =~/opt/nushell/0.116.1/nu --no-config-file gate/check.nu=.
 
+* PAUSED 2026-10-19 -- NOTATION took the session. PM resumes here.
+Uncommitted, path-scoped, in this order; each commit removes its own
+=TODO.org= item:
+- S2-04 the new =wait-door-lint= stage in =gate/check.nu= (D-060).
+- =pm doctor=: =src/entry/doctor-report.rkt= + new
+  =tests/entry/doctor-test.rkt=.
+- binary cache: =src/store/content-address.rkt=,
+  =src/build/build-cache.rkt=, =tests/store/content-address-test.rkt=,
+  =tests/build/build-cache-test.rkt=.
+- S-01: =security.rkt rule-by-id=, =errors/error-type.rkt#:rule=, five
+  choke points cite their rule, =tests/security/security-test.rkt= +81-109.
+- one-way law (D-044): 34 -> 15 crossings; =entry/version.rkt= moved to
+  =spec/version.rkt=, =machine/file-lock.rkt= moved to
+  =store/lockfile.rkt=, new =machine/events-dir.rkt= (=begin-run!= now
+  REQUIRES =#:events-dir=), =vault-status= takes inventory names.
+Evidence at the pause: =raco make= over the tree green at 08:45
+(=/tmp/opencode/make-all.log=, make_rc=0); one full gate was still in
+flight (=/tmp/opencode/gate-full-2.log=). That run was killed by the owner on
+2026-10-19 when NOTATION took the session, so NO PM test has run since
+=raco make= at 08:45; treat that compile as the freshest evidence and run
+the gate first on resume. OPEN DEFECT: =apply-test.rkt=
+aborts with no TEST-END (=/tmp/opencode/batch2.log=), undiagnosed; every
+other file in that batch was green (security-test 56/56, cli-test 110/110,
+closure-lock-test 28/28). Run the full gate FIRST on resume: it is the
+verdict. Then: real titles for =a3106ae6 update= in PROGRESS.org (it
+swallowed S2-03, P-02 and G-02/G-07), and the S-04 proof script
+=/tmp/opencode/s04-proof.sh= (backup =/tmp/opencode/git-env-rkt.s04.bak=).
+
 * PHASE A -- foundation and gates
 
 ** S2-04 no un-narrated blocking primitive
