@@ -16,7 +16,7 @@
 //!     heading start            -> 1.2
 //!     heading start            -> 2
 //!
-//! The Racket model has the same rule in model/numbering.rkt, so a page
+//! The Racket model has the same rule in its own numbering file, so a page
 //! numbered by the binary and a document numbered by the model agree.
 
 use crate::parser::{heading_level, Block, Node, Tree};

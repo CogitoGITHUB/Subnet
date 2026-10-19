@@ -17,8 +17,8 @@
 ;;     heading start   -> 1.2
 ;;     heading start   -> 2
 ;;
-;; The Rust crate has the same rule in model/numbering.rs, so a page numbered
-;; by the binary and a document numbered by the model agree.
+;; The Rust crate has the same rule in its own numbering file, so a page
+;; numbered by the binary and a document numbered by the model agree.
 ;;
 ;; Who calls it: the reader that draws an outline, and the editor that asks
 ;; for the number of the heading under the cursor.

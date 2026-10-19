@@ -161,6 +161,11 @@
     it), and every top-level definition has a comment line directly above it;
     every violation is listed as file:line. Registered 2026-10-19.
   - =comment-lint/= — the stage name as it appears in the gate table.
+  - =security-probe= — the file the security gate calls: every security rule
+    is probed on a value that must be refused and on a value that must pass,
+    and the answers are checked; the probe also names, for each rule, the
+    files that call it, so a rule nobody calls is named and not hidden.
+    Registered 2026-10-19.
   - =syntax/feature-status.org= — one row per audited feature: id, area,
     command, status and the evidence line that proves it. Registered
     2026-10-19; the PROGRESS line at its top says which step finished last.
@@ -213,6 +218,7 @@ AIU NOTATION/            the project: context and docs stay where they are
     read-check.rkt       the paren check: READ-BAD file:line, the bad form named
     one-way-dependency-lint.nu  the area table above, enforced
     security-gate-lint.nu       predicates called, writers audited
+    security-probe.rkt    the probe the security gate runs: one call per rule
     banned-words-lint.nu        the naming law, made mechanical
     language-split-lint.nu      only join/ may cross Rust and Racket
     load-check.nu        the load check: dynamic-require on every .rkt module
