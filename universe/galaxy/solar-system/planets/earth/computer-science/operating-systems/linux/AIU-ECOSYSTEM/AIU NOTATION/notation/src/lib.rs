@@ -36,3 +36,6 @@ pub mod strip;
 
 #[path = "rendering/plain.rs"]
 pub mod plain;
+
+#[path = "rendering/rich.rs"]
+pub mod rich;

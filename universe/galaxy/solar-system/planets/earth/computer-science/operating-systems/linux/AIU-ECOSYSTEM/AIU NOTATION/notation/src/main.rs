@@ -1,4 +1,4 @@
-//! One job: the three commands — parse, render, roundtrip — one file path each.
+//! One job: the four commands — parse, render, render-rich, roundtrip — one file path each.
 //! Registered in plan/package-tree.org (src/main.rs), provisional 2026-07-17
 //! alongside the binary target in Cargo.toml.
 //!
@@ -11,10 +11,15 @@ use std::time::Instant;
 use notation::buffer::Buffer;
 use notation::parser::parse;
 use notation::plain::render_plain;
+use notation::rich::render_rich;
 use notation::rust_exports::parse_document;
 
+/// The columns the rich render draws into when the caller names none. The
+/// binary cannot ask the terminal, so it picks a phone's width and says so.
+const RICH_DEFAULT_WIDTH: usize = 40;
+
 fn usage() {
-    eprintln!("usage: notation <parse|render|roundtrip> <file>");
+    eprintln!("usage: notation <parse|render|render-rich|roundtrip> <file>");
 }
 
 fn main() {
@@ -47,6 +52,10 @@ fn main() {
         // Print the plain render: the marks are gone, the content is not.
         "render" => {
             print!("{}", render_plain(&text));
+        }
+        // Print the rich render: the same content, drawn with unicode.
+        "render-rich" => {
+            print!("{}", render_rich(&text, RICH_DEFAULT_WIDTH));
         }
         // Say whether the tree prints back to the identical bytes.
         "roundtrip" => {
