@@ -33,6 +33,8 @@ pub struct Edit {
     pub text: Vec<u8>,
 }
 
+// Edit holds the methods every edit shares, so a caller can ask an edit
+// what it changes.
 impl Edit {
     /// The same edit with its range pulled inside `0..=len`. An editor may hand
     /// over a range that belonged to an older text; nothing here panics on one.
@@ -63,6 +65,8 @@ pub struct ReparseReport {
     pub bytes_added: isize,
 }
 
+// ReparseReport holds the methods every report shares, so a caller can
+// ask what was rebuilt and what was kept.
 impl ReparseReport {
     /// True when element `element` must be drawn again. False means its bytes
     /// did not change, so the renderer may leave it on the screen.
@@ -182,6 +186,8 @@ enum Side {
     CutAcross,
 }
 
+// side_of says which side of an edit a node sits on, so the reparse
+// knows what to keep and what to read again.
 fn side_of(node: &Node, from: usize, to: usize) -> Side {
     let span = node.span();
     if span.start >= from && span.end <= to {
@@ -246,6 +252,8 @@ fn line_delta(buffer: &Buffer, edit: &Edit) -> isize {
     added as isize - removed as isize
 }
 
+// count_line_breaks counts the newlines in a piece of text, so a line
+// number can be moved by the length of an edit.
 fn count_line_breaks(bytes: &[u8]) -> usize {
     bytes.iter().filter(|b| **b == b'\n').count()
 }
@@ -272,10 +280,13 @@ fn move_node(node: &mut Node, delta: isize, lines: isize) {
     }
 }
 
+// moved_span moves a span by a change in length, so the bytes a node
+// claims still point at the same text.
 fn moved_span(span: Span, delta: isize) -> Span {
     Span { start: shifted_offset(span.start, delta), end: shifted_offset(span.end, delta) }
 }
 
+// shifted_offset moves a byte offset by a change in length.
 fn shifted_offset(offset: usize, delta: isize) -> usize {
     if delta >= 0 {
         offset.saturating_add(delta as usize)
@@ -284,6 +295,7 @@ fn shifted_offset(offset: usize, delta: isize) -> usize {
     }
 }
 
+// moved_line moves a line number by a change in the number of lines.
 fn moved_line(line: usize, delta: isize) -> usize {
     shifted_offset(line, delta).max(1)
 }

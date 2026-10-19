@@ -7,6 +7,10 @@
 ;; by-hand run, 2026-10-17), so the record carries no writer of its own.
 ;; Printing is render.rkt's one job, and that is where the shape lives.
 
+;; A notation error carries the area that hit the problem and the
+;; place in the file, so a diagnosis can name both.
+;; The package's one error type: who hit the problem, where, and what went
+;; wrong, so every area raises the same shape.
 (struct exn:notation exn:fail (who where)
   #:transparent)
 
@@ -24,9 +28,13 @@
   (exn:notation (format "~a" what) (current-continuation-marks) who where))
 
 ;; err-who / err-where / err-what read the three fields without touching the
+;; err-where gives the file and line an error came from.
 ;; message string; every reader in the package goes through these.
+;; err-what gives the one sentence an error says.
 (define (err-who e)   (exn:notation-who e))
+;; err-where reads the place in words: the file and line, or the command.
 (define (err-where e) (exn:notation-where e))
+;; err-what reads the message alone — one sentence, never a dump.
 (define (err-what e)  (exn-message e))
 
 (provide make-err err-who err-where err-what (struct-out exn:notation))

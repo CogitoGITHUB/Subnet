@@ -72,6 +72,8 @@ pub fn block_left_open(tree: &Tree) -> Option<usize> {
     tree.nodes.iter().find_map(node_left_open)
 }
 
+// node_left_open gives the node that was opened and never closed, so the
+// recovery can point at the block that was left open.
 fn node_left_open(node: &Node) -> Option<usize> {
     match node {
         Node::Error(e) if e.kind == ErrorKind::UnclosedBlock => Some(e.span.start),
@@ -109,6 +111,8 @@ pub fn title_error(nodes: &[&Node]) -> Option<ErrorNode> {
     })
 }
 
+// is_the_file_title_rule says whether a node is the title of the file,
+// which is the one block a page must open with.
 fn is_the_file_title_rule(node: &Node) -> bool {
     matches!(node, Node::Error(e) if e.kind == ErrorKind::MissingTitle)
 }

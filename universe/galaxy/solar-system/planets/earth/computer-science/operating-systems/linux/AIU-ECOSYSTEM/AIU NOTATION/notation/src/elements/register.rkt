@@ -12,6 +12,10 @@
 (provide register known-name? element-for element-names require-known (struct-out element))
 
 
+;; An element is one registered block: its name, what kind of thing it
+;; is, and whether its body is opaque.
+;; One row of the one table: the name a block may carry, what that name means,
+;; and whether the parser must leave the block's body unread.
 (struct element (name kind opaque?) #:transparent)
 
 ;; The one table. Nothing else in the package may decide what a name means.

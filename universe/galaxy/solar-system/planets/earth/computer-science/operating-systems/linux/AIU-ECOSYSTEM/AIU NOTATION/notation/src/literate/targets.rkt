@@ -138,6 +138,7 @@
 ;; page: the exact design is still the owner's. scan.rkt reports every target
 ;; of this kind as a finding, and a run that meets one loads the chunk in
 ;; place and writes nothing for it, saying so.
-
 (define (whole-file-target? t)
+;; whole-file-target? says whether a target names one whole file,
+;; because this build writes whole files and not pieces.
   (eq? (target-place t) 'file))

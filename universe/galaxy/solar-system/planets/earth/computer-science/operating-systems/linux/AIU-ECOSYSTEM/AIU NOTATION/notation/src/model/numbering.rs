@@ -45,6 +45,8 @@ pub struct HeadingNumbers {
     entries: Vec<NumberedHeading>,
 }
 
+// HeadingNumbers holds the numbers of the headings in a tree, so a caller
+// can ask for the number of a heading by its line.
 impl HeadingNumbers {
     /// The numbers of every heading in the tree.
     pub fn of(tree: &Tree) -> HeadingNumbers {

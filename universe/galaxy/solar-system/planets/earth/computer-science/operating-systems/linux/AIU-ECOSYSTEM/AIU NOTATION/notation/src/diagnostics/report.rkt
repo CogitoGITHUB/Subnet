@@ -51,6 +51,10 @@
 (define (report-count report)
   (cdr (assq 'count report)))
 
+;; report-exit-code gives the code a command hands back: zero when the
+;; report holds no finding, one when it holds one.
+;; The status the CLI leaves behind for a report: 0 when there was nothing to
+;; report, 1 when there was; a refusal is 2 and never has a report.
 (define (report-exit-code report)
   (cdr (assq 'exit-code report)))
 

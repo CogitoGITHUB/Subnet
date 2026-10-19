@@ -60,6 +60,8 @@ pub enum ErrorKind {
     BadHeadingLevel,
 }
 
+// ErrorKind holds the methods every error kind shares, so a caller does
+// not match on the kind to learn its name.
 impl ErrorKind {
     /// The name as it is written in a diagnosis and in the tree.
     pub fn name(self) -> &'static str {
@@ -81,6 +83,8 @@ pub struct Span {
     pub end: usize,
 }
 
+// Span holds the methods every span shares, so a caller can ask a span
+// for its shape without knowing how it is built.
 impl Span {
     /// An empty span: it names a place without claiming any bytes.
     pub fn empty(at: usize) -> Span {
@@ -107,6 +111,8 @@ pub struct Block {
     pub children: Vec<Node>,
 }
 
+// Block holds the methods every block shares, so a caller can ask a
+// block whether its body is opaque.
 impl Block {
     /// The code block's body is opaque: nothing inside it is read as notation,
     /// and only an exact matching `code end` line closes it (rule D).
@@ -134,6 +140,8 @@ pub enum Node {
     Error(ErrorNode),
 }
 
+// Node holds the methods every node shares, so a caller can ask a node
+// for the span of the bytes it came from.
 impl Node {
     pub fn span(&self) -> Span {
         match self {
@@ -150,6 +158,8 @@ pub struct Tree {
     pub len: usize,
 }
 
+// Tree holds the methods every tree shares, so a caller can ask a tree
+// whether it prints back to the same bytes.
 impl Tree {
     /// Print the file back: the node spans in order, and the bytes between
     /// them, give the input byte for byte.
@@ -185,6 +195,8 @@ impl Tree {
     }
 }
 
+// collect_errors gathers the error nodes of a tree in the order they sit
+// in it, so the report can list them.
 fn collect_errors<'a>(node: &'a Node, out: &mut Vec<&'a ErrorNode>) {
     match node {
         Node::Error(e) => out.push(e),
@@ -243,6 +255,8 @@ fn shape_of(text: &str) -> LineShape {
     LineShape::Content
 }
 
+// is_block_name says whether a name is one of the registered block
+// names, so a block line with an unknown name can be refused.
 fn is_block_name(name: &str) -> bool {
     BLOCK_NAMES.contains(&name)
 }
@@ -447,6 +461,8 @@ fn attach(open: &mut Vec<Block>, top: &mut Vec<Node>, node: Node) {
     }
 }
 
+// close_block closes the innermost open block when the name matches,
+// and reports the mismatch when it does not.
 fn close_block(open: &mut Vec<Block>, top: &mut Vec<Node>, name: &str, span: Span, line: usize) {
     match open.last() {
         None => push_error(
@@ -488,6 +504,7 @@ fn close_block(open: &mut Vec<Block>, top: &mut Vec<Node>, name: &str, span: Spa
     }
 }
 
+// stray builds the error for a line that sits outside every block.
 fn stray(span: Span, line: usize) -> ErrorNode {
     ErrorNode {
         kind: ErrorKind::StrayText,
@@ -499,6 +516,8 @@ fn stray(span: Span, line: usize) -> ErrorNode {
     }
 }
 
+// unknown_name builds the error for a block line whose name is not
+// registered.
 fn unknown_name(span: Span, line: usize, name: &str) -> ErrorNode {
     ErrorNode {
         kind: ErrorKind::UnknownBlockName,

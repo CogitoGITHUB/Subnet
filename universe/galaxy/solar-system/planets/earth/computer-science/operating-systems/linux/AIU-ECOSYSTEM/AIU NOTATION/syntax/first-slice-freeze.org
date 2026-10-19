@@ -67,6 +67,13 @@
 * G. Check policy
 # the owner's default, revisable: what may run while building this.
   - One cargo check, one Racket read-check and one load-check per finished area.
+  - The comment lint is a stage of the gate, and the rule it keeps is this:
+    every .rkt, .rs and .nu file under notation/ and gate/ opens with a header
+    comment that says what the file is, why it exists and who calls it, and
+    every top-level definition has a comment line directly above it. A blank
+    line between the comment and the definition breaks the pair, and a Rust
+    attribute belongs to the definition it sits on, so the comment is written
+    above the attribute.
   - One by-hand program run per item is allowed: exactly the run that item's
     done-when names. For items 2 and 3 that is a real page with its output
     captured, and TODO.org carries the wording.

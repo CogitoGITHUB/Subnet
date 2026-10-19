@@ -126,6 +126,10 @@
 (define (plan-sends steps)
   (count (lambda (a) (eq? a 'send)) (map plan-step-action steps)))
 
+;; plan-loads gives the steps of a plan that load code, so a caller can
+;; see what the plan will read before it reads it.
+;; plan-loads counts the other half of the steps: the chunks that load in place
+;; and are written nowhere.
 (define (plan-loads steps)
   (count (lambda (a) (eq? a 'load)) (map plan-step-action steps)))
 

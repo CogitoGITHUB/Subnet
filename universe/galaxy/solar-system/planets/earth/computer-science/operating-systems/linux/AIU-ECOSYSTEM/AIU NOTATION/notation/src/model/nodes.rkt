@@ -43,8 +43,12 @@
 ;; The value is the text itself, with the quotes taken off, so a value that
 ;; holds a quote is the value and not a quotation of the value.
 (define (declaration-keyword d) (list-ref d 0))
+;; declaration-value gives the value of a declaration, with the quotes
+;; off.
 (define (declaration-value d) (list-ref d 1))
+;; declaration-line gives the line a declaration sits on.
 (define (declaration-line d) (list-ref d 2))
+;; declaration-offset gives the byte offset a declaration starts at.
 (define (declaration-offset d) (list-ref d 3))
 
 ;; node-line gives every node its line, so a caller never asks a node what kind

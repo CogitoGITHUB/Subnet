@@ -25,5 +25,9 @@
 (define (cli-main argv)
   (exit (run (cli-args argv))))
 
+;; The main part: it reads the command line and hands the command and
+;; its file to the dispatcher.
+;; The program entry point: running this file as a script turns the process
+;; arguments into the command call and exits with whatever it answers.
 (module+ main
   (cli-main (vector->list (current-command-line-arguments))))

@@ -22,6 +22,7 @@ const STAGES = [
     {name: "security-gate", script: "security-gate-lint.nu", kind: "nu"}
     {name: "language-split", script: "language-split-lint.nu", kind: "nu"}
     {name: "load-check", script: "load-check.nu", kind: "nu"}
+    {name: "comment-lint", script: "comment-lint.nu", kind: "nu"}
 ]
 
 # run-one stage returns what happened, and never raises: a stage that fails is

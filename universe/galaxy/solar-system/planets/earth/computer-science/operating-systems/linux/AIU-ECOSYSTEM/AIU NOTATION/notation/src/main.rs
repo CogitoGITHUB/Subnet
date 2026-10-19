@@ -18,10 +18,16 @@ use notation::rust_exports::parse_document;
 /// binary cannot ask the terminal, so it picks a phone's width and says so.
 const RICH_DEFAULT_WIDTH: usize = 40;
 
+// usage prints how the binary is called, so a wrong call says what the
+// right one is.
+/// Say how to call the binary: the four commands and the one file path they take.
 fn usage() {
     eprintln!("usage: notation <parse|render|render-rich|roundtrip> <file>");
 }
+// main reads the command and the file, and hands the work to the one
+// command that knows it.
 
+/// Read the file, run the one command named, and exit with the code it earns.
 fn main() {
     let args: Vec<String> = std::env::args().collect();
     if args.len() < 3 {

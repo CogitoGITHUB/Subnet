@@ -182,9 +182,17 @@
     (define lines (entry-lines entry))
     (if (null? lines) #f (car lines))))
 
+;; entry-lines gives the lines of a journal entry, so a reader can show
+;; what was recorded.
+;; entry-lines splits one store entry into its lines without trimming, so the
+;; first line is the whole target path.
 (define (entry-lines entry)
+;; say-entry-unreadable says that a journal entry cannot be read, in
+;; words a person can act on.
   (string-split (file->string entry #:mode 'binary) "\n" #:trim? #f #:repeat? #f))
 
+;; say-entry-unreadable tells the reader the store entry is not trusted, and
+;; says why the chunk is sent again instead of skipped.
 (define (say-entry-unreadable entry)
   (say-warn (format "the store entry ~a" (file-name-from-path entry))
             "it does not hold a hash this file wrote; the chunk is sent again rather than trusted"))

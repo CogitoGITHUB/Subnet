@@ -56,7 +56,15 @@
 ;; The three exit codes, named once. A command hands one of these back to run,
 ;; run hands it to cli.rkt, and cli.rkt makes it the process exit code.
 (define exit-clean 0)
+;; exit-clean is the code a command hands back when it found nothing
+;; wrong.
+;; exit-findings is the answer when the command ran and found something to
+;; exit-findings is the code a command hands back when the report
+;; holds a finding.
+;; report: the document holds at least one error.
 (define exit-findings 1)
+;; exit-refused is the answer when the command did not run at all: bad
+;; arguments, or a file it was told to read and could not.
 (define exit-refused 2)
 
 

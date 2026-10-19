@@ -66,6 +66,8 @@
 (define answers-node-fields
   '(address kind name start-line start-offset end-offset children))
 
+;; answers-error-fields names the fields an error answer carries, so a
+;; reader knows the shape of the answer it is given.
 (define answers-error-fields
   '(address kind line what what-to-do))
 

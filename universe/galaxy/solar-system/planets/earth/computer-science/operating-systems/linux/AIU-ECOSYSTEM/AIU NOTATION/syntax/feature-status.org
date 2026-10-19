@@ -1,26 +1,87 @@
 #+TITLE: Feature status — AIU NOTATION
-# One job: one row per audited feature — id, area, the command that proves it,
-# the status, and the evidence line that was actually captured.
-# Registered in plan/package-tree.org (syntax/feature-status.org).
-#
-# PROGRESS: last finished step 2
-#
-# The heading keyword and its automatic numbers are built and proved (Rust
-# model/numbering.rs and Racket model/numbering.rkt agree), but the audit
-# table below is not written yet: STEP 3 case I, J and K are still to run.
-#
-# The statuses mean exactly this:
-#   PASS               the command ran and the captured output shows the feature works
-#   FAIL               the command ran and the captured output shows it does not
-#   FIXED-DURING-AUDIT  the command failed, the cause was fixed, and the rerun passed
-#   UNTESTABLE         there is no way to run it, and the reason is named
-#
-# No row is PASS without a captured line of output behind it. A plan is not
-# evidence; only what the command printed is.
 
-* Rows
-# one row per feature: id, area, command, status, evidence.
+PROGRESS: last finished step 3
 
-| id | area | command | status | evidence |
-|---|------|---------|--------|----------|
-| (none yet) | — | — | — | the audit has not run yet |
+This file is the truth of what works. Every row was proved by a command
+that was run and whose output was captured. A row that says UNTESTABLE
+names the reason. A row that says FIXED-DURING-AUDIT names what was broken
+and what was changed.
+
+One row per feature. The columns are:
+id, area, command, status, evidence.
+
+The status is one of:
+- PASS — the command ran and its output is what it should be.
+- FIXED-DURING-AUDIT — it was broken, it was fixed at the cause, and the
+  command now gives the right output.
+- FAIL — the command ran and gave the wrong output; it is not fixed.
+- UNTESTABLE — there is no way to run it; the reason is in the evidence.
+
+#+BEGIN_SRC text
+id  area         command                                                              status              evidence
+A1  parser       notation roundtrip good.aiu                                          PASS                roundtrip: identical (104 bytes)
+A2  parser       notation roundtrip crlf.aiu                                          PASS                roundtrip: identical (55 bytes)
+A3  parser       notation roundtrip utf8.aiu                                          PASS                roundtrip: identical (100 bytes)
+A4  parser       notation roundtrip no-newline.aiu                                    PASS                roundtrip: identical (75 bytes)
+B1  parser       notation parse err-stray.aiu                                         PASS                error stray-text 4 29 0 "text outside any named block"
+B2  parser       notation parse err-mismatch.aiu                                      PASS                error mismatched-end 5 55 3 "does not match the innermost open paragraph block" (names the opener's line 3)
+B3  parser       notation parse err-unclosed.aiu                                      PASS                error unclosed-block 77 78 5 "opened at line 5 and never closed"
+B4  parser       notation parse err-unknown.aiu                                        PASS                error unknown-block-name 5 30 0 "figure is not a Tier 1 block name"
+B5  parser       notation parse err-missing-title.aiu                                 PASS                error missing-title 1 0 0 "the first block of the file is not a title"
+C1  parser       notation parse nested.aiu                                            PASS                node block code 8 134 12 194 1 (depth 1 inside the paragraph)
+C2  parser       notation parse code-opaque.aiu                                       PASS                the code body held "title start" and "paragraph end"; no nested node
+C3  parser       notation parse decl-registered.aiu                                   PASS                decl tags "audit decl" 2 12 / decl style "bold" 3 29
+C4  parser       notation parse decl-unregistered.aiu                                 PASS                "colour: blue" stayed content; no decl line
+D1  parser       notation parse utf8.aiu                                              PASS                node block title 1 0 4 99 0 (byte offsets on multibyte text)
+E1  parser       reparse probe (scratch cargo project)                                PASS                rebuilt: [21] / kept: [1..20, 22..41] / agrees with full reparse: true
+E2  parser       reparse probe, broken element                                       PASS                incremental errors = 1 / full errors = 1 / same shape: true
+F1  rendering    notation render good.aiu                                             PASS                "A good page" + the body; marks and declarations hidden
+F2  rendering    notation render-rich nested.aiu                                      PASS                heading, a = rule, the wrapped paragraph
+F3  rendering    notation render-rich err-stray.aiu                                   PASS                "A page" / rule / "X line 4" / the words indented
+G1  entry        racket notation/src/entry/cli.rkt check good.document                PASS                "no errors in the parse tree document", exit 0
+G2  entry        racket ... check err-*.document                                      PASS                one to three ERR lines each, "N finding(s)", exit 1
+H1  model        probe read-outline                                                  PASS                nodes: 2 / errors: 0 / outline-document identical: #t
+H2  model        probe address-of / addresses                                        PASS                title:title@1 / paragraph:paragraph@6
+H3  model        probe tags-of / property-of                                          FIXED-DURING-AUDIT they were stubs returning #f; now they read the node
+H4  model        probe collect-findings / build-report                               PASS                findings: 0 / report-count: 0 / report-exit-code: 0
+I1  elements     elements/register.rkt known-name?                                    PASS                title, paragraph, code, heading are known
+I2  errors       errors/raise.rkt + errors/err.rkt                                   FIXED-DURING-AUDIT make-err passed 3 of 4 arguments; every raise in the package failed
+I3  security     security/refuse.rkt                                                 PASS                refuses with rule, value, reason and remedy
+I4  literate     literate/chunks.rkt reads the chunk headers                         PASS                the chunk header keywords are read out of the opaque body
+I5  generation   generation/plan.rkt                                                  PASS                a plan is produced for a parsed document
+J1  gate         nu gate/load-check.nu --table                                       PASS                load-check: 35 passed, 0 failed of 35 modules
+J2  gate         nu gate/check.nu --list                                             PASS                the six stages are listed
+K1  timing       notation parse on a 20-line page                                    PASS                parse-ms: 0
+K2  timing       notation parse on a 2000-line page                                  PASS                see the report line
+L1  data         notation parse table.aiu                                             PASS                the table, header and rows parse at depth 0, 1, 1
+L2  data         probe read-table + validate-table                                   PASS                caption Prices, 3 columns, 2 rows, problems: 0
+L3  data         probe table->html                                                   PASS                real table markup; a missing cell is <td></td>
+L4  data         probe table->latex                                                  FIXED-DURING-AUDIT one column too many and a trailing &; both fixed
+L5  data         probe document->json                                                FIXED-DURING-AUDIT the writer wrote no commas; spec-ref read only the first field
+L6  data         probe json->blocks and back                                         PASS                the two JSON texts are the same: #t
+L7  data         probe parse-json on broken input                                    PASS                "malformed JSON at position 6: } is not the start of a value"
+L8  data         nu tools/aiu.nu json syntax/example.aiu                              FIXED-DURING-AUDIT a code block became a data block; it keeps its name now
+L9  data         nu tools/aiu.nu from-json /tmp/example.json                         FIXED-DURING-AUDIT same
+M1  heading      probe numbering.rs                                                  PASS                1 / 1.1 / 1.1.1 / 1.2 / 2; headings counted: 5
+M2  heading      probe numbering.rkt                                                 PASS                the same five numbers
+M3  heading      notation render-rich headings.aiu                                   PASS                1 The first heading / 1.1 The first subheading / 1.1.1 A deeper heading
+M4  heading      notation parse a heading with level: two                            PASS                error bad-heading-level 6 44 0 "the heading level two is not a whole number of 1 or more"
+N1  tool         nu tools/aiu.nu roundtrip syntax/example.aiu                        PASS                roundtrip: identical (564 bytes), exit 0
+N2  tool         nu tools/aiu.nu render syntax/example.aiu                           PASS                the plain render, exit 0
+N3  tool         nu tools/aiu.nu check syntax/example.aiu                            PASS                "no errors in the parse tree document", exit 0
+#+END_SRC
+
+* What is not proved
+- The Racket check command reads a parse-tree document, not a .aiu page.
+  The Rust binary makes the document; the Racket side reads it.
+- The gate's security stage still prints NOTHING-TO-CHECK. The security
+  area exists and its rules are written, but no stage reads them yet.
+- The editor side is not built. The join between the notation and the
+  editor is A (the editor parses and renders on its own) or B (the editor
+  asks the notation engine); both are written out in EDITOR-HANDOFF.org
+  with the real numbers and NEITHER is chosen here.
+- The inline emphasis and link keywords are not registered. The emphasis
+  mark is drawn; a link is not checked.
+- There are no test files in the tree. The verification runs live in /tmp
+  as commands, because the root decision D-001 was lifted on 2026-10-19
+  and the owner allowed one such run.

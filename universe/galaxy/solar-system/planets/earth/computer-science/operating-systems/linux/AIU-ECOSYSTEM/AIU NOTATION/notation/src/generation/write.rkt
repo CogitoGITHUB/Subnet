@@ -103,9 +103,16 @@
 (define (send-step? step)
   (eq? (plan-step-action step) 'send))
 
+;; send-skipped? says whether a send was skipped, so a caller can tell a
+;; skip from a write.
+;; send-skipped? says a step was left alone because the store already held the
+;; same hash for its target.
 (define (send-skipped? r)
+;; send-loaded? says whether a send actually loaded the code it names.
   (eq? (send-result-outcome r) 'skipped))
 
+;; send-loaded? says a step was not sent at all: the chunk loads in place, so
+;; no target was written.
 (define (send-loaded? r)
   (eq? (send-result-outcome r) 'not-sent))
 
@@ -142,10 +149,14 @@
 ;; lock-path is where the one-writer lock for a target lives: in the run's
 ;; state directory, named by the hash of the path. A lock file is a file this
 ;; run writes and the document never declared, so it stays out of the
+;; lock-directory gives the directory the writers lock, so two runs do
+;; not write the same place at once.
 ;; document's own directory.
 (define (lock-path target)
   (build-path (lock-directory) (text-hash target)))
 
+;; The one directory this package keeps its locks in, inside the run's state
+;; directory and outside the document's own files.
 (define (lock-directory)
   (build-path (notation-state-dir) "generation-locks"))
 
@@ -159,12 +170,16 @@
 ;; that names plan/x.org means that directory is part of what was declared.
 (define (write-file-at target text)
   (define beside (beside-target target))
+;; beside-target gives the file that stands next to a target, which is
+;; where a generated file goes when the target is a directory.
   (ensure-dir (if (path-only target) (path-only target) "."))
   (with-wait (format "writing ~a" target)
              "the text goes to a .new file beside it and is renamed over it in one step, so a crash costs the new file, never the old one"
     (call-with-output-file beside #:exists 'truncate (lambda (out) (display text out)))
     (rename-file-or-directory beside target #t)))
 
+;; The temporary path a write lands on first: a .new file beside the target, so
+;; the rename that follows is one step on one filesystem.
 (define (beside-target target)
   (build-path (if (path-only target) (path-only target) ".")
               (string-append (path->string (file-name-from-path target)) ".new")))

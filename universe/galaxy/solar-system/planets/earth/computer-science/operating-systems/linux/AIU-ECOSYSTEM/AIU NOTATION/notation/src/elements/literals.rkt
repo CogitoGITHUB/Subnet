@@ -43,6 +43,10 @@
   (define n (name-of line))
   (and n (string=? (second (string-split (string-trim line) " " #:trim? #t #:repeat? #t)) "start")))
 
+;; end-line? says whether a line closes a block, so a reader can tell
+;; the two kinds of block line apart.
+;; end-line? is the closing half of the pair: it answers only for a "<name> end"
+;; line, and #f for a start line or anything else.
 (define (end-line? line)
   (define n (name-of line))
   (and n (string=? (second (string-split (string-trim line) " " #:trim? #t #:repeat? #t)) "end")))

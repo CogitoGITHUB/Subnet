@@ -12,13 +12,19 @@
 (provide acquire-lock release-lock with-lock (struct-out wlock))
 
 
+;; A lock holds the path it guards and the door that frees it, so a
+;; caller can see what it holds.
+;; A held lock: the file that marks it, and the door that lets its holder give
+;; up rather than force it away from someone else.
 (struct wlock (path door) #:transparent)
 
 ;; A lock is stale when it is older than stale-seconds. A stale lock is never
 ;; taken by force: the waiter says so and gives up, leaving the decision to a
 ;; human. The number is an argument so nothing here reads a clock on its own.
+;; lock-exists? says whether a path is already locked.
 (define stale-seconds 600)
 
+;; lock-exists? says whether some writer already holds the lock at this path.
 (define (lock-exists? path)
   (file-exists? path))
 

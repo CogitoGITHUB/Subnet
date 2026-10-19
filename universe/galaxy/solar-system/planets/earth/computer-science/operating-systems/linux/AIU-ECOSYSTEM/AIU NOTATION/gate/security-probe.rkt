@@ -130,5 +130,9 @@
      (printf "SECURITY-GATE: ~a rules, ~a probed ok, ~a wrong\n" total (- total wrong) wrong)
      (if (zero? wrong) (exit 0) (exit 1))]))
 
+;; The main part: it runs the probe and prints what it found, so the
+;; stage has something real to read.
+;; Running this file as a program probes every rule and exits non-zero when any
+;; rule answers its two probe values the same way.
 (module+ main
   (main))

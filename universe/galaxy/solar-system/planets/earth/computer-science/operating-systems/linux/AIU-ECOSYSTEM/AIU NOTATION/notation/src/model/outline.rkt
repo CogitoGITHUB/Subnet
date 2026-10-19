@@ -22,6 +22,8 @@
 (provide read-outline outline-errors outline-document (struct-out outline) document-header)
 
 
+;; An outline is the tree of a document: its shape version, the file it
+;; came from, and its nodes in the order they were read.
 (struct outline (version file nodes) #:transparent)
 
 ;; The frozen header. A document that does not start with it is refused, never

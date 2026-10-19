@@ -3,6 +3,8 @@
 ;; Lands with TODO item 1 (the floor). Narration uses the errors floor and
 ;; nothing above it.
 
+;; An event is one thing that happened: its kind, what it was, and the
+;; detail a reader may want.
 (struct ev (kind what detail)
   #:transparent)
 
@@ -11,6 +13,8 @@
 ;; decides the vocabulary.
 (define ev-kinds '(open step note warn skip decide))
 
+;; ev-kind-of? says whether an event is of one kind, so a caller can pick
+;; the events it cares about.
 (define (ev-kind-of? kind)
   (and (memq kind ev-kinds) #t))
 

@@ -48,6 +48,8 @@ pub struct Comment {
     pub closed: bool,
 }
 
+// Comment holds the methods every comment shares, so a caller can ask a
+// comment whether it closed and where it sits.
 impl Comment {
     /// The comment's own bytes, exactly as written. The buffer keeps them:
     /// nothing in text/ deletes text.

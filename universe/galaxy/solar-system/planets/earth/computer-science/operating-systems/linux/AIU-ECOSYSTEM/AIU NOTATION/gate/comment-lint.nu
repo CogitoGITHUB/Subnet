@@ -70,6 +70,29 @@ def is-definition [line: string, lang: string] {
     }
 }
 
+# is-attribute-line says whether one line is a Rust attribute that belongs to
+# the definition under it, such as #[derive(...)] or #[serde(...)].
+#
+# An attribute is part of the definition, not a separate thing: the doc
+# comment above it is the comment of that definition. So when the lint looks
+# for the comment above a definition it looks above the attributes. This does
+# not make the rule looser: the comment still has to be there, and it still
+# has to be the line right above the definition and its attributes.
+def is-attribute-line [line: string, lang: string] {
+    if $lang != "rs" { return false }
+    let t = ($line | str trim)
+    ($t | str starts-with "#[")
+}
+
+# has-comment-above says whether the definition at index i has a comment line
+# directly above it. The nearest line above that is not an attribute has to be
+# a comment; a blank line is not a comment, so a blank line between the
+# comment and the definition breaks the rule.
+def has-comment-above [lines: list<string>, i: int, lang: string] {
+    let above = ($lines | take $i | reverse | where {|l| not (is-attribute-line $l $lang) } | get -o 0 | default null)
+    if $above == null { false } else { is-comment-line $above $lang }
+}
+
 # lang-of reads the language from the file's extension.
 def lang-of [p: string] {
     if ($p | str ends-with ".rkt") { "rkt" } else if ($p | str ends-with ".rs") { "rs" } else { "nu" }
@@ -84,8 +107,8 @@ def scan-file [abs_path: string, lang: string] {
     let header_violations = (if (header-ok $lines $lang) { [] } else { [{line: 1, why: "no header comment: what it is, why it exists, who calls it"}] })
     let def_violations = ($lines | enumerate | where {|e| is-definition $e.item $lang } | each {|e|
         let i = ($e.index)
-        let ok = (if $i == 0 { false } else { is-comment-line ($lines | get ($i - 1)) $lang })
-        if $ok { null } else { {line: ($i + 1), why: "top-level definition has no comment line directly above"} }
+        let ok = (has-comment-above $lines $i $lang)
+        if $ok { null } else { {line: ($i + 1), why: "top-level definition has no comment line directly above", text: ($lines | get $i)} }
     } | where {|v| $v != null })
     ($header_violations | append $def_violations)
 }
@@ -105,7 +128,7 @@ def main [] {
     let violations = ($files | each {|f|
         let lang = (lang-of $f)
         let rel = ($f | path relative-to $project_root)
-        scan-file $f $lang | each {|v| {path: $rel, line: $v.line, why: $v.why} }
+        scan-file $f $lang | each {|v| {path: $rel, line: $v.line, why: $v.why, text: ($v.text | default "")} }
     } | flatten)
     let bad_count = ($violations | length)
 
@@ -118,7 +141,8 @@ def main [] {
         let p = $v.path
         let ln = $v.line
         let why = $v.why
-        print $"($p):($ln): ($why)"
+        let text = ($v.text | default "")
+        print $"($p):($ln): ($why) — ($text)"
     }
     print $"comment-lint: ($file_count) files checked, ($bad_count) violations"
     exit 1

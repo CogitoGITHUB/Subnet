@@ -16,6 +16,8 @@ pub struct Buffer {
     starts: Vec<usize>,
 }
 
+// Buffer holds the methods every buffer shares, so a caller can ask for
+// the text without knowing how the bytes are held.
 impl Buffer {
     /// Build a buffer from the file's bytes. A trailing newline does not
     /// create an extra empty line, which is what a reader expects.

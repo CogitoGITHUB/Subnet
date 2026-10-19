@@ -13,12 +13,23 @@
 ;; was waiting says why it stopped.
 (struct door (flag) #:transparent)
 
+;; make-cancel-door makes the door a caller closes to stop the work in
+;; progress, so the stop is a thing that can be passed around.
+;; make-cancel-door opens a door nobody has pressed yet, so a run starts able
+;; to continue.
 (define (make-cancel-door)
+;; cancel! closes the door, so the work in progress is told to stop.
   (door (box #f)))
 
+;; cancel! presses the door. It records the fact and nothing else; whoever
+;; cancelled? says whether the door was closed, so a caller can stop
+;; early.
+;; pressed it keeps the reason.
 (define (cancel! d)
   (set-box! (door-flag d) #t))
 
+;; cancelled? answers the one question a blocking call asks of the door: has
+;; someone asked this run to stop?
 (define (cancelled? d)
   (unbox (door-flag d)))
 

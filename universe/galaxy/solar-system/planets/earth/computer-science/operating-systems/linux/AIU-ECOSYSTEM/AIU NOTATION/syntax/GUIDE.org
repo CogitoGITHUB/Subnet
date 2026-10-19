@@ -1,0 +1,188 @@
+#+TITLE: How to write a .aiu page
+#+STARTUP: showeverything
+
+This is the short guide. Read it once, then write.
+
+A page is a plain text file. The name ends in =.aiu=.
+Nothing else about it is special: any editor can write it.
+
+* The shape of a block
+
+A block is three lines:
+
+  title start
+  The first sample page
+  title end
+
+Line one opens it, the middle lines hold it,
+the last line closes it.
+
+The keyword comes FIRST both times.
+=start= and =end= are the keywords.
+The name sits in front of them.
+
+So a block opens with =<name> start=
+and closes with =<name> end=.
+
+The old spelling =end title= closes nothing.
+It is ordinary text, and the reader says so.
+
+* The rules in plain words
+
+- The file opens with a =title= block.
+- Every block that opens must close.
+- A block closes with the same name it opened with.
+- The content of a block is every line between the two marks.
+- A =code= block is opaque: nothing inside it is read.
+  Only =code end= closes it.
+- A line that reads =word: value= is a declaration
+  when =word= is one of the registered keywords.
+  Otherwise it stays plain text.
+- A =comment= block is dropped by the reader.
+
+* The names you may use
+
+Block names:
+
+  title  paragraph  code  heading  table  header  row
+
+Declaration keywords:
+
+  tags  language  style  theme  color  format  font
+  level  caption  column  cell  row-id  meta
+
+A declaration sits on the line just under the =start= line.
+
+* A real page
+
+#+BEGIN_EXAMPLE
+title start
+tags: sample first-run
+The first sample page
+title end
+
+paragraph start
+Every line of this page sits inside a named block.
+A block is three lines of shape: the name and start,
+the content on its own line or lines, then the name
+and end again.
+paragraph end
+
+code start
+language: text
+def example():
+    return 1
+code end
+#+END_EXAMPLE
+
+* Headings and their numbers
+
+A =heading= block takes its depth from =level:=.
+Without it, the level is 1.
+
+#+BEGIN_EXAMPLE
+heading start
+The first heading
+heading end
+
+heading start
+level: 2
+The first subheading
+heading end
+#+END_EXAMPLE
+
+The number is NEVER written by you.
+The reader counts the headings and gives them numbers:
+
+  1     The first heading
+  1.1   The first subheading
+  1.1.1 A deeper heading
+  1.2   The second subheading
+  2     The second top heading
+
+* Tables
+
+A table holds a =header= block and =row= blocks.
+A =column:= line names the column, its type,
+and whether it is optional.
+
+#+BEGIN_EXAMPLE
+table start
+caption: Prices
+column: name text
+column: price number
+column: note text optional
+header start
+cell: name
+cell: price
+cell: note
+header end
+row start
+row-id: r1
+cell: Widget
+cell: 9.99
+cell:
+row end
+table end
+#+END_EXAMPLE
+
+Column types: =text= =number= =integer= =bool= =date= =json=.
+
+A =cell:= with nothing after it is a MISSING value.
+A missing value is allowed only in an =optional= column.
+
+* What the reader says when something is wrong
+
+Every fault names the line, says what is wrong,
+and says what to do.
+
+** stray-text
+Text outside any block.
+  "put the text inside a \"<name> start\" / \"<name> end\" block"
+Move the line inside a block.
+
+** mismatched-end
+A close mark for a block that is not the open one.
+  "close the open \"paragraph\" block first"
+The message names the block and the line it was opened at.
+
+** unclosed-block
+A block that was opened and never closed.
+  "add its matching \"paragraph end\" line"
+The message names the line the block was opened at.
+
+** unknown-block-name
+A block name the notation does not know.
+  "use one of title, paragraph, code, heading, table, header, row"
+
+** missing-title
+The first block of the file is not a title.
+  "start the file with \"title start\""
+
+** bad-heading-level
+A =level:= that is not a whole number of 1 or more.
+  "write the level as a number, for example \"level: 2\""
+
+* Before you save
+
+- Does the file start with a =title start= line?
+- Does every =<name> start= have its =<name> end=?
+- Are the names the same on both marks?
+- Does a =heading= that should be deep carry a =level:=?
+- Does a table give every column a type?
+- Does an empty =cell:= sit in an =optional= column?
+
+* Checking a page
+
+From the project directory:
+
+#+BEGIN_EXAMPLE
+nu tools/aiu.nu check syntax/example.aiu
+nu tools/aiu.nu render syntax/example.aiu
+nu tools/aiu.nu roundtrip syntax/example.aiu
+#+END_EXAMPLE
+
+=check= says what is wrong and where.
+=render= prints the page as plain text.
+=roundtrip= says whether the page prints back
+to the very same bytes.
