@@ -14,6 +14,7 @@
   - banned-words-lint.nu — the naming law, made mechanical
   - language-split-lint.nu — only join/ may cross Rust and Racket
   - load-check.nu — verify every .rkt module under notation/ and gate/ loads cleanly
+  - test-runner.rkt — the test runner: every test file in argv, in one process
 
 * How the gate is run
 # the one entry point, and the two rules it keeps.
