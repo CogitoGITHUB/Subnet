@@ -1,0 +1,40 @@
+#+TITLE: INDEX — AIU NOTATION/notation/src/generation/
+# One job: list every file in this directory and the single job of each.
+# Status: current 2026-10-19; updated in the same commit as any change here.
+
+* Files
+# one line per file: its name, then the single job it performs.
+
+  - plan.rkt — what would be written: one plan step per chunk, with the
+    content hash and the target, and the sentence saying why a chunk is not
+    written anywhere
+  - write.rkt — write through security, into declared targets only: carries a
+    plan out under a one-writer lock, recording what it sent
+
+* Where it sits
+# why this area exists and what it may use.
+  - Above literate, below rendering. It is the only area that writes a
+    document's content, and it writes exactly what a plan step carries.
+  - plan.rkt decides the content hash of a chunk — its source, the hashes of
+    the chunks it depends on, and where it goes — so a chunk changes when
+    anything it was written against changes. Nothing it does touches a file.
+  - write.rkt refuses four things before a byte moves: a target no door
+    approved, a target that is the document itself, a target no run of this
+    document wrote, and a step that is a load. Writing goes to a =.new= file
+    beside the target and is renamed over it in one step, under a one-writer
+    lock that lives in the run's state directory.
+  - Those four refusals are write.rkt's own door, not security's.
+    ../security/security.rkt, shapes.rkt and refuse.rkt are on disk as of
+    2026-10-19, but write.rkt requires only ../errors/raise.rkt, so it raises
+    its refusals itself. Wiring it to refuse.rkt is a change in this area and
+    is the owner's to ask for.
+
+* Who calls it
+# what is still missing above this area.
+  - entry/dispatch.rkt reaches both files, through the =send= command only:
+    it requires plan.rkt for build-plan and write.rkt for send-plans, and no
+    other command calls either. The =literate= command reads and plans
+    nothing and writes nothing.
+  - Nothing else reaches this area: surface/, diagnostics/, model/ and
+    elements/ require neither file. The =literate= and =send= commands landed
+    2026-10-19; before that the area had no caller at all.

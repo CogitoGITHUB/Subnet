@@ -137,7 +137,26 @@ fn recover(tree: &Tree, buffer: &Buffer) -> Tree {
                 out.extend(parse_fragment(buffer, cut, buffer.len()).nodes);
                 return Tree { nodes: out, len: buffer.len() };
             }
-            _ => out.push(node.clone()),
+            _ => {
+    if let Node::Block(b) = node {
+        let unclosed = tree.nodes.iter().any(|n| {
+            matches!(n, Node::Error(e) if e.kind == ErrorKind::UnclosedBlock && e.opener_line == Some(b.line))
+        });
+        if unclosed {
+            let mut b = b.clone();
+            let end = b.span.end;
+            b.children.retain(|child| {
+                match child {
+                    Node::Block(cb) => cb.span.end < end.saturating_sub(1) || cb.name == "code",
+                    _ => true,
+                }
+            });
+            out.push(Node::Block(b));
+            continue;
+        }
+    }
+    out.push(node.clone())
+}
         }
     }
     Tree { nodes: out, len: buffer.len() }

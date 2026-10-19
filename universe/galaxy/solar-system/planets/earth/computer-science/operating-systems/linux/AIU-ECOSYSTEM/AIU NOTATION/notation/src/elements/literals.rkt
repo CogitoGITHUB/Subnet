@@ -6,7 +6,8 @@
 ;; A block name is written as a bare lowercase word: no symbol, no quotes, no
 ;; angle brackets. This file is the one place that decides what counts.
 
-(require racket/string)
+(require racket/list
+         racket/string)
 
 ;; Provided with TODO item 5: diagnostics/collect.rkt asks literal-name? what
 ;; a tag is, so no second place decides what a name looks like.

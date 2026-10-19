@@ -5,9 +5,15 @@
 * Files
 # one line per file: its name, then the single job it performs.
 
-  - register.rkt — the one table: name to meaning
-  - dispatch.rkt — a name and its body reach the right meaning
-  - literals.rkt — literal names: what a name is, what it is not
+  - register.rkt — the one table: name to meaning, and =require-known= which
+    refuses a name this table does not carry
+  - dispatch.rkt — a name and its body reach the right meaning, and =opaque?=
+    says whether a block's body is opaque
+  - literals.rkt — literal names: what a name is (bare lowercase word), what a
+    block line is, and which of the two it is. It also carries =name-of=,
+    =start-line?= and =end-line?=, which read the owner's three-line block
+    form; those three were being edited on 2026-10-19 when this index was
+    written, so read them as in flight, uncommitted.
 
 * Where it sits
 # why this area exists and what it may use.

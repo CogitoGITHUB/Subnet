@@ -81,6 +81,32 @@
     decision has fixed the extension; a page may be read with any name today,
     and the parser does not care what a file is called.
   - =load-check= — gate stage: verifies every .rkt module under notation/ and gate/ loads cleanly via dynamic-require.
+  - =comment-lint= — gate stage: every .rkt, .rs and .nu file under notation/
+    and gate/ carries a header comment (what it is, why it exists, who calls
+    it), and every top-level definition has a comment line directly above it;
+    every violation is listed as file:line. Registered 2026-10-19.
+  - =comment-lint/= — the stage name as it appears in the gate table.
+  - =syntax/feature-status.org= — one row per audited feature: id, area,
+    command, status and the evidence line that proves it. Registered
+    2026-10-19; the PROGRESS line at its top says which step finished last.
+  - =syntax/valid-page.aiu= — the fixture page with no error in it: title,
+    paragraph and a code body that holds a line shaped like a start line.
+    Registered 2026-10-19.
+  - =syntax/unclosed-block.aiu= — the fixture page with one paragraph never
+    closed, so the recovery path has something to recover. Registered
+    2026-10-19.
+  - =syntax/GUIDE.org= — how to write a .aiu file, in plain words, with one
+    real example and each error kind with what to do. Registered 2026-10-19.
+  - =tools/aiu.nu= — the daily-use script: =check=, =render= and =roundtrip=
+    subcommands over one .aiu path. Registered 2026-10-19.
+  - =EDITOR-HANDOFF.org= — what the AIU EDITOR design chat needs, written from
+    real code and captured output: the calls, the diagnostics shape, the
+    completion lists, the spans the editor may hide, the timings, the join
+    status and the known gaps. Registered 2026-10-19.
+  - =security/refuse.rkt= — the one door that turns a rule and an offending
+    value into the refusal record. Registered 2026-10-19.
+  - =security/shapes.rkt= — the total predicates: output-safe? and the
+    write-facing predicate list. Registered 2026-10-19.
   - =parse-tree-document= — the payload the Rust parser prints and the Racket
     side reads: one plain text document in one frozen shape, with no Racket
     dependency on the Rust side. Its shape is written in words in
@@ -97,6 +123,7 @@ AIU NOTATION/            the project: context and docs stay where they are
   INDEX.org              every file and folder here, one job each (landed)
   ROOT-REQUEST-D014.org  the root-log text the owner carries for the mark sign (landed)
   TODO.org               the one list of what is left (lands with this plan)
+  EDITOR-HANDOFF.org     what the AIU EDITOR design chat needs, from real output
   gate/                  the light gate now, the full gate when tests open
     INDEX.org
     check.nu             the dispatcher: named stages, one table, --list
@@ -108,8 +135,18 @@ AIU NOTATION/            the project: context and docs stay where they are
     banned-words-lint.nu        the naming law, made mechanical
     language-split-lint.nu      only join/ may cross Rust and Racket
     load-check.nu        the load check: dynamic-require on every .rkt module
+    comment-lint.nu      the comment check: header comment and one per definition
     test-runner.rkt      the test runner: every test file in argv, in one process
-  tools/                 dev scripts; empty until the first needs a home
+  tools/                 dev scripts
+    aiu.nu               the daily-use script: check, render, roundtrip
+  syntax/                the frozen syntax and the samples
+    example.aiu          the sample page: title, paragraphs, a code block
+    valid-page.aiu       the fixture page with no error in it
+    unclosed-block.aiu   the fixture page with one paragraph never closed
+    first-run-output.org  the captured output of the by-hand run
+    first-slice-freeze.org  the frozen rules of the first slice
+    feature-status.org   one row per audited feature, with its evidence
+    GUIDE.org            how to write a .aiu file, in plain words
   agent/                 the kit's agent side (ships with the package, rule 2)
     INDEX.org
     skills/notation/SKILL.md  the skill: what notation is, commands, runnable examples
@@ -135,7 +172,9 @@ AIU NOTATION/            the project: context and docs stay where they are
         cancel.rkt       the cancellation door every blocking call passes
       security/          what may happen without asking
         INDEX.org
-        security.rkt     the total predicates: output-safe?, state-changing?, refusals
+        security.rkt     the refusals as data: every rule by id, one lookup by id
+        shapes.rkt       the total predicates: output-safe?, write-facing list
+        refuse.rkt       the one door: a rule and a value become a refusal
       join/              the Racket–Rust seam; the only language crossing
         INDEX.org
         rust-exports.rs  the functions the meaning side may call, one per crossing

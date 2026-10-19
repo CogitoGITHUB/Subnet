@@ -1,0 +1,22 @@
+#+TITLE: Feature status — AIU NOTATION
+# One job: one row per audited feature — id, area, the command that proves it,
+# the status, and the evidence line that was actually captured.
+# Registered in plan/package-tree.org (syntax/feature-status.org).
+#
+# PROGRESS: last finished step 0
+#
+# The statuses mean exactly this:
+#   PASS               the command ran and the captured output shows the feature works
+#   FAIL               the command ran and the captured output shows it does not
+#   FIXED-DURING-AUDIT  the command failed, the cause was fixed, and the rerun passed
+#   UNTESTABLE         there is no way to run it, and the reason is named
+#
+# No row is PASS without a captured line of output behind it. A plan is not
+# evidence; only what the command printed is.
+
+* Rows
+# one row per feature: id, area, command, status, evidence.
+
+| id | area | command | status | evidence |
+|---|------|---------|--------|----------|
+| (none yet) | — | — | — | the audit has not run yet |

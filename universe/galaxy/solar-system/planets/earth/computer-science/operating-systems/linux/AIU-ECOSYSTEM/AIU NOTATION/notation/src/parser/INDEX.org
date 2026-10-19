@@ -1,19 +1,39 @@
 #+TITLE: INDEX — AIU NOTATION/notation/src/parser/
 # One job: list every file in this directory and the single job of each.
-# Status: current; updated in the same commit as any change in this directory.
+# Status: current 2026-10-19; updated in the same commit as any change here.
 
 * Files
 # one line per file: its name, then the single job it performs.
 
-  - parser.rs — the layered parser: the mark, blocks, elements, recovery; text
-    found outside any block becomes a =stray-text= error node
-  - reparse.rs — a keystroke rebuilds only the slice it touched and reports what
-    was rebuilt (build step 3)
+  - parser.rs — the layered parser: the mark, blocks, nesting, opaque code
+    bodies and the five registered errors; text found outside any block
+    becomes a =stray-text= error node
+  - reparse.rs — a keystroke rebuilds only the slice it touched and reports
+    what was rebuilt (build step 3)
   - partial.rs — a broken element becomes the error node and the text after it
     keeps parsing (build step 3)
 
-* Not written yet
-# named in plan/package-tree.org, still planned; no file, no stub.
+* The block form
+# the owner's grammar, stated here so a reader does not have to infer it.
+  - A block is three lines of shape: the name and =start=, the content on its
+    own line or lines, then =end= and the name again.
+      #+begin_example
+        title start
+        tags: sample
+        The first sample page
+        end title
+      #+end_example
+  - The retired spelling =<name> end= closes nothing; it is content like any
+    other line, so a page written the old way reports stray text instead of
+    silently closing a block.
+  - Nothing here may be read as the code agreeing with this rule yet. On
+    2026-10-19 the three-line grammar and the fixtures belonged to a lane in
+    flight: parser.rs was being edited while this index was written, and this
+    pass did not build or run it. The rule is the owner's
+    (decisions/OPEN.org); the implementation is in flight, uncommitted.
+  - The names on those lines are bare lowercase words with no symbol, no
+    quotes and no angle brackets; what makes a word a name is decided in
+    ../elements/literals.rkt (literal-name?, start-line?, end-line?), not here.
 
 * Where it sits
 # why this area exists and what it may use.
@@ -21,3 +41,6 @@
     =../text/= for bytes and positions and never the reverse. It produces
     blocks and error nodes only: the meaning tree has no node kind for loose
     text (syntax/first-slice-freeze.org, rule b).
+  - The three files are the only ones registered here, and all three are on
+    disk. There is nothing in this directory that is planned and unwritten, so
+    this index carries no "not written yet" list.

@@ -1,6 +1,6 @@
 #+TITLE: INDEX — AIU NOTATION/notation/
 # One job: list every directory and file in the package, and the single job of each.
-# Status: current 2026-10-17; updated in the same commit as any change here.
+# Status: current 2026-10-19; updated in the same commit as any change here.
 
 * The package
 # what this directory is.
@@ -12,14 +12,14 @@
   - src/errors/ — the error type and how it renders (the floor)
   - src/narration/ — how work speaks: events, the wait door, the printer
   - src/machine/ — the machine seam and the block door
-  - src/security/ — what may happen without asking (planned)
-  - src/join/ — the Rust–Racket seam; the only language crossing (planned)
+  - src/security/ — what may happen without asking
+  - src/join/ — the Rust–Racket seam; the only language crossing
   - src/text/ — the raw text: bytes, lines, positions (Rust)
   - src/parser/ — the context-free core (Rust, hot path)
   - src/elements/ — the element vocabulary: names and what they mean
   - src/model/ — the meaning tree
   - src/diagnostics/ — the reports the reader sees
-  - src/references/ — links and numbering (after the done line)
+  - src/references/ — links and numbering (after the done line; no directory yet)
   - src/literate/ — named chunks and targets (build step 5)
   - src/generation/ — writing generated files (build step 5)
   - src/rendering/ — the screen and printer output (build step 8, Rust)
@@ -27,18 +27,67 @@
   - src/entry/ — the outside world: argv and MCP
 
 * What exists on disk today
-# the areas landed so far, one line each; the rest is planned, not built.
-  - src/errors/ — landed: err.rkt, raise.rkt, render.rkt
-  - src/narration/ — landed: events.rkt, narration.rkt, wait-door.rkt, print-console.rkt
-  - src/machine/ — landed: directories.rkt, locks.rkt, cancel.rkt
-  - src/text/ — landed: buffer.rs, positions.rs (Rust)
-  - src/parser/ — landed: parser.rs (Rust)
-  - src/diagnostics/ — landed: collect.rkt, report.rkt
-# =src/elements/=, =src/model/= and =src/entry/= landed earlier and are still
-# missing from this list; reported 2026-10-19, not rewritten here.
-  - Cargo.toml — the crate manifest, one crate, no workspace
-  - src/lib.rs — the module list: which area files belong to the crate
-  - tests/, test-doubles/ — open when tests open (D-001)
+# One line per directory: what the area is for, what it owns, how many files.
+# Counted 2026-10-19 with ls, files excluding this INDEX.org. A reader who
+# finds a directory that is not here is looking at something unregistered; a
+# name absent from plan/package-tree.org does not exist yet.
+  - src/errors/ — the floor: the error record, the one raise helper, how an
+    error prints. 3 files: err.rkt, raise.rkt, render.rkt.
+  - src/narration/ — how a run speaks: the event record, the run's voice, the
+    wait door, the one printer. 4 files: events.rkt, narration.rkt,
+    wait-door.rkt, print-console.rkt.
+  - src/machine/ — the machine seam: where files live, who is writing, how a
+    blocking call is stopped. 3 files: directories.rkt, locks.rkt, cancel.rkt.
+  - src/security/ — what may happen without asking, as a vocabulary: the
+    rules by id, the shapes a value is refused for, the one door. 3 files:
+    security.rkt, shapes.rkt, refuse.rkt. Nothing requires this area yet; it
+    lands as data and its own INDEX.org names that.
+  - src/join/ — the Rust–Racket seam and the only language crossing: the
+    parse-tree-document the Rust side prints and the Racket side reads. 1
+    file: rust-exports.rs. How the document is carried is still open.
+  - src/text/ — the raw text and nothing else: bytes, lines, offsets, comment
+    spans. Rust. 3 files: buffer.rs, positions.rs, comments.rs.
+  - src/parser/ — the context-free core and the hot path: blocks, nesting,
+    opaque code bodies, the five registered errors, incremental reparse, and
+    recovery of a broken element. Rust. 3 files: parser.rs, reparse.rs,
+    partial.rs. The three-line block form (see parser/INDEX.org) is in flight,
+    uncommitted: this pass saw parser.rs mid-edit and did not verify it.
+  - src/elements/ — the element vocabulary and the only place a name may be
+    added: name to meaning, name to its body, and what a name literally is.
+    3 files: register.rkt, dispatch.rkt, literals.rkt.
+  - src/model/ — the meaning tree read off the parse-tree-document: node
+    identity, the outline, how a send names a node, and tags and properties.
+    4 files: nodes.rkt, outline.rkt, addressing.rkt, properties.rkt.
+  - src/diagnostics/ — what the reader must be told: findings gathered in
+    tree order, and the one diagnosis that prints them with the count and the
+    exit code the CLI answers with. 2 files: collect.rkt, report.rkt.
+  - src/literate/ — named chunks and their graph, targets as data, the
+    dependency scan that finds findings and the send order, and the journal
+    that skips an unchanged chunk by naming its hash. 4 files: chunks.rkt,
+    targets.rkt, scan.rkt, skip-journal.rkt.
+  - src/generation/ — the only area that writes a document's content: the
+    plan of what would be written, and the write that carries it out through
+    security into declared targets only. 2 files: plan.rkt, write.rkt.
+  - src/rendering/ — the screen and printer output: the one stripper, the
+    plain fallback, and the rich unicode tier. Rust. 3 files: strip.rs,
+    plain.rs, rich.rs. rich.rs is on disk but is not in src/lib.rs, so the
+    crate does not build it yet; rendering/INDEX.org names that.
+  - src/surface/ — the notation side of the engine boundary: the frozen
+    answer document and its loader, the unasked notices, and the calls the
+    editor and the multiplexer make. 3 files: surface.rkt, answers.rkt,
+    notices.rkt. Nothing in entry/ or the CLI reaches this area yet.
+  - src/entry/ — the ceiling and the outside world: argv in, a command out, an
+    exit code back. 2 files: cli.rkt, dispatch.rkt. dispatch.rkt holds three
+    commands — check, literate, send — and the code that names them.
+  - Cargo.toml — the crate manifest: one crate named notation, no workspace,
+    no dependencies.
+  - src/lib.rs — the module list: which area files belong to the crate, by
+    =#[path]=, so no per-area module file is invented. Nine modules today.
+  - src/main.rs — the one by-hand binary: parse, render, roundtrip, one file
+    path each. Provisional, for the single run TODO.org item 3 allows.
+  - tests/, test-doubles/ — no directory on disk. The owner lifted the
+    no-tests hold on 2026-10-19 (decisions/OPEN.org), so these are expected
+    and not yet written.
 
 * Where the gate lives
 # the gate is not inside the package.

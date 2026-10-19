@@ -1,12 +1,30 @@
 #lang racket/base
-;; One job: the command table — one name, one function; =check= lists every
-;; error with its line number and exits non-zero.
+;; One job: the command table — one name, one function; a command reads the
+;; document it was given, says what it found, and hands back the exit code a
+;; shell may trust.
 ;; Registered in plan/package-tree.org (entry/dispatch.rkt). Lands with TODO
-;; item 3.
+;; item 3; =check= lands with it, =literate= and =send= with TODO item 6 (build
+;; step 5, literate code).
 ;;
 ;; The table is closed: a name nobody registered is refused here, so a command
-;; cannot be added by accident. Reading is free; this only reads a document and
-;; reports what is wrong with it. Nothing here writes.
+;; cannot be added by accident. Two of the three commands only read. =check=
+;; reads a parse-tree document and reports what is wrong with it; =literate=
+;; reads a document's chunk graph and reports what is wrong with it and in what
+;; order its chunks would be sent. =send= is the only command here that writes,
+;; and it writes only what a plan step carries into a target the document
+;; declared.
+;;
+;; The exit codes are three and each means exactly one thing.
+;; diagnostics/report.rkt already promises a reader this table by name, so no
+;; code is added here and no command writes a number of its own:
+;;
+;;   0  exit-clean    the command finished and there was nothing to report.
+;;   1  exit-findings the document holds something the command names — an
+;;                    error in the parse tree, or a finding in the chunk graph
+;;                    — and nothing was written.
+;;   2  exit-refused  the run was refused before it began: no document named,
+;;                    no document at that path, or a command name nobody
+;;                    registered. Nothing was written.
 ;;
 ;; =check= found its findings and its diagnosis through diagnostics/ with TODO
 ;; item 5; before that it read the error nodes itself and printed a shape of
@@ -17,10 +35,25 @@
          "../errors/raise.rkt"
          "../diagnostics/collect.rkt"
          "../diagnostics/report.rkt"
+         "../generation/plan.rkt"
+         "../generation/write.rkt"
+         "../literate/chunks.rkt"
+         "../literate/scan.rkt"
+         "../literate/skip-journal.rkt"
+         "../narration/narration.rkt"
          "../narration/print-console.rkt"
+         "../narration/wait-door.rkt"
          "../model/outline.rkt")
 
-(provide check commands command-names command-for run)
+(provide check literate send-chunks
+         commands command-names command-for run)
+
+
+;; The three exit codes, named once. A command hands one of these back to run,
+;; run hands it to cli.rkt, and cli.rkt makes it the process exit code.
+(define exit-clean 0)
+(define exit-findings 1)
+(define exit-refused 2)
 
 
 ;; check reads a parse-tree-document text and reports every error in it. It
@@ -69,10 +102,149 @@
                                file-name (report-count report)))
            code))]))
 
+;; literate reads a document's chunk graph and reports it: every finding, with
+;; what is wrong and what to do, and the order the chunks may be sent in.
+;;
+;; It writes nothing at all — no target, no store entry, no lock — and it never
+;; asks for the store path, because asking for that path creates the run's state
+;; directory, and a write hidden inside a read is the one thing a read-only
+;; command may not do.
+;;
+;; The findings and the order are scan.rkt's answers, not this file's. Every
+;; finding was already said out loud by scan-chunks as it was found, through
+;; the one printer, carrying what is wrong and what to do; this command adds no
+;; second wording of a finding. The order is asked for only when the graph is
+;; clean, because chunks that wait on each other have no order to ask for and
+;; chunk-send-order refuses to invent one that happens to work today.
+(define (literate args)
+  (define who "literate")
+  (define path (first args))
+  (cond
+    [(or (not path) (string=? path ""))
+     (refuse who "name one document to read" (run-with who))]
+    [(not (file-exists? path))
+     (refuse who (format "there is no document at ~a" path)
+             "check the path you were given, or write the document first")]
+    [else
+     ;; The page is read once and held twice over: read-outline builds the tree
+     ;; out of it and read-chunk-graph reads the chunk bodies out of the same
+     ;; text, so the lines a chunk came from are the lines the tree named.
+     (define page (document-text path))
+     (define graph (read-chunk-graph (read-outline page) page))
+     (define file-name (or (chunk-graph-file graph) path))
+     (define findings (scan-chunks graph))
+     (cond
+       [(null? findings)
+        ;; One name per line, read down a screen: a list printed by Racket
+        ;; reads as "(a b c)", which is not an order anybody can act on.
+        (define order (chunk-send-order graph))
+        (say-step (format "the order to send ~a in" (length order))
+                  "each chunk comes after every chunk it depends on, so no chunk is sent against text that has not been sent yet; this command sent none of them")
+        (for-each (lambda (n) (print-line (format "  ~a" n))) order)
+        (say-note who
+                  (format "~a: ~a chunk(s), no findings, and nothing was written"
+                          file-name (length order)))
+        exit-clean]
+       [else
+        (say-note who
+                  (format "~a: the chunk graph holds ~a finding(s); the lines above name each one and what to do, so fix them and run literate again"
+                          file-name (length findings)))
+        exit-findings])]))
+
+
+;; send-chunks is the send command: it reads a document's chunk graph, builds
+;; the whole run as a plan, prints that plan, and then carries it out.
+;;
+;; The order of those three acts is the whole discipline. Nothing is planned
+;; until the graph is clean, because a chunk that waits on a chunk no document
+;; carries has no hash worth sending. Nothing is written until the plan has been
+;; printed, so a reader has seen every file that is about to change before the
+;; first of them changes.
+;;
+;; A chunk whose content hash is already on disk is not written again:
+;; decide-skip made that decision while the plan was built and said the sentence
+;; aloud, and a skip that writes anyway is not a skip. A chunk that loads in
+;; place is not written either, and the plan already said why. What is left is
+;; exactly what changed, and write.rkt is the only place that writes a byte of
+;; it — every disk touch it makes is wrapped in the same wait door, from the
+;; store directory opened here to the last store entry recorded.
+;;
+;; The command name is send and the function is send-chunks, because
+;; racket/base already has a send, and a reader must never have to ask which of
+;; the two a line in this file means.
+(define (send-chunks args)
+  (define who "send")
+  (define path (first args))
+  (cond
+    [(or (not path) (string=? path ""))
+     (refuse who "name one document to send" (run-with who))]
+    [(not (file-exists? path))
+     (refuse who (format "there is no document at ~a" path)
+             "check the path you were given, or write the document first")]
+    [else
+     (define page (document-text path))
+     (define graph (read-chunk-graph (read-outline page) page))
+     (define file-name (or (chunk-graph-file graph) path))
+     (define findings (scan-chunks graph))
+     (cond
+       [(pair? findings)
+        (say-note who
+                  (format "~a: the chunk graph holds ~a finding(s); the lines above name each one and what to do, so fix them and run send again. Nothing was planned and nothing was written"
+                          file-name (length findings)))
+        exit-findings]
+       [else
+        ;; The store is where the last run of this document recorded what it
+        ;; sent, and asking for its path creates the directory that holds it:
+        ;; the first write of this command, and the wait door says why before it
+        ;; blocks. The store is named by the hash of the document's own path, so
+        ;; two documents never share one.
+        (define store
+          (with-wait (format "opening the generation store for ~a" path)
+                     "the store is where the last run of this document recorded what it already sent, and the same content hash found there is a chunk this run will not send again"
+            (store-path path)))
+        (define steps (build-plan graph store))
+        (print-plan steps)
+        (send-plans path steps store)
+        exit-clean])]))
+
+
+;; document-text reads the named document as text. The read is a block on a
+;; disk that may be slow, full or gone, so it says what it is about to do and
+;; why before it blocks and again when it is through.
+;;
+;; check does not read through here and is left exactly as it was: its lines are
+;; the ones diagnostics/report.rkt promises a reader, and a read that grew a wait
+;; line would change what a reader of a clean document is shown.
+(define (document-text path)
+  (with-wait (format "reading ~a" path)
+             "the document may sit on a disk that is slow or gone, and a read that blocks without saying so is the failure this package exists to prevent"
+    (file->string path #:mode 'binary)))
+
+;; refuse prints one refusal and hands back an exit code. Every refusal a
+;; command makes carries the same three parts: who refuses (the command name),
+;; what is wrong, and what to do next. It is printed rather than raised, because
+;; what calls a command reads an exit code, and an exception that leaves the
+;; program prints a stack trace where this package promises one line
+;; (errors/render.rkt). The areas below raise through raise-err; this does not
+;; re-implement their door, and it does not re-word what they say.
+(define (refuse who what what-to-do)
+  (print-line (format "~a: ~a; what to do: ~a" who what what-to-do))
+  exit-refused)
+
+;; run-with is the what-to-do shared by every command refused for want of an
+;; argument: the shape of an invocation, and the names that do exist.
+(define (run-with who)
+  (format "run `notation ~a <document>`, or one of the other commands: ~a"
+          who (command-names)))
+
+
 ;; The one table: one name, one function. Adding a command is a decision for
-;; the owner, so the table says what exists rather than what might.
+;; the owner, so the table says what exists rather than what might. The name is
+;; what a reader types and the function is what this file calls it.
 (define commands
-  (list (list "check" check)))
+  (list (list "check" check)
+        (list "literate" literate)
+        (list "send" send-chunks)))
 
 ;; command-names lists the registered command names, for --list and for the
 ;; refusal message.
@@ -84,13 +256,14 @@
   (for/first ([c (in-list commands)] #:when (string=? (car c) name)) (cadr c)))
 
 ;; run dispatches one argv list to one command and returns its exit code. An
-;; unknown command is refused with the names that do exist; it is never
-;; treated as a success.
+;; unknown command is refused through the same door every other refusal uses,
+;; carrying the same three parts — who, what, what to do — and the names that do
+;; exist, because a usage string a reader cannot act on is a refusal with two
+;; of its three parts missing. It is never treated as a success.
 (define (run argv)
   (cond
     [(null? argv)
-     (print-line (format "notation: name a command; the commands are ~a" (command-names)))
-     2]
+     (refuse "notation" "name a command to run" (names-to-run))]
     [else
      (define name (car argv))
      (define args (if (null? (cdr argv)) '() (cdr argv)))
@@ -98,5 +271,11 @@
      (cond
        [fn (fn args)]
        [else
-        (print-line (format "notation: no command named ~a; the commands are ~a" name (command-names)))
-        2])]))
+        (refuse "notation" (format "there is no command named ~a" name)
+                (names-to-run))])]))
+
+;; names-to-run is the what-to-do the table itself speaks: the commands that
+;; exist, written the way run-with writes them, so a reader is given the same
+;; answer wherever they asked.
+(define (names-to-run)
+  (format "run one of the commands that exist: ~a" (command-names)))

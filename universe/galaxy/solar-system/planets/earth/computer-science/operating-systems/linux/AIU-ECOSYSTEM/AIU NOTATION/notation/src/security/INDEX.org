@@ -1,0 +1,66 @@
+#+TITLE: INDEX — AIU NOTATION/notation/src/security/
+# One job: list every file in this directory and the single job of each.
+# Status: current 2026-10-19; updated in the same commit as any change here.
+
+* Files
+# one line per file: its name, then the single job it performs.
+
+  - security.rkt — the refusals as data: every rule by id in one list, one
+    lookup by id, the rule ids, and the =state-changing?= predicate
+  - shapes.rkt — the total predicates: =output-safe?= and the write-facing
+    predicate list it answers with; no clock, no disk, no environment
+  - refuse.rkt — the one door: a rule and a value become the refusal record
+    =../errors/raise.rkt= prints
+
+* Where it sits
+# why this area exists and what it may use.
+  - Above machine, below join. It stands on errors and uses nothing above
+    itself; every predicate is pure, so no clock, no disk and no environment
+    reaches this area.
+  - This is the vocabulary, not a runtime: security.rkt decides nothing and
+    refuses nothing. A reader may enumerate the rules and look one up by id
+    without running one check.
+  - A refusal is an error record from =../errors/raise.rkt= and nothing else; a
+    refusal answers the CLI with exit code 2 (entry/dispatch.rkt:54-56). No
+    file here prints.
+  - plan/package-tree.org registered one file here (=security/security.rkt=).
+    It now registers all three, with the job each one has; the register was
+    widened 2026-10-19 rather than this directory being cut back to one file.
+
+* The rules
+# each id, then one plain sentence: what it refuses, and what to do instead.
+  - =target-names-no-file= — an =into:= value that names nothing; write a path
+    after =into:=.
+  - =target-is-a-directory= — a target ending in =/=; name the one file.
+  - =path-escapes-root= — a target that climbs out with =..=; keep it inside the
+    document's own directory.
+  - =absolute-target= — a target written as an absolute path; write it beside the
+    document, relative to it.
+  - =target-is-the-document= — a target that is the document itself; point the
+    =into:= line at a file of its own.
+  - =unwritable-place= — a heading or block place, which this build does not
+    splice into; send to the whole file, or leave the place to the owner.
+  - =opaque-body-reached= — a declaration no rule registers, read out of a code
+    body; register the keyword, or write the rule that covers it.
+
+* Who calls it
+# what is still missing above this area; nothing uses it today.
+  - No caller today, and that was re-checked on 2026-10-19: no Racket file in
+    the package requires anything under ../security/. The =send= command landed
+    and reaches generation/write.rkt, which still raises its own refusals. So
+    gate/security-gate-lint.nu still prints NOTHING-TO-CHECK: the directory
+    exists and the stage's own audit is a change in gate/, not here.
+  - literate/targets.rkt (=writable-path=) and generation/write.rkt
+    (=require-replaceable=) still raise their own refusals. They are the checks
+    the first five ids point at; rewiring them to refuse.rkt is a change in
+    those areas and is the owner's.
+  - =unwritable-place= points at =whole-file-target?= in literate/targets.rkt,
+    which reports the case as a finding and writes nothing for it. Nothing calls
+    =place-not-writable?= yet either.
+  - =opaque-body-reached= has no check anywhere today: literate/chunks.rkt reads
+    =chunk=, =into= and =depends= out of an opaque body precisely because rule B
+    registers none of them. Its predicate takes the registered declaration list
+    as a second argument, because that list lives in elements/, above this area.
+  - The store check in generation/write.rkt — a target file that exists and that
+    no run of this document sent — is a real refusal with no rule here: it needs
+    the store, not a shape, so this shape-only vocabulary does not carry it.

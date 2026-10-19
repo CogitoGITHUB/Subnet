@@ -1,13 +1,38 @@
 #+TITLE: INDEX — AIU NOTATION/notation/src/entry/
 # One job: list every file in this directory and the single job of each.
-# Status: current; updated in the same commit as any change in this directory.
+# Status: current 2026-10-19; updated in the same commit as any change here.
 
 * Files
 # one line per file: its name, then the single job it performs.
 
-  - dispatch.rkt — the command table: one name, one function; =check= lists
-    every error with its line number and exits non-zero
-  - cli.rkt — argv to a command: one parser, one dispatch
+  - dispatch.rkt — the command table: one name, one function. It holds THREE
+    commands today and the table is closed, so a name nobody registered is
+    refused. =check= lists every error in a parse-tree-document with its line
+    number; =literate <document>= reads the chunk graph and prints the
+    findings and, when the graph is clean, the send order — it writes nothing
+    at all, not even a store directory; =send <document>= scans, stops on
+    findings, builds the plan, prints it, and only then carries it out.
+  - cli.rkt — argv to a command: one parser, one dispatch; the only place that
+    reads argv, and the only place that turns an exit code into a process code
+
+* The three exit codes, and where each is named
+# one table, one place; a command hands a number back and invents none.
+  - =exit-clean= 0 — the command finished and there was nothing to report.
+  - =exit-findings= 1 — the document holds something the command names, an
+    error in the parse tree or a finding in the chunk graph. Nothing written.
+  - =exit-refused= 2 — refused before the run began: no document named, no
+    document at that path, or a command name nobody registered. Nothing
+    written.
+  - diagnostics/report.rkt promises this table to a reader and builds a report
+    with 0 or 1 only; a refusal never becomes a report, so 2 is decided by the
+    command before a report exists (diagnostics/report.rkt:13-16, 47-50).
+    dispatch.rkt defines the three numbers (dispatch.rkt:54-56).
+  - A refusal is printed, not raised: what calls a command reads an exit code,
+    and an exception would print a stack trace where this package promises one
+    line (dispatch.rkt:223-232).
+  - The command name is =send= and the function is =send-chunks=, because
+    racket/base already has a send and a reader must never have to ask which
+    one a line means (dispatch.rkt:172-174).
 
 * Not written yet
 # named in plan/package-tree.org, still planned; no file, no stub.
@@ -20,3 +45,6 @@
   - =entry/= is the ceiling of the area table: it may use every area below it
     and nothing uses it (plan/package-tree.org, "The law"). It is the only
     place argv is read.
+  - It requires diagnostics/, generation/, literate/, model/ and narration/
+    today. It does not require surface/, so the engine boundary's answer
+    document is not reachable from any command yet.

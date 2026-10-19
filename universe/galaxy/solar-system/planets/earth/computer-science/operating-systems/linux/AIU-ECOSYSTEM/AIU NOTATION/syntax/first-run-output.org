@@ -4,9 +4,9 @@
 
 * What was run
 # the page, the binary and the command, so this file can be read alone.
-  - Page: =syntax/example.notation= (20 lines, 482 bytes) — a title with tags,
+  - Page: =syntax/example.aiu= (20 lines, 482 bytes) — a title with tags,
     two paragraphs, and a code block whose body holds a bare =code start= line.
-  - Broken copy: =/tmp/opencode/broken.notation= only, never in the tree: the
+  - Broken copy: =/tmp/opencode/broken.aiu= only, never in the tree: the
     same page with one stray line inserted at line 6, between two blocks.
   - Rust side: =cargo build --offline= into =/tmp/opencode/notation-target=.
   - Racket side: =/root/home/shape/opt/racket-full/bin/racket notation/src/entry/cli.rkt check <document>=.
@@ -14,7 +14,7 @@
 * a. Round trip on the good page
 # identical or not, as printed.
 #+begin_example
-$ notation roundtrip syntax/example.notation
+$ notation roundtrip syntax/example.aiu
 roundtrip: identical (482 bytes)
 exit=0
 #+end_example
@@ -22,9 +22,9 @@ exit=0
 * b. Parse to a document, then check it
 # the document, and the check command's answer.
 #+begin_example
-$ notation parse syntax/example.notation > /tmp/opencode/good.document
+$ notation parse syntax/example.aiu > /tmp/opencode/good.document
 NOTATION-DOCUMENT 1
-file "syntax/example.notation"
+file "syntax/example.aiu"
 node block title 1 0 4 66 0
 decl tags "sample first-run" 2 12
 node block paragraph 6 68 9 233 0
@@ -44,7 +44,7 @@ still fails".
 * c. Plain render of the good page
 # the marks gone, the content kept word for word.
 #+begin_example
-$ notation render syntax/example.notation
+$ notation render syntax/example.aiu
 The first sample page
 Every line of this page sits inside a named block. The blocks are the syntax:
 a start line, the content, an end line, and nothing else.
@@ -58,14 +58,14 @@ exit=0
 * d. The broken copy
 # the stray line, its error, its line number, and the exit code.
 #+begin_example
-$ notation parse /tmp/opencode/broken.notation > /tmp/opencode/broken.document
+$ notation parse /tmp/opencode/broken.aiu > /tmp/opencode/broken.document
 error stray-text 6 68 0 "text outside any named block" "put the text inside a ""<name> start"" / ""<name> end"" block"
 
 $ racket notation/src/entry/cli.rkt check /tmp/opencode/broken.document
 notation/src/errors/raise.rkt:13:10: make-err: unbound identifier
 exit=1
 
-$ notation roundtrip /tmp/opencode/broken.notation
+$ notation roundtrip /tmp/opencode/broken.aiu
 roundtrip: identical (561 bytes)
 #+end_example
 The parser reports =stray-text= at line 6, and the broken page still round

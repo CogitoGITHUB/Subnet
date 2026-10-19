@@ -10,11 +10,12 @@
 //!     same mark as every other block:
 //!         comment start
 //!         a note for the owner, which the reader never sees
-//!         comment end
+//!         end comment
 //!   * rule A of syntax/first-slice-freeze.org — a block line is exactly two
-//!     words, the name and start or end. So `comment start` opens a comment
-//!     only when those two words are the whole line; the same two words inside
-//!     a line of prose open nothing, as rule D already says for a code body.
+//!     words, the name and `start`, or `end` and the name. So `comment start`
+//!     opens a comment only when those two words are the whole line; the same
+//!     two words inside a line of prose open nothing, as rule D already says for
+//!     a code body.
 //! No inline comment sign exists in the format yet and none is invented here;
 //! an undecided shape is reported, not guessed.
 //!
@@ -126,16 +127,16 @@ pub fn is_comment_line(comments: &[Comment], start: usize, end: usize) -> bool {
 }
 
 /// Which comment mark a line carries, or None when it carries none. The test
-/// is rule A's: the line is the two words, the name and start or end, and
-/// nothing else. Trailing spaces are ignored, as rule A says.
+/// is rule A's: the line is the two words, the name and `start` or `end` and
+/// the name, and nothing else. Trailing spaces are ignored, as rule A says.
 fn comment_mark(line: &str) -> Option<CommentMark> {
     let parts: Vec<&str> = line.trim_end().split_whitespace().collect();
-    if parts.len() != 2 || parts[0] != COMMENT_BLOCK_NAME {
+    if parts.len() != 2 {
         return None;
     }
-    match parts[1] {
-        "start" => Some(CommentMark::Start),
-        "end" => Some(CommentMark::End),
+    match (parts[0], parts[1]) {
+        (COMMENT_BLOCK_NAME, "start") => Some(CommentMark::Start),
+        ("end", COMMENT_BLOCK_NAME) => Some(CommentMark::End),
         _ => None,
     }
 }
@@ -144,4 +145,49 @@ fn comment_mark(line: &str) -> Option<CommentMark> {
 enum CommentMark {
     Start,
     End,
+}
+
+#[cfg(test)]
+mod tests {
+    //! A comment is a block, so it is written in the block form: `comment start`
+    //! opens, `end comment` closes. Both halves are tested here, because a
+    //! comment the scanner misses is a note the reader is shown.
+    use super::*;
+
+    #[test]
+    fn the_marks_are_the_three_line_block_form() {
+        assert!(matches!(comment_mark("comment start"), Some(CommentMark::Start)));
+        assert!(matches!(comment_mark("end comment"), Some(CommentMark::End)));
+        assert!(matches!(comment_mark("  comment start   "), Some(CommentMark::Start)));
+        // The retired "comment end" closes nothing, and a mark with anything
+        // else on the line is content.
+        assert!(comment_mark("comment end").is_none());
+        assert!(comment_mark("end").is_none());
+        assert!(comment_mark("end comment because").is_none());
+        assert!(comment_mark("a line that mentions comment start").is_none());
+    }
+
+    #[test]
+    fn a_closed_comment_keeps_exactly_its_own_lines() {
+        let text = "title start\ncomment start\na note\nend comment\nA page\nend title\n";
+        let buffer = Buffer::from_text(text);
+        let comments = find_comments(&buffer);
+        assert_eq!(comments.len(), 1);
+        assert!(comments[0].closed);
+        assert_eq!(comments[0].line, 2);
+        assert_eq!(
+            std::str::from_utf8(comments[0].bytes(&buffer)).unwrap(),
+            "comment start\na note\nend comment"
+        );
+    }
+
+    #[test]
+    fn a_comment_the_file_never_closed_is_still_found() {
+        let text = "title start\ncomment start\na note\nA page\nend title\n";
+        let buffer = Buffer::from_text(text);
+        let comments = find_comments(&buffer);
+        assert_eq!(comments.len(), 1);
+        assert!(!comments[0].closed);
+        assert_eq!(comments[0].line, 2);
+    }
 }

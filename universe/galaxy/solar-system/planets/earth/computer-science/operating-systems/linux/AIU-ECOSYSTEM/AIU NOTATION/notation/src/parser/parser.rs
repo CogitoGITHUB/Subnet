@@ -5,6 +5,21 @@
 //! Frozen rules live in syntax/first-slice-freeze.org; this file is their only
 //! implementation for the first slice (title, paragraph, code).
 //!
+//! The block form, which the owner's format rules fix: a block is three lines of
+//! shape — the name and `start`, the content on its own line or lines, then
+//! `end` and the name again.
+//!
+//! ```text
+//! title start
+//! tags: sample
+//! The first sample page
+//! end title
+//! ```
+//!
+//! The retired spelling `<name> end` closes nothing and is content like any
+//! other line, so a file written the old way reports stray text instead of
+//! silently closing a block.
+//!
 //! Two promises it keeps:
 //!   * the meaning tree has no node kind for loose text — only blocks and
 //!     error nodes (rule b), and
@@ -82,7 +97,7 @@ pub struct Block {
 
 impl Block {
     /// The code block's body is opaque: nothing inside it is read as notation,
-    /// and only an exact matching end line closes it (rule D).
+    /// and only an exact matching `end code` line closes it (rule D).
     pub fn is_opaque(&self) -> bool {
         self.name == "code"
     }
@@ -172,27 +187,35 @@ fn collect_errors<'a>(node: &'a Node, out: &mut Vec<&'a ErrorNode>) {
 /// What a line is, before any rule is applied.
 enum LineShape {
     Blank,
-    /// "<name> start" or "<name> end", with the name exactly as written.
-    BlockLine { name: String, is_start: bool },
+    /// "<name> start", with the name exactly as written.
+    BlockStart { name: String },
+    /// "end <name>", with the name exactly as written.
+    BlockEnd { name: String },
     /// "keyword: value" with a registered keyword.
     Declaration { keyword: String, value: String },
-    /// Anything else, including a "word:" line with an unregistered keyword.
+    /// Anything else, including a "word:" line with an unregistered keyword, and
+    /// the retired "<name> end" spelling, which is content and closes nothing.
     Content,
 }
 
 /// Read one line and say what shape it has. Trailing spaces are ignored
 /// (rule A); nothing else about the line is touched.
+///
+/// The three-line block form: the opener is the name and `start`, the closer is
+/// `end` and the name, and the content is whatever lines sit between them.
 fn shape_of(text: &str) -> LineShape {
     let trimmed = text.trim_end();
     if trimmed.trim().is_empty() {
         return LineShape::Blank;
     }
     let parts: Vec<&str> = trimmed.split_whitespace().collect();
-    if parts.len() == 2 && (parts[1] == "start" || parts[1] == "end") {
-        return LineShape::BlockLine {
-            name: parts[0].to_string(),
-            is_start: parts[1] == "start",
-        };
+    if parts.len() == 2 {
+        if parts[1] == "start" {
+            return LineShape::BlockStart { name: parts[0].to_string() };
+        }
+        if parts[0] == "end" {
+            return LineShape::BlockEnd { name: parts[1].to_string() };
+        }
     }
     if let Some(colon) = trimmed.find(':') {
         let keyword = trimmed[..colon].trim();
@@ -211,6 +234,35 @@ fn is_block_name(name: &str) -> bool {
     BLOCK_NAMES.contains(&name)
 }
 
+/// True when the line opens a block of that name and of no other: it is the
+/// two words `<name> start` and nothing else. Spelled out here because the
+/// recovery in partial/ needs it and `shape_of` is private to this file.
+pub fn opens_block(line: &str, name: &str) -> bool {
+    match shape_of(line) {
+        LineShape::BlockStart { name: written } => written == name,
+        _ => false,
+    }
+}
+
+/// True when the line closes a block of that name and of no other: it is the
+/// two words `end <name>` and nothing else.
+pub fn closes_block(line: &str, name: &str) -> bool {
+    match shape_of(line) {
+        LineShape::BlockEnd { name: written } => written == name,
+        _ => false,
+    }
+}
+
+/// True when the line opens one of the Tier 1 blocks: `<name> start` with a
+/// registered name. Used by the recovery to find where a broken file reads
+/// again, so the two never disagree about what an opener is.
+pub fn opens_registered_block(line: &str) -> bool {
+    match shape_of(line) {
+        LineShape::BlockStart { ref name } => is_block_name(name),
+        _ => false,
+    }
+}
+
 /// Parse one buffer into a tree.
 pub fn parse(buffer: &Buffer) -> Tree {
     let line_count = buffer.line_count();
@@ -225,12 +277,12 @@ pub fn parse(buffer: &Buffer) -> Tree {
         let text = buffer.line_text(line);
 
         // A code block's body is opaque (rule D): nothing inside it is read as
-        // notation, and only an exact matching end line closes it. A line that
-        // looks like a start line is content, so it opens nothing.
+        // notation, and only an exact matching `end code` line closes it. A line
+        // that looks like a start line is content, so it opens nothing.
         if let Some(inner) = open.last() {
             if inner.is_opaque() {
                 match shape_of(text) {
-                    LineShape::BlockLine { ref name, is_start: false } if *name == inner.name => {
+                    LineShape::BlockEnd { ref name } if *name == inner.name => {
                         close_block(&mut open, &mut top, name, span, line);
                     }
                     // every other line, including a "<name> start" line and a
@@ -245,10 +297,10 @@ pub fn parse(buffer: &Buffer) -> Tree {
             LineShape::Blank => {
                 // Blank lines between blocks carry no meaning (rule b).
             }
-            LineShape::BlockLine { name, is_start } => {
+            LineShape::BlockStart { name } => {
                 if !is_block_name(&name) {
                     push_error(&mut open, &mut top, unknown_name(span, line, &name));
-                } else if is_start {
+                } else {
                     let mut declarations = Vec::new();
                     let mut scan = line + 1;
                     // Consecutive declaration lines straight under the start
@@ -280,6 +332,11 @@ pub fn parse(buffer: &Buffer) -> Tree {
                         declarations,
                         children: Vec::new(),
                     });
+                }
+            }
+            LineShape::BlockEnd { name } => {
+                if !is_block_name(&name) {
+                    push_error(&mut open, &mut top, unknown_name(span, line, &name));
                 } else {
                     close_block(&mut open, &mut top, &name, span, line);
                 }
@@ -310,7 +367,7 @@ pub fn parse(buffer: &Buffer) -> Tree {
                 line: buffer.len().saturating_sub(1).max(1),
                 opener_line: Some(opener),
                 what: format!("block \"{}\" was opened at line {} and never closed", name, opener),
-                what_to_do: format!("add its matching \"{} end\" line", name),
+                what_to_do: format!("add its matching \"end {}\" line", name),
             },
         );
         attach(&mut open, &mut top, Node::Block(block));
@@ -366,7 +423,7 @@ fn close_block(open: &mut Vec<Block>, top: &mut Vec<Node>, name: &str, span: Spa
                 span,
                 line,
                 opener_line: None,
-                what: format!("\"{} end\" closes nothing: no block is open", name),
+                what: format!("\"end {}\" closes nothing: no block is open", name),
                 what_to_do: "remove the line, or open the block it was meant to close".to_string(),
             },
         ),
@@ -387,7 +444,7 @@ fn close_block(open: &mut Vec<Block>, top: &mut Vec<Node>, name: &str, span: Spa
                     line,
                     opener_line: Some(opener),
                     what: format!(
-                        "\"{} end\" does not match the innermost open \"{}\" block",
+                        "\"end {}\" does not match the innermost open \"{}\" block",
                         name, inner
                     ),
                     what_to_do: format!("close the open \"{}\" block first", inner),
@@ -404,7 +461,7 @@ fn stray(span: Span, line: usize) -> ErrorNode {
         line,
         opener_line: None,
         what: "text outside any named block".to_string(),
-        what_to_do: "put the text inside a \"<name> start\" / \"<name> end\" block".to_string(),
+        what_to_do: "put the text inside a \"<name> start\" / \"end <name>\" block".to_string(),
     }
 }
 
@@ -427,4 +484,227 @@ pub fn place_of(buffer: &Buffer, offset: usize) -> LineCol {
 /// The byte offset of a line and character column, for a diagnosis.
 pub fn offset_of(buffer: &Buffer, line: usize, column: usize) -> usize {
     line_col_to_offset(buffer, line, column)
+}
+
+#[cfg(test)]
+mod tests {
+    //! The block form, exercised on text and not on a hand-built tree: a page
+    //! written the way the owner's format rules write it must come back as the
+    //! blocks it says it is, with the content as the body and nothing invented.
+    use super::*;
+    use crate::buffer::Buffer;
+
+    /// A page in the new form: three-line blocks, content on its own lines.
+    const VALID_PAGE: &str = "\
+title start
+tags: sample
+A valid page
+end title
+
+paragraph start
+The first line of the body.
+The second line of the body.
+end paragraph
+";
+
+    /// A page whose code body holds lines that look like marks. Nothing in there
+    /// is parsed (rule D), so both stay content.
+    const OPAQUE_PAGE: &str = "\
+title start
+A page with a code body
+end title
+
+code start
+language: text
+def example():
+    return 1
+code start
+end paragraph
+end code
+";
+
+    fn buffer_of(text: &str) -> Buffer {
+        Buffer::from_text(text)
+    }
+
+    fn top_blocks(tree: &Tree) -> Vec<&Block> {
+        tree.nodes
+            .iter()
+            .filter_map(|node| match node {
+                Node::Block(b) => Some(b),
+                Node::Error(_) => None,
+            })
+            .collect()
+    }
+
+    fn block_named<'a>(tree: &'a Tree, name: &str) -> &'a Block {
+        top_blocks(tree)
+            .into_iter()
+            .find(|b| b.name == name)
+            .unwrap_or_else(|| panic!("no {} block in the tree", name))
+    }
+
+    fn error_kinds(tree: &Tree) -> Vec<ErrorKind> {
+        tree.errors().into_iter().map(|e| e.kind).collect()
+    }
+
+    /// The body lines of a block: what sits between the declaration run and the
+    /// closing line, with the blank spacing dropped. This is the reader test —
+    /// the words in the file are the words the tree kept.
+    fn body_lines(buffer: &Buffer, block: &Block) -> Vec<String> {
+        let first = block.line + 1 + block.declarations.len();
+        let last = buffer.line_at(block.span.end.saturating_sub(1).max(block.span.start));
+        let mut out: Vec<String> = Vec::new();
+        for line in first..last {
+            let text = buffer.line_text(line);
+            if text.trim().is_empty() {
+                continue;
+            }
+            out.push(text.to_string());
+        }
+        out
+    }
+
+    #[test]
+    fn a_valid_page_parses_to_the_expected_kinds() {
+        let buffer = buffer_of(VALID_PAGE);
+        let tree = parse(&buffer);
+        let names: Vec<&str> = top_blocks(&tree).iter().map(|b| b.name.as_str()).collect();
+        assert_eq!(names, vec!["title", "paragraph"]);
+        assert_eq!(error_kinds(&tree), Vec::<ErrorKind>::new());
+        assert!(tree.round_trips(&buffer));
+    }
+
+    #[test]
+    fn content_lines_are_the_body() {
+        let buffer = buffer_of(VALID_PAGE);
+        let tree = parse(&buffer);
+        let title = block_named(&tree, "title");
+        assert_eq!(body_lines(&buffer, title), vec!["A valid page".to_string()]);
+        // The declaration run is a hint on the block, not part of its body.
+        assert_eq!(title.declarations.len(), 1);
+        assert_eq!(title.declarations[0].keyword, "tags");
+        assert_eq!(title.declarations[0].value, "sample");
+        let paragraph = block_named(&tree, "paragraph");
+        assert_eq!(
+            body_lines(&buffer, paragraph),
+            vec!["The first line of the body.".to_string(), "The second line of the body.".to_string()]
+        );
+        // A body line is not an element: the tree has no node kind for loose
+        // text (rule b), so neither block has children.
+        assert!(title.children.is_empty());
+        assert!(paragraph.children.is_empty());
+    }
+
+    #[test]
+    fn end_name_closes_its_block() {
+        let buffer = buffer_of(VALID_PAGE);
+        let tree = parse(&buffer);
+        let title = block_named(&tree, "title");
+        assert_eq!(title.span.start, buffer.line_start(1));
+        // The span ends at the end of the "end title" line, not one byte later.
+        assert_eq!(title.span.end, buffer.line_end(4));
+        assert_eq!(buffer.line_text(4), "end title");
+        // The closer belongs to the block it closes: no error, no second node.
+        assert_eq!(tree.nodes.len(), 2);
+    }
+
+    #[test]
+    fn the_retired_name_end_spelling_closes_nothing() {
+        let text = "title start\nA page\ntitle end\n";
+        let buffer = buffer_of(text);
+        let tree = parse(&buffer);
+        // "title end" is a content line, so the title runs to the end of the
+        // file and is reported as unclosed.
+        let kinds = error_kinds(&tree);
+        assert!(kinds.contains(&ErrorKind::UnclosedBlock), "kinds were {:?}", kinds);
+        assert_eq!(top_blocks(&tree).len(), 1);
+        assert_eq!(top_blocks(&tree)[0].span.end, buffer.len());
+    }
+
+    #[test]
+    fn an_unclosed_block_is_recovered_as_an_error_node_that_keeps_its_children() {
+        // A title, then a paragraph that opens a code block and never closes.
+        let text = "title start\nA page\nend title\n\nparagraph start\nstill open\ncode start\nlanguage: text\nend code\n";
+        let buffer = buffer_of(text);
+        let tree = parse(&buffer);
+        let paragraph = block_named(&tree, "paragraph");
+        assert_eq!(paragraph.span.end, buffer.len());
+        let nested: Vec<&str> = paragraph.children.iter().map(|n| match n {
+            Node::Block(b) => b.name.as_str(),
+            Node::Error(_) => "",
+        }).collect();
+        assert_eq!(nested, vec!["code"]);
+        let errors = tree.errors();
+        let unclosed: Vec<&ErrorNode> =
+            errors.iter().filter(|e| e.kind == ErrorKind::UnclosedBlock).copied().collect();
+        assert_eq!(unclosed.len(), 1);
+        // An empty span: the error names a place and claims no bytes, so the
+        // file still prints back byte for byte (rule F).
+        assert_eq!(unclosed[0].span.start, unclosed[0].span.end);
+        assert!(unclosed[0].what_to_do.contains("end paragraph"));
+        assert!(tree.round_trips(&buffer));
+    }
+
+    #[test]
+    fn a_code_body_stays_opaque() {
+        let buffer = buffer_of(OPAQUE_PAGE);
+        let tree = parse(&buffer);
+        assert_eq!(error_kinds(&tree), Vec::<ErrorKind>::new());
+        let code = block_named(&tree, "code");
+        assert!(code.is_opaque());
+        assert_eq!(
+            body_lines(&buffer, code),
+            vec![
+                "def example():".to_string(),
+                "    return 1".to_string(),
+                // A start line inside the body opens nothing.
+                "code start".to_string(),
+                // A mismatched end line inside the body closes nothing.
+                "end paragraph".to_string(),
+            ]
+        );
+        assert_eq!(code.span.end, buffer.line_end(11));
+        assert!(tree.round_trips(&buffer));
+    }
+
+    #[test]
+    fn only_end_code_closes_a_code_body() {
+        // "end title" is not "end code": the code block runs on and the title
+        // that wrote it is still the innermost block that can be closed.
+        let text = "title start\nA page\ncode start\nend title\n";
+        let buffer = buffer_of(text);
+        let tree = parse(&buffer);
+        let kinds = error_kinds(&tree);
+        assert!(kinds.contains(&ErrorKind::UnclosedBlock), "kinds were {:?}", kinds);
+    }
+
+    #[test]
+    fn an_unregistered_name_is_reported_on_both_spellings() {
+        for line in ["figure start", "end figure"] {
+            let text = format!("title start\nA page\nend title\n{}\n", line);
+            let tree = parse(&buffer_of(&text));
+            let kinds = error_kinds(&tree);
+            assert!(
+                kinds.contains(&ErrorKind::UnknownBlockName),
+                "{} gave {:?}",
+                line,
+                kinds
+            );
+        }
+    }
+
+    #[test]
+    fn the_opener_and_closer_tests_are_the_ones_the_recovery_asks_for() {
+        assert!(opens_block("code start", "code"));
+        assert!(opens_registered_block("code start"));
+        assert!(!opens_registered_block("code end"));
+        assert!(closes_block("end code", "code"));
+        assert!(!closes_block("code start", "code"));
+        // Trailing spaces are ignored (rule A); anything else on the line is
+        // content, so neither test fires.
+        assert!(closes_block("end code   ", "code"));
+        assert!(!closes_block("end code because", "code"));
+        assert!(!opens_block("end code", "code"));
+    }
 }

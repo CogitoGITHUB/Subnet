@@ -1,0 +1,15 @@
+title start
+tags: fixture valid
+A valid page
+end title
+
+paragraph start
+Every block on this page is opened by "<name> start" and closed by
+"end <name>", and every line between them is the body.
+end paragraph
+
+code start
+language: text
+title start
+paragraph end
+end code
