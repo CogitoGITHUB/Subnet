@@ -147,7 +147,7 @@
 ;; (rule F).
 (define (line-start-offset lines line)
   (for/fold ([n 0]) ([l (take lines (sub1 line))])
-    (+ n (string-utf8-length l) 1)))
+    (+ n (string-utf-8-length l) 1)))
 
 ;; page-lines splits the page into its lines. Empty lines are kept and the CR
 ;; of a CR LF page stays on the line it belongs to, so a cut and a join give
@@ -178,6 +178,10 @@
                   (format "the chunk names ~a twice; a header says each thing once" kw))]
       [else
        (loop (cdr left) (cons (cons kw (header-value line)) header))])))
+
+;; string-index finds the 0-based index of character ch in str, or #f if not found.
+(define (string-index str ch)
+  (for/first ([c (in-string str)] [i (in-naturals)] #:when (char=? c ch)) i))
 
 ;; header-keyword reads the keyword of a header line, or #f when the line is
 ;; not one of this area's declarations. The keyword ends at the first colon,

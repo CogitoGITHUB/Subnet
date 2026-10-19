@@ -103,7 +103,7 @@
      (raise-err 'targets "targets.rkt"
                 (format "the target \"~a\" climbs out with \"..\"; a target is written inside the document's own directory"
                         written))]
-    [(path-absolute? clean)
+    [(absolute-path? clean)
      (raise-err 'targets "targets.rkt"
                 (format "the target \"~a\" is an absolute path; a target is written beside the document, not anywhere on the machine"
                         written))]
