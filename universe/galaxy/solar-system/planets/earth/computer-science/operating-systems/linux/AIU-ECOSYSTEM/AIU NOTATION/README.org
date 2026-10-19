@@ -1,177 +1,326 @@
-#+TITLE: README — AIU NOTATION
-# One job: what this program is, in one short read; status lives elsewhere
-# Status: current 2026-10-19. This file never repeats status; it points to where status lives.
+#+TITLE: AIU NOTATION
+# One job: what this program is and what it does today.
+# Every line here is proved by a command that was run; the proof is in
+# syntax/feature-status.org, one row per feature.
 
 * What it is
-# the short answer, from HANDOFF.org and rule 12.
-  - The owner's own file format and syntax in one: it replaces Org, Markdown
-    and LaTeX for their everyday use.
-  - Plain text is the source of truth; a rendering engine shows it live.
-  - A page is a plain text file with the extension =.aiu=.
-  - The product name is AIU-NOTATION. The program is separate and the code
-    lives in one package directory, =notation/=.
+
+AIU NOTATION is the text format of the AIU ecosystem.
+A page is a plain text file with the extension =.aiu=.
+
+The program has two halves:
+
+  - the Rust crate under =notation/= — the engine: it parses, renders
+    and round-trips a page, fast.
+  - the Racket package under =notation/src/= — the model: it reads the
+    engine's document, answers questions about a page and writes the
+    engine's output back out.
+
+Both halves are built and green today.
 
 * The hard rule
-# the one rule everything else obeys. The owner chose it.
-  - A block is three lines: the name and =start=, the content on its own line
-    or lines, then the name and =end= again.
-  - So a block reads:
-    #+begin_example
-    title start
-    tags: sample
-    The first sample page
-    title end
-    #+end_example
-  - The keyword comes FIRST both times: =<name> start= and =<name> end=.
-  - The retired spelling =end <name>= closes nothing. It is content like any
-    other line, so a file written the old way reports a stray text instead of
-    silently closing a block.
-  - WHY the owner chose it: "I chose it so it is easy to read for everyone —
-    humans, AI, grep, CLI tools." The name is the subject of the line and the
-    word after it says what the line does, so the eye always lands on the same
-    word in the same place.
-  - A code block's body is opaque: only =code end= closes it, and any line in
-    between that looks like =title start= is content and opens nothing.
+
+A block is three lines:
+
+  =<name> start=
+  the content, on its own line or lines
+  =<name> end=
+
+The keyword comes FIRST both times.
+
+  title start
+  tags: sample
+  The first sample page
+  title end
+
+=end title= is the RETIRED spelling. It closes nothing and is
+ordinary text.
+
+The owner chose this because it reads the same way to everyone who
+reads these files — a person, an AI, a =grep=, a CLI. The name is the
+subject of the line and the word after it says what the line does, so
+the eye always lands on the same word in the same place.
+
+* The names you may use
+
+Block names (the word on a start or end line):
+
+  title  paragraph  code  heading  table  header  row  comment
+
+Declaration keywords (the word before the colon on a line):
+
+  tags  language  style  theme  color  format  font  level
+  caption  column  cell  row-id  meta  todo
+
+A line whose word is NOT in that list stays plain content. A
+=colour: blue= line is not a declaration; it is text.
 
 * Build
-# the one command, and the one file it leaves behind.
-  - =cargo build --manifest-path notation/Cargo.toml --target-dir /tmp/notation-target=
-  - The build leaves =notation/Cargo.lock= behind. Delete it:
-    =rm -f notation/Cargo.lock=
-  - The binary lands at =/tmp/notation-target/debug/notation=.
-  - Nothing is written inside the project tree.
 
-* Run
-# four commands, one file path each.
-  - =notation parse <file.aiu>= — prints the parse tree document, and the parse
-    time in milliseconds on the error port.
-  - =notation render <file.aiu>= — prints the plain render: the marks and the
-    declaration lines are hidden, the content is kept.
-  - =notation render-rich <file.aiu>= — the same content drawn with unicode: a
-    heading rule, a code box, an indent per nesting level.
-  - =notation roundtrip <file.aiu>= — prints "roundtrip: identical (N bytes)"
-    when the tree prints back to the identical bytes, and exits 1 when it does
-    not.
+The crate builds with:
 
-* Check
-# the daily script, and the gate under it.
-  - The daily script does the whole thing:
-    =nu tools/aiu.nu check <file.aiu>=,
-    =nu tools/aiu.nu render <file.aiu>=,
-    =nu tools/aiu.nu roundtrip <file.aiu>=,
-    =nu tools/aiu.nu json <file.aiu>= and
-    =nu tools/aiu.nu from-json <file.json>=.
-  - It builds the binary if the binary is missing, and it never writes inside
-    the project tree.
-  - The gate is the whole project: =nu gate/check.nu=. It has seven stages:
-    paren-check, naming, one-way, security-gate, language-split, load-check
-    and comment-lint. A green run ends with "light gate: green, 7 stages ran".
-  - A stage with nothing to check prints NOTHING-TO-CHECK and never PASS.
-  - The Racket check command on its own must be run with a RELATIVE path:
-    =racket notation/src/entry/cli.rkt check <document>=. The absolute path of
-    this project holds a space, and racket splits its argument on that space.
+  cargo build --manifest-path notation/Cargo.toml --target-dir /tmp/notation-target
 
-* The block names and the declaration keywords
-# the vocabulary, all of it registered in plan/package-tree.org.
-  - Block names: =title=, =paragraph=, =code=, =heading=, =table=, =header=,
-    =row=. A =code= body is opaque; the others may nest.
-  - Declaration keywords, written =keyword: value= on their own line right
-    under the opening line: =tags=, =language=, =style=, =theme=, =color=,
-    =format=, =font=, =level=, =caption=, =column=, =cell=, =row-id=, =meta=.
-  - A =heading= takes its depth from its =level:= declaration. Its NUMBER is
-    computed, never typed: the first heading is 1, the one under it is 1.1,
-    the one under that is 1.1.1, the next at the same level is 1.2, and the
-    next top heading is 2.
-  - A =table= holds =header= and =row= blocks. A =column:= declaration names
-    the column, its type and whether it is optional. A =cell:= with an empty
-    value is a MISSING value, and only an optional column may hold one.
-  - A =word: value= line whose word is not a registered keyword stays plain
-    content. It is never a declaration.
-  - The error kinds, all of them severity error with no off switch:
-    =stray-text=, =mismatched-end=, =unclosed-block=, =unknown-block-name=,
-    =missing-title= and =bad-heading-level=.
+The binary lands at =/tmp/notation-target/debug/notation=.
+The build leaves =notation/Cargo.lock= behind; delete it:
 
-* Principles
-# one line each, from rules/rule-12-notation-syntax.org and HANDOFF.org.
-  - Ordinary things use literal names, not symbols: a title is called title.
-  - A named element is opened and closed with one tiny, consistent mark.
-  - Goal: insanely easy to read, insanely easy to type, instantly
-    understandable by the owner and by agents alike.
-  - The smallest slice first: title, paragraph, code block.
-  - The editor helps typing, and live rendering hides the marks.
-  - Only the hardcore parts (math, graphs) use advanced symbolic syntax:
-    tier 3, far future.
+  rm -f notation/Cargo.lock
 
-* How it fits
-# the seams, from plan/architecture.org.
-  - The engine surface is called by the editor and the multiplexer, and
-    calls nothing back into them.
-  - The editor plugs in through the notation-engine boundary, in
-    =../contract/=; it triggers the engine build and enters dev mode after.
-  - Agents read a notation address carried inside the context bundle.
-  - PM installs the notation, then bakes it in (rule 02); it is a package
-    with its own kit, like every program.
-  - The editor keeps its own features; notation carries none (rule 14).
+Nothing is ever written inside the project tree.
 
-* Folder map
-# one line per top-level folder and file, as they exist today; INDEX.org is the full index.
-  - README.org — this file: what the program is, in one read
-  - AGENT.md — the session rules: scope, the light gate, building, git
-  - HANDOFF.org — what a fresh conversation needs to start here
-  - EDITOR-HANDOFF.org — what the editor may call today, with real output
-  - INDEX.org — every file and folder with its single job
-  - TODO.org — the single list of what is left, in build order
-  - ROOT-REQUEST-D014.org — the root-log text the owner still has to carry
-  - architecture/ — the project's shape
-  - comments/ — first-class comments and what rendering strips
-  - decisions/ — choices already made, newest first
-  - engine/ — the machine behind the language
-  - gate/ — the checks: the light gate and the lint stages it runs
-  - graphs/ — tier 3, planned only
-  - literate-code/ — named chunks, targets, dependency scanning
-  - lsp/ — the notation side of the engine surface
-  - math/ — tier 3, planned only
-  - notation/ — the code: the Rust crate and the Racket areas under =src/=
-  - plan/ — one topic per file, the general build plan
-  - questions/ — owner questions, answerable on a phone
-  - rendering/ — plain, rich unicode, optional graphics
-  - research/ — program-specific findings only
-  - rules/ — the hard rules, one file each, rule 12 among them
-  - syntax/ — the element language, the example pages and the feature table
-  - tools/ — the daily script =aiu.nu=
+* The engine, four commands and a fifth
 
-* Tiers
-# what each tier means here, one line each.
-  - Tier 1: up to the done line — the build in TODO.org, including the
-    notation hosted end to end and its share of the done line.
-  - Tier 2: after the done line — references and numbering, tables and
-    data, variants and versioning, engine services, kit entries, conformance.
-  - Tier 3: the LaTeX heritage — math and physics, units, figures,
-    numbering, citations; plan only until the owner opens it.
+  notation parse FILE       prints the parse tree document; the
+                            time it took goes to stderr as =parse-ms: N=
+  notation render FILE      prints the plain render: the content of
+                            the page, with the marks, the declaration
+                            lines and the comments dropped
+  notation render-rich FILE prints the same content drawn with
+                            unicode: a =═= rule under a title, a box
+                            around a code block, two columns of indent
+                            per nesting level, a =✗ line N= mark on an
+                            error
+  notation roundtrip FILE   says whether the page prints back to the
+                            very same bytes
+  notation todos FILE       lists every todo in the page
+
+* The daily script
+
+One script does the everyday work:
+
+  nu tools/aiu.nu check     FILE
+  nu tools/aiu.nu render    FILE
+  nu tools/aiu.nu roundtrip FILE
+  nu tools/aiu.nu json      FILE
+  nu tools/aiu.nu from-json FILE.json
+
+It builds the binary if it is missing, and it never writes in the
+tree. =json= prints the page as JSON; =from-json= prints a JSON file
+back as a =.aiu= page.
+
+* The model, from the shell
+
+  cd "<the project directory>"
+  /root/home/shape/opt/racket-full/bin/racket notation/src/entry/cli.rkt check FILE
+
+Use a RELATIVE path. The project directory holds a space, and racket
+splits a path that holds one, so an absolute path fails.
+
+The commands are =check=, =literate=, =send=, =json= and =from-json=.
+The exit codes are named: =exit-clean 0=, =exit-findings 1=,
+=exit-refused 2=.
+
+=check= reads a PARSE TREE DOCUMENT — the output of =notation parse= —
+not a page. =tools/aiu.nu= does both steps for you.
+
+* The parse tree document
+
+The frozen shape, in =notation/src/join/INDEX.org=:
+
+  NOTATION-DOCUMENT 1
+  file "<path>"
+  node block <name> <startLine> <startOffset> <endLine> <endOffset> <depth>
+  decl <keyword> "<value>" <line> <offset>
+  error <kind> <line> <offset> <openerLine> "<what>" "<whatToDo>"
+  end
+
+A quoted field is ONE field and keeps its spaces. A double quote
+inside is written twice. The =depth= field says what sits inside what,
+so a reader never has to count.
+
+* What the model answers
+
+  read-outline      the document as a tree
+  address-of        a node's address: =title:title@1=; an error node
+                    is =error:<kind>@<line>=
+  addresses         every address, in tree order
+  property-of       a declaration's value on a node
+  tags-of           the tags of a node
+  heading-numbers   the computed number of every heading
+  collect-findings  the findings of a document
+  build-report      the report and its exit code
+  surface-answers   the answers document for the editor
+  read-notices      the notices document
+
+* What a diagnostic looks like
+
+  (struct finding (kind who line column what what-to-do) #:transparent)
+
+The kinds are =unknown-element-name=, =tag-names-nothing=,
+=property-no-value=, =link-no-target= and =parser-recovery=.
+
+A report line reads:
+
+  ERR err-stray.aiu at line 4, column unknown: parser-recovery: the
+  parser recovered from stray-text: text outside any named block; what
+  to do: put the text inside a "<name> start" / "<name> end" block
+
+The column says "unknown" because a parse tree document carries no
+page. The engine's own error line carries the line, the byte and the
+line the block was opened at.
+
+* The six errors the engine names
+
+  stray-text         text outside any named block
+  mismatched-end     a close that does not match the open block; it
+                     names the block and the line it was opened at
+  unclosed-block     a block that was opened and never closed; it
+                     names the line it was opened at
+  unknown-block-name a name that is not registered
+  missing-title      a file whose first block is not a title
+  bad-heading-level  a =level:= that is not a whole number of 1 or
+                     more
+
+* Headings and their numbers
+
+A heading takes its depth from a =level:= declaration; without one it
+is level 1. The NUMBER is computed and never written by you:
+
+  1        1.1        1.1.1        1.2        2
+
+Both halves compute the same numbers: the Rust engine for the render,
+the Racket model for the document.
+
+* Tables
+
+A table holds a =header= block and =row= blocks:
+
+  table start
+  caption: Prices
+  column: name text
+  column: price number
+  column: note text optional
+  header start
+  cell: name
+  cell: price
+  cell: note
+  header end
+  row start
+  row-id: r1
+  cell: Widget
+  cell: 9.99
+  cell:
+  row end
+  table end
+
+A =column:= line names the column, its type and whether it is
+optional. The types are =text=, =number=, =integer=, =bool=, =date=
+and =json=. An EMPTY =cell:= is a MISSING value, and a missing value
+is allowed only in an =optional= column.
+
+A table is read, checked, and drawn two ways: as HTML and as LaTeX.
+The structure is kept apart from the drawing.
+
+* JSON, both ways
+
+A page becomes a JSON array with one object per top-level block:
+
+  [ { "title": "..." },
+    { "paragraph": "..." },
+    { "heading": { "level": 2, "number": "1.1", "text": "..." } },
+    { "table": { "caption": "...",
+                 "columns": [ {"name": "price", "type": "number",
+                               "optional": false} ],
+                 "header": [ ["name", true] ],
+                 "rows": [ {"id": "r1",
+                            "cells": [ ["Widget", true], ["", false] ] } ] } },
+    { "code": "..." },
+    { "data": <any JSON value> } ]
+
+The =data= key is the way out for machine-oriented data the notation
+has no block for. A JSON file read back becomes a =.aiu= page, and
+the two JSON texts come out the same.
+
+What JSON cannot hold is said out loud: a comment, a blank line, and
+the way a heading was numbered all come back changed or not at all.
+
+* The todo state
+
+A todo is a line that starts with =todo:=. It may sit on ANY block —
+a title, a paragraph, a heading, a table, a code block — and it may
+sit inside a comment. The only place it is not read is the body of a
+code block, because a code body is not read as notation.
+
+  notation todos FILE
+
+lists them, one per line, with the line each sits on.
+
+* The gate
+
+  nu gate/check.nu
+
+Seven stages, and a green run ends:
+
+  stages that checked nothing: 0 of 7
+  light gate: green, 7 stages ran
+
+  paren-check     every .rkt file reads
+  naming          no banned word in any name
+  one-way         a require may point downward only
+  security-gate   every security rule answers as it says
+  language-split  only join/ may cross between Rust and Racket
+  load-check      every module loads
+  comment-lint    every file has a header and every definition a
+                  comment above it
+
+The security gate probes the seven security rules — a target that
+names no file, a target that is a directory, a target that climbs out
+with "..", an absolute target, a target that is the document itself,
+an unwritable place, and a declaration no rule registers read out of a
+code body — on a value that must be refused and on one that must pass.
+It also names, for each rule, the files that call it. TODAY NO FILE
+CALLS THEM YET, and the gate says so on every run.
+
+* How fast it is
+
+  parse, 20 lines        0 ms
+  parse, 2000 lines      40 ms
+  the whole check        about 18 s, on 20 lines AND on 2000 lines
+  =racket -n -e ''=      about 0.5 s
+  loading one module     about 11 s
+  loading the CLI        about 23 s
+
+The check costs the SAME on a small page and on a big one, so the
+cost is the MODULE LOAD on this phone, not the page. The engine
+itself is instant.
+
+* What is not there yet
+
+  - The Racket =check= command reads a parse tree document, not a
+    page. The engine makes the document; =tools/aiu.nu= does both.
+  - A path that holds a space cannot be handed to racket, so every
+    Racket command needs a relative path.
+  - The seven security rules have NO caller. The literate and the
+    generation areas still raise their own refusals.
+  - The =link= keyword is not registered, and the =references= area
+    holds no files.
+  - The kit — the MCP server, the skill, the plugin — is not built.
+  - There are two address shapes: the model says =title:title@1= and
+    the surface answers say ="title/1"=. One of them has to go; the
+    hand-off asks for one.
+  - Nothing is long-lived. Every command is a one-shot process.
 
 * Where truth lives
-# this file points; it does not repeat.
-  - HANDOFF.org — start here; the current state and the next step.
-  - TODO.org — the only work list, in build order.
-  - syntax/feature-status.org — what is proved, one row per feature, with the
-    captured output as the evidence.
-  - syntax/GUIDE.org — how to write a =.aiu= file, in plain words.
-  - plan/package-tree.org — the register of the package: a name that is
-    not in it does not exist yet.
-  - =../contract/= — the shared boundary: engine surface, node addressing.
-  - rules/ — the binding hard rules, including rule 12.
+
+  syntax/first-slice-freeze.org   the frozen rules of the first slice
+  syntax/GUIDE.org                how to write a page
+  syntax/feature-status.org       one row per feature, with the proof
+  syntax/first-run-output.org      a run, captured
+  plan/package-tree.org           the register: every name, every file
+  decisions/OPEN.org              the choices that were made
+  EDITOR-HANDOFF.org              what the editor may use, and how
+  HANDOFF.org                     the true state of the program
 
 * Rules for anyone working here
-# the short list; AGENT.md is the full session contract.
-  - Work only inside this project directory; other projects and the root
-    files are read-only.
-  - Register every name in plan/package-tree.org before using it.
-  - Every file opens with a header comment, and every top-level definition has
-    a comment line directly above it. The =comment-lint= stage checks this.
-  - One file, one job. A name that lies costs more than a missing comment.
-  - Small commits, explicit relative paths, never a blanket add, no pushes.
-  - Nothing is written outside =/tmp=.
-  - No test files in the tree (root DECISIONS.org D-001). The owner lifted
-    that on 2026-10-19 for one verification run, and those commands live in
-    =/tmp=, never in the tree.
-  - Report real output only, and say "not run" where something was not run.
+
+  - Register a name in =plan/package-tree.org= before you use it.
+  - One file, one job.
+  - Every file opens with a header comment that says what it is, why
+    it exists and who calls it. Every top-level definition has a
+    comment line directly above it. The =comment-lint= stage checks
+    this.
+  - Commit with explicit relative paths. Never =git add -A=.
+  - Nothing writes outside =/tmp=.
+  - No test files in the tree (root DECISIONS.org D-001). The owner
+    lifted that on 2026-10-19 for one verification run, and those
+    commands live in =/tmp=, never in the tree.
