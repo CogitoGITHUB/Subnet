@@ -1,0 +1,52 @@
+#+TITLE: INDEX — AIU NOTATION/notation/src/surface/
+# One job: list every file in this directory and the single job of each.
+# Status: current; updated in the same commit as any change in this directory.
+
+* Files
+# one line per file: its name, then the single job it performs.
+
+  - answers.rkt — the surface document: the frozen text an editor reads, and
+    the loader that reads it back; it requires nothing of the model, so a
+    consumer may read a document with this file and the contract alone
+  - notices.rkt — what the boundary sends unasked: a document parsed, a
+    document changed, with the same errors =check= prints
+  - surface.rkt — the calls the editor and the multiplexer make, the addresses
+    the answers carry, and the one narrated write of an answer to disk
+
+* The shape, in one line
+# the field list, so the reader does not have to open the file for the shape.
+  =NOTATION-SURFACE 1= / =file "<path>"= /
+  =node <address> <kind> <name> <startLine> <startOffset> <endOffset>
+  <children>= / =error <address> <kind> <line> "<what>" "<whatToDo>"= / =end=
+
+* What makes an address stable
+# and what breaks it, in the words a reader needs before storing one.
+  - An address is a path from the root: each kind, then its 1-based ordinal
+    among the siblings of that kind (=title/1=, =title/1/paragraph/2=).
+  - Stable: the bytes of the document decide the address and nothing else
+    does, so the same text gives the same addresses on every run and a stored
+    address keeps naming its node while the owner edits anywhere else.
+  - Broken by: inserting, removing or re-kindling a sibling of the SAME kind
+    above a node — the ordinal below moves. An authored id is the open
+    question in ROOT-REQUEST-D014.org and is not invented here.
+  - It is not the address in model/addressing.rkt, which is name and line and
+    shifts when a line is added above. Both are computed, never authored
+    (contract/node-addressing-and-comments.org:13-15).
+
+* Where it sits
+# why this area exists and what it may use.
+  - This is the boundary contract/notation-engine-boundary.org describes: the
+    notation answers here and never calls back into the host.
+  - answers.rkt and notices.rkt require only the errors floor and each other,
+    so the loader works with the notation absent (rule 14, general editor
+    first; TODO item 8). surface.rkt is the only file here that reads the
+    parse tree, and it hands out plain text.
+  - Nothing here writes a document's generated content: that is
+    generation/write.rkt's door. surface.rkt writes the boundary's answer to a
+    file the host named, and says so before it blocks.
+  - No caller today. Nothing in the package requires this area, and entry/ — the
+    ceiling that could — does not name it: the CLI answers with exit codes and
+    parse-tree text, not with a =NOTATION-SURFACE= answer. The editor that
+    would ask is build step 7 and has not landed.
+  - All three files were edited on 2026-10-19 within the hour before this index
+    was written. What is here is on disk; this pass did not run it.
