@@ -1,6 +1,6 @@
 #+TITLE: Feature status — AIU NOTATION
 
-PROGRESS: last finished step 3
+PROGRESS: last finished step 7
 
 One job: one row per feature of this program, with the command that
 exercises it and the output that was captured. A row is PASS only when the
@@ -128,6 +128,15 @@ never in the tree.
 * O. The comments
 
 - O1 | gate | =nu gate/comment-lint.nu= | FIXED-DURING-AUDIT | 53 real violations were found (definitions with no comment directly above); every one now has one and the lint says: OK comment-lint — 64 files checked, every file has a header and every definition a comment above
+
+* P. The todo state — a todo on any block, and a todo in a comment
+- P1 | todo on a title block | notation todos /tmp/aiu-audit/todos.aiu | PASS | todo line 4: write the second paragraph
+- P2 | todo on a paragraph block | notation todos /tmp/aiu-audit/todos.aiu | PASS | todo line 9: this paragraph needs a source
+- P3 | todo inside a comment block | notation todos /tmp/aiu-audit/todos.aiu | PASS | todo line 13: even a comment can carry a todo
+- P4 | a page that carries a comment parses clean | notation parse /tmp/aiu-audit/todos.aiu | FIXED-DURING-AUDIT | node block comment 12 181 15 268 0 and no error line; the name comment was not a block name before
+- P5 | the comment body is dropped by the render | notation render /tmp/aiu-audit/todos.aiu | PASS | the render printed only the title and the paragraph
+- P6 | the round trip holds with a todo in it | notation roundtrip /tmp/aiu-audit/todos.aiu | PASS | roundtrip: identical (269 bytes)
+- P7 | the todo keyword is registered on both sides | the Rust keyword list and the Racket property list | PASS | the Rust list holds todo and the Racket list holds todo; a keyword in only one of the two breaks the other side
 
 * What is not proved
 
