@@ -1,23 +1,28 @@
 #+TITLE: INDEX — AIU EDITOR/editor/src/join/
 # One job: list every file in the join area and the single job of each.
-# Status: current; updated in the same commit as any change in this directory.
+# Status: current; the updated in the same commit as any change in this directory.
 
 * Files
 # one line per file: its name, then the single job it performs.
 
-  - INDEX.org — this index: every file of the join area and its one job
-  - protocol.rkt — the wire shape: one request and one response
-  - racket-entry.rkt — the meaning side's entry: one request in, one response out
-  - load.rkt — where the meaning side is reached; the one call that asks it
+ - INDEX.org — this index: every file of the join area and its one job
+ - protocol.rkt — the wire shape: one request and one response
+ - transport.rkt — the transport: one request file, one answer file, one child
+ - racket-entry.rkt — the meaning side's entry: one request in, one response out
+ - load.rkt — where the meaning side is reached; the one call that asks it
+ - hot-path.rkt — the call that asks the hot path; the other side of the seam
+ - hot-path.rs — the Rust side of the seam: one request file in, one answer file out
+ - wire-json.rs — the Rust side of the wire shape: read a request, write a response
+ - rust-exports.rs — the functions the meaning side may call, one per crossing
 
 * The area
 # The join area is the only place the two languages meet (rule 09).
 #
 # On this phone the meaning side cannot be baked into a binary, so it runs
-# as an external Racket process and the wire between the two is one line of
-# JSON per message. The numbers that forced this are in
-# research/join-on-the-phone.org; the decision is D-008 in the root
-# DECISIONS.org.
+# as an external Racket process, and the hot path runs as an external Rust
+# process. The wire between them is one line of JSON per message, and the
+# numbers that forced this are in research/join-on-the-phone.org; the
+# decision is D-008 in the root DECISIONS.org.
 #
 # The wire travels through two files, one for the request and one for the
 # response, and that is a fact of this Racket build rather than a choice:
@@ -25,5 +30,5 @@
 # not a file stream, so a child given a pipe is mute. The message shape is
 # unchanged: one line of JSON each way.
 #
-# rust-exports.rs, the functions the meaning side may call, lands with the
-# first Rust file: there is no Rust in this program yet.
+# rust-exports.rs names every crossing between the two languages, one per
+# crossing, so the seam is written down in one place.

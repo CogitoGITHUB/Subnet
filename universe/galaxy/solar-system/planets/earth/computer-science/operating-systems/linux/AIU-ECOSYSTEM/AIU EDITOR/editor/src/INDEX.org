@@ -5,10 +5,14 @@
 * Directories
 # one line per area, lowest first; a require may point downward only.
 
-  - errors/ — the error type and how it renders (the floor)
-  - narration/ — how work speaks: events, the wait door, the printer
-  - machine/ — the machine seam and the block door
-  - join/ — the seam: the wire and the meaning side, the one place two languages meet
+ - errors/ — the error type and how it renders (the floor)
+ - narration/ — how work speaks: events, the wait door, the printer
+ - machine/ — the machine seam and the block door
+ - join/ — the seam: the wire and the meaning side, the one place two languages meet
+ - journal/ — the record of every edit, and the work that is not saved yet
+ - buffer/ — the text state: bytes, lines, offsets
+ - commands/ — the command table: what a typed line means
+ - entry/ — the ceiling: argv, the dispatch, the session
 
 * Later
 # The area order is the one in plan/package-tree.org, "The law": errors is the

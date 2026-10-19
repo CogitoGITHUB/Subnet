@@ -1,0 +1,14 @@
+#+TITLE: INDEX — AIU EDITOR/editor/src/buffer/
+# One job: list every file in the buffer area and the single job of each.
+# Status: current; updated in the same commit as any change in this directory.
+
+* Files
+# one line per file: its name, then the single job it performs.
+
+ - INDEX.org — this index: every file of the buffer area and its one job
+ - buffer.rs — the text: bytes, lines, offsets
+
+* The area
+# The buffer is the text state of the editor, and the text state belongs to
+# the hot path (rule 09, D-007). This area is Rust: the side that touches
+# the bytes. The Racket side never holds the text.

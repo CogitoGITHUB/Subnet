@@ -1,0 +1,15 @@
+# One job: the crate manifest — the hot path builds from here.
+# The build writes its target directory outside the tree, so nothing is
+# written here but the source: see the build command in the project README.
+
+[package]
+name = "aiu-editor"
+version = "0.1.0"
+edition = "2021"
+
+# The hot path is the one binary: the Rust side of the seam. It reads a
+# request file and writes an answer file; the meaning side asks it over
+# the file wire.
+[[bin]]
+name = "hot-path"
+path = "src/join/hot-path.rs"

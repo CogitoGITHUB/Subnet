@@ -20,25 +20,27 @@
       (path->complete-path h)))
 
 ;; xdg-dir returns the XDG directory of the given kind, and falls back to the
-;; default place under the home directory when the variable is not set.
+;; default place under the home directory when the variable is not set. The
+;; fallback is a list of path parts, so a default may be more than one
+;; directory deep.
 (define (xdg-dir kind fallback)
   (define value (getenv (string-append "XDG_" (string-upcase kind) "_HOME")))
   (if (and value (not (string=? value "")))
       (path->complete-path value)
-      (build-path (home-dir) fallback)))
+      (apply build-path (home-dir) fallback)))
 
 ;; config-dir returns the editor's configuration directory.
 (define (config-dir)
-  (build-path (xdg-dir "config" ".config") "aiu-editor"))
+  (build-path (xdg-dir "config" '(".config")) "aiu-editor"))
 
 ;; state-dir returns the editor's state directory: the journal and the locks
 ;; live here, because they are the things that must survive a crash.
 (define (state-dir)
-  (build-path (xdg-dir "state" ".local" "share") "aiu-editor"))
+  (build-path (xdg-dir "state" '(".local" "share")) "aiu-editor"))
 
 ;; cache-dir returns the editor's cache directory.
 (define (cache-dir)
-  (build-path (xdg-dir "cache" ".cache") "aiu-editor"))
+  (build-path (xdg-dir "cache" '(".cache")) "aiu-editor"))
 
 ;; racket-bin answers the Racket program of this machine, and refuses when it
 ;; is not there: a path that guesses is a path that fails later, in the middle
@@ -54,6 +56,36 @@
       (error-of 'err-no-racket "the editor" (path->string bin)
                 "the Racket program is not there"
                 "set AIU_RACKET_BIN to the racket program, or put Racket under the home directory")))
+
+;; hot-path-bin answers the Rust hot path's program: the binary the
+;; meaning side starts to do the state work. The environment variable
+;; wins, so a build that lives somewhere else is named in one place. The
+;; default is the build's target directory, which is outside the tree.
+(define (hot-path-bin)
+  (define named (getenv "AIU_HOT_PATH_BIN"))
+  (define bin (if (and named (not (string=? named "")))
+                  (path->complete-path named)
+                  (build-path "/tmp" "editor-target" "debug" "hot-path")))
+  (if (file-exists? bin)
+      bin
+      (error-of 'err-no-hot-path "the editor" (path->string bin)
+                "the hot path program is not there"
+                "build the editor crate, or set AIU_HOT_PATH_BIN to the hot path program")))
+
+;; journal-path-for answers where the journal of one file lives: in the
+;; state directory, named after the file and a short key of its path, so
+;; two files never share one journal.
+(define (journal-path-for path)
+  (build-path (state-dir) "journal"
+              (format "~a-~a.journal" (file-name-from-path path) (path-key path))))
+
+;; path-key answers a short stable name for a path: the sum of its
+;; characters, so the same path always gets the same key.
+(define (path-key path)
+  (let loop ([chars (string->list (path->string path))] [sum 0])
+    (if (null? chars)
+        (format "~a" (modulo sum 100000))
+        (loop (cdr chars) (+ sum (char->integer (car chars)))))))
 
 ;; ensure-dir creates a directory when it is missing, and says so when it
 ;; cannot, so a caller never writes into a path that is not there.
@@ -77,4 +109,6 @@
          state-dir
          cache-dir
          racket-bin
+         hot-path-bin
+         journal-path-for
          ensure-dir)

@@ -5,8 +5,8 @@
 * Files
 # one line per file: its name, then the single job it performs. This index is updated in the same commit as any change here.
 
-  - none yet — every decision of this program is D-numbered in the root DECISIONS.org
+ - plain-text-slice.org — the choices of the first slice that edits text, and what each cost
 
 * Later
-# This directory stays for program-only decisions if the need ever appears; ecosystem-wide ones land in the root DECISIONS.org, newest first.
-
+# This directory holds program-only decisions. Ecosystem-wide ones land in the
+# root DECISIONS.org, newest first.

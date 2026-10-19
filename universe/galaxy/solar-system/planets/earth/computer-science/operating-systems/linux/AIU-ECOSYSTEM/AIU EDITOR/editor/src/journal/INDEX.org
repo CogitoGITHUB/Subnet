@@ -1,0 +1,16 @@
+#+TITLE: INDEX — AIU EDITOR/editor/src/journal/
+# One job: list every file in the journal area and the single job of each.
+# Status: current; updated in the same commit as any change in this directory.
+
+* Files
+# one line per file: its name, then the single job it performs.
+
+ - INDEX.org — this index: every file of the journal area and its one job
+ - journal.rs — append every edit; replayable, in order
+
+* The area
+# The journal is the record of every edit as it happens (rule 01), and it is
+# the home of the work that is not saved yet: the text of a file is what was
+# saved, and the journal is what was typed since. Saving writes the file and
+# clears the journal; a crash loses nothing, because the journal is on disk.
+# Like the buffer, the journal is Rust's: it is the hot path (rule 09).

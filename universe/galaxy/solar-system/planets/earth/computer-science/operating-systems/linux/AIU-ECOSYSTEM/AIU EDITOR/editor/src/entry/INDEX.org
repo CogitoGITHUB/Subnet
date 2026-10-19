@@ -1,0 +1,15 @@
+#+TITLE: INDEX — AIU EDITOR/editor/src/entry/
+# One job: list every file in the entry area and the single job of each.
+# Status: current; updated in the same commit as any change in this directory.
+
+* Files
+# one line per file: its name, then the single job it performs.
+
+ - INDEX.org — this index: every file of the entry area and its one job
+ - cli.rkt — argv to a command: one parser, one dispatch
+ - dispatch.rkt — the command table: one name, one function
+
+* The area
+# The entry area is the ceiling of the program: it is the only place that
+# may reach every area below it, because it is the outside world speaking.
+# It parses argv, dispatches on the verb, and runs the session.

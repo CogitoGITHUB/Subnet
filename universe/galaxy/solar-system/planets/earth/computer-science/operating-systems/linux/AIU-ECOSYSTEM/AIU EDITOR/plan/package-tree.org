@@ -60,6 +60,7 @@ AIU EDITOR/              the project: context and docs stay where they are
     opencode-plugin/          the read-only plugin (lands with the kit)
   editor/                THE PACKAGE — all of it lives here
     INDEX.org
+    Cargo.toml        the crate manifest: the hot path builds from here
     src/
       errors/            the error type and how it renders (the floor)
         INDEX.org
@@ -83,9 +84,13 @@ AIU EDITOR/              the project: context and docs stay where they are
       join/              the Racket–Rust seam; the only language crossing
         INDEX.org
         protocol.rkt     the wire shape: one request and one response
+        wire-json.rs     the Rust side of the wire shape: read a request, write a response
+        transport.rkt    the transport: one request file, one answer file, one child
         rust-exports.rs  the functions the meaning side may call, one per crossing
+        hot-path.rs      the Rust side of the seam: one request file in, one answer file out
         racket-entry.rkt the meaning side's entry: one request in, one response out
         load.rkt         where the meaning side is reached; the one call that asks it
+        hot-path.rkt     the call that asks the hot path; the other side of the seam
       devloop/           work mode and the bake (rule 02)
         INDEX.org
         work.rkt         work mode: loads config live from source

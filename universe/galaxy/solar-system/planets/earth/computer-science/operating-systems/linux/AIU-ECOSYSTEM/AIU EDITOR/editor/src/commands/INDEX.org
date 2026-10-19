@@ -1,0 +1,15 @@
+#+TITLE: INDEX — AIU EDITOR/editor/src/commands/
+# One job: list every file in the commands area and the single job of each.
+# Status: current; updated in the same commit as any change in this directory.
+
+* Files
+# one line per file: its name, then the single job it performs.
+
+ - INDEX.org — this index: every file of the commands area and its one job
+ - commands.rkt — the command table: one name, one function
+
+* The area
+# The commands area is the meaning side: it says what a typed line means, and
+# it is the Racket half of the program (rule 09). The table holds one name
+# and one function per command, and a command that is not in the table is
+# refused by name, never guessed at.
