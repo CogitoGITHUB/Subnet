@@ -9,7 +9,9 @@
 
 use ./env.nu *
 
+# The pinned version, as its two numbers: 0.116 is the Nu this phone runs.
 const REQUIRED_MAJOR = 0
+# The minor number of the pinned version; the patch number does not matter.
 const REQUIRED_MINOR = 116
 
 # main prints the running Nu version and exits 3 unless it is the pinned one,

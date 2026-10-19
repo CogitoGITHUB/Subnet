@@ -13,6 +13,8 @@
 
 use ./env.nu *
 
+# The areas, lowest first, transcribed from plan/package-tree.org: a require
+# may only point downward through this order.
 const AREAS = ["errors" "narration" "machine" "security" "join" "devloop" "journal" "buffer" "notation" "commands" "routes" "input" "drawing" "models" "dashboard" "send" "picker" "checkpoint" "audit" "entry"]
 
 # area_index answers the position of an area in the declared order, and 99 for

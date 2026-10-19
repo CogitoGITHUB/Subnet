@@ -15,6 +15,8 @@
 
 use ./env.nu *
 
+# The stages the light gate runs, in order, with the script that runs each
+# one and the kind of script it is.
 const STAGES = [
     {name: "paren-check", script: "read-check.rkt", kind: "racket"}
     {name: "naming", script: "banned-words-lint.nu", kind: "nu"}
