@@ -79,7 +79,7 @@
 ;; repeated-names lists a name more than once, each name once.
 (define (repeated-names chunks)
   (define names (map chunk-name chunks))
-  (remove-duplicates (filter (lambda (n) (> (count-of n names) 1)) names)))
+  (remove-duplicates (filter (lambda (n) (> (count (lambda (x) (equal? x n)) names) 1)) names)))
 
 ;; self-findings: a chunk that declares itself as a dependency.
 (define (self-findings graph who)
