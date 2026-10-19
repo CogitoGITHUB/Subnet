@@ -11,7 +11,7 @@
 
 * Items
 # in build order.
-  1. The tree lands — create =editor/= per plan/package-tree.org: INDEX.org, the floor areas and gate/ with its first stages; done when: the light gate is green; deps: none.
+  1. DONE (the tree landed in =c93db7e3=; the light gate green at 6 stages in =5d6414ec=) — The tree lands — create =editor/= per plan/package-tree.org: INDEX.org, the floor areas and gate/ with its first stages; done when: the light gate is green; deps: none.
   2. Racket in binary (tier-1 item 01): the probe that decides the join — the minimal Racket inside a baked binary, measuring the start on the phone (the laptop builds where the phone cannot); done when: the baked binary prints its measured start on the phone, or the external-process fallback is forced (D-008); deps: none.
   3. Plain text slice (item 05): opens a real file, edits it, saves it, through the journal; done when: a real editing session on the phone, every command answering in the one printer; deps: 1, 2.
   4. Key routing across layers (item 06, shared; the routing itself is built in the multiplexer's list — the editor-in-a-pane half is here); done when: the routing walk passes with the editor in a pane — no mouse anywhere; deps: 3, multiplexer items 3–4.
