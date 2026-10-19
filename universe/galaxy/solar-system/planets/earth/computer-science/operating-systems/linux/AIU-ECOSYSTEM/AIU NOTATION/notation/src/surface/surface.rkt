@@ -105,8 +105,8 @@
   (let loop ([rest nodes] [seen '()] [out '()])
     (if (null? rest)
         (reverse out)
-        (let ([n (car rest)]
-              [kind (kind-word n)])
+        (let* ([n (car rest)]
+               [kind (kind-word n)])
           (define ordinal
             (+ 1 (count-of-kind seen kind)))
           (loop (cdr rest)
@@ -191,7 +191,7 @@
     (call-with-output-file (beside-target where)
                            #:exists 'truncate
                            (lambda (out) (display (answers-document a) out)))
-    (rename-file (beside-target where) where)))
+    (rename-file-or-directory (beside-target where) where #t)))
 
 ;; target-path answers the path a caller named. A path written as a string and
 ;; a path written as a path are one file and must be one answer.
