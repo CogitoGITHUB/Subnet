@@ -1,121 +1,109 @@
-#+TITLE: First run — captured output
-# One job: the output of the one by-hand run allowed for items 2 and 3, kept as it was
-# Status: run 2026-10-17 on the phone; two fixes were made because the output named them, and one part still fails.
+#+TITLE: First run — what the notation engine does with a real page
+# One job: the captured output of one real run, so a reader can see what the
+# engine does without running it.
+# Captured 2026-10-19 on the phone, from the commands below. Nothing here was
+# written by hand; every line is output that was seen.
 
-* What was run
-# the page, the binary and the command, so this file can be read alone.
-  - Page: =syntax/example.aiu= (20 lines, 482 bytes) — a title with tags,
-    two paragraphs, and a code block whose body holds a bare =code start= line.
-  - Broken copy: =/tmp/opencode/broken.aiu= only, never in the tree: the
-    same page with one stray line inserted at line 6, between two blocks.
-  - Rust side: =cargo build --offline= into =/tmp/opencode/notation-target=.
-  - Racket side: =/root/home/shape/opt/racket-full/bin/racket notation/src/entry/cli.rkt check <document>=.
+* The page
+=syntax/example.aiu= — 564 bytes.
 
-* a. Round trip on the good page
-# identical or not, as printed.
-#+begin_example
-$ notation roundtrip syntax/example.aiu
-roundtrip: identical (482 bytes)
+* The commands
+The binary is built into =/tmp/notation-target= and the Racket side is run
+with a RELATIVE path from the project directory, because the project
+directory holds a space and racket splits a path argument on it.
+
+#+BEGIN_EXAMPLE
+cd "<project dir>"
+B=/tmp/notation-target/debug/notation
+R=/root/home/shape/opt/racket-full/bin/racket
+#+END_EXAMPLE
+
+* 1. The round trip
+The page must print back to the very same bytes.
+#+BEGIN_EXAMPLE
+$B roundtrip syntax/example.aiu
+roundtrip: identical (564 bytes)
 exit=0
-#+end_example
+#+END_EXAMPLE
 
-* b. Parse to a document, then check it
-# the document, and the check command's answer.
-#+begin_example
-$ notation parse syntax/example.aiu > /tmp/opencode/good.document
+* 2. The parse
+The page becomes a parse tree document. The shape is frozen in
+=notation/src/join/INDEX.org=: a node line, its =decl= lines, its children,
+and =end= at the end.
+#+BEGIN_EXAMPLE
+$B parse syntax/example.aiu
+parse-ms: 0
 NOTATION-DOCUMENT 1
 file "syntax/example.aiu"
 node block title 1 0 4 66 0
 decl tags "sample first-run" 2 12
-node block paragraph 6 68 9 233 0
-node block paragraph 11 235 14 407 0
-node block code 16 409 21 482 0
-decl language "text" 17 420
+node block paragraph 6 68 10 300 0
+node block paragraph 12 302 16 499 0
+node block code 18 501 22 563 0
+decl language "text" 19 512
 end
+#+END_EXAMPLE
+The numbers are: the name, the line, the start byte, the end line, the end
+byte, the depth. The code block is at depth 0 and holds no child: its body is
+opaque.
 
-$ racket notation/src/entry/cli.rkt check /tmp/opencode/good.document
-notation/src/errors/raise.rkt:13:10: make-err: unbound identifier
-exit=1
-#+end_example
-The document is right: the code block is one node and the bare =code start=
-line inside it opened nothing. The check command did not answer: see "What
-still fails".
-
-* c. Plain render of the good page
-# the marks gone, the content kept word for word.
-#+begin_example
-$ notation render syntax/example.aiu
+* 3. The plain render
+The marks, the declaration lines and the comments are gone; the content is
+kept.
+#+BEGIN_EXAMPLE
+$B render syntax/example.aiu
 The first sample page
-Every line of this page sits inside a named block. The blocks are the syntax:
-a start line, the content, an end line, and nothing else.
+Every line of this page sits inside a named block. A block is three lines of
+shape: the name and start, the content on its own line or lines, then the name
+and end again. The keyword always comes first.
 The code block below holds a line that looks like a start line. The body of a
-code block is opaque, so that line is content and opens nothing.
+code block is opaque, so that line is content and opens nothing. Only code end
+closes it.
 def example():
     return 1
 exit=0
-#+end_example
+#+END_EXAMPLE
 
-* d. The broken copy
-# the stray line, its error, its line number, and the exit code.
-#+begin_example
-$ notation parse /tmp/opencode/broken.aiu > /tmp/opencode/broken.document
-error stray-text 6 68 0 "text outside any named block" "put the text inside a ""<name> start"" / ""<name> end"" block"
+* 4. A broken copy
+One line of loose text was put after the title block. The engine does not
+throw the page away: it keeps every block and names the broken line.
+#+BEGIN_EXAMPLE
+$B parse /tmp/aiu-audit/broken.aiu
+parse-ms: 2
+NOTATION-DOCUMENT 1
+file "/tmp/aiu-audit/broken.aiu"
+node block title 1 0 4 66 0
+decl tags "sample first-run" 2 12
+error stray-text 5 67 0 "text outside any named block" "put the text inside a ""<name> start"" / ""<name> end"" block"
+node block paragraph 7 100 11 332 0
+node block paragraph 13 334 17 531 0
+node block code 19 533 23 595 0
+decl language "text" 20 544
+end
+#+END_EXAMPLE
+The error line carries the kind, the line, the byte, the line the block was
+opened at, what is wrong and what to do.
 
-$ racket notation/src/entry/cli.rkt check /tmp/opencode/broken.document
-notation/src/errors/raise.rkt:13:10: make-err: unbound identifier
+* 5. The check, on a good page
+The Racket =check= command reads a PARSE TREE DOCUMENT, not a .aiu page, so
+the document from step 2 is what it is given.
+#+BEGIN_EXAMPLE
+$R notation/src/entry/cli.rkt check /tmp/aiu-audit/example.document
+syntax/example.aiu: no errors in the parse tree document
+exit=0
+#+END_EXAMPLE
+
+* 6. The check, on the broken page
+#+BEGIN_EXAMPLE
+$R notation/src/entry/cli.rkt check /tmp/aiu-audit/broken.document
+ERR /tmp/aiu-audit/broken.aiu at line 5, column unknown: parser-recovery: the parser recovered from stray-text: text outside any named block; what to do: put the text inside a "<name> start" / "<name> end" block
+/tmp/aiu-audit/broken.aiu: 1 finding(s); the document is not clean
 exit=1
+#+END_EXAMPLE
+The column says =unknown= because a parse tree document carries no page.
 
-$ notation roundtrip /tmp/opencode/broken.aiu
-roundtrip: identical (561 bytes)
-#+end_example
-The parser reports =stray-text= at line 6, and the broken page still round
-trips: the stray text is kept, never deleted.
-
-* e. Timing
-# every number in milliseconds, as measured on the phone.
-#+begin_example
-rust-parse-ms: 109
-racket-startup-ms: 1232
-check-end-to-end-ms: 2451  (exit 1)
-page-lines: 20
-document-bytes: 248
-#+end_example
-Racket's own =parse-ms: 0= line came from the binary: the Rust parse of this
-page takes under a millisecond; the 109 ms above is process start plus read.
-
-* What the output named, and what was fixed
-# two failures, each fixed once, each because the output named it.
-  - 1. =err.rkt= used =#:methods gen:custom-write= and failed with "write-exn:
-    unbound identifier". This build has no =gen:custom-write= ("bad require
-    spec"). Fix: the record carries no writer of its own; printing is
-    =render.rkt='s one job.
-  - 2. The document showed a nested =node block code ... depth 1= and an
-    =unclosed-block= error, because the parser read inside an opaque code body
-    and took the bare =code start= line as a nested open. That breaks rule D.
-    Fix: =parser.rs= now skips every line inside a code block except an exact
-    matching end line. After the fix the document above is correct.
-
-* What still fails
-# named, not hidden. One part of the run did not pass, and it is not my code.
-  - The Racket =check= command cannot run on this phone at all: **no relative
-    =require= works in this Racket 9.3 build**. Proved with three files:
-    =(require "m1.rkt")= leaves the identifier unbound, and so does
-    =(require (file "m1.rkt"))=; a single self-contained module runs fine.
-    =raise.rkt= needs =make-err= from =err.rkt=, so it fails at load time.
-  - Consequence: parts b and d have no Racket answer yet — no exit code from
-    =check=, no "no errors" line, no printed diagnosis. The Rust side of both
-    parts is proven; the Racket side is blocked by the toolchain.
-  - What it needs: either a Racket build on this phone that resolves a relative
-    require, or a decision to inline the Racket areas into one file per command
-    (which would break the area table in plan/package-tree.org). Not decided
-    here. This belongs on the laptop list.
-
-* What is therefore proven, and what is not
-# TODO.org items 2 and 3, honestly.
-  - Proven: the frozen block syntax parses; a code body is opaque; the round
-    trip is byte-identical, including for a page with a stray line; stray text
-    is reported with its line number and kept; plain render hides the marks and
-    keeps the content; the document shape carries everything the model needs.
-  - Not proven: the Racket model reading the document, =check= listing errors
-    and exiting non-zero, and the whole end-to-end check timing (its 2451 ms
-    is a load failure, not a working check).
+* What this run does not show
+* The rich render (=notation render-rich=) and the heading numbers.
+* The JSON form and the tables (=nu tools/aiu.nu json= and =from-json=).
+* The Racket side costs 11 to 23 seconds to start on this device; the
+  commands above are one shot each.
