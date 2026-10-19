@@ -1,0 +1,17 @@
+#+TITLE: INDEX — AIU EDITOR/tools/
+# One job: list every file in the tools directory and the single job of each.
+# Status: current; updated in the same commit as any change in this directory.
+
+* Files
+# one line per file: its name, then the single job it performs.
+
+  - INDEX.org — this index: every file of the tools directory and its one job
+  - join-probe.rkt — the phone probe: measure the Racket start, decide the join
+
+* What lives here
+# The tools are the dev scripts of this program. They are not part of the
+# package: the package is editor/ and it lives and dies on its own. A tool
+# measures, probes or drives; the package is the thing being measured.
+#
+# The tools are read by the gate, so every tool has a header and every
+# definition a comment, the same as the package.

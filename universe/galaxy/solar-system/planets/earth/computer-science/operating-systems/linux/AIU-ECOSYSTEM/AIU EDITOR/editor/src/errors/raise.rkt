@@ -17,3 +17,7 @@
 ;; case where the caller holds all five fields in hand.
 (define (error-of kind who where what what-to-do)
   (raise-error (err kind who where what what-to-do)))
+
+;; The one way out of this program, for every area above it.
+(provide raise-error
+         error-of)

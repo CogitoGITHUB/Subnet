@@ -50,3 +50,17 @@
 ;; monotonic clock, so a duration is never wrong because the clock moved.
 (define (monotonic-ms)
   (inexact->exact (round (current-inexact-milliseconds))))
+
+;; The record and the clock, for every area above this one.
+(provide event
+         make-event
+         utc-now
+         monotonic-ms
+         event-kind
+         event-who
+         event-why
+         event-started
+         event-ended
+         event-duration-ms
+         event-data
+         event-redacted)

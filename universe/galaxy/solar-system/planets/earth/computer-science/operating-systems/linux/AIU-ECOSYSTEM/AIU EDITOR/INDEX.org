@@ -22,6 +22,7 @@
   - research/ — program-specific findings only
   - rules/ — the hard rules, one file each
   - study/ — the neomacs study, read-only, names and sizes only
+  - tools/ — dev scripts: the probes and the build helpers
   - ui/ — placeable-piece list and layouts
 
 * Later

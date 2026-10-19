@@ -18,6 +18,11 @@ export const package_dir = $project_root | path join "editor"
 # package_src is where the areas are.
 export const package_src = $package_dir | path join "src"
 
+# tools_dir is where the dev scripts live: the probes and the build helpers.
+# They are not part of the package, but the gate still reads them, so they
+# carry a header and a comment above every definition like the rest.
+export const tools_dir = $project_root | path join "tools"
+
 # home_dir is the one HOME seam, mirrored for Nushell (machine/directories.rkt
 # is the same seam for Racket). $nu.home-path does not exist in this build and
 # an environment value is not a parse-time constant here, so this is a def.

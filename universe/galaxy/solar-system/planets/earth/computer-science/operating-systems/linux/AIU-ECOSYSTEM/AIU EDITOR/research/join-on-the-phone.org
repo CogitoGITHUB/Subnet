@@ -1,0 +1,90 @@
+#+TITLE: The join on the phone
+# One job: the numbers that decided how this editor reaches the meaning side,
+# and the facts that were found on the way to them.
+# Registered in plan/package-tree.org; lands with TODO item 2.
+
+* The question
+D-008 in the root =AIU-ECOSYSTEM/DECISIONS.org= says:
+
+  Racket is baked into the binary at build time as the meaning layer and
+  loads nothing at startup; the phone test at item 01 confirms it or forces
+  the external-process fallback.
+
+The phone cannot build the baked binary — the laptop builds where the phone
+cannot — so the branch that happens here is the second one: the external
+process fallback is FORCED. A forced fallback still has to work, and it has
+to be measured, so this file holds both.
+
+* What was measured
+Three things, by =tools/join-probe.rkt= on this phone:
+
+  1. the bare start — a Racket that starts, evaluates =(void 0)= and leaves;
+  2. one ask — a request over the wire and the answer that came back;
+  3. a second ask — the same path with different arguments, to show the
+     arguments travel and are not lost.
+
+* The numbers
+From the run of =tools/join-probe.rkt= that ended with exit 0:
+
+  - bare start: 7517 ms  (earlier runs of the same measurement: 6417 ms,
+    4986 ms — the machine is warm or it is not, the order of seconds holds)
+  - ask ping: 6572 ms -> ok, the answer said pong and named the meaning side
+  - ask echo: 4224 ms -> ok, the answer gave the arguments back, so the wire
+    carries them and does not lose them
+
+* What the numbers mean
+A question costs seconds, not milliseconds, and every question starts a
+fresh Racket: the first ask paid 6572 ms and the second 4224 ms, and the
+difference is the pages being warm, not the work being cheaper. The cost
+is the START, and on this phone a start is seconds.
+
+That is the cost of the external-process fallback, and it is the cost that
+a bake on the laptop would remove: a baked binary starts the meaning layer
+with the program and pays nothing per question.
+
+So the fallback WORKS, and it is EXPENSIVE. Rule 04 and rule 03 stand: no
+timer, no long-lived process. A cached meaning side would be a long-lived
+process, so the plain slice must not need one — the plain text slice is
+Rust, and the meaning side is asked only when a question is asked.
+
+* The verdict
+  - the baked binary cannot be built on this phone;
+  - the external-process fallback is forced (D-008);
+  - it works: the wire carried both requests and both answers came back;
+  - the wire is a pair of FILES, not pipes, and that is a fact of this
+    Racket build rather than a choice.
+
+* The pipe fact, and why the wire is files
+=racket/system= in this build hands a child process =/dev/null= for every
+stream that is not a file stream: =if-stream-out= answers =#f= for a pipe
+output port and =if-stream-in= answers =#f= for a pipe input port, and the
+copying threads then copy from =#f= and die silently. A child that is given
+a pipe is mute — no output, no error, no clue. A file stream is passed
+straight through, so the request goes in as a file the child reads and the
+answer comes out as a file the parent reads.
+
+The shape of a message did not change: one line of JSON each way, the same
+in =editor/src/join/protocol.rkt= whatever carries it.
+
+* What the probe found on the way
+Six bugs, each fixed at its cause:
+  1. a JSON key must be a SYMBOL — =jsexpr->string= refuses a string key;
+  2. =hasheq= compares string keys by IDENTITY, so a parsed "ping" never
+     matched the literal in the operations table; the table is now =hash=;
+  3. =subprocess= answers FOUR values in this build, not one;
+  4. =racket -n -e= fails: without the init file the top interaction
+     namespace has no language, so the bare start is measured without =-n=;
+  5. =(current-load-relative-directory)= is =#f= in a module reached by a
+     relative require, so the join directory comes from =define-runtime-path=;
+  6. =make-temporary-directory= wants a FORMAT string, not a plain name.
+
+And one design fact: the parent must close its own copy of the child's
+output, or the reader never sees the end of the wire. With files there is
+nothing to close: the child exits and the file is complete.
+
+* Where the code is
+  - =tools/join-probe.rkt= — the probe that made these numbers
+  - =editor/src/join/load.rkt= — the one call that asks the meaning side
+  - =editor/src/join/protocol.rkt= — the wire shape
+  - =editor/src/join/racket-entry.rkt= — the meaning side's entry
+  - =research/INDEX.org= — this directory's index

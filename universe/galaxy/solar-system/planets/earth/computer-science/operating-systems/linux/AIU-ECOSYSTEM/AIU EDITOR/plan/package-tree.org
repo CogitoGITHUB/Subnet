@@ -38,6 +38,8 @@
 AIU EDITOR/              the project: context and docs stay where they are
   AGENT.md               the session rules (landed)
   TODO.org               the one list of what is left (lands with this plan)
+  research/              program-specific findings only
+    join-on-the-phone.org  the join the phone forced, and the numbers that forced it
   gate/                  the light gate now, the full gate when tests open
     INDEX.org
     check.nu             the dispatcher: named stages, one table, --list
@@ -49,7 +51,9 @@ AIU EDITOR/              the project: context and docs stay where they are
     banned-words-lint.nu        the naming law, made mechanical
     language-split-lint.nu      only join/ may cross Rust and Racket
     comment-lint.nu             every file has a header, every definition a comment
-  tools/                 dev scripts; empty until the first needs a home
+  tools/                 dev scripts: the probes and the build helpers
+    INDEX.org
+    join-probe.rkt       the phone probe: measure the Racket start, decide the join
   agent/                 the kit's agent side (ships with the package, rule 2)
     INDEX.org
     skills/editor/SKILL.md    the skill: what the editor is, commands, runnable examples
@@ -78,9 +82,10 @@ AIU EDITOR/              the project: context and docs stay where they are
         security.rkt     the total predicates: checkpoint-needed?, stop-scope, state-changing?
       join/              the Racket–Rust seam; the only language crossing
         INDEX.org
+        protocol.rkt     the wire shape: one request and one response
         rust-exports.rs  the functions the meaning side may call, one per crossing
-        racket-entry.rkt the meaning side starting inside the baked binary
-        load.rkt         nothing loads at startup; everything comes from the bake
+        racket-entry.rkt the meaning side's entry: one request in, one response out
+        load.rkt         where the meaning side is reached; the one call that asks it
       devloop/           work mode and the bake (rule 02)
         INDEX.org
         work.rkt         work mode: loads config live from source

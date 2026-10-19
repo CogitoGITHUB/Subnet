@@ -32,3 +32,11 @@
 ;; printer. It is the only place an event is made.
 (define (say kind who why)
   (print-event (make-event kind who why (utc-now) #f #f #f #f)))
+
+;; The six voices, for every area above this one.
+(provide open-run
+         step
+         note
+         warn
+         skip
+         decide)

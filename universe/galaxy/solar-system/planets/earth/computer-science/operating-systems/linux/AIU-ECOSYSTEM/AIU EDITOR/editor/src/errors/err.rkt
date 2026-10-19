@@ -17,3 +17,14 @@
 ;; exn:fail:editor carries an err record as a Racket exception, so the record
 ;; travels whole instead of being flattened into a message.
 (struct exn:fail:editor exn:fail (err) #:transparent)
+
+;; The record and the exception are what every area above this one names.
+(provide err
+         exn:fail:editor
+         exn:fail:editor?
+         exn:fail:editor-err
+         err-kind
+         err-who
+         err-where
+         err-what
+         err-what-to-do)

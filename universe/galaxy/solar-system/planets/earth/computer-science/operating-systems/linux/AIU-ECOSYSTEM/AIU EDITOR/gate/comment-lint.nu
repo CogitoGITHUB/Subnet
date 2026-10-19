@@ -98,7 +98,8 @@ def missing_definition_comments [lines kind] {
 def main [] {
     let package_files = (glob $"($package_src)/**/*")
     let gate_files = (glob $"($gate_dir)/*")
-    let found = ($package_files | append $gate_files)
+    let tools_files = (glob $"($tools_dir)/**/*")
+    let found = ($package_files | append $gate_files | append $tools_files)
     let all = ($found | where {|p| ($p | path type) == "file" } | where {|p| is_code $p })
 
     if ($all | is-empty) {

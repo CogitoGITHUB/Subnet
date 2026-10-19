@@ -16,3 +16,6 @@
 (define (err-line e)
   (format "ERR ~a at ~a: ~a: ~a; what to do: ~a"
           (err-who e) (err-where e) (err-kind e) (err-what e) (err-what-to-do e)))
+
+;; The one line an error prints as, for every area above this one.
+(provide err-line)

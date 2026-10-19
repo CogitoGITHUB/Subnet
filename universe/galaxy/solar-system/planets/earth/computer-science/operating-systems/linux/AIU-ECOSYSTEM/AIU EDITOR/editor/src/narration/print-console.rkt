@@ -91,3 +91,10 @@
       [(char=? c #\return) (display "\\r" out)]
       [else (write-char c out)]))
   (format "\"~a\"" (get-output-string out)))
+
+;; The one printer, for every area above this one.
+(provide output-format
+         print-line
+         print-event
+         print-error
+         event->string)

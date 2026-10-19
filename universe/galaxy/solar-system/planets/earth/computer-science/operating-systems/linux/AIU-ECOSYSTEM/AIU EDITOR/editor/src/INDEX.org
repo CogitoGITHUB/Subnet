@@ -8,6 +8,7 @@
   - errors/ — the error type and how it renders (the floor)
   - narration/ — how work speaks: events, the wait door, the printer
   - machine/ — the machine seam and the block door
+  - join/ — the seam: the wire and the meaning side, the one place two languages meet
 
 * Later
 # The area order is the one in plan/package-tree.org, "The law": errors is the

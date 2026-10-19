@@ -40,6 +40,21 @@
 (define (cache-dir)
   (build-path (xdg-dir "cache" ".cache") "aiu-editor"))
 
+;; racket-bin answers the Racket program of this machine, and refuses when it
+;; is not there: a path that guesses is a path that fails later, in the middle
+;; of a run. The environment variable wins, so a machine that keeps Racket
+;; somewhere else is named in one place.
+(define (racket-bin)
+  (define named (getenv "AIU_RACKET_BIN"))
+  (define bin (if (and named (not (string=? named "")))
+                  (path->complete-path named)
+                  (build-path (home-dir) "opt" "racket-full" "bin" "racket")))
+  (if (file-exists? bin)
+      bin
+      (error-of 'err-no-racket "the editor" (path->string bin)
+                "the Racket program is not there"
+                "set AIU_RACKET_BIN to the racket program, or put Racket under the home directory")))
+
 ;; ensure-dir creates a directory when it is missing, and says so when it
 ;; cannot, so a caller never writes into a path that is not there.
 (define (ensure-dir d)
@@ -54,3 +69,12 @@
                        "check the permissions of the directory above it"))])
        (make-directory* d)
        d)]))
+
+;; The one place the environment is read, for every area above this one.
+(provide home-dir
+         xdg-dir
+         config-dir
+         state-dir
+         cache-dir
+         racket-bin
+         ensure-dir)
