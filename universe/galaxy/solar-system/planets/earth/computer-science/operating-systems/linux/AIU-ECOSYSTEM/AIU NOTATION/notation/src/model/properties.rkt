@@ -36,13 +36,25 @@
     (raise-err 'properties "properties.rkt"
                (format "~a is not a registered property keyword; use one of ~a"
                        keyword property-keywords)))
-  #f)
+  (define found (find-declaration node keyword))
+  (and found (list-ref found 1)))
 
 ;; tags-of is the one property a reader asks for by name, because tags are the
 ;; only Tier 1 declaration with a defined shape (rule C: the title's tags live
 ;; in its tags declaration).
 (define (tags-of node)
-  #f)
+  (define found (find-declaration node 'tags))
+  (and found (parse-tags (list-ref found 1))))
+
+;; find-declaration looks for one declaration of a node by its keyword and
+;; returns the declaration whole — the four fields (keyword value line offset)
+;; the model layer carries — or #f when the node does not carry that keyword.
+;; A node that is not a block carries no declaration at all, so it answers #f
+;; rather than being read as one.
+(define (find-declaration node keyword)
+  (and (block-node? node)
+       (for/or ([d (in-list (block-node-declarations node))])
+         (and (list? d) (eq? (list-ref d 0) keyword) d))))
 
 ;; planning-state-of is named here so the reader test passes and nobody has to
 ;; guess where planning states will live; it is Tier 2 and returns #f until the
