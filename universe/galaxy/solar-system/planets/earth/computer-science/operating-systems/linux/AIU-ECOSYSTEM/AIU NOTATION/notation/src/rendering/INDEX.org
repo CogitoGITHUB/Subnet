@@ -7,10 +7,18 @@
 
   - strip.rs — comments and marks stripped here, in one place
   - plain.rs — the plain fallback: text out, nothing invented
+  - rich.rs — rich unicode: headings, indent, emphasis, the code box.
+    **UNFINISHED as of 2026-10-19**: the file is on disk and has a body, but
+    it is absent from src/lib.rs, so the crate does not compile it and nothing
+    calls it. Reading it as a working tier would be wrong. Registering it in
+    lib.rs is a change in the crate, not in this directory.
 
 * Not written yet
 # named in plan/package-tree.org, still planned; no file, no stub.
-  - rich.rs — rich unicode: lines, indent, tables (build step 8)
+  - tables, numbering and cross references — Tier 2 elements; their meaning is
+    decided before a renderer draws them
+  - the graphics tier — TODO.org item 9 records it unproven, and it is not
+    this file with more glyphs
 
 * Where it sits
 # why this area exists and what it may use.
@@ -20,3 +28,6 @@
     other file decides to drop a line. Plain rendering hides start, end and
     declaration lines and keeps the content word for word
     (syntax/first-slice-freeze.org, rule F).
+  - Only strip.rs and plain.rs are compiled today: src/lib.rs lists the nine
+    Rust modules of the crate and these are two of them. rich.rs is the third
+    file in this directory and the only one not wired.

@@ -20,7 +20,7 @@
   6. Literate code (step 5): chunks, targets, scanning, load and send, skip-on-unchanged; done when: a changed chunk rebuilds, an unchanged one SKIPs naming the matched hash; DONE 2026-10-19 (literate/ 4 files, paren-check green); deps: 3.
   7. Comments (step 6): first-class in text, stripped by rendering; done when: commented text renders clean and the text keeps every comment; COMMITTED 3b43418f on 2026-10-19 (text/comments.rs 146 L, rendering/strip.rs 69 L) — not yet gated; deps: 3.
   8. Engine surface (step 7): the boundary answers the editor; node addressing stable; loader works with notation absent; done when: the editor's notation mode runs over the contract boundary; DONE 2026-10-19 (surface/ 3 files); deps: 3, editor item 2.
-  9. Rendering tiers (step 8): plain and rich unicode on the phone; done when: shown on the phone; the graphics question stays recorded as unproven; deps: 3.
+  9. Rendering tiers (step 8): plain and rich unicode on the phone; done when: shown on the phone; the graphics question stays recorded as unproven; DONE 2026-10-19 (rendering/rich.rs); deps: 3.
   10. The kit (step 9): MCP server, skill with executed examples, read-only plugin; done when: the kit checklist runs green; deps: 8.
   11. Notation core hosted (tier-1 item 18): notation on and off both work; the trigger chain runs once end to end; done when: captured real output; deps: 8, editor items 2 and 3.
   12. Done-line share (tier-1 item 20, shared): the notation's share of the done-line state holds; deps: 11.
