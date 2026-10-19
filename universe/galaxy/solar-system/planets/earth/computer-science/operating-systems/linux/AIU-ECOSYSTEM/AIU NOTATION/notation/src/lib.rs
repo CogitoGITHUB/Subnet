@@ -15,6 +15,9 @@ pub mod buffer;
 #[path = "text/positions.rs"]
 pub mod positions;
 
+#[path = "text/comments.rs"]
+pub mod comments;
+
 #[path = "parser/parser.rs"]
 pub mod parser;
 

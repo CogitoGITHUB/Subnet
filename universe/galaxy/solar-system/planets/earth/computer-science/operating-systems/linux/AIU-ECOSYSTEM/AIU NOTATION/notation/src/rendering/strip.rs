@@ -7,6 +7,14 @@
 //!   * a block line — "<name> start" or "<name> end",
 //!   * a declaration line — "keyword: value" with a registered keyword.
 //! Everything else is content and is kept exactly as written.
+//!
+//! Comments are the third thing it drops, and the spans come from text/:
+//! text/comments.rs says where they are (TODO item 7). This file never reads a
+//! comment itself, only the byte ranges it must drop, so there is exactly one
+//! place that knows what a comment is and one place that removes it.
+
+use crate::buffer::Buffer;
+use crate::comments::{find_comments, is_comment_line};
 
 /// The registered declaration keywords, mirrored from parser/parser.rs. A line
 /// whose keyword is not here is content, even when it has a colon in it.
@@ -32,38 +40,31 @@ pub fn is_declaration_line(line: &str) -> bool {
 }
 
 /// True when the line is anything the reader should never see: a block line, a
-/// declaration line, or a line that is only whitespace.
+/// declaration line, or a line that is only whitespace. A line inside a
+/// comment is not judged here — it needs the span, not the shape.
 pub fn is_stripped(line: &str) -> bool {
     line.trim().is_empty() || is_block_line(line) || is_declaration_line(line)
 }
 
-/// Strip the marks: keep the content lines, drop everything that is only
-/// syntax. Line endings are kept exactly as they came, so a stripped file
-/// still has one newline per line it had.
+/// Strip the marks and the comments: keep the content lines, drop everything
+/// that is only syntax. Line endings are kept exactly as they came, so a
+/// stripped file still has one newline per line it had, and the dropped lines
+/// take their own endings with them so the kept lines stay whole.
 pub fn strip_marks(text: &str) -> String {
+    let buffer = Buffer::from_text(text);
+    let comments = find_comments(&buffer);
     let mut out = String::new();
-    for line in split_keeping_endings(text) {
-        if !is_stripped(&line) {
-            out.push_str(&line);
+    for line in 1..=buffer.line_count() {
+        let start = buffer.line_start(line);
+        let end = buffer.line_end(line);
+        if is_comment_line(&comments, start, end) {
+            continue;
         }
-    }
-    out
-}
-
-/// Split text into lines, each keeping its own ending. A final line with no
-/// ending stays that way, so nothing is invented.
-fn split_keeping_endings(text: &str) -> Vec<&str> {
-    let mut out: Vec<&str> = Vec::new();
-    let mut start = 0usize;
-    let bytes = text.as_bytes();
-    for i in 0..bytes.len() {
-        if bytes[i] == b'\n' {
-            out.push(&text[start..=i]);
-            start = i + 1;
+        if is_stripped(buffer.line_text(line)) {
+            continue;
         }
-    }
-    if start < text.len() {
-        out.push(&text[start..]);
+        // line_bytes keeps the line's own ending, so nothing is re-invented
+        out.push_str(std::str::from_utf8(buffer.line_bytes(line)).unwrap_or(""));
     }
     out
 }
