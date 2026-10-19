@@ -16,6 +16,8 @@
   - architecture/ — the program's shape, detailed later
   - decisions/ — choices already made, newest first
   - dev-mode/ — what work mode loads live and what a bake bakes in
+  - editor/ — the package itself: the areas under editor/src, lowest first
+  - gate/ — the light gate: the dispatcher and the lints it runs
   - plan/ — one topic per file, the general build plan
   - research/ — program-specific findings only
   - rules/ — the hard rules, one file each
