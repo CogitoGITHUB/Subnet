@@ -2,86 +2,145 @@
 
 PROGRESS: last finished step 3
 
-This file is the truth of what works. Every row was proved by a command
-that was run and whose output was captured. A row that says UNTESTABLE
-names the reason. A row that says FIXED-DURING-AUDIT names what was broken
-and what was changed.
+One job: one row per feature of this program, with the command that
+exercises it and the output that was captured. A row is PASS only when the
+output was seen; FIXED-DURING-AUDIT means the audit found a real fault, fixed
+it at the cause, and the row now holds the output after the fix; UNTESTABLE
+means there is no way to run it yet and the row says why.
 
-One row per feature. The columns are:
-id, area, command, status, evidence.
+The four statuses: PASS, FIXED-DURING-AUDIT, FAIL, UNTESTABLE.
 
-The status is one of:
-- PASS — the command ran and its output is what it should be.
-- FIXED-DURING-AUDIT — it was broken, it was fixed at the cause, and the
-  command now gives the right output.
-- FAIL — the command ran and gave the wrong output; it is not fixed.
-- UNTESTABLE — there is no way to run it; the reason is in the evidence.
+The audit ran on 2026-10-19. Every command below was run from the project
+directory and its output was captured. The scratch files live in /tmp and are
+never in the tree.
 
-#+BEGIN_SRC text
-id  area         command                                                              status              evidence
-A1  parser       notation roundtrip good.aiu                                          PASS                roundtrip: identical (104 bytes)
-A2  parser       notation roundtrip crlf.aiu                                          PASS                roundtrip: identical (55 bytes)
-A3  parser       notation roundtrip utf8.aiu                                          PASS                roundtrip: identical (100 bytes)
-A4  parser       notation roundtrip no-newline.aiu                                    PASS                roundtrip: identical (75 bytes)
-B1  parser       notation parse err-stray.aiu                                         PASS                error stray-text 4 29 0 "text outside any named block"
-B2  parser       notation parse err-mismatch.aiu                                      PASS                error mismatched-end 5 55 3 "does not match the innermost open paragraph block" (names the opener's line 3)
-B3  parser       notation parse err-unclosed.aiu                                      PASS                error unclosed-block 77 78 5 "opened at line 5 and never closed"
-B4  parser       notation parse err-unknown.aiu                                        PASS                error unknown-block-name 5 30 0 "figure is not a Tier 1 block name"
-B5  parser       notation parse err-missing-title.aiu                                 PASS                error missing-title 1 0 0 "the first block of the file is not a title"
-C1  parser       notation parse nested.aiu                                            PASS                node block code 8 134 12 194 1 (depth 1 inside the paragraph)
-C2  parser       notation parse code-opaque.aiu                                       PASS                the code body held "title start" and "paragraph end"; no nested node
-C3  parser       notation parse decl-registered.aiu                                   PASS                decl tags "audit decl" 2 12 / decl style "bold" 3 29
-C4  parser       notation parse decl-unregistered.aiu                                 PASS                "colour: blue" stayed content; no decl line
-D1  parser       notation parse utf8.aiu                                              PASS                node block title 1 0 4 99 0 (byte offsets on multibyte text)
-E1  parser       reparse probe (scratch cargo project)                                PASS                rebuilt: [21] / kept: [1..20, 22..41] / agrees with full reparse: true
-E2  parser       reparse probe, broken element                                       PASS                incremental errors = 1 / full errors = 1 / same shape: true
-F1  rendering    notation render good.aiu                                             PASS                "A good page" + the body; marks and declarations hidden
-F2  rendering    notation render-rich nested.aiu                                      PASS                heading, a = rule, the wrapped paragraph
-F3  rendering    notation render-rich err-stray.aiu                                   PASS                "A page" / rule / "X line 4" / the words indented
-G1  entry        racket notation/src/entry/cli.rkt check good.document                PASS                "no errors in the parse tree document", exit 0
-G2  entry        racket ... check err-*.document                                      PASS                one to three ERR lines each, "N finding(s)", exit 1
-H1  model        probe read-outline                                                  PASS                nodes: 2 / errors: 0 / outline-document identical: #t
-H2  model        probe address-of / addresses                                        PASS                title:title@1 / paragraph:paragraph@6
-H3  model        probe tags-of / property-of                                          FIXED-DURING-AUDIT they were stubs returning #f; now they read the node
-H4  model        probe collect-findings / build-report                               PASS                findings: 0 / report-count: 0 / report-exit-code: 0
-I1  elements     elements/register.rkt known-name?                                    PASS                title, paragraph, code, heading are known
-I2  errors       errors/raise.rkt + errors/err.rkt                                   FIXED-DURING-AUDIT make-err passed 3 of 4 arguments; every raise in the package failed
-I3  security     security/refuse.rkt                                                 PASS                refuses with rule, value, reason and remedy
-I4  literate     literate/chunks.rkt reads the chunk headers                         PASS                the chunk header keywords are read out of the opaque body
-I5  generation   generation/plan.rkt                                                  PASS                a plan is produced for a parsed document
-J1  gate         nu gate/load-check.nu --table                                       PASS                load-check: 35 passed, 0 failed of 35 modules
-J2  gate         nu gate/check.nu --list                                             PASS                the six stages are listed
-K1  timing       notation parse on a 20-line page                                    PASS                parse-ms: 0
-K2  timing       notation parse on a 2000-line page                                  PASS                see the report line
-L1  data         notation parse table.aiu                                             PASS                the table, header and rows parse at depth 0, 1, 1
-L2  data         probe read-table + validate-table                                   PASS                caption Prices, 3 columns, 2 rows, problems: 0
-L3  data         probe table->html                                                   PASS                real table markup; a missing cell is <td></td>
-L4  data         probe table->latex                                                  FIXED-DURING-AUDIT one column too many and a trailing &; both fixed
-L5  data         probe document->json                                                FIXED-DURING-AUDIT the writer wrote no commas; spec-ref read only the first field
-L6  data         probe json->blocks and back                                         PASS                the two JSON texts are the same: #t
-L7  data         probe parse-json on broken input                                    PASS                "malformed JSON at position 6: } is not the start of a value"
-L8  data         nu tools/aiu.nu json syntax/example.aiu                              FIXED-DURING-AUDIT a code block became a data block; it keeps its name now
-L9  data         nu tools/aiu.nu from-json /tmp/example.json                         FIXED-DURING-AUDIT same
-M1  heading      probe numbering.rs                                                  PASS                1 / 1.1 / 1.1.1 / 1.2 / 2; headings counted: 5
-M2  heading      probe numbering.rkt                                                 PASS                the same five numbers
-M3  heading      notation render-rich headings.aiu                                   PASS                1 The first heading / 1.1 The first subheading / 1.1.1 A deeper heading
-M4  heading      notation parse a heading with level: two                            PASS                error bad-heading-level 6 44 0 "the heading level two is not a whole number of 1 or more"
-N1  tool         nu tools/aiu.nu roundtrip syntax/example.aiu                        PASS                roundtrip: identical (564 bytes), exit 0
-N2  tool         nu tools/aiu.nu render syntax/example.aiu                           PASS                the plain render, exit 0
-N3  tool         nu tools/aiu.nu check syntax/example.aiu                            PASS                "no errors in the parse tree document", exit 0
-#+END_SRC
+* A. The round trip — the tree prints back to the very same bytes
+
+- A1 | Rust round trip | =notation roundtrip good.aiu= | PASS | roundtrip: identical (104 bytes)
+- A2 | Rust round trip | =notation roundtrip crlf.aiu= | PASS | roundtrip: identical (55 bytes) (the CRLF bytes confirmed with od -c)
+- A3 | Rust round trip | =notation roundtrip utf8.aiu= | PASS | roundtrip: identical (100 bytes) (the render kept the multibyte bytes)
+- A4 | Rust round trip | =notation roundtrip no-newline.aiu= | PASS | roundtrip: identical (75 bytes)
+
+* B. The error kinds — each with its line, what and what to do
+
+- B1 | parser | =notation parse err-stray.aiu= | PASS | error stray-text 4 29 0 "text outside any named block" "put the text inside a \"<name> start\" / \"<name> end\" block"
+- B2 | parser | =notation parse err-mismatch.aiu= | PASS | error mismatched-end 5 55 3 "\"title end\" does not match the innermost open \"paragraph\" block" "close the open \"paragraph\" block first" (it names the opener's line 3)
+- B3 | parser | =notation parse err-unclosed.aiu= | PASS | error unclosed-block 77 78 5 "block \"paragraph\" was opened at line 5 and never closed" "add its matching \"paragraph end\" line"
+- B4 | parser | =notation parse err-unknown.aiu= | PASS | error unknown-block-name 5 30 0 "\"figure\" is not a Tier 1 block name" "use one of title, paragraph, code"
+- B5 | parser | =notation parse err-missing-title.aiu= | PASS | error missing-title 1 0 0 "the first block of the file is not a title" "start the file with \"title start\""
+- B6 | parser | =notation parse a heading with level: two= | PASS | error bad-heading-level 6 44 0 "the heading level \"two\" is not a whole number of 1 or more" "write the level as a number, for example \"level: 2\""
+
+* C. Nesting, opaque bodies and declarations
+
+- C1 | parser | =notation parse nested.aiu= | PASS | node block paragraph 6 74 13 208 0 then node block code 8 134 12 194 1 (depth 1)
+- C2 | parser | =notation parse code-opaque.aiu= | PASS | the code body held "title start" and "paragraph end" and opened nothing
+- C3 | parser | =notation parse decl-registered.aiu= | PASS | decl tags "audit decl" 2 12 and decl style "bold" 3 29
+- C4 | parser | =notation parse decl-unregistered.aiu= | PASS | an unregistered "colour: blue" line stayed content; no decl line
+
+* D. Offsets
+
+- D1 | parser | =notation parse utf8.aiu= | PASS | node block title 1 0 4 99 0 (the offsets are byte offsets; confirmed against the bytes)
+
+* E. Incremental reparse
+
+- E1 | reparse | the reparse probe in /tmp | PASS | rebuilt: [21] / kept: [1..20, 22..41] / incremental agrees with full reparse: true
+- E2 | reparse | the reparse probe in /tmp | PASS | broken: incremental errors = 1 / broken: full errors = 1 / broken: incremental recovers the same shape: true
+
+* F. The two render tiers
+
+- F1 | rendering | =notation render good.aiu= | PASS | A good page / The body of the page. (the marks and the declaration lines are hidden, the content is kept)
+- F2 | rendering | =notation render-rich nested.aiu= | PASS | the heading, a rule, a blank line, the paragraph wrapped at 40 columns
+- F3 | rendering | =notation render-rich err-stray.aiu= | PASS | A page / a rule / a blank line / ✗ line 4 / the error's own words
+
+* G. The check command
+
+- G1 | entry | =racket notation/src/entry/cli.rkt check good.document= | PASS | good.aiu: no errors in the parse tree document (exit 0)
+- G2 | entry | the same command on each broken case | PASS | ERR <file> at line <n>, column unknown: parser-recovery: the parser recovered from <kind>: <what>; what to do: <remedy> and "N finding(s); the document is not clean" (exit 1)
+
+* H. The model layer
+
+- H1 | model | the model probe in /tmp | PASS | nodes: 2 / errors: 0 and "outline-document identical to the file: #t"
+- H2 | model | the model probe in /tmp | PASS | address: title:title@1 / address: paragraph:paragraph@6
+- H3 | model | the model probe in /tmp | PASS | tags-of the first node: (audit good) / property-of tags of the first node: audit good
+- H4 | diagnostics | the model probe in /tmp | PASS | findings: 0 / report-count: 0 / report-exit-code: 0
+
+* I. Every other area that has code
+
+- I1 | elements | the area probe in /tmp | PASS | element-names -> (title paragraph code heading); element-for 'code -> #(struct:element code text the parser does not read as notation #t); known-name? 'figure -> #f
+- I2 | elements | the area probe in /tmp | FIXED-DURING-AUDIT | register.rkt's format string used {a} instead of ~a, so every unknown name raised a format error; now: "\"figure\" is not a registered block name; use one of (title paragraph code heading)
+- I3 | errors | the area probe in /tmp | PASS | ERR probe at probe.rkt: a named fault; err-who -> probe; raise-err -> REFUSED: a refused thing
+- I4 | machine | the area probe in /tmp | PASS | the cancel door reads #f and #t after cancel!; home-dir -> /root/home/shape; ensure-dir made /tmp/aiu-audit/case-i-dir; acquire-lock then release-lock -> released
+- I5 | narration | the area probe in /tmp | PASS | "step: a step — a detail"; "open: a door opens — and here is why"; "note: printed — by the console"; "done waiting: a wait — how it ended"
+- I6 | literate | the area probe in /tmp | FIXED-DURING-AUDIT | chunks.rkt passed a string to the register, which holds symbols, so every code block was refused; now read-chunks and chunk-names answer
+- I7 | generation | the area probe in /tmp | FIXED-DURING-AUDIT | build-plan answers now that read-chunks does
+- I8 | surface | the area probe in /tmp | FIXED-DURING-AUDIT | surface.rkt swapped the two arguments of partition, so the answers could not be built; now surface-answers and read-answers answer
+- I9 | security | the area probe in /tmp | PASS | rule-ids -> the seven ids; state-changing? -> the six write-facing predicates
+- I10 | text | =notation render= on a page with a comment block | PASS | the comment block is dropped by the render and the rest of the page is kept
+- I11 | references | — | UNTESTABLE | the area is in the area table but holds no files, and the link keyword is not registered
+- I12 | entry | — | UNTESTABLE | the mcp and documents parts of the entry area are the kit, and the kit is not built
+
+* J. The gate
+
+- J1 | gate | =nu gate/check.nu --list= | PASS | the light gate has 7 stages
+- J2 | gate | =nu gate/check.nu= | PASS | light gate: green, 7 stages ran (exit 0)
+- J3 | gate | the security stage | FIXED-DURING-AUDIT | the stage printed NOTHING-TO-CHECK; now: SECURITY-GATE: 7 rules, 7 probed ok, 0 wrong, and each rule names whether any file calls it
+- J4 | gate | the comment stage | FIXED-DURING-AUDIT | the stage did not exist; now: OK comment-lint — 64 files checked, every file has a header and every definition a comment above
+- J5 | gate | =nu gate/check.nu= | PASS | stages that checked nothing: 0 of 7
+- J6 | gate | the load stage | PASS | OK load-check — 42 modules loaded cleanly
+
+* K. The timings, measured on this phone
+
+- K1 | parser | =notation parse t20.aiu= | PASS | parse-ms: 0 (three runs: 0, 0, 0)
+- K2 | parser | =notation parse t2000.aiu= | PASS | parse-ms: 40 / 36 / 43
+- K3 | entry | =nu tools/aiu.nu check t20.aiu= | PASS | 18363 ms
+- K4 | entry | =nu tools/aiu.nu check t2000.aiu= | PASS | 18773 ms
+- K5 | racket | =racket -n -e ''= | PASS | 479 ms / 1523 ms / 499 ms (the first run of the machine is slower)
+- K6 | racket | the module load alone | PASS | outline.rkt 10977 ms, cli.rkt 23367 ms — the check costs the same on 20 lines and on 2000 lines, so what costs is the loading, not the page
+
+* L. The data area — tables and JSON, both ways
+
+- L1 | parser | =notation parse table.aiu= | PASS | node block table 6 61 28 348 0 with decl caption "Prices" 7 73 and decl column "name text" 8 89
+- L2 | data | the data probe in /tmp | PASS | caption: Prices / 3 columns / a header of 3 cells / 2 rows, and the third cell of row r1 is a MISSING value
+- L3 | data | the data probe in /tmp | PASS | problems: 0
+- L4 | data | the data probe in /tmp | PASS | the HTML has <td></td> for the missing cell, never "null"
+- L5 | data | the data probe in /tmp | FIXED-DURING-AUDIT | the LaTeX had one column too many and a mark after the last cell; now three columns and no trailing mark
+- L6 | data | the data probe in /tmp | FIXED-DURING-AUDIT | the writer never wrote a comma and the header kept its raw cells; now the JSON holds the caption, the columns, the header and the rows
+- L7 | data | the data probe in /tmp | FIXED-DURING-AUDIT | the parser compared keys with eq? on strings and the array demanded commas; now "the two JSON texts are the same: #t"
+- L8 | data | the data probe in /tmp | FIXED-DURING-AUDIT | lookup read only the first field, so the .aiu text back lost the table; now the table form comes back whole
+- L9 | data | the data probe in /tmp | PASS | refused: malformed JSON at position 6: } is not the start of a value
+- L10 | data | =nu tools/aiu.nu json syntax/example.aiu= | FIXED-DURING-AUDIT | a code block came back as a data block; now the JSON holds a "code" key and the .aiu text back holds code start / code end
+
+* M. The heading and its computed number
+
+- M1 | model | the numbering probe in /tmp | PASS | 1 / 1.1 / 1.1.1 / 1.2 / 2 and "headings counted: 5"
+- M2 | model | the numbering probe in /tmp | PASS | the Racket half gives the same five numbers
+- M3 | rendering | =notation render-rich headings.aiu= | FIXED-DURING-AUDIT | strip.rs kept its own copy of the keyword list, so the level line leaked into the render; now "1 The first heading" and no level line
+- M4 | parser | a heading with level: two= | PASS | error bad-heading-level 6 44 0 — the heading falls back to level 1
+
+* N. The daily script
+
+- N1 | tools | =nu tools/aiu.nu roundtrip syntax/example.aiu= | PASS | roundtrip: identical (564 bytes)
+- N2 | tools | =nu tools/aiu.nu render syntax/example.aiu= | PASS | the plain render of the page
+- N3 | tools | =nu tools/aiu.nu check syntax/example.aiu= | PASS | syntax/example.aiu: no errors in the parse tree document
+- N4 | tools | =nu tools/aiu.nu json syntax/example.aiu= | PASS | the array of one object per block
+- N5 | tools | =nu tools/aiu.nu from-json /tmp/example.json= | PASS | the .aiu text back, with the code block as a code block
+
+* O. The comments
+
+- O1 | gate | =nu gate/comment-lint.nu= | FIXED-DURING-AUDIT | 53 real violations were found (definitions with no comment directly above); every one now has one and the lint says: OK comment-lint — 64 files checked, every file has a header and every definition a comment above
 
 * What is not proved
-- The Racket check command reads a parse-tree document, not a .aiu page.
-  The Rust binary makes the document; the Racket side reads it.
-- The gate's security stage still prints NOTHING-TO-CHECK. The security
-  area exists and its rules are written, but no stage reads them yet.
-- The editor side is not built. The join between the notation and the
-  editor is A (the editor parses and renders on its own) or B (the editor
-  asks the notation engine); both are written out in EDITOR-HANDOFF.org
-  with the real numbers and NEITHER is chosen here.
-- The inline emphasis and link keywords are not registered. The emphasis
-  mark is drawn; a link is not checked.
-- There are no test files in the tree. The verification runs live in /tmp
-  as commands, because the root decision D-001 was lifted on 2026-10-19
-  and the owner allowed one such run.
+
+- The Racket =check= command reads a parse tree document, not a .aiu page.
+  The Rust binary makes that document; =nu tools/aiu.nu check= does both steps.
+- A path that holds a space cannot be handed to racket as an argument, so
+  every Racket command is run with a relative path from the project folder.
+- The security rules have no caller yet: literate/targets.rkt and
+  generation/write.rkt still raise their own refusals. The gate names this on
+  every run.
+- The =link= keyword is not registered, so a link inside a paragraph is not
+  checked, and the =references= area holds no files.
+- The kit — the MCP server, the skill and the plugin — is not built.
+- The Racket side pays a module load of about 11 to 23 seconds on this phone.
+  The checking work itself is fast; the engine side parses in 0 to 40
+  milliseconds.

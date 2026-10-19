@@ -85,7 +85,7 @@
 ;; and not by a word written again here.
 (define (opaque-block? n)
   (and (block-node? n)
-       (opaque? (symbol->string (block-node-name n)))))
+       (opaque? (block-node-name n))))
 
 ;; chunk-in-block reads one code block and answers the chunk it holds, or #f
 ;; when the block names none. The source is joined back with the newline that
@@ -110,12 +110,18 @@
 ;; Rule A decides it: only an exact matching end line closes a block.
 (define (chunk-end-line lines node body-start)
   (define wanted (symbol->string (block-node-name node)))
+  ;; The end line is the FIRST line that closes this block, so every line is
+  ;; looked at and the first match is taken. A for/first would answer with the
+  ;; FIRST line's value and stop there, even when that value is #f, so the
+  ;; matches are collected and the first of them is chosen.
   (define found
-    (for/first ([i (in-range (sub1 body-start) (length lines))])
-      (define line (list-ref lines i))
-      (and (end-line? line)
-           (string=? (name-of line) wanted)
-           (add1 i))))
+    (let ([hits (filter values
+                      (for/list ([i (in-range (sub1 body-start) (length lines))])
+                        (define line (list-ref lines i))
+                        (and (end-line? line)
+                             (string=? (name-of line) wanted)
+                             (add1 i))))])
+      (if (null? hits) #f (car hits))))
   (unless found
     (raise-err 'chunks "chunks.rkt"
                (format "the code block that starts on line ~a has no matching \"~a end\" line; its body cannot be read"
@@ -135,7 +141,13 @@
      (say-note (format "the end of the block on line ~a" line)
                "this page ends its lines with CR LF, so its bytes do not line up with its lines; the end comes from the rule alone")]
     [else
-     (define walked (line-start-offset lines line))
+           ;; The tree's end offset is the byte just past the LAST CHARACTER of the
+      ;; end line, so the rule's offset must be the same thing and not the
+      ;; start of the line. Comparing a start with an end would report a
+      ;; difference on every page.
+      (define end-line (list-ref lines (sub1 line)))
+      (define walked (+ (line-start-offset lines line)
+                        (string-utf-8-length end-line)))
      (define known (block-node-end node))
      (unless (= walked known)
        (say-warn (format "the block that ends on line ~a" line)

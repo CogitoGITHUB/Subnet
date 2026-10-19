@@ -47,5 +47,5 @@
 (define (require-known name)
   (unless (known-name? name)
     (raise-err 'register "register.rkt"
-               (format "\"{a}\" is not a registered block name; use one of ~a"
+               (format "\"~a\" is not a registered block name; use one of ~a"
                        name (element-names)))))

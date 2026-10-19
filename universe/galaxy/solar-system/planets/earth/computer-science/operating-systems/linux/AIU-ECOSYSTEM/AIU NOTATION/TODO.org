@@ -3,43 +3,64 @@
 # Status: current; one item finishes in the commit that records its hash; nothing else is a task list.
 
 * How this list works
-# the discipline, once.
+
   - Item shape: what, done when, dependencies; a finished item records DONE and the commit hash together.
-  - A blocked item is marked BLOCKED with its reason; the run continues (learned/todo-list-practice.org).
+  - A blocked item is marked BLOCKED with its reason; the run continues.
   - Build order here follows plan/build-order.org; the package tree and every name are in plan/package-tree.org.
+  - The four statuses are: DONE, PARTLY DONE, BLOCKED-ON-OWNER, WAITING-ON-EDITOR.
   - Tests are ON from 2026-10-19: the owner lifted the D-001 hold, so this list now
     grows test items and the gate runs them; recorded in decisions/OPEN.org.
 
 * Items
-# in build order; twelve numbered items, 1 to 12, then the after-done-line list, then the open items.
+
   1. The tree lands — create =notation/= per plan/package-tree.org: INDEX.org, the floor areas (errors, narration, machine) and gate/ with its first stages; done when: the light gate is green on the new tree; deps: none.
-  2. The mark and the first elements (build step 1): FIRST ACT DONE 2026-10-17 — the sign is revised to start/end keywords with everything inside a named block (notation D-014 REVISED; root =DECISIONS.org= record pending in ROOT-REQUEST-D014.org), block bodies opaque so only an exact matching end line closes one (history: the first answer was braces { }, and the sign and its typing comfort were item 2's first act, on a phone); STILL OPEN: the light gate is green and syntax/example.notation parses with title, paragraph and code (D-013) — proven by syntax/first-run-output.org (a)–(c) and (e) on 2026-10-17 — but the Racket half of the run is BLOCKED: CORRECTED 2026-10-19 — the recorded blocker ("this phone's Racket resolves no relative require") is FALSE for the installed Racket 9.3; see decisions/OPEN.org, last section. The half loads, and its first real defect was a missing require, not a resolution failure. Not yet done: the Racket model reading the document, and =check= printing a diagnosis; no test files (D-001); deps: 1.
-  3. Round trip (build step 2): text/, parser/, elements/, model/, rendering/plain.rs, entry/cli.rkt; PARTLY DONE 2026-10-17, captured in syntax/first-run-output.org — parse, render and round trip agree byte for byte on a real page (a), the plain render keeps the content and hides the marks (c), one deliberate stray line is reported as =stray-text= at line 6 and kept (d), and the timing is captured (e: Rust parse 109 ms, Racket startup alone 1232 ms, page 20 lines, document 248 bytes). STILL OPEN: the end-to-end check — =entry/cli.rkt check= did not load, so no diagnosis line and no non-zero exit from =check= were proven; its 2451 ms is a load failure, not a working check. The load blocker was since shown false (decisions/OPEN.org). What it needs is on the laptop list. No test files (D-001); deps: 1, 2.
-  4. Robustness (step 3): incremental reparse and recovery; done when: edit mid-file, the rest stays rendered, a broken element recovers; COMMITTED 54ce3f78 on 2026-10-19 (parser/reparse.rs 288 L, parser/partial.rs 213 L) — the Rust half, not yet gated; deps: 3.
-  5. Named elements grow (step 4): outlines, tags, properties, tables, planning states, links; done when: each element dispatches by name and the editor completes names while typing; COMMITTED cbfbbe54 on 2026-10-19 (diagnostics/collect.rkt 238 L, report.rkt 78 L) — not yet gated; deps: 3.
-  6. Literate code (step 5): chunks, targets, scanning, load and send, skip-on-unchanged; done when: a changed chunk rebuilds, an unchanged one SKIPs naming the matched hash; DONE 2026-10-19 (literate/ 4 files, paren-check green); deps: 3.
-  7. Comments (step 6): first-class in text, stripped by rendering; done when: commented text renders clean and the text keeps every comment; COMMITTED 3b43418f on 2026-10-19 (text/comments.rs 146 L, rendering/strip.rs 69 L) — not yet gated; deps: 3.
-  8. Engine surface (step 7): the boundary answers the editor; node addressing stable; loader works with notation absent; done when: the editor's notation mode runs over the contract boundary; DONE 2026-10-19 (surface/ 3 files); deps: 3, editor item 2.
-  9. Rendering tiers (step 8): plain and rich unicode on the phone; done when: shown on the phone; the graphics question stays recorded as unproven; DONE 2026-10-19 (rendering/rich.rs); deps: 3.
+     DONE 2026-10-19 — the gate runs seven stages and is green; every name is in plan/package-tree.org.
+
+  2. The mark and the first elements (build step 1): the three-line block form and the first elements; done when: syntax/example.aiu parses with title, paragraph and code (D-013); deps: 1.
+     DONE 2026-10-19 — the block is =<name> start= / content / =<name> end=, the keyword first; syntax/example.aiu parses and the six error names are produced with a line, what and what to do.
+
+  3. Round trip (build step 2): text/, parser/, elements/, model/, rendering/plain.rs, entry/cli.rkt; done when: a page prints back to the very same bytes and =check= prints a diagnosis with a non-zero exit; deps: 1, 2.
+     DONE 2026-10-19 — the round trip is exact on a good page, a CRLF page, a multibyte page and a page with no trailing newline; the Racket =check= command prints a diagnosis and exits non-zero on a broken page.
+
+  4. Robustness (step 3): incremental reparse and recovery; done when: an edit mid-file rebuilds only the slice and a broken element recovers; deps: 3.
+     DONE 2026-10-19 (parser/reparse.rs, parser/partial.rs) — an edit rebuilds only the changed element, the result agrees with a full reparse, and a broken element recovers to the same shape.
+
+  5. Named elements grow (step 4): outlines, tags, properties, tables, planning states, links; done when: each named thing is read and reported; deps: 3.
+     PARTLY DONE 2026-10-19 (diagnostics/collect.rkt, report.rkt, model/) — outlines, tags, properties, headings with their computed numbers and tables are read and reported; the link keyword and the planning states are not registered yet.
+
+  6. Literate code (step 5): chunks, targets, scanning, load and send, skip-on-unchanged; done when: a chunk is found, its target is checked and it is skipped when unchanged; deps: 3.
+     DONE 2026-10-19 (literate/ 4 files) — the chunks, the targets, the scan and the skip journal are in and the paren check is green.
+
+  7. Comments (step 6): first-class in text, stripped by rendering; done when: a comment block is found, kept in the tree and dropped by the render; deps: 3.
+     DONE 2026-10-19 (text/comments.rs, rendering/strip.rs) — a =comment start= / =comment end= block is found, kept and dropped by the render.
+
+  8. Engine surface (step 7): the boundary answers the editor; node addressing stable; loader works with notation absent; done when: the surface answers for a real document; deps: 3, editor item 2.
+     DONE 2026-10-19 (surface/ 3 files) — the answers and the notices are in and the model addresses a node as =name:name@line=.
+
+  9. Rendering tiers (step 8): plain and rich unicode on the phone; done when: both tiers render a real page; deps: 3.
+     DONE 2026-10-19 (rendering/rich.rs and the =render-rich= command) — the plain tier and the rich tier both render a real page, and the rich tier draws a heading with its computed number.
+
   10. The kit (step 9): MCP server, skill with executed examples, read-only plugin; done when: the kit checklist runs green; deps: 8.
+     BLOCKED-ON-OWNER — the kit needs the owner's answer on what the MCP server may write and what the skill may run; the surface it would sit on is ready (surface/ and the =json= and =from-json= commands).
+
   11. Notation core hosted (tier-1 item 18): notation on and off both work; the trigger chain runs once end to end; done when: captured real output; deps: 8, editor items 2 and 3.
+     WAITING-ON-EDITOR — the engine side is ready and proved; the editor side does not exist yet.
+
   12. Done-line share (tier-1 item 20, shared): the notation's share of the done-line state holds; deps: 11.
+     WAITING-ON-EDITOR — it waits on item 11.
 
 * Open items
-# named and left open by the owner on 2026-10-17; none of them blocks item 1 or the first slice.
-  - Inline emphasis and links inside a paragraph — OPEN, not decided; the
-    owner named it open and it stays open until they answer (notation D-014
-    revised: still open).
-  - The Tier 2 element list — comment, citation, tables and so on — OPEN, not
-    decided.
-  - Block reuse by an authored id — Tier 2, design note only; needs the
-    contract question in ROOT-REQUEST-D014.org answered first, because the
-    contract says addresses are computed and never authored.
-  - Editor side: auto-insert a start and end line while typing, and hide the
-    end line on display — dependency of item 11 (notation core hosted), where
-    the editor's notation mode runs over the contract boundary; the one-key
-    wrap belongs here, not to the engine.
+
+  - Inline emphasis and links inside a paragraph — PARTLY DONE; the emphasis mark is drawn by the rich tier, and the =link= keyword is not registered yet, so a link is not checked.
+
+  - The Tier 2 element list — comment, citation, tables and so on — PARTLY DONE; the heading keyword with its automatic numbering is in, and the tables and data area is in, and the rest of the list is not decided.
+
+  - Block reuse by an authored id — BLOCKED-ON-OWNER; Tier 2, design note only; needs the contract question in ROOT-REQUEST-D014.org answered first, because the contract says addresses are computed and never authored.
+
+  - A TODO state as an add-on that works on every keyword, so that anything — even a comment — can become a todo — BLOCKED-ON-OWNER; the keyword must be registered in both places that hold the list, the Rust =DECLARATION_KEYWORDS= and the Racket =property-keywords=, and the owner must say where the state lives.
+
+  - Editor side: auto-insert a start and end line while typing, and hide the end line on display — WAITING-ON-EDITOR; it is a dependency of item 11, and the one-key wrap belongs here, not to the engine.
 
 * After the done line
-# what continues on its own.
+
   - The program's own checklist from checklist/tier-2/ content: references and numbering, tables and data, variants and versioning, engine services, kit entries and conformance. Tier 3 stays plan only until the owner opens it.

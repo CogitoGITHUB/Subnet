@@ -65,7 +65,7 @@
 ;; and its children can never be given addresses by two different rules.
 (define (surface-answers o)
   (define-values (nodes errors)
-    (partition (answer-siblings (outline-nodes o) "") answer-error?))
+    (partition answer-error? (answer-siblings (outline-nodes o) "")))
   ;; The file the document describes is carried even when the tree did not
   ;; learn one: an answer that does not say which file it is about is an
   ;; answer about nothing.
