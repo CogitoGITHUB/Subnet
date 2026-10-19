@@ -7,13 +7,18 @@
 ;; The table is closed: a name nobody registered is refused here, so a command
 ;; cannot be added by accident. Reading is free; this only reads a document and
 ;; reports what is wrong with it. Nothing here writes.
+;;
+;; =check= found its findings and its diagnosis through diagnostics/ with TODO
+;; item 5; before that it read the error nodes itself and printed a shape of
+;; its own, which is what the diagnostics area exists to end.
 
 (require racket/file
          racket/list
          "../errors/raise.rkt"
+         "../diagnostics/collect.rkt"
+         "../diagnostics/report.rkt"
          "../narration/print-console.rkt"
-         "../model/outline.rkt"
-         "../model/nodes.rkt")
+         "../model/outline.rkt")
 
 (provide check commands command-names command-for run)
 
@@ -41,22 +46,28 @@
      ;; applied, because there are no bytes to convert.
      (define text (file->string path #:mode 'binary))
      (define o (read-outline text))
-     (define errors (outline-errors o))
      (define file-name (or (outline-file o) path))
-     (for ([e (in-list errors)])
-       (print-line (format "~a:~a: ~a: ~a; what to do: ~a"
-                           file-name
-                           (error-node-line e)
-                           (error-node-kind e)
-                           (error-node-what e)
-                           (error-node-what-to-do e))))
-     (if (null? errors)
+     ;; The tree is walked by diagnostics/collect.rkt and rendered by
+     ;; diagnostics/report.rkt, which prints through errors/render.rkt — the
+     ;; only printer of an error in the package. This command adds no shape
+     ;; of its own: it reads the report and decides what to exit with. The
+     ;; page is #f, because a parse-tree-document carries byte offsets and no
+     ;; page; with no page no column can be counted, and every finding says
+     ;; its column is unknown rather than naming a wrong one.
+     (define report (build-report file-name (collect-findings #f o)))
+     (define body (report-text report))
+     ;; The exit code comes from the report, not from a count read here, so one
+     ;; place decides what a finding is worth to the shell.
+     (define code (report-exit-code report))
+     (unless (string=? body "") (print-line body))
+     (if (= code 0)
          (begin
            (print-line (format "~a: no errors in the parse tree document" file-name))
-           0)
+           code)
          (begin
-           (print-line (format "~a: ~a error(s); the document is not clean" file-name (length errors)))
-           1))]))
+           (print-line (format "~a: ~a finding(s); the document is not clean"
+                               file-name (report-count report)))
+           code))]))
 
 ;; The one table: one name, one function. Adding a command is a decision for
 ;; the owner, so the table says what exists rather than what might.

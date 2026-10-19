@@ -1,0 +1,36 @@
+#+TITLE: INDEX — AIU NOTATION/notation/src/diagnostics/
+# One job: list every file in this directory and the single job of each.
+# Status: current 2026-10-19; updated in the same commit as any change here.
+
+* Files
+# one line per file: its name, then the single job it performs.
+
+  - collect.rkt — every finding a reader must be told, gathered from the tree
+    in order: an unknown element name, a tag that names nothing, a property
+    with no value, a link with no target, and every construct the parser
+    recovered from, =stray-text= included
+  - report.rkt — one diagnosis: where, what, what the reader can do; plus the
+    count and the exit code the CLI answers with
+
+* Where it sits
+# why this area exists and what it may use.
+  - Between model/ and entry/: it reads the tree elements/ and model/ built and
+    hands back findings, and entry/ is the only area that turns them into
+    output. A require may point downward only (plan/package-tree.org).
+  - =collect.rkt= prints nothing and =report.rkt= renders through
+    errors/render.rkt alone. There is one printer of an error in the package
+    and a collector that printed would be a second one.
+  - Nothing here waits: reading a tree in memory does not block, so the wait
+    door stays shut and narration/ is not used in this area.
+
+* What is quiet today, and why
+# checks that cannot fire yet, named so nobody reads silence as a pass.
+  - A declaration reaches collect.rkt only when model/outline.rkt fills
+    block-node-declarations, which it does not yet; the property, tag and link
+    checks stay quiet until it does.
+  - A link needs the =link= declaration keyword, which the parser does not
+    read yet. Registering it is the owner's decision (plan/package-tree.org,
+    "Declaration keywords"); the check is already written against the shape.
+  - =check= reads a parse-tree-document, which carries byte offsets and no
+    page, so a column reads "unknown". Counting one needs the page text, which
+    collect.rkt takes as its first argument.

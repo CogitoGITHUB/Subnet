@@ -33,6 +33,9 @@
   - src/machine/ — landed: directories.rkt, locks.rkt, cancel.rkt
   - src/text/ — landed: buffer.rs, positions.rs (Rust)
   - src/parser/ — landed: parser.rs (Rust)
+  - src/diagnostics/ — landed: collect.rkt, report.rkt
+# =src/elements/=, =src/model/= and =src/entry/= landed earlier and are still
+# missing from this list; reported 2026-10-19, not rewritten here.
   - Cargo.toml — the crate manifest, one crate, no workspace
   - src/lib.rs — the module list: which area files belong to the crate
   - tests/, test-doubles/ — open when tests open (D-001)

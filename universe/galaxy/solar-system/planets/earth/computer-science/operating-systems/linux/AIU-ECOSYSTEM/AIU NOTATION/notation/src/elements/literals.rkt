@@ -8,6 +8,10 @@
 
 (require racket/string)
 
+;; Provided with TODO item 5: diagnostics/collect.rkt asks literal-name? what
+;; a tag is, so no second place decides what a name looks like.
+(provide name-char? literal-name? name-of start-line? end-line?)
+
 ;; name-char? says whether a character may appear in a name. Names stay plain
 ;; lowercase words so they read the same in text, in a message and on a phone
 ;; keyboard.

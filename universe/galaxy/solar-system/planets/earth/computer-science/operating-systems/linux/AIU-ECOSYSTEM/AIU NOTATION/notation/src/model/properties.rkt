@@ -11,6 +11,11 @@
          "nodes.rkt"
          "../errors/raise.rkt")
 
+;; Provided with TODO item 5: diagnostics/collect.rkt reads the registered
+;; keywords and the one word splitter from here, so this vocabulary has one
+;; home and no file repeats it.
+(provide property-keywords parse-tags property-of tags-of planning-state-of)
+
 ;; The registered declaration keywords. A line whose keyword is not here is
 ;; content, not a property.
 (define property-keywords
