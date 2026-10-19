@@ -7,11 +7,13 @@
 
   - parser.rs — the layered parser: the mark, blocks, elements, recovery; text
     found outside any block becomes a =stray-text= error node
+  - reparse.rs — a keystroke rebuilds only the slice it touched and reports what
+    was rebuilt (build step 3)
+  - partial.rs — a broken element becomes the error node and the text after it
+    keeps parsing (build step 3)
 
 * Not written yet
 # named in plan/package-tree.org, still planned; no file, no stub.
-  - reparse.rs — a keystroke touches only its slice (build step 3)
-  - partial.rs — a broken element recovers; the rest keeps parsing (build step 3)
 
 * Where it sits
 # why this area exists and what it may use.

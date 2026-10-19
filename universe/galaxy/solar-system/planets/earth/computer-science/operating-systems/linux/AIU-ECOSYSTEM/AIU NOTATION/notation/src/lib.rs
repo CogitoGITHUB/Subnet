@@ -21,6 +21,13 @@ pub mod comments;
 #[path = "parser/parser.rs"]
 pub mod parser;
 
+// reparse comes before partial: reparse asks partial what a slice cut.
+#[path = "parser/reparse.rs"]
+pub mod reparse;
+
+#[path = "parser/partial.rs"]
+pub mod partial;
+
 #[path = "join/rust-exports.rs"]
 pub mod rust_exports;
 
