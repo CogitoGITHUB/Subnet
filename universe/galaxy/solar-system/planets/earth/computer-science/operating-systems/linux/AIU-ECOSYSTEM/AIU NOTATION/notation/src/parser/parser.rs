@@ -39,11 +39,15 @@ use crate::buffer::Buffer;
 use crate::positions::{line_col_to_offset, offset_to_line_col, LineCol};
 
 /// The Tier 1 block names (rule A). Anything else on a block line is an error.
-pub const BLOCK_NAMES: [&str; 4] = ["title", "paragraph", "code", "heading"];
+pub const BLOCK_NAMES: [&str; 7] = [
+    "title", "paragraph", "code", "heading", "table", "header", "row",
+];
 
 /// The registered declaration keywords (rule B). They are hints, never meaning.
-pub const DECLARATION_KEYWORDS: [&str; 8] =
-    ["tags", "language", "style", "theme", "color", "format", "font", "level"];
+pub const DECLARATION_KEYWORDS: [&str; 13] = [
+    "tags", "language", "style", "theme", "color", "format", "font", "level", "caption", "column", "cell",
+    "row-id", "meta",
+];
 
 /// The registered error names (rule E). All are severity error, no off switch.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -502,7 +506,7 @@ fn unknown_name(span: Span, line: usize, name: &str) -> ErrorNode {
         line,
         opener_line: None,
         what: format!("\"{}\" is not a Tier 1 block name", name),
-        what_to_do: "use one of title, paragraph, code, heading".to_string(),
+        what_to_do: "use one of title, paragraph, code, heading, table, header, row".to_string(),
     }
 }
 

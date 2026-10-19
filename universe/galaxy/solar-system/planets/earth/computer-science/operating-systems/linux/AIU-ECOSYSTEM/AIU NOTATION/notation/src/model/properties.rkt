@@ -18,9 +18,13 @@
 
 ;; The registered declaration keywords. A line whose keyword is not here is
 ;; content, not a property. The `level` keyword says how deep a heading is;
-;; the number that follows from it is computed, never written.
+;; the number that follows from it is computed, never written. The table
+;; keywords — caption, column, cell, row-id and meta — are here because a
+;; table's shape is carried by its declarations, and a keyword that is not
+;; listed would be refused as content.
 (define property-keywords
-  '(tags language style theme color format font level))
+  '(tags language style theme color format font level
+    caption column cell row-id meta))
 
 ;; parse-tags reads the value of a tags declaration: whitespace-separated
 ;; words, in the order written. An empty value is an empty list, never a list

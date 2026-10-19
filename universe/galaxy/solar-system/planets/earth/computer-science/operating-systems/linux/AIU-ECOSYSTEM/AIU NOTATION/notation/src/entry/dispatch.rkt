@@ -32,7 +32,10 @@
 
 (require racket/file
          racket/list
+         racket/port
          "../errors/raise.rkt"
+         "../data/aiu-text.rkt"
+         "../data/json.rkt"
          "../diagnostics/collect.rkt"
          "../diagnostics/report.rkt"
          "../generation/plan.rkt"
@@ -45,7 +48,7 @@
          "../narration/wait-door.rkt"
          "../model/outline.rkt")
 
-(provide check literate send-chunks
+(provide check literate send-chunks json from-json
          commands command-names command-for run)
 
 
@@ -238,13 +241,74 @@
           who (command-names)))
 
 
+;; json turns a page into JSON: the structured value the Nushell side and any
+;; other tool wants, instead of text.
+;;
+;; The parse tree comes from the Rust binary, because the Rust crate is the
+;; parser; the binary is named by the environment variable AIU_NOTATION_BIN,
+;; and tools/aiu.nu sets it. When it is not set the command refuses and says
+;; what to do, because a command that guesses a path is a command that fails
+;; in a way nobody can act on.
+(define (json args)
+  (define who "json")
+  (define path (first args))
+  (cond
+    [(or (not path) (string=? path ""))
+     (refuse who "name one page to read" (run-with who))]
+    [(not (file-exists? path))
+     (refuse who (format "there is no page at ~a" path)
+             "check the path you were given, or write the page first")]
+    [else
+     (define bin (or (getenv "AIU_NOTATION_BIN") ""))
+     (if (string=? bin "")
+         (refuse who "the notation binary is not named, and the page cannot be read without it"
+                 "set AIU_NOTATION_BIN to the notation binary, or use tools/aiu.nu, which sets it for you")
+         (let* ([document (run-notation bin path)]
+                [o (read-outline document)]
+                [page (file->bytes path)]
+                [value (document->json o page)])
+           (print-line (json->text value))
+           exit-clean))]))
+
+;; from-json turns a JSON file into a .aiu page, written to the standard
+;; output. The other way round of the json command, and the way a JSON file
+;; becomes a page a person can read.
+(define (from-json args)
+  (define who "from-json")
+  (define path (first args))
+  (cond
+    [(or (not path) (string=? path ""))
+     (refuse who "name one JSON file to read" (run-with who))]
+    [(not (file-exists? path))
+     (refuse who (format "there is no file at ~a" path)
+             "check the path you were given, or write the file first")]
+    [else
+     (define value (parse-json (file->string path #:mode 'binary)))
+     (define blocks (json->blocks value))
+     (print-line (blocks->aiu-text blocks))
+     exit-clean]))
+
+;; run-notation runs the Rust binary over a page and gives back the parse-tree
+;; document it printed. The binary's own output is what is wanted, so it is
+;; captured instead of being printed, and the binary's complaints go to
+;; nowhere rather than into the JSON.
+(define (run-notation bin path)
+  (define out (open-output-string))
+  (parameterize ([current-output-port out]
+                 [current-error-port (open-output-nowhere)])
+    (system* bin "parse" path))
+  (get-output-string out))
+
+
 ;; The one table: one name, one function. Adding a command is a decision for
 ;; the owner, so the table says what exists rather than what might. The name is
 ;; what a reader types and the function is what this file calls it.
 (define commands
   (list (list "check" check)
         (list "literate" literate)
-        (list "send" send-chunks)))
+        (list "send" send-chunks)
+        (list "json" json)
+        (list "from-json" from-json)))
 
 ;; command-names lists the registered command names, for --list and for the
 ;; refusal message.

@@ -1,0 +1,88 @@
+#+TITLE: data — the structured model, the bridge to JSON and to Nushell
+#+STARTUP: showeverything
+
+* What this area is for
+
+The owner asked on 2026-10-19 for a structured internal data model that sits
+between parsing, JSON, Nushell and rendering. This area is that model. The AIU
+notation stays the canonical human-authored form; everything else reads and
+writes the data this area holds.
+
+The area is above =model= and below =diagnostics=. It may use the model, the
+elements, the parser and the errors, and nothing above it.
+
+* The files
+
+- =table.rkt= — the table structure: a =table= block read into a table with
+  its caption, its columns, its header, its rows and its cells; the column
+  types; the missing values; the validation.
+- =table-html.rkt= — a table drawn as one HTML table element.
+- =table-latex.rkt= — a table drawn as one LaTeX tabular.
+- =json.rkt= — JSON read and JSON written, and the two mappings between an
+  AIU document and JSON.
+- =aiu-text.rkt= — described blocks written as .aiu text, so a JSON file can
+  be imported into a page.
+
+* The table form
+
+Every line carries a keyword, so the table is not punctuation:
+
+#+begin_example
+table start
+caption: Prices
+column: name text
+column: price number
+column: note text optional
+header start
+cell: name
+cell: price
+cell: note
+header end
+row start
+row-id: r1
+cell: Widget
+cell: 9.99
+cell:
+row end
+table end
+#+end_example
+
+- =column: <name> <type> [optional]= — the type is one of text, number,
+  integer, bool, date, json.
+- =cell:= with an empty value is a MISSING value, not an empty string.
+- A missing value is only allowed in a column that says =optional=.
+- =row-id:= is optional and names the row for a reader that points at it.
+
+* The AIU and JSON mapping
+
+A document becomes a JSON array with one object per top-level block, in the
+order the blocks appear:
+
+#+begin_example
+[{"title": "The first page"},
+ {"paragraph": "The body of the page."},
+ {"heading": {"level": 2, "number": "1.1", "text": "A subheading"}},
+ {"table": {"caption": "Prices",
+            "columns": [{"name": "name", "type": "text", "optional": false}],
+            "header": ["name"],
+            "rows": [{"id": "r1", "cells": [["Widget", true]]}]}}]
+#+end_example
+
+={\"data\": <any JSON value>}= is the way out for machine-oriented data that
+has no AIU form of its own.
+
+The other way round, the same array is read back into blocks, and those
+blocks are written as a .aiu page by =aiu-text.rkt=.
+
+* What JSON cannot hold, said out loud
+
+A JSON value has no place for a comment, for the blank lines between blocks,
+or for the way a heading was numbered. The mapping therefore loses those, and
+the rule is written down rather than left to be discovered: what JSON cannot
+represent is dropped, and what JSON can represent is kept.
+
+* Who calls it
+
+The =json= and =from-json= commands in the entry area; the Nushell side
+through =tools/aiu.nu=, which wants structured values and not text; and any
+caller that wants a table as data instead of as a drawing.
