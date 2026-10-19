@@ -1,0 +1,53 @@
+#+TITLE: INDEX — AIU NOTATION/notation/src/literate/
+# One job: list every file in this directory and the single job of each.
+# Status: current; updated in the same commit as any change in this directory.
+
+* Files
+# one line per file: its name, then the single job it performs.
+
+  - chunks.rkt — named chunks and their graph
+  - targets.rkt — targets as data: where a chunk may go
+  - scan.rkt — dependency scanning over the chunks
+  - skip-journal.rkt — a changed chunk rebuilds; an unchanged one SKIPs naming the hash
+
+* Where it sits
+# why this area exists and what it may use.
+  - Above model and elements, below generation. A chunk is a code block (so the
+    bytes in it are this area's to read, syntax/first-slice-freeze.org rule D)
+    plus a name, a target and the names it depends on.
+  - A chunk is declared in the head of its own block:
+    =chunk: NAME= names it, =into: PATH [at heading NAME | at block NAME]=
+    says where it may go, =depends: A B C= says what it waits on. Those three
+    keywords are NOT in the registered declaration list (rule B names tags,
+    language, style, theme, color, format and font); registering them is the
+    owner's decision and is still open. Until then they are read from inside
+    the opaque body, which rule B does not cover.
+  - Targets are relative paths inside the document's own directory. Absolute
+    paths, directories and =..= are refused in targets.rkt, and that refusal
+    is this area's own small door. =../security/= now carries the same rules
+    as shapes and data, but targets.rkt requires only =../errors/raise.rkt= and
+    still raises them itself; rewiring it to =security/refuse.rkt= is the
+    owner's decision, and the two are not yet the same check.
+  - Only a whole-file target is written by this build. A heading or block place
+    names a place inside a file somebody else wrote; scan.rkt reports it and
+    the run loads that chunk in place. literate-code/targets.org recommends
+    heading as the default and is still a skeleton page.
+
+* Who calls it, and when
+# what reached this area, so a reader knows if a silent file is a dead one.
+  - entry/dispatch.rkt reaches chunks.rkt, scan.rkt and skip-journal.rkt today,
+    and only through the =literate= and =send= commands, which landed
+    2026-10-19. =check= does not touch this area. Nothing else in the package
+    requires it; generation/plan.rkt and generation/write.rkt sit above it and
+    are the only other callers.
+
+* The skip, and where it is written
+# the sentence the item's done-when asks for, and the one place it exists.
+  - decide-skip in skip-journal.rkt speaks it; no caller may write it:
+    =skip: chunk NAME → PATH — unchanged; the same content hash HASH is
+    already written there, so nothing was sent=
+  - The entry it matched is named by its own hash under
+    =$XDG_STATE_HOME/notation/generations/<hash of the document path>/=, and it
+    is only a skip when the target file is still there and still hashes to
+    what the entry recorded. A file somebody changed by hand outranks the
+    store: the chunk is sent again and the run says why.
