@@ -21,8 +21,12 @@
   - Areas, lowest first; a require may point downward only. The gate's
     one-way lint transcribes this table, and it is the source for it:
     errors, narration, machine, security, join, text, parser,
-    elements, model, diagnostics, references, literate, generation,
+    elements, model, data, diagnostics, references, literate, generation,
     rendering, surface, entry.
+  - The =data= area is the bridge the owner asked for on 2026-10-19: the
+    structured internal model that sits between parsing, JSON, Nushell and
+    rendering. It sits above =model= (it reads the model) and below
+    =diagnostics= (diagnostics may read what data knows).
   - errors is the floor (everything may use it; it uses nothing);
     entry is the ceiling (it may use everything; nothing uses it).
   - Rule 09, named exactly: Rust owns the hot path — =text/=,
@@ -89,6 +93,49 @@
     renderer gives the headings of a page, counted in document order. The two
     sides follow one rule so a page numbered by the binary and a document
     numbered by the model say the same thing. Registered 2026-10-19.
+  - =data= — the area that holds the structured internal model: the bridge
+    between parsing, JSON, Nushell and rendering, asked for by the owner on
+    2026-10-19. The AIU notation stays the canonical human-authored form; the
+    data area is what the other three read and write. Registered 2026-10-19.
+  - =data/table.rkt= — the table structure: a =table= block read into a table
+    value with its caption, its header, its columns, its rows, its cells and
+    its metadata; the column types, the missing values and the validation.
+    Registered 2026-10-19.
+  - =data/table-html.rkt= — the table exported as HTML, one table element
+    with a caption, a head and a body. Registered 2026-10-19.
+  - =data/table-latex.rkt= — the table exported as LaTeX, one tabular with
+    a caption and a rule after the header. Registered 2026-10-19.
+  - =data/json.rkt= — JSON read and JSON written, and the two mappings
+    between an AIU document and JSON: what each block becomes, and what each
+    JSON value becomes. Registered 2026-10-19.
+  - =data/aiu-text.rkt= — a document written back as .aiu text, so a JSON
+    file can be imported into a page and a page can be exported without
+    changing the form the author reads. Registered 2026-10-19.
+  - =table= — the block name of a table. A =table= block holds a =caption=
+    declaration, =column= declarations, an optional =header= block and =row=
+    blocks. Registered 2026-10-19.
+  - =header= — the block name of a table's header row. Its content lines are
+    the labels shown above the columns. Registered 2026-10-19.
+  - =row= — the block name of a table's row. Its =cell= declarations are the
+    row's values, in column order. Registered 2026-10-19.
+  - =caption= — the declaration keyword that gives a table its caption.
+    Registered 2026-10-19.
+  - =column= — the declaration keyword that names a table's column and gives
+    it a type: =column: name number=, =column: size number optional=. The
+    last word =optional= says a missing value is allowed in that column.
+    Registered 2026-10-19.
+  - =cell= — the declaration keyword that holds one value of one row. An
+    empty value is a missing value, not an empty string. Registered
+    2026-10-19.
+  - =row-id= — the declaration keyword that gives a row its identifier.
+    Registered 2026-10-19.
+  - =meta= — the declaration keyword that holds one piece of a table's
+    metadata: =meta: key value=. Registered 2026-10-19.
+  - =json= — the CLI command that writes a document as JSON, so Nushell and
+    every other tool can read it as structured data. Registered 2026-10-19.
+  - =from-json= — the CLI command that reads a JSON file and writes the .aiu
+    page it means, so JSON can be imported without a human writing it out.
+    Registered 2026-10-19.
   - =check= — the CLI command that reads a file, lists every error with its
     line number and exits non-zero when any error is found; the same
     documents the editor receives through the boundary.

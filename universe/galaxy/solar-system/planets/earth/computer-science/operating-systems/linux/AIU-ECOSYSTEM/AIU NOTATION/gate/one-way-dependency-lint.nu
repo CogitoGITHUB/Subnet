@@ -13,7 +13,7 @@
 
 use ./env.nu *
 
-const AREAS = ["errors" "narration" "machine" "security" "join" "text" "parser" "elements" "model" "diagnostics" "references" "literate" "generation" "rendering" "surface" "entry"]
+const AREAS = ["errors" "narration" "machine" "security" "join" "text" "parser" "elements" "model" "data" "diagnostics" "references" "literate" "generation" "rendering" "surface" "entry"]
 
 def area_index [name] {
     $AREAS | enumerate | where {|a| $a.item == $name } | get -o item index | default 99
