@@ -24,7 +24,7 @@
 ;; listed would be refused as content.
 (define property-keywords
   '(tags language style theme color format font level
-    caption column cell row-id meta))
+    caption column cell row-id meta todo))
 
 ;; parse-tags reads the value of a tags declaration: whitespace-separated
 ;; words, in the order written. An empty value is an empty list, never a list

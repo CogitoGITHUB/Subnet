@@ -24,7 +24,8 @@
    (element 'title "a heading that names the file" #f)
    (element 'paragraph "ordinary prose, the everyday case" #f)
    (element 'code "text the parser does not read as notation" #t)
-   (element 'heading "a numbered section heading" #f)))
+   (element 'heading "a numbered section heading" #f)
+   (element 'comment "a block of text the reader drops" #f)))
 
 ;; known-name? answers whether a name is registered. It is the only question a
 ;; caller needs before it may use a name.
