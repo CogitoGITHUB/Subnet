@@ -57,6 +57,7 @@
 
 use crate::buffer::Buffer;
 use crate::comments::{find_comments_in, is_comment_line, Comment};
+use crate::numbering::HeadingNumbers;
 use crate::parser::{parse, Block, ErrorNode, Node, Span};
 use crate::plain;
 use crate::strip::{is_block_line, is_declaration_line};
@@ -114,9 +115,12 @@ pub fn render_rich(text: &str, width: usize) -> String {
     }
     let buffer = Buffer::from_text(text);
     let tree = parse(&buffer);
+    // The heading numbers are computed once for the whole page, because a
+    // heading's number depends on the headings before it.
+    let numbers = HeadingNumbers::of(&tree);
     let mut out = String::new();
     for node in &tree.nodes {
-        push_section(&mut out, &render_node_rich(node, &buffer, width, 0));
+        push_section(&mut out, &render_node_rich(node, &buffer, width, 0, &numbers));
     }
     if out.is_empty() {
         // Nothing important is silent: an empty page says so rather than
@@ -130,8 +134,19 @@ pub fn render_rich(text: &str, width: usize) -> String {
 /// A caller that already holds a node — the editor's notation mode, the
 /// `check` command — calls this instead of `render_rich`, and there is only
 /// this one walk either way.
-pub fn render_node_rich(node: &Node, buffer: &Buffer, width: usize, depth: usize) -> String {
-    match rich_shape(node, buffer, width, depth) {
+///
+/// The heading numbers come in as an argument, because a heading's number
+/// cannot be known from the heading alone: it depends on the headings before
+/// it in the page. A caller that holds the whole tree computes them once with
+/// `HeadingNumbers::of` and passes them here.
+pub fn render_node_rich(
+    node: &Node,
+    buffer: &Buffer,
+    width: usize,
+    depth: usize,
+    numbers: &HeadingNumbers,
+) -> String {
+    match rich_shape(node, buffer, width, depth, numbers) {
         Some(section) => section,
         // No rich shape for this kind of node. The plain rendering of its own
         // span is shown instead: the words are the reader's, the markup is
@@ -144,15 +159,27 @@ pub fn render_node_rich(node: &Node, buffer: &Buffer, width: usize, depth: usize
 /// yet. The match is exhaustive over today's `Node`, so a kind added later is a
 /// compile error until it is routed here — either to a shape or to None, which
 /// is the plain fallback above.
-fn rich_shape(node: &Node, buffer: &Buffer, width: usize, depth: usize) -> Option<String> {
+fn rich_shape(
+    node: &Node,
+    buffer: &Buffer,
+    width: usize,
+    depth: usize,
+    numbers: &HeadingNumbers,
+) -> Option<String> {
     match node {
-        Node::Block(block) => Some(block_section(block, buffer, width, depth)),
+        Node::Block(block) => Some(block_section(block, buffer, width, depth, numbers)),
         Node::Error(error) => Some(error_section(error, buffer, width, depth)),
     }
 }
 
 /// One block: its own body in its own shape, then whatever nests inside it.
-fn block_section(block: &Block, buffer: &Buffer, width: usize, depth: usize) -> String {
+fn block_section(
+    block: &Block,
+    buffer: &Buffer,
+    width: usize,
+    depth: usize,
+    numbers: &HeadingNumbers,
+) -> String {
     let indent = indent_for(depth, width);
     let body = lines_of_span(block.span, buffer, &readable_comments(block, buffer));
     let mark = if asks_for_emphasis(block) { EMPHASIS_MARK_LINE } else { "" };
@@ -160,6 +187,9 @@ fn block_section(block: &Block, buffer: &Buffer, width: usize, depth: usize) -> 
     let columns = width.saturating_sub(indent + column_count(mark));
     let mut section = match block.name.as_str() {
         "title" => heading_lines(&body, columns, indent),
+        // A heading is a title with a number in front of it. The number is
+        // computed from where the heading sits, never written by the author.
+        "heading" => numbered_heading_lines(&body, columns, indent, numbers.number_at(block.line)),
         "paragraph" => paragraph_lines(&body, columns, indent, mark),
         "code" => code_box_lines(&body, columns, indent),
         // The parser turns an unregistered name into an error node before a
@@ -169,7 +199,10 @@ fn block_section(block: &Block, buffer: &Buffer, width: usize, depth: usize) -> 
         _ => paragraph_lines(&body, columns, indent, mark),
     };
     for child in &block.children {
-        push_section(&mut section, &render_node_rich(child, buffer, width, depth + 1));
+        push_section(
+            &mut section,
+            &render_node_rich(child, buffer, width, depth + 1, numbers),
+        );
     }
     section
 }
@@ -213,6 +246,37 @@ fn heading_lines(lines: &[&str], columns: usize, indent: usize) -> String {
         push_line(&mut out, &format!("{}{}", pad, HEADING_RULE.to_string().repeat(widest)));
     }
     out
+}
+
+/// A heading with its number in front of the words: "1.2 The words", then the
+/// same rule the title gets.
+///
+/// The number is put in front of the FIRST line of the heading's own words,
+/// so the number and the words it belongs to read as one line. A heading with
+/// no number — a tree built by hand, or a caller that passed no numbers —
+/// draws the words alone, the same shape as a title.
+fn numbered_heading_lines(
+    lines: &[&str],
+    columns: usize,
+    indent: usize,
+    number: Option<&str>,
+) -> String {
+    let number = match number {
+        Some(number) => number,
+        None => return heading_lines(lines, columns, indent),
+    };
+    let mut owned: Vec<String> = Vec::with_capacity(lines.len());
+    let mut first = true;
+    for line in lines {
+        if first {
+            owned.push(format!("{} {}", number, line));
+            first = false;
+        } else {
+            owned.push((*line).to_string());
+        }
+    }
+    let borrowed: Vec<&str> = owned.iter().map(|line| line.as_str()).collect();
+    heading_lines(&borrowed, columns, indent)
 }
 
 /// Prose: the lines the reader wrote, wrapped to the columns that are left

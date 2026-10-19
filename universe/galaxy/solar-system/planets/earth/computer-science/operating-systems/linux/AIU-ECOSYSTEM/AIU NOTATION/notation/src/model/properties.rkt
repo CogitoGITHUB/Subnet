@@ -17,9 +17,10 @@
 (provide property-keywords parse-tags property-of tags-of planning-state-of)
 
 ;; The registered declaration keywords. A line whose keyword is not here is
-;; content, not a property.
+;; content, not a property. The `level` keyword says how deep a heading is;
+;; the number that follows from it is computed, never written.
 (define property-keywords
-  '(tags language style theme color format font))
+  '(tags language style theme color format font level))
 
 ;; parse-tags reads the value of a tags declaration: whitespace-separated
 ;; words, in the order written. An empty value is an empty list, never a list

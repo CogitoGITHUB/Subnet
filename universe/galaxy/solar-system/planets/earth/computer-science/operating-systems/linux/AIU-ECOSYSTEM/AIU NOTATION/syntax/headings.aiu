@@ -1,0 +1,47 @@
+title start
+tags: audit headings
+A page with numbered headings
+title end
+
+heading start
+The first heading
+heading end
+
+paragraph start
+The text under the first heading.
+paragraph end
+
+heading start
+level: 2
+The first subheading
+heading end
+
+paragraph start
+The text under the first subheading.
+paragraph end
+
+heading start
+level: 3
+A deeper heading
+heading end
+
+paragraph start
+The text under the deeper heading.
+paragraph end
+
+heading start
+level: 2
+The second subheading
+heading end
+
+paragraph start
+The text under the second subheading.
+paragraph end
+
+heading start
+The second top heading
+heading end
+
+paragraph start
+The text under the second top heading.
+paragraph end

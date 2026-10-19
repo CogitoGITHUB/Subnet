@@ -39,13 +39,13 @@ use crate::buffer::Buffer;
 use crate::positions::{line_col_to_offset, offset_to_line_col, LineCol};
 
 /// The Tier 1 block names (rule A). Anything else on a block line is an error.
-pub const BLOCK_NAMES: [&str; 3] = ["title", "paragraph", "code"];
+pub const BLOCK_NAMES: [&str; 4] = ["title", "paragraph", "code", "heading"];
 
 /// The registered declaration keywords (rule B). They are hints, never meaning.
-pub const DECLARATION_KEYWORDS: [&str; 7] =
-    ["tags", "language", "style", "theme", "color", "format", "font"];
+pub const DECLARATION_KEYWORDS: [&str; 8] =
+    ["tags", "language", "style", "theme", "color", "format", "font", "level"];
 
-/// The five registered error names (rule E). All are severity error, no off switch.
+/// The registered error names (rule E). All are severity error, no off switch.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ErrorKind {
     StrayText,
@@ -53,6 +53,7 @@ pub enum ErrorKind {
     UnclosedBlock,
     UnknownBlockName,
     MissingTitle,
+    BadHeadingLevel,
 }
 
 impl ErrorKind {
@@ -64,6 +65,7 @@ impl ErrorKind {
             ErrorKind::UnclosedBlock => "unclosed-block",
             ErrorKind::UnknownBlockName => "unknown-block-name",
             ErrorKind::MissingTitle => "missing-title",
+            ErrorKind::BadHeadingLevel => "bad-heading-level",
         }
     }
 }
@@ -332,6 +334,27 @@ pub fn parse(buffer: &Buffer) -> Tree {
                         saw_block = true;
                         first_is_title = name == "title";
                     }
+                    // A heading carries its depth in a `level:` declaration. A
+                    // level that cannot be read is reported on the declaration
+                    // line itself, and the heading falls back to level 1 so the
+                    // numbering never counts a level it could not read.
+                    if name == "heading" {
+                        for declaration in &declarations {
+                            if declaration.keyword == "level"
+                                && heading_level(std::slice::from_ref(declaration)).is_none()
+                            {
+                                push_error(
+                                    &mut open,
+                                    &mut top,
+                                    bad_heading_level(
+                                        declaration.span,
+                                        buffer.line_at(declaration.span.start),
+                                        &declaration.value,
+                                    ),
+                                );
+                            }
+                        }
+                    }
                     open.push(Block {
                         name,
                         span,
@@ -479,7 +502,38 @@ fn unknown_name(span: Span, line: usize, name: &str) -> ErrorNode {
         line,
         opener_line: None,
         what: format!("\"{}\" is not a Tier 1 block name", name),
-        what_to_do: "use one of title, paragraph, code".to_string(),
+        what_to_do: "use one of title, paragraph, code, heading".to_string(),
+    }
+}
+
+/// The level a heading block declares, or the default level 1.
+///
+/// A heading carries its depth in a `level:` declaration, so the block name
+/// stays one name instead of one name per depth. A heading with no `level:`
+/// line is a first-level heading. A `level:` value that is not a whole number
+/// of 1 or more is a `bad-heading-level` error and the block falls back to
+/// level 1, so the numbering never counts a level it could not read.
+pub fn heading_level(declarations: &[Declaration]) -> Option<u32> {
+    for declaration in declarations {
+        if declaration.keyword == "level" {
+            return match declaration.value.trim().parse::<u32>() {
+                Ok(level) if level >= 1 => Some(level),
+                _ => None,
+            };
+        }
+    }
+    None
+}
+
+/// The error a heading block gets when its `level:` value cannot be read.
+fn bad_heading_level(span: Span, line: usize, value: &str) -> ErrorNode {
+    ErrorNode {
+        kind: ErrorKind::BadHeadingLevel,
+        span,
+        line,
+        opener_line: None,
+        what: format!("the heading level \"{}\" is not a whole number of 1 or more", value),
+        what_to_do: "write the level as a number, for example \"level: 2\"".to_string(),
     }
 }
 

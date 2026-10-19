@@ -5,6 +5,10 @@
 #
 # PROGRESS: last finished step 2
 #
+# The heading keyword and its automatic numbers are built and proved (Rust
+# model/numbering.rs and Racket model/numbering.rkt agree), but the audit
+# table below is not written yet: STEP 3 case I, J and K are still to run.
+#
 # The statuses mean exactly this:
 #   PASS               the command ran and the captured output shows the feature works
 #   FAIL               the command ran and the captured output shows it does not

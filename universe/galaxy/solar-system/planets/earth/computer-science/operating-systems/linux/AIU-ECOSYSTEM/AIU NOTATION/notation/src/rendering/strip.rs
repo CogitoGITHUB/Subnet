@@ -15,11 +15,7 @@
 
 use crate::buffer::Buffer;
 use crate::comments::{find_comments, is_comment_line};
-
-/// The registered declaration keywords, mirrored from parser/parser.rs. A line
-/// whose keyword is not here is content, even when it has a colon in it.
-pub const DECLARATION_KEYWORDS: [&str; 7] =
-    ["tags", "language", "style", "theme", "color", "format", "font"];
+use crate::parser::DECLARATION_KEYWORDS;
 
 /// True when the line is a block line: the two words "<name> start", or the two
 /// words "<name> end". Anything else, including the retired "end <name>", is

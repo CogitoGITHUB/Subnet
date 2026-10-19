@@ -3,7 +3,8 @@
 ;; Registered in plan/package-tree.org (elements/register.rkt). Lands with
 ;; TODO item 3.
 ;;
-;; Tier 1 has exactly three block names (syntax/first-slice-freeze.org, rule A).
+;; Tier 1 has four block names (syntax/first-slice-freeze.org, rule A). The
+;; heading name came with the owner's request for automatic heading numbers.
 ;; Adding a name here is a decision for the owner, not for a build.
 
 (require "../errors/raise.rkt")
@@ -18,7 +19,8 @@
   (list
    (element 'title "a heading that names the file" #f)
    (element 'paragraph "ordinary prose, the everyday case" #f)
-   (element 'code "text the parser does not read as notation" #t)))
+   (element 'code "text the parser does not read as notation" #t)
+   (element 'heading "a numbered section heading" #f)))
 
 ;; known-name? answers whether a name is registered. It is the only question a
 ;; caller needs before it may use a name.

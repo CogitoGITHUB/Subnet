@@ -39,3 +39,7 @@ pub mod plain;
 
 #[path = "rendering/rich.rs"]
 pub mod rich;
+
+// numbering comes after parser: it walks the tree the parser built.
+#[path = "model/numbering.rs"]
+pub mod numbering;

@@ -63,11 +63,32 @@
     not one of the Tier 1 block names.
   - =missing-title= — the error name for a file whose first block is not a
     title, or which has no title block at all.
-  - Tier 1 block names: =title=, =paragraph=, =code= — the only names a start
-    or end line may carry in Tier 1.
+  - Tier 1 block names: =title=, =paragraph=, =code=, =heading= — the only
+    names a start or end line may carry in Tier 1.
   - Declaration keywords: =tags=, =language=, =style=, =theme=, =color=,
-    =format=, =font= — the only "keyword: value" lines a block may declare;
-    they are stored as hints, never as meaning.
+    =format=, =font=, =level= — the only "keyword: value" lines a block may
+    declare; they are stored as hints, never as meaning.
+  - =heading= — the numbered section heading. A =heading= block carries its
+    depth in a =level= declaration (=level: 1= is the default when the
+    declaration is absent), and its NUMBER is never written by hand: the
+    engine counts the headings before it. The first heading of a file is 1, a
+    heading directly under it is 1.1, a heading under that one is 1.1.1, and
+    the second heading at the same level is 1.2. Registered 2026-10-19 at the
+    owner's request ("each heading get automaticly a number like 1 2 3 and
+    subheadings get a .1 .2 .3").
+  - =level= — the declaration keyword that gives a =heading= its depth. Its
+    value must be a whole number of 1 or more; a value that is not one is the
+    error =bad-heading-level= and the heading keeps no number.
+  - =bad-heading-level= — the error name for a =level= declaration whose value
+    is not a whole number of 1 or more. It names the line of the offending
+    declaration. Registered 2026-10-19.
+  - =model/numbering.rkt= — the Racket side of the heading numbering: the
+    numbers the model gives the headings of a document, counted in document
+    order. Registered 2026-10-19.
+  - =model/numbering.rs= — the Rust side of the same rule: the numbers the
+    renderer gives the headings of a page, counted in document order. The two
+    sides follow one rule so a page numbered by the binary and a document
+    numbered by the model say the same thing. Registered 2026-10-19.
   - =check= — the CLI command that reads a file, lists every error with its
     line number and exits non-zero when any error is found; the same
     documents the editor receives through the boundary.
@@ -96,6 +117,9 @@
   - =syntax/unclosed-block.aiu= — the fixture page with one paragraph never
     closed, so the recovery path has something to recover. Registered
     2026-10-19.
+  - =syntax/headings.aiu= — the fixture page with headings at three levels, so
+    the automatic heading numbers (1, 1.1, 1.1.1, 1.2, 2) have something to
+    number. Registered 2026-10-19.
   - =syntax/GUIDE.org= — how to write a .aiu file, in plain words, with one
     real example and each error kind with what to do. Registered 2026-10-19.
   - =tools/aiu.nu= — the daily-use script: =check=, =render= and =roundtrip=
