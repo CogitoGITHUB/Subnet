@@ -12,11 +12,16 @@
 
 ;; make-err builds the record; it never raises, so a caller may hold an error
 ;; as a value and decide later whether to raise or to report it.
+;;
+;; exn:notation inherits from exn:fail, and exn:fail inherits from exn, whose
+;; fields are the message and the continuation marks. The constructor therefore
+;; takes four arguments, not three: the message, the marks, the area and the
+;; place. Passing the marks is what makes the raise carry where it came from.
 (define (make-err who where what)
   ;; who   — the area or the stage that hit the problem, in words
   ;; where — the file and line, or the command, in words
   ;; what  — what went wrong, one sentence, no dump
-  (exn:notation (format "~a" what) who where))
+  (exn:notation (format "~a" what) (current-continuation-marks) who where))
 
 ;; err-who / err-where / err-what read the three fields without touching the
 ;; message string; every reader in the package goes through these.
