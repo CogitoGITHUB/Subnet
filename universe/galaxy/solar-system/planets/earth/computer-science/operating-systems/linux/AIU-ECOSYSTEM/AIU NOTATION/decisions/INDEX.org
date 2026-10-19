@@ -5,7 +5,9 @@
 * Files
 # one line per file: its name, then the single job it performs. This index is updated in the same commit as any change here.
 
-  - none yet — every decision of this program is D-numbered in the root DECISIONS.org
+  - OPEN.org — every default this build chose where another was possible: the
+    default, why, and the one edit that changes it, so the owner can rule. An
+    entry closes by moving to the root DECISIONS.org with a D-number.
 
 * Later
 # This directory stays for program-only decisions if the need ever appears; ecosystem-wide ones land in the root DECISIONS.org, newest first.
