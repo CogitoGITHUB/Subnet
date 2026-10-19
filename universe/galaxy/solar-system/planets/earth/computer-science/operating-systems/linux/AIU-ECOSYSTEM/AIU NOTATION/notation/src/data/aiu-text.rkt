@@ -52,10 +52,13 @@
     [(eq? kind 'paragraph) (simple-block "paragraph" (second block))]
     [(eq? kind 'heading) (heading-text (second block))]
     [(eq? kind 'table) (table-text (second block))]
+    ;; A code block is written as a code block, with its body exactly as it
+    ;; was, because the body of a code block is text the parser never read.
+    [(eq? kind 'code) (simple-block "code" (second block))]
     [(eq? kind 'data) (data-text (second block))]
     [else
      (raise-err 'data "aiu-text.rkt"
-                (format "~a is not a block this file can write; the blocks that exist are title, paragraph, heading, table and data"
+                (format "~a is not a block this file can write; the blocks that exist are title, paragraph, heading, table, code and data"
                         kind))]))
 
 ;; simple-block writes a block that holds nothing but its words.

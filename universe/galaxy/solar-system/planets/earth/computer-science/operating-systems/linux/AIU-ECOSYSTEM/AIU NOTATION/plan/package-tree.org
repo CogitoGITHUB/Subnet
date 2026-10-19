@@ -136,6 +136,12 @@
   - =from-json= — the CLI command that reads a JSON file and writes the .aiu
     page it means, so JSON can be imported without a human writing it out.
     Registered 2026-10-19.
+  - =json block keys= — the keys one block may hold in the JSON form of a
+    document: =title=, =paragraph=, =heading=, =table=, =code= and =data=.
+    The first five are the block names of the notation itself, so a page
+    that goes to JSON and comes back keeps its shape; =data= is the escape
+    hatch for machine-oriented data that the notation has no block for.
+    Registered 2026-10-19.
   - =check= — the CLI command that reads a file, lists every error with its
     line number and exits non-zero when any error is found; the same
     documents the editor receives through the boundary.

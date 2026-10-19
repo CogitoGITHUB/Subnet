@@ -423,6 +423,10 @@
                           'number (or (number-at o (block-node-line node)) "")
                           'text words))]
     [(eq? name 'table) (list 'table (table->spec (read-table node)))]
+    ;; A code block keeps its own name in the JSON, because a code block is
+    ;; not the same thing as a data block: its body was never read as
+    ;; notation, and that difference must survive the round trip.
+    [(eq? name 'code) (list 'code words)]
     [else (list 'data words)]))
 
 ;; block-words gives back the words of a block: the lines between its start
@@ -516,6 +520,9 @@
      (json-object-set! inner "text" (spec-ref 'text spec ""))]
     [(eq? kind 'table)
      (json-object-set! obj "table" (table->json spec))]
+    ;; A code block keeps its own key, so that a page that goes to JSON and
+    ;; comes back still holds a code block and not a data block.
+    [(eq? kind 'code) (json-object-set! obj "code" spec)]
     [else (json-object-set! obj "data" spec)])
   obj)
 
@@ -570,10 +577,11 @@
                           'text (json-ref inner "text" "")))]
     [(string=? (car (car entries)) "table")
      (list 'table (json->table-spec (cdr (car entries))))]
+    [(string=? (car (car entries)) "code") (list 'code (cdr (car entries)))]
     [(string=? (car (car entries)) "data") (list 'data (cdr (car entries)))]
     [else
      (raise-err 'json "json.rkt"
-                (format "~a is not a key a block may hold; the keys are title, paragraph, heading, table and data"
+                (format "~a is not a key a block may hold; the keys are title, paragraph, heading, table, code and data"
                         (car (car entries))))]))
 
 ;; json->table-spec turns a JSON table object into a described table.
