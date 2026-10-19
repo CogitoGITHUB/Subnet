@@ -1,7 +1,7 @@
 title start
 tags: fixture unclosed
 A page whose paragraph was never closed
-end title
+title end
 
 paragraph start
 This paragraph is opened and never closed. It keeps the code block nested
@@ -9,8 +9,8 @@ inside it, the parser reports one unclosed-block error with an empty span, and
 the file still prints back byte for byte.
 code start
 language: text
-end code
+code end
 
 paragraph start
 The paragraph above still runs, so this line is its body and not a break.
-end paragraph
+paragraph end

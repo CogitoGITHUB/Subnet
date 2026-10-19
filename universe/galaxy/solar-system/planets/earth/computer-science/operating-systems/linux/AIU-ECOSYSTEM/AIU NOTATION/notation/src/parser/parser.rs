@@ -7,16 +7,22 @@
 //!
 //! The block form, which the owner's format rules fix: a block is three lines of
 //! shape — the name and `start`, the content on its own line or lines, then
-//! `end` and the name again.
+//! the name and `end` again.
 //!
 //! ```text
 //! title start
 //! tags: sample
 //! The first sample page
-//! end title
+//! title end
 //! ```
 //!
-//! The retired spelling `<name> end` closes nothing and is content like any
+//! The keyword comes first both times, always: `<name> start` and `<name> end`.
+//! The owner chose it because it reads the same way to everyone who reads
+//! these files — a person, an AI, a `grep`, a CLI. The name is the subject of
+//! the line and the word after it says what the line does, so the eye always
+//! lands on the same word in the same place.
+//!
+//! The retired spelling `end <name>` closes nothing and is content like any
 //! other line, so a file written the old way reports stray text instead of
 //! silently closing a block.
 //!
@@ -97,7 +103,7 @@ pub struct Block {
 
 impl Block {
     /// The code block's body is opaque: nothing inside it is read as notation,
-    /// and only an exact matching `end code` line closes it (rule D).
+    /// and only an exact matching `code end` line closes it (rule D).
     pub fn is_opaque(&self) -> bool {
         self.name == "code"
     }
@@ -189,12 +195,12 @@ enum LineShape {
     Blank,
     /// "<name> start", with the name exactly as written.
     BlockStart { name: String },
-    /// "end <name>", with the name exactly as written.
+    /// "<name> end", with the name exactly as written.
     BlockEnd { name: String },
     /// "keyword: value" with a registered keyword.
     Declaration { keyword: String, value: String },
     /// Anything else, including a "word:" line with an unregistered keyword, and
-    /// the retired "<name> end" spelling, which is content and closes nothing.
+    /// the retired "end <name>" spelling, which is content and closes nothing.
     Content,
 }
 
@@ -202,7 +208,8 @@ enum LineShape {
 /// (rule A); nothing else about the line is touched.
 ///
 /// The three-line block form: the opener is the name and `start`, the closer is
-/// `end` and the name, and the content is whatever lines sit between them.
+/// the name and `end`, and the content is whatever lines sit between them.
+/// The keyword comes first both times: `<name> start` and `<name> end`.
 fn shape_of(text: &str) -> LineShape {
     let trimmed = text.trim_end();
     if trimmed.trim().is_empty() {
@@ -213,8 +220,8 @@ fn shape_of(text: &str) -> LineShape {
         if parts[1] == "start" {
             return LineShape::BlockStart { name: parts[0].to_string() };
         }
-        if parts[0] == "end" {
-            return LineShape::BlockEnd { name: parts[1].to_string() };
+        if parts[1] == "end" {
+            return LineShape::BlockEnd { name: parts[0].to_string() };
         }
     }
     if let Some(colon) = trimmed.find(':') {
@@ -245,7 +252,7 @@ pub fn opens_block(line: &str, name: &str) -> bool {
 }
 
 /// True when the line closes a block of that name and of no other: it is the
-/// two words `end <name>` and nothing else.
+/// two words `<name> end` and nothing else.
 pub fn closes_block(line: &str, name: &str) -> bool {
     match shape_of(line) {
         LineShape::BlockEnd { name: written } => written == name,
@@ -277,7 +284,7 @@ pub fn parse(buffer: &Buffer) -> Tree {
         let text = buffer.line_text(line);
 
         // A code block's body is opaque (rule D): nothing inside it is read as
-        // notation, and only an exact matching `end code` line closes it. A line
+        // notation, and only an exact matching `code end` line closes it. A line
         // that looks like a start line is content, so it opens nothing.
         if let Some(inner) = open.last() {
             if inner.is_opaque() {
@@ -461,7 +468,7 @@ fn stray(span: Span, line: usize) -> ErrorNode {
         line,
         opener_line: None,
         what: "text outside any named block".to_string(),
-        what_to_do: "put the text inside a \"<name> start\" / \"end <name>\" block".to_string(),
+        what_to_do: "put the text inside a \"<name> start\" / \"<name> end\" block".to_string(),
     }
 }
 
@@ -499,12 +506,12 @@ mod tests {
 title start
 tags: sample
 A valid page
-end title
+title end
 
 paragraph start
 The first line of the body.
 The second line of the body.
-end paragraph
+paragraph end
 ";
 
     /// A page whose code body holds lines that look like marks. Nothing in there
@@ -512,15 +519,15 @@ end paragraph
     const OPAQUE_PAGE: &str = "\
 title start
 A page with a code body
-end title
+title end
 
 code start
 language: text
 def example():
     return 1
 code start
-end paragraph
-end code
+paragraph end
+code end
 ";
 
     fn buffer_of(text: &str) -> Buffer {
@@ -602,19 +609,19 @@ end code
         let tree = parse(&buffer);
         let title = block_named(&tree, "title");
         assert_eq!(title.span.start, buffer.line_start(1));
-        // The span ends at the end of the "end title" line, not one byte later.
+        // The span ends at the end of the "title end" line, not one byte later.
         assert_eq!(title.span.end, buffer.line_end(4));
-        assert_eq!(buffer.line_text(4), "end title");
+        assert_eq!(buffer.line_text(4), "title end");
         // The closer belongs to the block it closes: no error, no second node.
         assert_eq!(tree.nodes.len(), 2);
     }
 
     #[test]
-    fn the_retired_name_end_spelling_closes_nothing() {
-        let text = "title start\nA page\ntitle end\n";
+    fn the_retired_end_name_spelling_closes_nothing() {
+        let text = "title start\nA page\nend title\n";
         let buffer = buffer_of(text);
         let tree = parse(&buffer);
-        // "title end" is a content line, so the title runs to the end of the
+        // "end title" is a content line, so the title runs to the end of the
         // file and is reported as unclosed.
         let kinds = error_kinds(&tree);
         assert!(kinds.contains(&ErrorKind::UnclosedBlock), "kinds were {:?}", kinds);
@@ -625,7 +632,7 @@ end code
     #[test]
     fn an_unclosed_block_is_recovered_as_an_error_node_that_keeps_its_children() {
         // A title, then a paragraph that opens a code block and never closes.
-        let text = "title start\nA page\nend title\n\nparagraph start\nstill open\ncode start\nlanguage: text\nend code\n";
+        let text = "title start\nA page\ntitle end\n\nparagraph start\nstill open\ncode start\nlanguage: text\ncode end\n";
         let buffer = buffer_of(text);
         let tree = parse(&buffer);
         let paragraph = block_named(&tree, "paragraph");
@@ -642,7 +649,7 @@ end code
         // An empty span: the error names a place and claims no bytes, so the
         // file still prints back byte for byte (rule F).
         assert_eq!(unclosed[0].span.start, unclosed[0].span.end);
-        assert!(unclosed[0].what_to_do.contains("end paragraph"));
+        assert!(unclosed[0].what_to_do.contains("paragraph end"));
         assert!(tree.round_trips(&buffer));
     }
 
@@ -661,7 +668,7 @@ end code
                 // A start line inside the body opens nothing.
                 "code start".to_string(),
                 // A mismatched end line inside the body closes nothing.
-                "end paragraph".to_string(),
+                "paragraph end".to_string(),
             ]
         );
         assert_eq!(code.span.end, buffer.line_end(11));
@@ -670,9 +677,9 @@ end code
 
     #[test]
     fn only_end_code_closes_a_code_body() {
-        // "end title" is not "end code": the code block runs on and the title
+        // "title end" is not "code end": the code block runs on and the title
         // that wrote it is still the innermost block that can be closed.
-        let text = "title start\nA page\ncode start\nend title\n";
+        let text = "title start\nA page\ncode start\ntitle end\n";
         let buffer = buffer_of(text);
         let tree = parse(&buffer);
         let kinds = error_kinds(&tree);
@@ -681,8 +688,8 @@ end code
 
     #[test]
     fn an_unregistered_name_is_reported_on_both_spellings() {
-        for line in ["figure start", "end figure"] {
-            let text = format!("title start\nA page\nend title\n{}\n", line);
+        for line in ["figure start", "figure end"] {
+            let text = format!("title start\nA page\ntitle end\n{}\n", line);
             let tree = parse(&buffer_of(&text));
             let kinds = error_kinds(&tree);
             assert!(
@@ -699,12 +706,12 @@ end code
         assert!(opens_block("code start", "code"));
         assert!(opens_registered_block("code start"));
         assert!(!opens_registered_block("code end"));
-        assert!(closes_block("end code", "code"));
+        assert!(closes_block("code end", "code"));
         assert!(!closes_block("code start", "code"));
         // Trailing spaces are ignored (rule A); anything else on the line is
         // content, so neither test fires.
-        assert!(closes_block("end code   ", "code"));
-        assert!(!closes_block("end code because", "code"));
-        assert!(!opens_block("end code", "code"));
+        assert!(closes_block("code end   ", "code"));
+        assert!(!closes_block("code end because", "code"));
+        assert!(!opens_block("code end", "code"));
     }
 }

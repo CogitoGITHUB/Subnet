@@ -3,7 +3,7 @@
 # the status, and the evidence line that was actually captured.
 # Registered in plan/package-tree.org (syntax/feature-status.org).
 #
-# PROGRESS: last finished step 0
+# PROGRESS: last finished step 2
 #
 # The statuses mean exactly this:
 #   PASS               the command ran and the captured output shows the feature works

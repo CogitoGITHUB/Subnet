@@ -18,7 +18,9 @@ are now expected, and a gate stage runs them.
 ** The page extension is =.aiu=.
 Was =.notation=. Three files named the old one; the register now names =.aiu=.
 ** Blocks are three lines: =<name> start=, content on its own line(s),
-=end <name>=. Not =<name> end=. This is the owner's grammar.
+=<name> end=. Not =end <name>=. This is the owner's grammar: the keyword
+comes first both times, so the eye lands on the same word in the same place
+for a person, an AI, a =grep= and a CLI.
 
 * Parsing
 ** An unclosed block is cut at the first line inside it that opens a
@@ -31,7 +33,7 @@ alternative (cut at end of file) loses every block after the mistake.
 change it by: =notation/src/parser/partial.rs=, =block_left_open= and
 =parse_recovering=.
 ** A =code= body is opaque and is never recovered inside.
-default: nothing inside =code start= / =end code= is parsed, so a stray
+default: nothing inside =code start= / =code end= is parsed, so a stray
 =paragraph start= inside a code block is text, not a node.
 why: rule D, from =syntax/first-slice-freeze.org=.
 change it by: =notation/src/parser/parser.rs=, the opaque-shape test.
@@ -42,7 +44,7 @@ why: element kinds are registered one at a time (rule B); a silent new kind
 would make a page parse differently tomorrow than it does today.
 change it by: =notation/src/parser/parser.rs=, =BLOCK_NAMES=.
 ** A =comment= is a block, not a sign.
-default: =comment start= / =end comment=, whole lines only, no inline sign,
+default: =comment start= / =comment end=, whole lines only, no inline sign,
 and it is NOT a registered block name yet — so the parser reports
 =unknown-block-name= for it today.
 why: the only comment shape anywhere in the tree's documents is a block

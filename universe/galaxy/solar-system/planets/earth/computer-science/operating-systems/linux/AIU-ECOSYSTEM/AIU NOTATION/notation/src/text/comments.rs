@@ -10,7 +10,7 @@
 //!     same mark as every other block:
 //!         comment start
 //!         a note for the owner, which the reader never sees
-//!         end comment
+//!         comment end
 //!   * rule A of syntax/first-slice-freeze.org — a block line is exactly two
 //!     words, the name and `start`, or `end` and the name. So `comment start`
 //!     opens a comment only when those two words are the whole line; the same
@@ -136,7 +136,7 @@ fn comment_mark(line: &str) -> Option<CommentMark> {
     }
     match (parts[0], parts[1]) {
         (COMMENT_BLOCK_NAME, "start") => Some(CommentMark::Start),
-        ("end", COMMENT_BLOCK_NAME) => Some(CommentMark::End),
+        (COMMENT_BLOCK_NAME, "end") => Some(CommentMark::End),
         _ => None,
     }
 }
@@ -150,26 +150,26 @@ enum CommentMark {
 #[cfg(test)]
 mod tests {
     //! A comment is a block, so it is written in the block form: `comment start`
-    //! opens, `end comment` closes. Both halves are tested here, because a
+    //! opens, `comment end` closes. Both halves are tested here, because a
     //! comment the scanner misses is a note the reader is shown.
     use super::*;
 
     #[test]
     fn the_marks_are_the_three_line_block_form() {
         assert!(matches!(comment_mark("comment start"), Some(CommentMark::Start)));
-        assert!(matches!(comment_mark("end comment"), Some(CommentMark::End)));
+        assert!(matches!(comment_mark("comment end"), Some(CommentMark::End)));
         assert!(matches!(comment_mark("  comment start   "), Some(CommentMark::Start)));
-        // The retired "comment end" closes nothing, and a mark with anything
+        // The retired "end comment" closes nothing, and a mark with anything
         // else on the line is content.
-        assert!(comment_mark("comment end").is_none());
+        assert!(comment_mark("end comment").is_none());
         assert!(comment_mark("end").is_none());
-        assert!(comment_mark("end comment because").is_none());
+        assert!(comment_mark("comment end because").is_none());
         assert!(comment_mark("a line that mentions comment start").is_none());
     }
 
     #[test]
     fn a_closed_comment_keeps_exactly_its_own_lines() {
-        let text = "title start\ncomment start\na note\nend comment\nA page\nend title\n";
+        let text = "title start\ncomment start\na note\ncomment end\nA page\ntitle end\n";
         let buffer = Buffer::from_text(text);
         let comments = find_comments(&buffer);
         assert_eq!(comments.len(), 1);
@@ -177,13 +177,13 @@ mod tests {
         assert_eq!(comments[0].line, 2);
         assert_eq!(
             std::str::from_utf8(comments[0].bytes(&buffer)).unwrap(),
-            "comment start\na note\nend comment"
+            "comment start\na note\ncomment end"
         );
     }
 
     #[test]
     fn a_comment_the_file_never_closed_is_still_found() {
-        let text = "title start\ncomment start\na note\nA page\nend title\n";
+        let text = "title start\ncomment start\na note\nA page\ntitle end\n";
         let buffer = Buffer::from_text(text);
         let comments = find_comments(&buffer);
         assert_eq!(comments.len(), 1);

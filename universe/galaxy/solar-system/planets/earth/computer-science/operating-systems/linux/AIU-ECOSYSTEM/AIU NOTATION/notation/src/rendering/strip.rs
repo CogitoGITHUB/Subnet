@@ -4,7 +4,7 @@
 //! strip.rs is the **only** stripper in the package. If another file decides to
 //! drop a line, it calls this one; nobody re-implements the rule. It knows two
 //! shapes of line and nothing about meaning:
-//!   * a block line — "<name> start" or "end <name>",
+//!   * a block line — "<name> start" or "<name> end",
 //!   * a declaration line — "keyword: value" with a registered keyword.
 //! Everything else is content and is kept exactly as written.
 //!
@@ -22,12 +22,12 @@ pub const DECLARATION_KEYWORDS: [&str; 7] =
     ["tags", "language", "style", "theme", "color", "format", "font"];
 
 /// True when the line is a block line: the two words "<name> start", or the two
-/// words "end <name>". Anything else, including the retired "<name> end", is
+/// words "<name> end". Anything else, including the retired "end <name>", is
 /// content.
 pub fn is_block_line(line: &str) -> bool {
     let trimmed = line.trim_end();
     let parts: Vec<&str> = trimmed.split_whitespace().collect();
-    parts.len() == 2 && (parts[1] == "start" || parts[0] == "end")
+    parts.len() == 2 && (parts[1] == "start" || parts[1] == "end")
 }
 
 /// True when the line declares something with a registered keyword.
@@ -81,12 +81,12 @@ mod tests {
     #[test]
     fn both_spellings_of_a_block_line_are_block_lines() {
         assert!(is_block_line("title start"));
-        assert!(is_block_line("end title"));
+        assert!(is_block_line("title end"));
         assert!(is_block_line("code start   "));
-        assert!(is_block_line("   end code"));
-        // The retired "<name> end" is content now, and so is a mark with
+        assert!(is_block_line("   code end"));
+        // The retired "end <name>" is content now, and so is a mark with
         // anything else on the line.
-        assert!(!is_block_line("title end"));
+        assert!(!is_block_line("end title"));
         assert!(!is_block_line("end"));
         assert!(!is_block_line("end code because"));
         assert!(!is_block_line("the code start of the file"));
@@ -94,16 +94,16 @@ mod tests {
 
     #[test]
     fn strip_marks_keeps_the_body_and_drops_the_marks() {
-        let text = "title start\ntags: sample\nA page\nend title\n\ncode start\nlanguage: text\nend code\n";
+        let text = "title start\ntags: sample\nA page\ntitle end\n\ncode start\nlanguage: text\ncode end\n";
         let kept = strip_marks(text);
         assert_eq!(kept, "A page\n");
-        assert_eq!(is_stripped("end title"), true);
+        assert_eq!(is_stripped("title end"), true);
         assert_eq!(is_stripped("a sentence"), false);
     }
 
     #[test]
     fn a_comment_in_the_three_line_form_is_dropped_with_its_body() {
-        let text = "title start\ncomment start\na note for the owner\nend comment\nA page\nend title\n";
+        let text = "title start\ncomment start\na note for the owner\ncomment end\nA page\ntitle end\n";
         let kept = strip_marks(text);
         assert_eq!(kept, "A page\n");
     }

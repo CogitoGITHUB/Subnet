@@ -1,22 +1,22 @@
 title start
 tags: sample first-run
 The first sample page
-end title
+title end
 
 paragraph start
 Every line of this page sits inside a named block. A block is three lines of
-shape: the name and start, the content on its own line or lines, then end and
-the name again.
-end paragraph
+shape: the name and start, the content on its own line or lines, then the name
+and end again. The keyword always comes first.
+paragraph end
 
 paragraph start
 The code block below holds a line that looks like a start line. The body of a
-code block is opaque, so that line is content and opens nothing. Only end code
+code block is opaque, so that line is content and opens nothing. Only code end
 closes it.
-end paragraph
+paragraph end
 
 code start
 language: text
 def example():
     return 1
-end code
+code end

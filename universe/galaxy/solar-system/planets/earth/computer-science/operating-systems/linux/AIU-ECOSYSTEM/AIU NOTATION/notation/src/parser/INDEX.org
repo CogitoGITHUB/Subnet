@@ -21,7 +21,7 @@
         title start
         tags: sample
         The first sample page
-        end title
+        title end
       #+end_example
   - The retired spelling =<name> end= closes nothing; it is content like any
     other line, so a page written the old way reports stray text instead of
