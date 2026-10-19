@@ -8,6 +8,8 @@
 
 use ./env.nu *
 
+# check-one loads one module by its full path and answers whether it loaded,
+# carrying the first error line when it did not.
 def check-one [abs_path: string, rel_path: string] {
     let rkt = (racket_bin)
     let code = $"\(dynamic-require \(string->path \"($abs_path)\"\) \(void\)\)"
@@ -21,6 +23,8 @@ def check-one [abs_path: string, rel_path: string] {
     }
 }
 
+# main loads every .rkt module under notation/ and gate/ and prints the result;
+# with --table it prints one line per module, and it exits non-zero if any failed.
 def main [ --table ] {
     let gate_files = (glob $"($gate_dir)/**/*.rkt")
     let pkg_files = (glob $"($package_dir)/**/*.rkt")

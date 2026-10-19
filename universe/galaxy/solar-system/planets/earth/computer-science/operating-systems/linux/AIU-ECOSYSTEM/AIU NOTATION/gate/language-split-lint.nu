@@ -12,10 +12,14 @@
 
 use ./env.nu *
 
+# in_join says whether a path lies under join/, the one area where a Rust file
+# may name Racket and the reverse.
 def in_join [p] {
     ($p | path relative-to $project_root) =~ "join/"
 }
 
+# rust_crossings returns each Rust file that names a .rkt file outside join/,
+# one record per offender.
 def rust_crossings [rs] {
     $rs | each {|p|
         let text = open --raw $p
@@ -25,6 +29,8 @@ def rust_crossings [rs] {
     } | where {|e| $e != null }
 }
 
+# racket_crossings returns each Racket file that names a .rs file, one record
+# per offender.
 def racket_crossings [rkt] {
     $rkt | each {|p|
         let text = open --raw $p
@@ -34,6 +40,8 @@ def racket_crossings [rkt] {
     } | where {|e| $e != null }
 }
 
+# main checks every .rs and .rkt file for a reference to the other language
+# outside join/ and exits non-zero when any such crossing exists.
 def main [] {
     let rs = (glob $"($package_dir)/**/*.rs") | lines
     let rkt = (glob $"($package_dir)/**/*.rkt") | lines

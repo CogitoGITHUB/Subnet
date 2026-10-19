@@ -15,10 +15,14 @@ use ./env.nu *
 
 const AREAS = ["errors" "narration" "machine" "security" "join" "text" "parser" "elements" "model" "data" "diagnostics" "references" "literate" "generation" "rendering" "surface" "entry"]
 
+# area_index answers the position of an area in the declared order, and 99 for
+# a name the table does not hold.
 def area_index [name] {
     $AREAS | enumerate | where {|a| $a.item == $name } | get -o item index | default 99
 }
 
+# main reads every require between areas, checks each points downward in the
+# declared order, and exits non-zero when one points upward.
 def main [] {
     let files = (glob $"($package_src)/**/*.rkt") | lines
     let file_count = ($files | length)

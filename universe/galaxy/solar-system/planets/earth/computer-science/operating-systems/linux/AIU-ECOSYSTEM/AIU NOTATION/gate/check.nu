@@ -43,6 +43,8 @@ def run-one [stage] {
     }
 }
 
+# main runs every stage and prints each one's output plus the verdict; with
+# --list it only names the stages and the scripts they run.
 def main [ --list ] {
     if $list {
         print $"the light gate has ($STAGES | length) stages:"

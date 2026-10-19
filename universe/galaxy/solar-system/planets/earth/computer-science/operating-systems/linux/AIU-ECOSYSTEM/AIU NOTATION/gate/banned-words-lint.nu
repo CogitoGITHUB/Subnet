@@ -10,6 +10,8 @@ use ./env.nu *
 # manager/, handler/, tmp/ (plan/package-tree.org, "The law").
 const BANNED = ["core" "engine" "utils" "manager" "handler" "tmp"]
 
+# main scans every path under notation/ for a banned segment and prints each
+# bad name; it prints NOTHING-TO-CHECK when no paths exist yet.
 def main [] {
     let root = $project_root
     let scanned = (glob $"($root)/notation/**/*") | where {|p|

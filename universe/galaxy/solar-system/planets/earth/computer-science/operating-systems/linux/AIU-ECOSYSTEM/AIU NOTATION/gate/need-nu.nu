@@ -12,6 +12,8 @@ use ./env.nu *
 const REQUIRED_MAJOR = 0
 const REQUIRED_MINOR = 116
 
+# main prints the running Nu version and exits 3 unless it is the pinned one,
+# recording the mismatch rather than installing anything.
 def main [] {
     let version = (nu --version | str trim)
     # "0.116.0" -> [0 116 0]

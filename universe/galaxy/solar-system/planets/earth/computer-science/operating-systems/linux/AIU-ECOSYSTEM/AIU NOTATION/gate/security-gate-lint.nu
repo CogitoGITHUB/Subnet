@@ -8,6 +8,8 @@
 
 use ./env.nu *
 
+# main answers whether the security area exists yet; with nothing to audit it
+# prints NOTHING-TO-CHECK rather than a pass.
 def main [] {
     let security = $package_src | path join "security"
     let present = ($security | path exists)

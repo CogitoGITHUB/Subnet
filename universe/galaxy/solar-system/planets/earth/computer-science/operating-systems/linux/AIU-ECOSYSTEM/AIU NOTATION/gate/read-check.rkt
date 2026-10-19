@@ -28,6 +28,8 @@
          racket/list
          racket/string)
 
+;; files is the list of file paths given on the command line, read once here so
+;; every later step works on the same list.
 (define files (vector->list (current-command-line-arguments)))
 
 ;; header-lines: how many leading lines to drop — a shebang, then a #lang.
@@ -40,6 +42,8 @@
     [(regexp-match? #px"^[ \t]*#lang" (car ls)) 1]
     [else 0]))
 
+;; bad-at prints one READ-BAD line naming the file, the line and what went
+;; wrong, so the caller has the bad form and where it starts.
 (define (bad-at f line msg)
   (printf "READ-BAD ~a:~a ~a\n" f line msg))
 
@@ -70,6 +74,9 @@
     (set! out (append (reverse stack) out)))
   out)
 
+;; read-one reads one file and answers whether it parsed. On failure it prints
+;; where reading stopped and every form still left open, so an unclosed head is
+;; shown rather than hidden.
 (define (read-one f)
   ;; file->string comes from racket/file and reads the bytes as written. (The
 ;; racket/port route works too — port->string is fine once racket/port is
