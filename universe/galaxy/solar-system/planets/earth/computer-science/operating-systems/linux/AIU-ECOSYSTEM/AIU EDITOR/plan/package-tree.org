@@ -17,8 +17,8 @@
   - Areas, lowest first; a require may point downward only. The
     one-way lint transcribes this table as its source:
     errors, narration, machine, security, join, devloop, journal,
-    buffer, notation, commands, routes, input, drawing, models,
-    dashboard, send, picker, checkpoint, audit, entry.
+    buffer, notation, commands, checkpoint, routes, input, drawing,
+    models, dashboard, send, picker, audit, entry.
   - errors is the floor; entry is the ceiling.
   - Rule 09, named exactly (D-007): Rust owns the hot path — =input/=,
     =drawing/=, =journal/= and the buffer's text state (input,
@@ -125,6 +125,10 @@ AIU EDITOR/              the project: context and docs stay where they are
         config.rkt       the config the commands read
         effects.rkt      effects only at the edges, through machine and security
         tasks.rkt        the task table and the runner: declare, list, run, sequence
+      checkpoint/        git checkpoints and the stop switch (rule 07)
+        INDEX.org
+        checkpoint.rkt   checkpoint before agent actions
+        rollback.rkt     rollback to a checkpoint
       routes/            which layer sees a key first (rules 09, 13)
         INDEX.org
         routes.rkt       the routing: focused program first; the reserved prefix
@@ -158,10 +162,6 @@ AIU EDITOR/              the project: context and docs stay where they are
         INDEX.org
         picker.rkt       launch the picker over candidates
         flow.rkt         selections flow to sends and commands
-      checkpoint/        git checkpoints and the stop switch (rule 07)
-        INDEX.org
-        checkpoint.rkt   checkpoint before agent actions
-        rollback.rkt     rollback to a checkpoint
       audit/             the live audit (rule 07)
         INDEX.org
         audit.rkt        file-change events in; agent or external marks out

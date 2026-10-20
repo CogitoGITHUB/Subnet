@@ -189,28 +189,15 @@
   (define why (if (null? rest) "" (string-join (cdr rest) " ")))
   (define path (path->complete-path (if (string=? file "") "untitled" file)))
   (define session (make-session path (journal-path-for path)))
-  (define the-bundle
-    (make-bundle "aiu-editor" "aiu-ecosystem" target
-                 (selection-text session)
-                 (path->string path)
-                 (the-point session)
-                 #f
-                 why))
-  (cond
-    [(not the-bundle)
-     (print-line "a send needs a why: say what the sender was doing")]
-    [else
-     (for-each print-line (bundle-lines the-bundle))
-     (let ([answer (deliver opencode-adapter the-bundle)])
-       (if (car answer)
-           (print-line (format "sent to ~a" target))
-           (print-line (format "the send was refused: ~a — ~a"
-                               (hash-ref (cdr answer) 'what)
-                               (hash-ref (cdr answer) 'what_to_do)))))])) 
+  ;; the verb runs the ONE command, so the verb and the key do the same
+  ;; thing: the same bundle, the same checkpoint, the same refusal
+  (define answer (send-command session (cons target (if (string=? why "") '() (list why)))))
+  (print-line (cdr answer)))
 
-;; checkpoint-verb makes a checkpoint of the tree: the state the tree is
-;; put back to when an agent does something the human did not want. The
-;; words are the why.
+;; edit-file opens the file the user named and runs the editing session.
+;; checkpoint-verb makes a checkpoint of a tree: the state the tree is put
+;; back to when an agent does something the human did not want. The first
+;; word is the tree, the rest is the why.
 (define (checkpoint-verb args)
   (define root (if (null? args) "." (car args)))
   (define why (string-join (if (null? args) '() (cdr args)) " "))
@@ -219,7 +206,7 @@
       (print-line (format "checkpoint: ~a" made))
       (print-line "a checkpoint needs a why: say what the agent was about to do")))
 
-;; rollback-verb puts the tree back to a checkpoint.
+;; rollback-verb puts a tree back to a checkpoint.
 (define (rollback-verb args)
   (define root (if (null? args) "." (car args)))
   (define commit (if (null? args) "" (cadr args)))

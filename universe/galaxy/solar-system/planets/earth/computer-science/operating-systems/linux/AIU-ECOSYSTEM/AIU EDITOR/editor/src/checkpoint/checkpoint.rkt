@@ -66,9 +66,10 @@
      (for/list ([a (in-list arguments)])
        (string-append "'" (if (path? a) (path->string a) a) "'"))
      " "))
+  (define root-text (if (path? root) (path->string root) root))
   (system* shell
            "-c"
-           (string-append git " -C '" (path->string root) "' " quoted
+           (string-append git " -C '" root-text "' " quoted
                           " > '" (path->string out-file) "' 2>/dev/null; echo -n $? > '"
                           (path->string status-file) "'"))
   (if (file-exists? out-file) (file->string out-file) ""))
@@ -80,6 +81,13 @@
   (define status-file (build-path (state-dir) "git-status"))
   (and (file-exists? status-file)
        (string=? (string-trim (file->string status-file)) "0")))
+
+;; tree-root answers the tree a file lives in: the top level git knows, or
+;; the file's own directory when the tree is not a git one.
+(define (tree-root file)
+  (define directory (simplify-path (path->complete-path (build-path file 'up))))
+  (define answer (string-trim (run-git directory "rev-parse" "--show-toplevel")))
+  (if (string=? answer "") directory answer))
 
 ;; checkpoint makes a checkpoint of the tree and answers the name of it:
 ;; the commit it made. The files are added one by one, and the note names
@@ -136,6 +144,7 @@
 
 ;; The checkpoint, for the rollback beside it.
 (provide checkpoints-dir
+         tree-root
          git-ok?
          checkpoints-file
          tracked-files

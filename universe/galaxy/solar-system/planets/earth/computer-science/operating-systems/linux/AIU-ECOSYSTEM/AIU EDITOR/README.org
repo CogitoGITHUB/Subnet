@@ -412,6 +412,10 @@ changed the file, and the rollback put it back:
   checkpoint: aab5c83
   the tree is back at aab5c83
 
+**A send makes its own checkpoint first**, so no bundle ever leaves
+without one — the key and the command line do the same thing, because
+both run the same one command.
+
 The **stop switch** is coarse (D-010): it stops every agent session for
 this project, and there is no per-session and no per-agent toggle. It is
 a file in the state directory, and the adapter asks it on every call —

@@ -7,10 +7,17 @@
 ;; up to it. The send area wires itself into the command table when it
 ;; loads, and the entry loads it, so the key finds the real command.
 ;;
+;; A send makes a CHECKPOINT FIRST, so no bundle ever leaves without one:
+;; the tree is put back to that checkpoint if the agent does something the
+;; human did not want.
+;;
 ;; Registered in plan/package-tree.org; lands with TODO item 9.
 
-(require racket/list
+(require racket/file
+         racket/list
+         racket/path
          racket/string
+         "../checkpoint/checkpoint.rkt"
          "../commands/commands.rkt"
          "adapter.rkt"
          "bundle.rkt")
@@ -30,9 +37,16 @@
                  why))
   (if (not the-bundle)
       (cons #t "a send needs a why: say what the sender was doing")
-      (let ([answer (deliver opencode-adapter the-bundle)])
+      (let* ([tree (tree-root (session-file session))]
+             [made (checkpoint tree why)]
+             [answer (if made
+                       (deliver opencode-adapter the-bundle)
+                       (cons #f (hash 'kind "err-no-checkpoint"
+                                       'who "aiu-editor"
+                                       'what "the tree could not be checkpointed, so nothing was sent"
+                                       'what_to_do "the tree has no git history, or the commit failed")))])
         (if (car answer)
-            (cons #t (format "sent to ~a" target))
+            (cons #t (format "sent to ~a (the checkpoint is ~a)" target made))
             (cons #t (format "the send was refused: ~a — ~a"
                              (hash-ref (cdr answer) 'what)
                              (hash-ref (cdr answer) 'what_to_do)))))))
@@ -40,6 +54,10 @@
 ;; The send area is ABOVE the commands area, so the commands may not reach
 ;; up to it. The send area wires itself into the command table when it
 ;; loads, and the entry loads it, so the key finds the real command.
+;;
+;; A send makes a CHECKPOINT FIRST, so no bundle ever leaves without one:
+;; the tree is put back to that checkpoint if the agent does something the
+;; human did not want.
 (hash-set! commands "send" send-command)
 
 ;; The one action, for the entry above it.
