@@ -1,0 +1,15 @@
+#+TITLE: INDEX — AIU EDITOR/agent/
+# One job: list every file in this directory and the single job of each.
+# Status: current; updated in the same commit as any change in this directory.
+
+* Files
+# one line per file: its name, then the single job it performs.
+
+  - skills/editor/SKILL.md — the skill: what the editor is, the commands, and the examples that run
+  - opencode-plugin/editor-watch.js — the watcher: reads the editor's feed and prints it, never writes
+
+* The directory
+# what it is for.
+  The kit's agent side, and it ships with the package (ecosystem rule
+  2): the skill file serves both agents, the plugin only looks, and the
+  gate's kit-check proves all six proofs of the kit format.

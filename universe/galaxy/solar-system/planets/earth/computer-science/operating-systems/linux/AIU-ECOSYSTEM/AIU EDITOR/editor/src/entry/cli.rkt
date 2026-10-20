@@ -6,6 +6,7 @@
 ;; Usage: racket cli.rkt edit FILE
 
 (require "dispatch.rkt"
+         "documents.rkt"
          "../devloop/start.rkt"
          "../narration/print-console.rkt")
 
@@ -28,7 +29,8 @@
 (define (usage why)
   (print-line (format "the editor: ~a" why))
   (print-line "usage: racket cli.rkt edit FILE | routes | tasks | task | keys | dashboard | bake | send | agent | permit")
-  (exit 2))
+  ;; the refusal code is frozen: the program refused, and it said why
+  (exit exit-refusal))
 
 ;; The parser, for the outside world.
 (module+ main

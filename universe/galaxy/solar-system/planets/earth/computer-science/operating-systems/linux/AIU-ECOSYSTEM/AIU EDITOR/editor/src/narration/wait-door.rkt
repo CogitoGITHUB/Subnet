@@ -28,3 +28,7 @@
 ;; blank? answers whether a piece of text is missing or holds only spaces.
 (define (blank? s)
   (or (not (string? s)) (string=? (string-trim s) "")))
+
+;; The wait door, for every area above it.
+(provide wait-for
+         wait-done)
