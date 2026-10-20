@@ -29,6 +29,7 @@ one line of JSON each way.
     state back exactly after a kill (item 5).
   - The routing: which layer sees a key first (item 4, the editor's
     half).
+  - The task table: declare, list, run, sequence (item 17).
   - The one-way lint, which really checks the area law now.
 
 * The hard rules that bind it
@@ -124,6 +125,44 @@ table, never a function. A key is named the way the terminal names it:
 =C-= for control, =M-= for alt, =S-= for shift, and a word for a named
 key — escape, return, tab, space, backspace, delete, up, down, left,
 right, home, end, pageup, pagedown.
+
+* The tasks: declare, list, run, sequence
+
+A task is a plain function on the meaning side: it takes the session and
+the string arguments, and answers one line. Its doc line is the comment
+block above its own definition, so the list and the help come from the
+source and never from a second list.
+
+  racket editor/src/entry/cli.rkt tasks
+
+lists the table:
+
+  insert — insert puts the words into the buffer and journals the edit. In the dry-run scope it prints what it would do and changes nothing.
+  say — say prints the words it was given as one line, and changes nothing.
+
+and a task runs against a file:
+
+  racket editor/src/entry/cli.rkt task FILE NAME WORDS...
+
+  racket editor/src/entry/cli.rkt task /tmp/tasks-demo.txt say hello the task runner
+  hello the task runner
+
+A =--= between two runs makes a sequence, and the runs go in the order
+they were given:
+
+  racket editor/src/entry/cli.rkt task FILE say first run -- insert a real line -- say second run
+  first run
+  bytes=41 lines=1 pending=1
+  second run
+
+=--dry-run= opens the scope where a task that acts prints what it would
+do and changes nothing — the file and the journal stay untouched:
+
+  racket editor/src/entry/cli.rkt task --dry-run FILE insert a line that must not land
+  would insert: a line that must not land
+
+A name the table does not hold is refused by name, never guessed at:
+=there is no task named nosuchtask; ask for one of: insert, say=.
 
 * The gate
 
