@@ -25,8 +25,17 @@
     replay, the routing, the keyboard and the live session, the
     dashboard, the dev mode, the tasks, the checkpoint and the stop
     switch — and the agent boundary, which is real (TODO item 9).
-  - The light gate is green at 10 stages, and the security stage says
-    NOTHING-TO-CHECK: the =security= area does not exist yet.
+  - The plugin system works: the editor asks pm, loads a plugin across
+    the seam, refuses a missing plugin by name, and runs with no plugin
+    at all (TODO item 17, =f7770df4=).
+  - The send is proved end to end: the client reads the reply in bytes
+    by one reader, and the gate stage =send-check= drives the whole
+    send against a local stub agent that speaks the agent's own wire —
+    the session opens, the feed opens, the bundle is delivered, the
+    region's own text travels, the agent's text comes back and the turn
+    ends (=43d0a04d=).
+  - The light gate is green at 14 stages, and the security stage checks
+    8 predicates, every one of them called.
   - The decisions D-007..D-010 stand; the root D-number for the
     reserved prefix is still owed, because the root decision log is
     read-only from this project.
@@ -34,11 +43,18 @@
 
 * Next step
 # one line, so a fresh conversation starts in the right place.
-  - TODO.org, top to bottom: item 11 (the live agent audit), then 13
-    (the secrets package), 14 (select and send), 15 (the kit) and 16
-    (the done line). The Hermes adapter was skipped by the owner on
-    2026-10-20, and item 17 (the agent opens beside the editor) waits
-    on the multiplexer having code.
+  - What is left in this project is item 18: the agent opens beside
+    the editor, with the context already in it. It needs a pane — the
+    multiplexer's half, which has no code — or an owner decision on
+    the form it takes.
+  - What is left but is not this project's to close: item 4's last
+    half and item 15's checklist run in the MULTIPLEXER (it has no
+    code); item 16's notation clause is the NOTATION project's item 11
+    (the editor's seam is ready and waits for the engine); the shared
+    checklist's deletion is a ROOT file (=checklist/=), read-only from
+    here.
+  - The Hermes adapter was skipped by the owner on 2026-10-20, so one
+    adapter stands.
 
 * How to work here
 # house rules.
