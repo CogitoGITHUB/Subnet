@@ -37,6 +37,9 @@
  - src/buffer/buffer.rs — the text: bytes, lines, offsets
  - src/commands/INDEX.org — the commands area: the command table
  - src/commands/commands.rkt — the command table: one name, one function
+ - src/routes/INDEX.org — the routes area: the layers and the routing
+ - src/routes/keymaps.rkt — the mapping tables, as data: the layers and their keys
+ - src/routes/routes.rkt — the routing: which layer sees a key first
  - src/entry/INDEX.org — the entry area: argv, the dispatch, the session
  - src/entry/cli.rkt — argv to a command: one parser, one dispatch
  - src/entry/dispatch.rkt — the command table: one name, one function

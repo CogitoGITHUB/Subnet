@@ -6,6 +6,7 @@
 # one line per file: its name, then the single job it performs. This index is updated in the same commit as any change here.
 
  - plain-text-slice.org — the choices of the first slice that edits text, and what each cost
+ - reserved-prefix.org — the reserved prefix the multiplexer keeps, and why it is C-b
 
 * Later
 # This directory holds program-only decisions. Ecosystem-wide ones land in the

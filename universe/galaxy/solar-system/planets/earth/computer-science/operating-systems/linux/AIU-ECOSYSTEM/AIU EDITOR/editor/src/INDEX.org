@@ -12,6 +12,7 @@
  - journal/ — the record of every edit, and the work that is not saved yet
  - buffer/ — the text state: bytes, lines, offsets
  - commands/ — the command table: what a typed line means
+ - routes/ — the routing: which layer sees a key first
  - entry/ — the ceiling: argv, the dispatch, the session
 
 * Later

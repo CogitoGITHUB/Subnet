@@ -24,6 +24,7 @@ const STAGES = [
     {name: "security-gate", script: "security-gate-lint.nu", kind: "nu"}
     {name: "language-split", script: "language-split-lint.nu", kind: "nu"}
     {name: "comment-lint", script: "comment-lint.nu", kind: "nu"}
+    {name: "route-check", script: "route-check.rkt", kind: "racket-plain"}
 ]
 
 # run-one stage returns what happened, and never raises: a stage that fails is
@@ -38,6 +39,10 @@ def run-one [stage] {
                      catch {|e| {stdout: $"(racket_bin) could not run: ($e)", exit_code: 3} })
             {name: $stage.name, code: $r.exit_code, out: ($r.stdout | str trim)}
         }
+    } else if $stage.kind == "racket-plain" {
+        let r = (try { run-external (racket_bin) $"($gate_dir)/($stage.script)" | complete }
+                 catch {|e| {stdout: $"(racket_bin) could not run: ($e)", exit_code: 3} })
+        {name: $stage.name, code: $r.exit_code, out: ($r.stdout | str trim)}
     } else {
         let r = (try { run-external nu $"($gate_dir)/($stage.script)" | complete }
                  catch {|e| {stdout: $"(nu) could not run ($stage.script): ($e)", exit_code: 3} })

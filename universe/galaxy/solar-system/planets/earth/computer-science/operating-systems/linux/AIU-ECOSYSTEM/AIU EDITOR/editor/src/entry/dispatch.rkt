@@ -9,10 +9,12 @@
 
 (require racket/path
          racket/port
+         racket/string
          "../narration/print-console.rkt"
          "../narration/narration.rkt"
          "../machine/directories.rkt"
          "../commands/commands.rkt"
+         "../routes/routes.rkt"
          "../join/hot-path.rkt")
 
 ;; edit-session opens the file, then reads one command per line until the
@@ -36,6 +38,26 @@
       (unless (string=? text "") (print-line text))
       (when (car answer) (loop)))))
 
+;; routes-walk runs the routing walk and prints one line per key: which
+;; layer saw the key and what it meant there. The keys are the ones given
+;; on the command line, or every key the editor binds when none are
+;; given, plus the reserved prefix, so the walk always shows the whole
+;; shape. The program-claims are the keys the focused program wants; they
+;; are given as the words before the layer.
+(define (routes-walk args)
+  (define layer (if (null? args) "normal" (car args)))
+  (define claims (if (null? args) '() (cdr args)))
+  (define keys (if (null? args)
+                   (append (list reserved-prefix)
+                           (map car (keys-of layer)))
+                   (list reserved-prefix)))
+  (print-line (format "layer: ~a  program claims: ~a  reserved prefix: ~a"
+                       layer
+                       (if (null? claims) "none" (string-join claims " "))
+                       reserved-prefix))
+  (for-each (lambda (answer) (print-line (route-line answer)))
+            (route-walk keys claims layer)))
+
 ;; edit-file opens the file the user named and runs the editing session.
 (define (edit-file args)
   (if (null? args)
@@ -44,7 +66,8 @@
 
 ;; commands is the table: one name, one function.
 (define commands
-  (hash "edit" edit-file))
+  (hash "edit" edit-file
+        "routes" routes-walk))
 
 ;; command-known? answers whether the table holds the name.
 (define (command-known? verb)

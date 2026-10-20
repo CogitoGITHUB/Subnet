@@ -1,0 +1,36 @@
+#+TITLE: The reserved prefix — the key the multiplexer keeps
+# One job: the one key the multiplexer keeps for itself, and why it is C-b
+# Status: current; the editor's half of the contract's open decision, lands with TODO item 4.
+
+* The decision
+The reserved prefix is =C-b=. The multiplexer keeps it for its own
+actions and it applies everywhere: in a pane, in the editor, in any
+program. The editor binds no layer of it, and the route check refuses the
+editor when a layer does.
+
+* Why this key
+The multiplexer is built on the herdr line, and herdr is a tmux-style
+multiplexer; tmux's prefix is =C-b=. Choosing the same key means the two
+sides agree by default, so a key that reaches the editor from a pane is
+the same key that reaches the multiplexer, and a person does not have to
+learn two prefixes. The contract asks for "one named prefix, declared in
+the layout, collisions refused", and this is that one.
+
+* What it forbids
+The prefix is the multiplexer's own key, so no layer of the editor may
+bind it. The rule check in =gate/route-check.rkt= refuses the editor when
+a layer binds =C-b=, and it says which layer and which key. The check
+also refuses a route that names a command the command table does not
+hold, because such a route would run nothing.
+
+* What is still owed
+The contract says the prefix is "declared in the layout", and the layout
+belongs to the multiplexer; that project has no code yet. The root
+=DECISIONS.org= is read-only from this project, so the shared D-number
+for this key is still owed. This file records the editor's answer so
+both sides read the same key when the multiplexer starts.
+
+* How it is proved
+=nu gate/check.nu= runs the route check as a stage, and
+=racket editor/src/entry/cli.rkt routes= prints the walk: one line per
+key, the layer that saw it and what it meant there.

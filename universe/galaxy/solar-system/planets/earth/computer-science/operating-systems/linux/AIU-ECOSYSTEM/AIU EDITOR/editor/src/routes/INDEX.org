@@ -1,0 +1,20 @@
+#+TITLE: INDEX — AIU EDITOR/editor/src/routes/
+# One job: list every file in the routes area and the single job of each.
+# Status: current; updated in the same commit as any change in this directory.
+
+* Files
+# one line per file: its name, then the single job it performs. This index is updated in the same commit as any change here.
+
+ - INDEX.org — this index: every file of the routes area and its one job
+ - keymaps.rkt — the mapping tables, as data: the layers and their keys
+ - routes.rkt — the routing: which layer sees a key first
+
+* The area
+# The routes area is the editor's own half of the key routing. The shape
+# is the contract's (AIU-ECOSYSTEM/contract/key-routing.org): a key
+# reaches the focused program first, then the editor's own layers, and
+# the multiplexer's reserved prefix applies everywhere.
+#
+# The prefix is a key no layer may bind. The multiplexer keeps it, and
+# the route-check stage of the gate refuses the editor when a route
+# collides with it.

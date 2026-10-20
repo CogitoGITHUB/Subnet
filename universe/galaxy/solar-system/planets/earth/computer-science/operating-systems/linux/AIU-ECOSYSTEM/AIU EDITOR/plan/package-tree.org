@@ -40,6 +40,10 @@ AIU EDITOR/              the project: context and docs stay where they are
   TODO.org               the one list of what is left (lands with this plan)
   research/              program-specific findings only
     join-on-the-phone.org  the join the phone forced, and the numbers that forced it
+  decisions/             the choices already made, newest first
+    INDEX.org
+    plain-text-slice.org the choices of the first slice, and what each cost
+    reserved-prefix.org  the reserved prefix the multiplexer keeps, and why C-b
   gate/                  the light gate now, the full gate when tests open
     INDEX.org
     check.nu             the dispatcher: named stages, one table, --list
@@ -51,6 +55,7 @@ AIU EDITOR/              the project: context and docs stay where they are
     banned-words-lint.nu        the naming law, made mechanical
     language-split-lint.nu      only join/ may cross Rust and Racket
     comment-lint.nu             every file has a header, every definition a comment
+    route-check.rkt       the route check: the reserved prefix is bound by no layer
   tools/                 dev scripts: the probes and the build helpers
     INDEX.org
     join-probe.rkt       the phone probe: measure the Racket start, decide the join
