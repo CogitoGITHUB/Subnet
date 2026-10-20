@@ -58,12 +58,12 @@ def main [] {
     }
 
     let uncalled = ($predicates | where {|p|
-        let outside = ($all_racket | where {|f| ($f | path relative-to $dir) | str starts-with ".." })
+        let outside = ($all_racket | where {|f| ($f | path dirname) != $dir })
         (callers_of $p.name $outside | is-empty)
     })
 
     for p in $predicates {
-        let outside = ($all_racket | where {|f| ($f | path relative-to $dir) | str starts-with ".." })
+        let outside = ($all_racket | where {|f| ($f | path dirname) != $dir })
         let who = (callers_of $p.name $outside | each {|f| $f | path relative-to $project_root })
         if ($who | is-empty) {
             print $"CALLER ($p.name) — no file calls it yet"
