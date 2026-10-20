@@ -1,0 +1,238 @@
+#+TITLE: AIU EDITOR
+# One job: what this program is and what it does today.
+# Every line here is proved by a command that was run; the proof is in
+# the tree: the gate, the feature table and the decisions.
+
+* What it is
+
+AIU EDITOR is a general editor first: plain text, keyboard driven, no
+daemon, no legacy baggage. It grows out of the neomacs work, and it
+hosts AIU-NOTATION later as one pluggable engine behind a contract
+boundary, never a dependency.
+
+The program has two halves:
+
+  - the Rust crate under =editor/= — the hot path: the text state, the
+    journal, and the wire.
+  - the Racket package under =editor/src/= — the meaning side: the
+    command table, the routing, the narration, the error records.
+
+They meet in one place, the =join/= area, and the wire between them is
+one line of JSON each way.
+
+* What works right now
+
+  - The tree, the light gate and the build (items 1 and 2).
+  - A plain text editing session: open, type, save, through the journal
+    (item 3).
+  - The journal and the replay: every edit written as it happens, and the
+    state back exactly after a kill (item 5).
+  - The routing: which layer sees a key first (item 4, the editor's
+    half).
+  - The one-way lint, which really checks the area law now.
+
+* The hard rules that bind it
+
+  - rules/ — the owner's hard rules, one file each.
+  - ../contract/ — the shared contract; read it before anything that
+    crosses programs.
+  - plan/package-tree.org — the register: a name that is not there does
+    not exist yet.
+  - The root DECISIONS.org holds the decisions that cross programs.
+
+* Build
+
+  cargo build --manifest-path editor/Cargo.toml --target-dir /tmp/editor-target
+
+The binary lands at =/tmp/editor-target/debug/hot-path=. Nothing is
+written inside the tree; the build leaves =editor/Cargo.lock= behind,
+so delete it:
+
+  rm -f editor/Cargo.lock
+
+* Run a session
+
+  cd "<the AIU EDITOR directory>"
+  racket editor/src/entry/cli.rkt edit FILE
+
+The path must be RELATIVE: the project directory holds a space, and
+racket splits a path that holds one.
+
+The session reads one command per line from the standard input and
+prints every answer in the one printer. The commands are:
+
+  insert TEXT   put the text into the buffer; the journal holds it
+  save          write the buffer to the file and empty the journal
+  show          answer the text as it stands
+  journal       answer the journal's records
+  replay        rebuild the state and answer what is waiting
+  help          answer the names in the table
+  quit          end the session
+
+A real run:
+
+  (ev-open the editor editing /tmp/readme-demo.txt 2026-10-20T08:21:56Z ...)
+  bytes=22 file=/tmp/readme-demo.txt lines=1 pending=0
+  bytes=30 lines=1 pending=1
+  count=1 records=insert one line
+  bytes=30 file=/tmp/readme-demo.txt lines=1 pending=0
+  bytes=30 lines=1 text=hello from the read meone line
+  bye
+
+The numbers are: the bytes and the lines of the text, and =pending= — the
+records in the journal, the edits that are not saved yet.
+
+* The journal, and what a kill costs
+
+The state between two commands is the file plus the journal: the saved
+text lives in the file, the unsaved work lives in the journal. So a
+crash, a kill or a closed terminal costs nothing.
+
+The journal sits beside the state, one file per edited file:
+
+  ~/.local/state/aiu-editor/journal/<name>-<key>.journal
+
+A =save= writes the file and empties the journal. A session that is
+killed with =kill -9= mid-edit leaves the edit in the journal, and the
+next session on the same file brings the state back exactly.
+
+* The routing: which layer sees a key first
+
+The keyboard layer owns the routes, and the shape is the contract's: the
+focused program sees a key first, then the editor's own layers, and the
+multiplexer's reserved prefix applies everywhere.
+
+  racket editor/src/entry/cli.rkt routes
+
+prints the walk — one line per key, the layer that saw it and what it
+meant there:
+
+  layer: normal  program claims: none  reserved prefix: C-b
+  C-b -> multiplexer -
+  C-s -> editor save
+  C-q -> editor quit
+  C-l -> editor show
+  C-h -> editor help
+
+=C-b= is the reserved prefix: the multiplexer keeps it for its own
+actions, it applies everywhere, and no layer of the editor may bind it.
+The choice and its reason are in =decisions/reserved-prefix.org=.
+
+The tables are data, not code: =editor/src/routes/keymaps.rkt= holds the
+layers and their keys, and a route names a command from the command
+table, never a function. A key is named the way the terminal names it:
+=C-= for control, =M-= for alt, =S-= for shift, and a word for a named
+key — escape, return, tab, space, backspace, delete, up, down, left,
+right, home, end, pageup, pagedown.
+
+* The gate
+
+  nu gate/check.nu
+
+Seven stages, and a green run ends:
+
+  stages that checked nothing: 1 of 7
+  light gate: green, 7 stages ran
+
+  paren-check     every Racket file reads
+  naming          no banned word in any name
+  one-way         a require may point downward only
+  security-gate   every security rule answers as it says
+  language-split  only join/ may cross between Rust and Racket
+  comment-lint    every file has a header and every definition a comment
+  route-check     the reserved prefix is bound by no layer, and every
+                  route names a command that exists
+
+The route check is the seventh stage, and it was proved on a copy with
+both faults planted: it named the layer and the key that took the
+prefix, and the route that named a command the table does not hold.
+
+The security stage prints NOTHING-TO-CHECK: the security area does not
+exist yet, and the gate says so instead of passing silently.
+
+* The area law
+
+The areas, lowest first:
+
+  errors  narration  machine  security  join  devloop  journal  buffer
+  notation  commands  routes  input  drawing  models  dashboard  send
+  picker  checkpoint  audit  entry
+
+=errors= is the floor and =entry= the ceiling, and a require may point
+DOWNWARD only. Rust owns the hot path — =input/=, =drawing/=, =journal/=
+and the buffer's text; Racket owns the meaning side — commands, routes,
+models, rules and config. The seam is =join/=, and the one-way lint and
+the language-split lint keep every other area clean.
+
+* How fast it is
+
+  the bare Racket start     7517 ms
+  the first question        6572 ms
+  the second question       4224 ms
+  the build                 0.28 s when the crate is already built
+  a session with one answer about 5 s
+
+The start is the module load on this phone, not the work. The numbers
+are in =research/join-on-the-phone.org=.
+
+* How it is put together
+
+  editor/src/errors/      the error record, the one raise, the render
+  editor/src/narration/   the events, the voice, the wait door, the printer
+  editor/src/machine/     the HOME seam, the locks, the cancel door
+  editor/src/join/        the wire: the request, the answer, the transport
+  editor/src/journal/     the record of every edit, and the replay
+  editor/src/buffer/      the text state: bytes, lines, offsets
+  editor/src/commands/    the command table: one name, one function
+  editor/src/routes/      the routing: which layer sees a key first
+  editor/src/entry/       argv, the dispatch, the session
+
+The wire between the two halves is one line of JSON each way, and it
+travels through a PAIR OF FILES — one for the request and one for the
+answer. That is a fact of this Racket build and not a choice:
+=racket/system= hands a child =/dev/null= for every stream that is not a
+file stream. The decision is D-008 in the root DECISIONS.org.
+
+* What is not there yet
+
+  - The input is read on the RACKET side, one typed line at a time. The
+    =input/= area, with the keys read in Rust, lands when a stream can
+    carry them; =decisions/plain-text-slice.org= says what it costs and
+    what it takes to undo.
+  - The multiplexer has no code, so the editor's half of the routing is
+    all that can be built here. The walk that runs with the editor in a
+    pane is still owed.
+  - The =security= area does not exist, so the gate's security stage has
+    nothing to check.
+  - The =notation= seam, the =drawing= area, the dashboard, the agent
+    boundary, the kit — none of them are built.
+  - The root D-number for the reserved prefix is still owed: the root
+    decision log is read-only from this project.
+  - Nothing is long-lived. Every command is a one-shot call to the hot
+    path, and the state lives in the file and the journal.
+
+* Where truth lives
+
+  TODO.org                the one list of what is left, in build order
+  HANDOFF.org             the true state of the program
+  plan/package-tree.org   the register: every name, every file
+  plan/architecture.org    the pieces and how they fit
+  decisions/              the choices already made, newest first
+  rules/                  the hard rules, one file each
+  study/                  the neomacs study, read-only
+  research/               the findings only this program made
+  gate/                   the light gate: the dispatcher and its stages
+
+* Rules for anyone working here
+
+  - Register a name in =plan/package-tree.org= before you use it.
+  - One file, one job. Every file opens with a header comment that says
+    what it is; every top-level definition has a comment line directly
+    above it. The comment-lint stage checks this.
+  - A require may point downward only.
+  - Commit with explicit relative paths. Never =git add -A=.
+  - Nothing writes outside =/tmp= and the state directory.
+  - No test files in the tree (root DECISIONS.org D-001). A check that
+    proves something is a stage of the gate, and a check that tries to
+    fail is proved on a copy in =/tmp=.
+  - Never weaken a check. A check that cannot fail is not a check.
