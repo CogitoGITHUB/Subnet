@@ -31,6 +31,8 @@ one line of JSON each way.
     half).
   - The task table: declare, list, run, sequence (item 17).
   - The dashboard and the placeable pieces (item 7).
+  - The keyboard: the bytes of a key become its name (item 6, the part
+    that is done).
   - The one-way lint, which really checks the area law now.
 
 * The hard rules that bind it
@@ -192,14 +194,41 @@ area. The gate's eighth stage, `dashboard-check.rkt`, checks that every
 piece of the placeable piece list is really drawn, and it fails on a
 piece welded to an edge the drawing does not know.
 
+* The keyboard: the bytes of a key become its name
+
+The keyboard is split the way D-007 says: the **decoding is Rust** (the
+input area) and the **keymaps and the meaning stay in Racket** (the
+routes area).
+
+  racket editor/src/entry/cli.rkt keys normal 13 11 1b5b41 61 1b
+
+answers the name of each key, the layer that saw it and the command it
+runs:
+
+  C-s -> normal save
+  C-q -> normal quit
+  up -> unclaimed -
+  a -> unclaimed -
+  escape -> unclaimed -
+
+The bytes are given as hex, because a key may be any byte at all. The
+hot path also answers the way back — how a key name is spelled — and the
+gate's `key-check.rkt` stage walks every key of the keymaps round: the
+name that comes back must be the name that went in.
+
+The kitty keyboard protocol is **adopted, not invented**: the flags that
+ask the terminal to report the escape codes it would otherwise swallow
+are the protocol's own, and the reader uses no timer of its own. A lone
+escape is the escape key, and the next byte decides it.
+
 * The gate
 
   nu gate/check.nu
 
-Eight stages, and a green run ends:
+Nine stages, and a green run ends:
 
-  stages that checked nothing: 1 of 8
-  light gate: green, 8 stages ran
+  stages that checked nothing: 1 of 9
+  light gate: green, 9 stages ran
 
   paren-check     every Racket file reads
   naming          no banned word in any name
@@ -209,6 +238,7 @@ Eight stages, and a green run ends:
   comment-lint    every file has a header and every definition a comment
   route-check     the reserved prefix is bound by no layer, and every
                   route names a command that exists
+  key-check       the decoder and the keymaps agree on every key
   dashboard-check every piece of the placeable piece list is really drawn
 
 The route check is the seventh stage, and it was proved on a copy with
