@@ -1,0 +1,21 @@
+#+TITLE: INDEX — AIU EDITOR/editor/src/dashboard/
+# One job: list every file in the dashboard area and the single job of each.
+# Status: current; updated in the same commit as any change in this directory.
+
+* Files
+# one line per file: its name, then the single job it performs.
+
+ - INDEX.org — this index: every file of the dashboard area and its one job
+ - dashboard.rkt — the meaning: what each piece shows, and the call that draws it
+ - pieces.rkt — the placeable piece list: the edges, the sizes, the order
+ - dashboard.rs — the drawing: the pieces are placed on a screen and the screen is written out
+
+* The area
+# what the area is and what it owes.
+# The dashboard is the status and the context display. The placement is
+# data: a piece names an edge, a width and an order, so any piece can go
+# on any edge and several pieces can share one (rule 10). The meaning is
+# Racket and the drawing is Rust, and the two meet in the join area.
+#
+# A piece is never cut: a piece whose text needs more room than its size
+# says gets the room it needs, so the same piece fits any edge.

@@ -25,6 +25,7 @@ const STAGES = [
     {name: "language-split", script: "language-split-lint.nu", kind: "nu"}
     {name: "comment-lint", script: "comment-lint.nu", kind: "nu"}
     {name: "route-check", script: "route-check.rkt", kind: "racket-plain"}
+    {name: "dashboard-check", script: "dashboard-check.rkt", kind: "racket-plain"}
 ]
 
 # run-one stage returns what happened, and never raises: a stage that fails is

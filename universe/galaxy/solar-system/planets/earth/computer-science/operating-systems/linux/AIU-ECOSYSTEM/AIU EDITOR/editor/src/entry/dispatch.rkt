@@ -15,6 +15,7 @@
          "../machine/directories.rkt"
          "../commands/commands.rkt"
          "../commands/tasks.rkt"
+         "../dashboard/dashboard.rkt"
          "../routes/routes.rkt"
          "../join/hot-path.rkt")
 
@@ -100,6 +101,16 @@
        (loop (cdr rest) '() (if (null? current) runs (cons (reverse current) runs)))]
       [else (loop (cdr rest) (cons (car rest) current) runs)])))
 
+;; dashboard-verb draws the dashboard and prints it, one line per row of
+;; the screen. The file is the one being edited; without a file the
+;; dashboard shows the editor alone.
+(define (dashboard-verb args)
+  (define file (if (null? args) "" (car args)))
+  (define path (path->complete-path (if (string=? file "") "untitled" file)))
+  (define journal (journal-path-for path))
+  (define state (session-state (path->string path) (path->string journal)))
+  (for-each print-line (draw-dashboard the-pieces state)))
+
 ;; edit-file opens the file the user named and runs the editing session.
 (define (edit-file args)
   (if (null? args)
@@ -111,7 +122,8 @@
   (hash "edit" edit-file
         "routes" routes-walk
         "task" task-verb
-        "tasks" tasks-verb))
+        "tasks" tasks-verb
+        "dashboard" dashboard-verb))
 
 ;; command-known? answers whether the table holds the name.
 (define (command-known? verb)

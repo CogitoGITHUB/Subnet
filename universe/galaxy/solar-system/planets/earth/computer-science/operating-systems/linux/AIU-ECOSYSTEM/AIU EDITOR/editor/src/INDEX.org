@@ -13,6 +13,10 @@
  - buffer/ — the text state: bytes, lines, offsets
  - commands/ — the command table: what a typed line means
  - routes/ — the routing: which layer sees a key first
+ - input/ — the keys in, read in Rust
+ - drawing/ — the screen's one place: the attach, the layout, the paint
+ - models/ — the semantic models: what exists and where it sits
+ - dashboard/ — the dashboard: the placeable pieces and their drawing
  - entry/ — the ceiling: argv, the dispatch, the session
 
 * Later

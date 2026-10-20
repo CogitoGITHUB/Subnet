@@ -57,6 +57,7 @@ AIU EDITOR/              the project: context and docs stay where they are
     language-split-lint.nu      only join/ may cross Rust and Racket
     comment-lint.nu             every file has a header, every definition a comment
     route-check.rkt       the route check: the reserved prefix is bound by no layer
+    dashboard-check.rkt   the dashboard check: every piece is really drawn
   tools/                 dev scripts: the probes and the build helpers
     INDEX.org
     join-probe.rkt       the phone probe: measure the Racket start, decide the join
@@ -143,6 +144,7 @@ AIU EDITOR/              the project: context and docs stay where they are
       dashboard/         the status and context display
         INDEX.org
         dashboard.rkt    the meaning: what to show
+        pieces.rkt       the placeable piece list: the edges, the sizes, the order
         dashboard.rs     the drawing of it
       send/              the one action: build a bundle, call the boundary
         INDEX.org

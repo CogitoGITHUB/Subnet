@@ -41,6 +41,10 @@
  - src/routes/INDEX.org — the routes area: the layers and the routing
  - src/routes/keymaps.rkt — the mapping tables, as data: the layers and their keys
  - src/routes/routes.rkt — the routing: which layer sees a key first
+ - src/dashboard/INDEX.org — the dashboard area: the pieces and their drawing
+ - src/dashboard/dashboard.rkt — the meaning: what each piece shows, and the call that draws it
+ - src/dashboard/pieces.rkt — the placeable piece list: the edges, the sizes, the order
+ - src/dashboard/dashboard.rs — the drawing: the pieces are placed on a screen and the screen is written out
  - src/entry/INDEX.org — the entry area: argv, the dispatch, the session
  - src/entry/cli.rkt — argv to a command: one parser, one dispatch
  - src/entry/dispatch.rkt — the command table: one name, one function
