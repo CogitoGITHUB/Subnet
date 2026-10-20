@@ -32,6 +32,7 @@
  - src/join/rust-exports.rs — the functions the meaning side may call, one per crossing
  - src/journal/INDEX.org — the journal area: the record of every edit
  - src/journal/journal.rs — append every edit; replayable, in order
+ - src/journal/replay.rkt — rebuild state after a crash; never guesses silently
  - src/buffer/INDEX.org — the buffer area: the text state
  - src/buffer/buffer.rs — the text: bytes, lines, offsets
  - src/commands/INDEX.org — the commands area: the command table

@@ -20,3 +20,7 @@ pub const OP_SHOW: &str = "show";
 
 /// OP_JOURNAL answers the records of the journal.
 pub const OP_JOURNAL: &str = "journal";
+
+/// OP_REPLAY rebuilds the state after a crash: the file with the journal's
+/// unsaved edits put back on top, the pending count and the records.
+pub const OP_REPLAY: &str = "replay";

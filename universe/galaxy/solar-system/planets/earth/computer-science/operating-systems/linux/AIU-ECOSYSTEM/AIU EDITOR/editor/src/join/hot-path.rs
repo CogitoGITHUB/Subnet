@@ -140,12 +140,27 @@ fn answer_for(request: &wire_json::Request) -> (bool, Vec<(String, String)>) {
                 ],
             )
         }
+        rust_exports::OP_REPLAY => {
+            let text = current_text(&file, &journal_path);
+            let state = buffer::new_buffer(&text);
+            let records = journal::records(&journal_path);
+            (
+                true,
+                vec![
+                    ("text".to_string(), buffer::text_of(&state).to_string()),
+                    ("lines".to_string(), buffer::line_count(&state).to_string()),
+                    ("bytes".to_string(), buffer::byte_len(&state).to_string()),
+                    ("pending".to_string(), records.len().to_string()),
+                    ("records".to_string(), records.join("\n")),
+                ],
+            )
+        }
         _ => (
             false,
             vec![
                 ("kind".to_string(), "err-unknown-op".to_string()),
                 ("what".to_string(), format!("there is no operation named {}", op)),
-                ("what_to_do".to_string(), "ask for one of: open, insert, save, show, journal".to_string()),
+                ("what_to_do".to_string(), "ask for one of: open, insert, save, show, journal, replay".to_string()),
             ],
         ),
     }

@@ -13,7 +13,8 @@
          racket/path
          racket/string
          "../join/protocol.rkt"
-         "../join/hot-path.rkt")
+         "../join/hot-path.rkt"
+         "../journal/replay.rkt")
 
 ;; session is the state of one editing session: the file being edited and
 ;; the journal that holds the work not saved yet.
@@ -56,6 +57,14 @@
 (define (command-quit session words)
   (cons #f "bye"))
 
+;; command-replay rebuilds the state after a crash and reports what is
+;; waiting: the counts and the journal's records. The text itself is what
+;; the show command answers.
+(define (command-replay session words)
+  (cons #t
+        (replay-report
+         (replay-state (session-file session) (session-journal session)))))
+
 ;; commands is the table: one name, one function. The keys are compared
 ;; as text, so a name typed on the keyboard finds its function.
 (define commands
@@ -63,6 +72,7 @@
         "save" command-save
         "show" command-show
         "journal" command-journal
+        "replay" command-replay
         "help" command-help
         "quit" command-quit))
 
