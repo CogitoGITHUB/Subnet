@@ -62,6 +62,7 @@ AIU EDITOR/              the project: context and docs stay where they are
     secret-check.rkt      the no-secrets check: a real bundle and the disk
     kit-check.rkt         the kit check: the six proofs of the kit format
     plugin-check.rkt      the plugin check: the five proofs of the plugin system
+    send-check.rkt        the send check: the whole send against a stub agent
   tools/                 dev scripts: the probes and the build helpers
     INDEX.org
     join-probe.rkt       the phone probe: measure the Racket start, decide the join

@@ -19,6 +19,10 @@
   - route-check.rkt — the route check: the reserved prefix is bound by no layer
   - key-check.rkt — the key check: the decoder and the keymaps agree
   - dashboard-check.rkt — the dashboard check: every piece is really drawn
+  - secret-check.rkt — the no-secrets check: a real bundle and the disk
+  - kit-check.rkt — the kit check: the six proofs of the kit format
+  - plugin-check.rkt — the plugin check: the five proofs of the plugin system
+  - send-check.rkt — the send check: the whole send against a stub agent
 
 * Later
 # The gate lives outside editor/ on purpose: the gate checks the package, so
