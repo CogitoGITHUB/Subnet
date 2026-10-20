@@ -1,0 +1,28 @@
+#+TITLE: Risks — AIU BROWSER
+# One job: what can go wrong, and what is done about it.
+# Status: current; the ready-up of 2026-10-20.
+
+* The risks
+# each risk, and the answer.
+  - **The listing is slow on a big tree.** The answer: the listing is
+    the hot path and it is Rust, and the panel draws a window of the
+    rows, not all of them.
+  - **The phone cannot bake the binary.** The answer: D-008 already
+    decided the shape — the meaning side runs as a source program and
+    the wire travels through a pair of files. The browser copies that
+    answer instead of discovering it again.
+  - **The browser duplicates the editor.** The answer: the split, the
+    wire, the gate, the journal and the kit are the editor's shapes,
+    copied deliberately and named in the plan; the parts that are
+    different are the listing, the rows and the tree actions.
+  - **Two programs change the same tree.** The answer: the journal and
+    the checkpoint; a change that cannot be undone is refused by name.
+  - **The agent edits files behind the panel's back.** The answer: the
+    editor's audit (its item 11) marks the changes nobody reported as
+    external, and the panel reads the same tree, so the two agree.
+  - **The plan drifts from the tree.** The answer: package-tree.org is
+    the register and the naming lint reads it; a name that is not
+    registered does not exist.
+  - **The study of oil.nvim is from memory, not from the source.** The
+    answer: the study says so, and the findings that need the upstream
+    source are named in open-decisions.org instead of being guessed.

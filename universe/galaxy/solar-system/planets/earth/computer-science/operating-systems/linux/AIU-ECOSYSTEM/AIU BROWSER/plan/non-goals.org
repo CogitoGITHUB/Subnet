@@ -1,0 +1,29 @@
+#+TITLE: Non-goals — AIU BROWSER
+# One job: what this program will not carry, and why.
+# Status: current; the ready-up of 2026-10-20.
+
+* The non-goals
+# each one, and the reason.
+  - **No daemon.** The panel is a program that runs and stops; it is
+    never a background service (rule 03).
+  - **No file watcher and no timer.** The tree is read when something
+    happens, never on a clock (rule 03, rule 04).
+  - **No plugin runtime.** This is a program with a contract, not a
+    Neovim plugin. The editor is not its host; it is its sibling.
+  - **No terminal emulator and no shell.** The multiplexer holds
+    terminals; the browser holds files.
+  - **No copy of oil.nvim.** The shape is modelled, the code is not
+    taken: the split, the wire and the rules are this ecosystem's.
+  - **No mouse.** The keyboard is the way (rule 13). A mouse may be
+    supported later, but no feature may need one.
+  - **No search engine.** Finding a file is the editor's job and the
+    agent's; the browser shows what is there.
+  - **No file editing.** The browser acts on the tree; the text belongs
+    to the editor. A file opens in the editor, it does not open here.
+
+* The things that look like non-goals but are not
+# the near misses.
+  - Git state per row IS in: it is read from the tree's own git and it
+    is what makes a row worth seeing.
+  - Hidden files ARE in: one key toggles them.
+  - A file's size IS in: a row says how big the thing is.

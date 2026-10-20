@@ -1,0 +1,54 @@
+#+TITLE: Tasks — AIU BROWSER
+# One job: the tasks the program declares and runs, and where they live.
+# Status: current; the ready-up of 2026-10-20.
+
+* What a task is
+# the shape, from the editor's rule 09.
+  A task is a plain function on the meaning side that takes the session
+  and the string arguments, and answers one line. Its doc line is the
+  comment block above its own definition, so the list and the help come
+  from the source and never from a second list.
+
+* The tasks this program will declare
+# the names, and what each one does. The names are registered before
+# they are used.
+  - =list= — list a directory: the rows, one per line.
+  - =open= — open a file: the path and the answer.
+  - =new= — create a file or a directory.
+  - =rename= — rename a file or a directory.
+  - =delete= — delete a file or a directory, with the confirmation.
+  - =move= — move a file or a directory.
+  - =copy= — copy a file.
+  - =hidden= — toggle the hidden files.
+  - =where= — where am I: the path of the tree being shown.
+  - =git= — the git state of the tree.
+  - =find= — find a file by name, fuzzily, over a named source.
+  - =collapse= — collapse the tree, or open it all the way down.
+  - =root= — change the root of the tree to the parent.
+  - =focus= — focus the panel, or toggle it away.
+  - =filter= — the live filter: the rows narrow as the query is typed.
+  - =cut=, =copy=, =paste= — the clipboard, and the share between panels.
+  - =branches= — the git branches, with a preview of the last commit.
+  - =commits= — the git commits, with a preview of the diff.
+
+* The rules of the table
+# the discipline, so the list cannot drift.
+  - The table is data in the source, and the list of the tasks and the
+    help are read from it.
+  - A name the table does not hold is refused by name.
+  - A dry-run scope prints what a task would do and changes nothing.
+  - Every task that acts writes to the journal, with a why.
+
+* Where it lives
+# the file, when the tree lands.
+  =browser/src/commands/tasks.rkt= — the task table and the runner.
+
+* The picker's own sources
+# the candidates, and where they come from.
+  - =tree= — the rows of the tree that is open.
+  - =branches= — the git branches of the tree.
+  - =commits= — the git commits of the tree.
+  - =open= — the files the editor has open, when the editor's surface
+    is there.
+  A source is one row in a table, so a new one is one entry and no new
+  program.

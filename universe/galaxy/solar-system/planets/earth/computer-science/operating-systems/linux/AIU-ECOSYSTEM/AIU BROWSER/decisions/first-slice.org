@@ -1,0 +1,34 @@
+#+TITLE: Decision — the first slice
+# One job: what the first slice is, and what that choice costs.
+# Status: current; 2026-10-20.
+
+* What was decided
+# the slice, in one sentence.
+  The first slice is ONE real directory, listed as a TREE with the
+  cursor on the first row and the rows drawn on the screen: the listing
+  and the painting in Rust, the meaning of a row and the commands in
+  Racket, and the wire between them one line of JSON each way.
+
+* Why
+# the reason, at intent level.
+  A tree is the shape both studied programs agree on, and it is the
+  shape that pays off: the same tree answers "what is here", "what
+  changed in git" and "where is that file". Building it first means
+  every later action lands on a tree that already draws itself.
+
+* What it costs
+# the price, plainly.
+  - The tree state (which nodes are open, where the cursor is) is
+    state, so it needs a home: the session holds it, and the panel is
+    redrawn from it.
+  - A large tree must not be drawn whole: the panel draws the window of
+    the rows around the cursor, and the listing is Rust.
+  - The filter and the clipboard are deliberately NOT in this slice:
+    they are cheap later and expensive early.
+
+* What it takes to undo it
+# the honest reversal.
+  A flat listing instead of a tree is a change in one file (the rows
+  become a list) and one in the drawing. Nothing outside the package
+  depends on the tree's shape, because the panel is placed by data and
+  read by the human.

@@ -1,0 +1,52 @@
+#+TITLE: Study — nvim-tree.lua
+# One job: what nvim-tree does, in names and behaviour, and what this program takes from it.
+# Status: current; the ready-up of 2026-10-20.
+#
+# Read from the upstream README on 2026-10-20. The repository itself was
+# NOT cloned; the wiki and the help file were not read. A finding that
+# needs those is named in plan/open-decisions.org.
+
+* What it is
+  A file explorer TREE for Neovim, written in Lua. It is stable: the
+  project says no new major features, and the work is on performance,
+  quality of life, the API and the events.
+
+* What it does
+  - Shows a TREE, not a flat list: directories open and close, and the
+    tree can be collapsed.
+  - Finds a file by name in the tree and opens it.
+  - Changes the root of the tree to the parent directory.
+  - Filters the tree as you type, live.
+  - Creates, renames and deletes entries.
+  - Cuts, copies and pastes, locally and between two instances.
+  - Shows the git state, the file kinds and the diagnostics of a file.
+  - Toggles the whole window, and focuses it.
+  - Sends EVENTS, and exposes a public API that other code calls.
+
+* What this program takes
+  - The tree, with nodes that open and close and a cursor that moves
+    through them.
+  - The find-a-file command, the change-root command, the collapse-all
+    command, the toggle command and the help.
+  - The live filter: the rows narrow as the filter is typed.
+  - The clipboard: cut, copy and paste, and the paste works between two
+    panels as well as inside one.
+  - The events and the public API, as this ecosystem's event feed and
+    its MCP surface.
+  - Several panels at once, each with its own root and its own cursor.
+
+* What this program drops
+  - The automatic updates: a watcher is a timer, and this ecosystem has
+    no timers (rule 03). The panel is redrawn when something happens.
+  - The icons and the colours: plain text, a kind and a size.
+  - The language diagnostics: the language side belongs to the editor.
+    What the editor's side reports may be shown on a row, and that is an
+    open decision.
+  - The Lua configuration: the keymaps are data and the work mode reads
+    them live (rule 02).
+
+* The findings that need the source
+  - How the filter and the tree state interact with a large tree.
+  - How the clipboard is stored, so two panels share it.
+  - What the events carry, so this program's event feed can be compared
+    with it.

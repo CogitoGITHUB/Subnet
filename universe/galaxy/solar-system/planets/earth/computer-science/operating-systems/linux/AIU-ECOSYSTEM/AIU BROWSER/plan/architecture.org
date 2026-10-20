@@ -1,0 +1,69 @@
+#+TITLE: Architecture — AIU BROWSER
+# One job: the pieces of the program and how they fit.
+# Status: current; the ready-up of 2026-10-20.
+
+* The shape
+# the two halves and the seam.
+  The browser is the editor's shape, because the editor's shape already
+  survived contact with a real implementation:
+  - the **Rust crate** under =browser/= is the hot path: the directory
+    listing, the fuzzy ranking, the painting of the rows, and the
+    reading of the keys;
+  - the **Racket package** under =browser/src/= is the meaning side: the
+    command table, the keymaps, the security predicates, the journal,
+    the narration and the error records;
+  - they meet in =join/=, and the wire between them is one line of JSON
+    each way, travelling through a pair of files (D-008's finding).
+
+* The areas, lowest first
+# a require may point downward only.
+  errors, narration, machine, security, join, devloop, journal,
+  commands, routes, input, drawing, files, picker, entry.
+
+* The pieces and their jobs
+# one line per piece.
+  - **The listing** (Rust, hot path): read the directory, stat every
+    entry, sort it, and answer the rows as data.
+  - **The tree** (Racket, meaning): the nodes, which are open and which
+    are closed, and the path from the root to each node.
+  - **The rows** (Racket, meaning): what a row *is* — name, kind, size,
+    git state, whether it is the file being edited — and the commands
+    each kind of row carries.
+  - **The filter** (Racket, meaning): the live filter; the rows narrow
+    as the query is typed.
+  - **The picker** (Racket meaning, Rust hot path): the fuzzy finder
+    over a named source of candidates, with the preview of the item
+    under the cursor, and the batch pick.
+  - **The clipboard** (Racket, meaning): cut, copy and paste, and the
+    share between two panels.
+  - **The panel** (Rust, drawing): the rows and the picker become a
+    screen, and the placement says where the screen sits (rule 10).
+  - **The keyboard** (Rust input, Racket routes): the bytes of a key
+    become the name of a key, the keymaps are data, a route names a
+    command.
+  - **The tree actions** (Racket commands + Rust work): new, rename,
+    delete, move, copy — each one through the journal, each one asking
+    for a why.
+  - **The security predicates** (Racket security): what may happen
+    without asking; a delete that cannot be undone needs a
+    confirmation, and every action that changes the tree needs a
+    checkpoint.
+  - **The journal** (Rust journal, Racket replay): the record of every
+    change, written as it happens, replayable after a kill (rule 01).
+
+* The seams to other programs
+# the crossings, and who owns them.
+  - **To the editor:** the browser opens a file by calling the editor's
+    MCP surface (the editor's kit, item 15). The editor owns that
+    surface; the browser is a client of it.
+  - **To the multiplexer:** the panel can sit in a pane beside the
+    editor. The multiplexer owns panes; the browser only draws.
+  - **To an agent:** the browser's one action — send what is selected to
+    an agent — goes through the AI-link boundary, like every other
+    program (contract/ai-link-boundary.org).
+
+* What is NOT a seam
+# the tempting crossings that stay inside.
+  - The browser does not read the editor's files, and the editor does
+    not read the browser's state. One program asks the other through
+    the boundary, and the answer is a line of text.

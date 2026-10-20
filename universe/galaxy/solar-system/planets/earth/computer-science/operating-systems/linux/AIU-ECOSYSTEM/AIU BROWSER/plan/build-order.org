@@ -1,0 +1,38 @@
+#+TITLE: Build order — AIU BROWSER
+# One job: what lands first, what waits, and why.
+# Status: current; the ready-up of 2026-10-20.
+
+* The order
+# the list, in build order, with the reason each one is there.
+  1. **The tree and the light gate.** Everything else is proved by the
+     gate, so the gate comes before the code it watches.
+  2. **The listing, the rows, the panel.** The first slice: one
+     directory, listed, with the meaning on the Racket side and the
+     drawing on the Rust side. This is the smallest thing that is
+     already the program (rule 11).
+  3. **The keys and the live session.** The panel is useless without a
+     cursor, and the cursor is a key.
+  4. **The tree actions and the journal.** A browser that cannot change
+     anything is a listing; a browser that changes things without a
+     journal loses work (rule 01).
+  5. **The placement.** The panel as a placeable piece, so it can be
+     hosted anywhere (rule 10).
+  6. **The picker.** The fuzzy finder over a named source, with the
+     preview and the batch pick, so a file is found by typing a few
+     letters instead of walking the tree.
+  7. **The AI-link.** The one action to an agent, read free and mutate
+     gated (rule 07).
+  8. **The kit.** The JSON surface, the MCP server, the skill, the
+     plugin, and the conformance checklist.
+  9. **The done line.** Every clause of the shared done line holds.
+
+* What waits, and why
+# the honest blockers.
+  - **The editor's MCP surface** (the browser's way to open a file) is
+    the editor's item 15; until it lands, the browser opens a file by
+    naming it in its own answer, and the editor is a client of the
+    browser's MCP surface in the other direction.
+  - **A pane beside the editor** is the multiplexer's; the browser
+    draws the panel and the multiplexer holds the pane.
+  - **The second agent adapter** is the editor's item 10, which the
+    owner skipped; the browser does not need it either.

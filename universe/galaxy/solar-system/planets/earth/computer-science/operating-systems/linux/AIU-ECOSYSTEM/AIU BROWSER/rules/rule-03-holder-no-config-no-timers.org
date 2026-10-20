@@ -1,0 +1,21 @@
+#+TITLE: Rule 03 — The holder has no config and no timers
+# One job: the hard rule and what it demands in this program
+# Status: current; the rule text is the owner's and changes only with the owner.
+
+* The rule
+# the owner's words, repeated unchanged. Do not soften or reinterpret them here.
+  The holder has no config and no timers. It only holds terminals and the log.
+
+* What it demands here
+# how this rule bites in this program. No examples; the plan carries the detail.
+  No long-lived process of the editor carries config or timers; the journal is the only thing
+  that rotates.
+
+* What breaks it
+# the failure this rule exists to prevent.
+  A holder that reads config or ticks, so it cannot be trusted to just hold terminals.
+
+* Where it is proven
+# the checklist item that shows this rule holds; named 2026-10-16.
+  checklist/tier-1 items 07 and 10
+

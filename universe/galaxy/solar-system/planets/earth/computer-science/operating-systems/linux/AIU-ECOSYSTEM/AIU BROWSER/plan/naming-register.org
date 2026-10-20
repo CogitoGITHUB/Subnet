@@ -1,0 +1,53 @@
+#+TITLE: Naming register — AIU BROWSER
+# One job: the names of this program, and why they are the names.
+# Status: current; the ready-up of 2026-10-20.
+#
+# The reader test: the owner must never have to ask "what is that, why
+# is it there?" about a path or an identifier. A name that lies costs
+# more than a missing comment.
+
+* The project
+  - **AIU BROWSER** — the file panel of the AIU editor. The word
+    "manager" is banned by the naming law, and "browser" says what the
+    thing is: it browses a tree and acts on it.
+  - =browser/= — the package: all of it lives here, and nothing of it
+    lives outside.
+
+* The areas
+  - =errors= — the error record and how it renders (the floor).
+  - =narration= — how work speaks: events, the wait door, the printer.
+  - =machine= — the machine seam: HOME, the terminal, the locks, the
+    cancel door.
+  - =security= — the total predicates: what may happen without asking.
+  - =join= — the Racket–Rust seam; the only place two languages meet.
+  - =devloop= — the work mode, the bake and the last good.
+  - =journal= — the record of every change to the tree.
+  - =commands= — the command table: one name, one function; and the
+    task table.
+  - =routes= — the routing and the keymaps, as data.
+  - =input= — the keys in, read in Rust.
+  - =drawing= — the panel's one place: the attach, the layout, the
+    paint.
+  - =files= — the meaning of a file: name, kind, size, git state, and
+    the commands a row carries.
+  - =entry= — the ceiling: argv, the dispatch, the live session, the
+    MCP server, the JSON surface.
+
+* The names that are refused
+  - **core/**, **engine/**, **utils/**, **manager/**, **handler/**,
+    **tmp/** — the banned words of the ecosystem law. A directory that
+    holds one of them says nothing about what is inside it.
+  - **popup** — the panel is a placeable piece, not a popup; a popup is
+    one placement of it.
+  - **oil** — the name of the plugin this is modelled on. The shape is
+    taken; the name is not, because a reader would ask what "oil" means
+    here.
+  - **nvim-tree** — the same, for the tree browser this is modelled on.
+  - **telescope** — the same, for the finder. The piece here is called
+    the picker, and the owner already has a picker of his own.
+
+* The identifiers
+  - Every command is a verb in the plainest words: =list=, =open=,
+    =new=, =rename=, =delete=, =move=, =copy=, =hidden=, =where=.
+  - Every file is named for the one job it does, and a file with two
+    jobs is two files.

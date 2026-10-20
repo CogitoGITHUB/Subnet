@@ -1,0 +1,47 @@
+#+TITLE: Phone-first tests — AIU BROWSER
+# One job: the proofs that run on the phone, and what each one proves.
+# Status: current; the ready-up of 2026-10-20.
+#
+# There are no test files yet (root DECISIONS.org D-001). These are the
+# proofs that are run BY HAND on the phone, and each one is written
+# down so it cannot be forgotten.
+
+* The proofs
+# each one, and what it must show.
+  - **The listing.** A real directory with at least one hidden file and
+    one subdirectory is listed: the rows, the kinds, the sizes, the git
+    state, and hidden files not shown until the key is pressed.
+  - **The cursor.** A live session under a pseudo-terminal: the cursor
+    moves down and up, the panel redraws, and the row under the cursor
+    is the one the commands act on.
+  - **The open.** A file opens in the editor, and the editor shows the
+    file the panel named.
+  - **The rename and the undo.** A file is renamed; the journal holds
+    the record; the undo puts the name back exactly.
+  - **The kill.** The session is killed with =kill -9= after a rename;
+    the next session replays the journal and the tree is what it was.
+  - **The delete.** A delete is refused without a confirmation, and
+    with one the file is gone and the undo brings it back.
+  - **The placement.** The same panel is placed on all five edges and
+    each one puts it where it was asked, with the text never cut.
+  - **The find.** A fuzzy query over a real tree names the right file
+    when only a few letters are typed, and the rows narrow as the query
+    is typed.
+  - **The preview.** The item under the cursor shows what it is: the
+    first lines of a file, the last commit of a branch.
+  - **The batch pick.** Several entries are selected, copied and
+    pasted, and the paste lands exactly where the cursor was.
+  - **The clipboard between two panels.** A copy in one panel is pasted
+    in the other, and the journal holds the record.
+  - **The gate.** Every fault is proved on a copy: a route that names a
+    command the table does not hold, a file with no comment above a
+    definition, a require that points upward, a panel piece welded to
+    an edge the drawing does not know.
+
+* The phone's limits
+# the honest boundaries, from the sibling program's findings.
+  - The bare Racket start costs seconds; the start is the module load,
+    not the work.
+  - The phone cannot bake a binary: the meaning side runs from source
+    (D-008).
+  - A live session needs a pseudo-terminal; the proofs drive one.

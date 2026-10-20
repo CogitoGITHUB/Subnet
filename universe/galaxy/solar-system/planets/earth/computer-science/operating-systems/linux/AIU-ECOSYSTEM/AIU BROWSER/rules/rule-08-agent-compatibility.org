@@ -1,0 +1,25 @@
+#+TITLE: Rule 08 — Agent compatibility
+# One job: the hard rule and what it demands in this program
+# Status: current; the rule text is the owner's and changes only with the owner.
+
+* The rule
+# the owner's words, repeated unchanged. Do not soften or reinterpret them here.
+  Agent compatibility is the agent integration design in full. Every package integrates with
+  both OpenCode and Hermes as deeply as possible. One agent-neutral AI-link boundary; OpenCode
+  and Hermes are adapters behind it; a third agent later is an adapter only. Each adapter is
+  its own PM package, versioned, pinned, with a conformance test and rollback. In the
+  multiplexer, either agent can open in its own pane beside the work with the context
+  attached.
+
+* What it demands here
+# how this rule bites in this program. No examples; the plan carries the detail.
+  Both agents are first class; a third agent later is an adapter only.
+
+* What breaks it
+# the failure this rule exists to prevent.
+  An integration only one agent can use, or an adapter that leaks into the programs.
+
+* Where it is proven
+# the checklist item that shows this rule holds; named 2026-10-16.
+  checklist/tier-1 items 11, 12 and 16
+

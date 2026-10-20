@@ -1,0 +1,165 @@
+#+TITLE: Package tree — AIU BROWSER
+# One job: the package directory, the area law, and every planned directory and file with its single job
+# Status: planned 2026-10-20; this file is the register for the package — a name that is not here does not exist yet.
+
+* The package directory
+# one subdir holds the whole package; nothing is scattered.
+  - The package is =browser/=, directly under this project directory.
+    The project root keeps context and docs (plan/, rules/, study/,
+    research/, decisions/) plus gate/ and tools/.
+  - =browser/INDEX.org= is created with the directory, one job per line;
+    every subdirectory carries its own INDEX.org.
+  - Nothing of the package lives outside =browser/=.
+
+* The law
+# areas lowest first; dependencies point one way; the language seam is named.
+  - Areas, lowest first; a require may point downward only. The
+    one-way lint transcribes this table as its source:
+    errors, narration, machine, security, join, devloop, journal,
+    commands, routes, input, drawing, files, picker, entry.
+  - errors is the floor; entry is the ceiling.
+  - Rule 09, named exactly (the editor's D-007): Rust owns the hot path
+    — =input/=, =drawing/=, =journal/= and the listing; Racket owns the
+    meaning side — commands, routes, files, rules and config. The seam
+    is =join/=, and the meaning side is baked at build time and loads
+    nothing at startup (D-008). =gate/language-split-lint.nu= keeps
+    every other area clean.
+  - One file, one job; the reader test on every name; banned words as
+    in the ecosystem law.
+  - The table is the plan; the first lint run lists any crossing it
+    inherits, and each one gets a recorded decision, never silence.
+
+* The tree
+# every planned directory and file, one job each.
+#+begin_example
+AIU BROWSER/              the project: context and docs stay where they are
+  AGENT.md               the session rules (landed)
+  ReadMe.md              what the program is and what it does today
+  TODO.org               the one list of what is left, in build order
+  HANDOFF.org            everything a fresh conversation needs
+  research/              program-specific findings only
+    INDEX.org
+  study/                 the oil.nvim and nvim-tree studies, read-only
+    INDEX.org
+    oil.org              the file panel this program is modelled on
+    nvim-tree.org        the tree browser this program is modelled on
+  decisions/             the choices already made, newest first
+    INDEX.org
+    first-slice.org      the shape of the first slice, and what it costs
+  gate/                  the light gate now, the full gate when tests open
+    INDEX.org
+    check.nu             the dispatcher: named stages, one table, --list
+    need-nu.nu           pinned Nu or exit 3; never fetches
+    env.nu               the Nushell mirror of the one HOME seam
+    read-check.rkt       the paren check: READ-BAD file:line, the bad form named
+    load-check.rkt       the load check: every module of the package really loads
+    one-way-dependency-lint.nu  the area table above, enforced
+    security-gate-lint.nu       predicates called, writers audited
+    banned-words-lint.nu        the naming law, made mechanical
+    language-split-lint.nu      only join/ may cross Rust and Racket
+    comment-lint.nu             every file has a header, every definition a comment
+    tree-check.rkt       the tree check: every node of the tree is drawn
+    clip-check.rkt       the clipboard check: a paste never invents a path
+    picker-check.rkt     the picker check: every source is ranked and drawn
+  tools/                 dev scripts: the probes and the build helpers
+    INDEX.org
+    list-probe.rkt       the phone probe: measure the listing of a real tree
+  browser/               THE PACKAGE — all of it lives here
+    INDEX.org
+    Cargo.toml        the crate manifest: the hot path builds from here
+    src/
+      errors/            the error type and how it renders (the floor)
+        INDEX.org
+        err.rkt          the error record: what happened, who, where
+        raise.rkt        the one raise helper; nothing raises around it
+        render.rkt       how an error prints: one shape, never a dump
+      narration/         how work speaks: events, the wait door, the printer
+        INDEX.org
+        events.rkt       the event record: schema only, decides nothing
+        narration.rkt    a run's voice: open, step, note, warn, skip, decide
+        wait-door.rkt    wait-for / wait-done; why is never blank
+        print-console.rkt  the ONE printer to the terminal
+      machine/           the machine seam and the block door
+        INDEX.org
+        directories.rkt  the one place HOME / XDG is read
+        terminal.rkt     the terminal: the raw mode, the settings, the bytes that arrive
+        locks.rkt        one-writer locks: wait and retry, never force
+        cancel.rkt       the cancellation door every blocking call passes
+      security/          what may happen without asking
+        INDEX.org
+        security.rkt     the total predicates: needs-why?, needs-checkpoint?, reversible?
+      join/              the Racket–Rust seam; the only language crossing
+        INDEX.org
+        protocol.rkt     the wire shape: one request and one response
+        wire-json.rs     the Rust side of the wire shape: read a request, write a response
+        transport.rkt    the transport: one request file, one answer file, one child
+        rust-exports.rs  the functions the meaning side may call, one per crossing
+        hot-path.rs      the Rust side of the seam: one request file in, one answer file out
+        racket-entry.rkt the meaning side's entry: one request in, one response out
+        load.rkt         where the meaning side is reached; the one call that asks it
+        hot-path.rkt     the call that asks the hot path; the other side of the seam
+      devloop/           work mode and the bake (rule 02)
+        INDEX.org
+        bake.rkt         the bake: config becomes first-class defaults
+        last-good.rkt    keep last good; a bad bake never ships
+        start.rkt        the measured start: the number, and the mode
+      journal/           every change to the tree written as it happens (rule 01)
+        INDEX.org
+        journal.rs       append every change; replayable, in order
+        replay.rkt       rebuild state after a crash; never guesses silently
+      commands/          what a key means; the command table and the task table
+        INDEX.org
+        commands.rkt     the command table: one name, one function
+        tasks.rkt        the task table and the runner: declare, list, run, sequence
+        config.rkt       the config the commands read
+      routes/            which layer sees a key first (rules 09, 13)
+        INDEX.org
+        routes.rkt       the routing: focused program first; the reserved prefix
+        keymaps.rkt      the mapping tables, as data
+        keyboard.rkt     the keyboard: the bytes of a key become its name
+      input/             keys in (hot path, Rust)
+        INDEX.org
+        read.rs          read keys and escape sequences; hand to routes
+        keys.rs          sequence parsing: what a key is
+        kitty.rs         the kitty keyboard protocol's opt-in flags, adopted not invented
+      drawing/           the panel's one place (hot path, Rust)
+        INDEX.org
+        screen.rs        attach, detach, capability negotiation; least-capable client wins
+        layout.rs        where the panel sits: the placement is data
+        paint.rs         emit one batch; nothing else touches the screen
+      files/             the meaning of a file: name, kind, size, git state
+        INDEX.org
+        files.rkt        what a row is, and what a kind of row may do
+        tree.rkt         the tree: the nodes, the open and closed ones
+        filter.rkt       the live filter: the rows narrow as it is typed
+        clipboard.rkt    the clipboard: cut, copy, paste, and the share between panels
+        git.rkt          the git state of a row and of the tree
+      picker/            the fuzzy finder: find, filter, preview, pick
+        INDEX.org
+        picker.rkt       the picker over a list of candidates
+        sources.rkt      the sources: the tree, the branches, the commits, the open files
+        preview.rkt      the preview of the item under the cursor
+      entry/             the outside world: argv, the MCP server, the documents
+        INDEX.org
+        cli.rkt          argv to a command: one parser, one dispatch
+        dispatch.rkt     the command table: one name, one function
+        live.rkt         the live session: the keys from the terminal, each one routed and run
+        mcp.rkt          the MCP server: the same commands, the machine surface
+        documents.rkt    the one JSON shape shared by CLI, MCP, skill and plugin
+    tests/               mirrors src, area for area; opens when tests open (D-001)
+    test-doubles/        recordings and fakes; opens when tests open (D-001)
+#+end_example
+
+* What starts first
+# the first files, tied to the build order.
+  - Lands first, with the light gate: errors, narration, machine and
+    the =browser/= INDEX.org — the floor every later file stands on.
+  - The first slice: join (the wire), files (the rows), drawing (the
+    panel) — one real directory, listed and drawn.
+  - The picker lands after the tree: the finder needs rows to find in.
+
+* Absent on purpose
+# what similar programs carry and this one will not.
+  - No daemon; no plugin runtime; no terminal emulator; no file watcher;
+    no icon set; no mouse-only feature; no language server; no
+    core/, utils/ or description-name directories, ever.

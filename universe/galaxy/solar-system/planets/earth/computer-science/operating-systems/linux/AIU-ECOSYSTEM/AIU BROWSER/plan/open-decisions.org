@@ -1,0 +1,59 @@
+#+TITLE: Open decisions — AIU BROWSER
+# One job: the decisions this project still owes, with the options and a recommendation.
+# Status: current; the ready-up of 2026-10-20.
+#
+# A decision is written down when it is made, with the default that was
+# used. Until then the recommendation below is the working assumption.
+
+* The decisions
+# each one: the question, the options, the recommendation.
+  - **What the panel shows when it opens.** Options: the last directory
+    used; the directory of the file being edited; the tree root.
+    Recommendation: the directory of the file being edited, and the tree
+    root when there is no file — the panel is always about the work at
+    hand.
+  - **The rows' order.** Options: by name; by kind then name; by git
+    state then name. Recommendation: by name, with the directories
+    first — the order a person reads a directory in.
+  - **The size of a row.** Options: bytes; a rounded size; nothing.
+    Recommendation: a rounded size, because a byte count is noise past
+    four digits.
+  - **Whether a delete is undoable by the journal or by a copy.**
+    Recommendation: by a copy for a delete, and by the journal for
+    everything else — a rename is a rename, but a delete loses the
+    bytes, and the rule says work is never lost (rule 01).
+  - **How the browser opens a file in the editor.** Options: the
+    editor's MCP surface; a message on the editor's event feed; a
+    command line to the editor. Recommendation: the editor's MCP
+    surface, because it is the editor's own machine surface and it
+    re-checks the mutation itself.
+  - **The oil.nvim findings that need the upstream source.** The study
+    is from the documented behaviour, not from the code. The upstream
+    repository was not cloned for this plan. Recommendation: clone it
+    into a scratch directory when the first slice is done, and record
+    the findings in study/ as they are confirmed.
+  - **The fuzzy distance.** Options: the owner's own picker's distance
+    (Television); a simple subsequence match; a Levenshtein distance.
+    Recommendation: the owner's own picker, reached the way the editor
+    reaches it, with the simple match as the fallback when it is not
+    there. The ranking must never be the reason a find is slow.
+  - **Which sources the picker has at the start.** Options: the tree
+    only; the tree, the branches and the commits; every source the
+    studies name. Recommendation: the tree, the branches and the
+    commits — the sources that are about the tree. The editor's open
+    files come with the editor's surface.
+  - **The preview.** Options: the file's first lines; a summary line;
+    nothing. Recommendation: the first lines of a file, and the last
+    commit of a branch — a preview that says what the thing is.
+  - **Whether the filter and the fuzzy finder are one thing.**
+    Options: two commands; one command with two modes. Recommendation:
+    one command with two modes — the filter narrows the tree, the
+    finder picks from a source, and both are "narrow the rows as it is
+    typed".
+  - **The batch pick.** Options: one entry at a time; several, as
+    telescope does. Recommendation: several — cut, copy and move need
+    it, and a batch is one journal record with a list in it.
+  - **Whether the browser has its own git state reader.** Options: run
+    git as a child; read the index directly. Recommendation: run git as
+    a child — the sibling program already does this, and the index
+    format is not a thing to re-implement.

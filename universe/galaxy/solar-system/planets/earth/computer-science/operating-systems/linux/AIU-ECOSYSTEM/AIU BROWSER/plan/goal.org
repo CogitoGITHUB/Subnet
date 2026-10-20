@@ -1,0 +1,30 @@
+#+TITLE: Goal — AIU BROWSER
+# One job: what the program is for.
+# Status: current; the ready-up of 2026-10-20.
+
+* The goal
+# one paragraph, no more.
+  A file panel for the AIU editor: a keyboard-driven browser for a
+  directory tree, in the shape oil.nvim and nvim-tree gave Neovim, that
+  sits beside the editor or inside it as a placeable piece, finds a
+  file by typing a few letters (the shape telescope gave Neovim), and
+  never loses a change — every action on the tree is journalled and
+  undoable.
+
+* Who it is for
+# the one user, and the one job.
+  The owner, on the phone, moving between files without a mouse and
+  without a file dialog.
+
+* What "done" looks like
+# the end state, plainly.
+  A tree is listed with its kinds, sizes and git state; the cursor
+  moves with plain keys; a file is found by a fuzzy query and opens in
+  the editor; a rename can be taken back; the panel can be placed on
+  any edge; and the whole thing speaks one language to an agent, read
+  free and mutate gated.
+
+* The one sentence
+# for the README and for the reader test.
+  AIU BROWSER is the file panel of the AIU editor: it shows a tree,
+  finds in it, acts on it, and never loses a change.

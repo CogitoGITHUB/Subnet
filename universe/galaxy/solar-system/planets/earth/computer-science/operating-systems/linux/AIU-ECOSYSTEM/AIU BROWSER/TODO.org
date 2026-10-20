@@ -1,0 +1,69 @@
+#+TITLE: TODO — AIU BROWSER
+# One job: the single list of what is left for this program, in build order
+# Status: current; one item finishes in the commit that records its hash; nothing else is a task list.
+
+* How this list works
+# the discipline, once.
+  - Item shape: what, done when, dependencies; a finished item records
+    DONE and the commit hash together.
+  - A blocked item is marked BLOCKED with its reason; the run continues.
+  - Build order here follows the sibling program's list (../AIU EDITOR/TODO.org)
+    with the tree first; the package tree and every name are in
+    plan/package-tree.org.
+  - No tests for now: the light gate only (root DECISIONS.org D-001).
+
+* Items
+# in build order.
+  1. TODO — The tree lands — create =browser/= per plan/package-tree.org:
+    INDEX.org, the floor areas and the gate with its first stages; done
+    when: the light gate is green; deps: none.
+  2. TODO — The panel shows a directory (the first slice): the listing
+    comes from the hot path, the meaning from the Racket side, and the
+    rows are drawn; done when: a real directory is listed on the phone,
+    with the kind, the size and the git state of every row, and every
+    answer in the one printer; deps: 1.
+  3. TODO — The keys drive the panel: the cursor moves, the panel
+    redraws, a file opens; done when: a live session on the phone moves
+    the cursor and opens a file; deps: 2.
+  4. TODO — The tree changes and the change is undoable: new, rename,
+    delete, move, copy — each one journalled (rule 01) and undoable;
+    done when: a rename is undone exactly; deps: 2, 3.
+  5. TODO — The picker (the telescope shape): a fuzzy find over a named
+    source, with the preview of the item under the cursor and the batch
+    pick; done when: a file is found by typing a few letters, the
+    preview shows what it is, and two entries can be picked at once;
+    deps: 2, 3.
+  6. TODO — The clipboard and the live filter (the nvim-tree shape):
+    cut, copy and paste, shared between two panels, and the rows that
+    narrow as the filter is typed; done when: a copy in one panel is
+    pasted in the other and the journal holds the record; deps: 3, 5.
+  7. TODO — The panel is a placeable piece: the placement is data, so it
+    sits on any edge (rule 10); done when: the same panel is placed on
+    five edges and drawn in each; deps: 2.
+  8. TODO — The AI-link first adapter: the panel's one action reaches an
+    agent through the boundary, read free and mutate gated; done when: a
+    bundle reaches the agent and a mutation stays gated; deps: 2.
+  9. TODO — The kit: the JSON surface, the MCP server, the skill and the
+    read-only plugin, and the conformance checklist; done when: the kit
+    checklist is green; deps: 3, 6.
+  10. TODO — The done line: every done-line clause holds; done when: the
+    sibling program's done-line shape is met; deps: all above.
+
+* After the done line
+# what continues on its own.
+  - The panel hosted inside the editor's dashboard, and beside the
+    editor in a pane: both are the multiplexer and the editor's halves,
+    and both are owed by those programs.
+
+* The studies
+# what the three plugins gave this plan, and what was not read.
+  - oil.nvim — the file panel: its actions, its git state, its drop
+    target. The upstream repository was not cloned.
+  - nvim-tree — the tree: the nodes, the filter, the clipboard, the
+    events, the several instances. The upstream repository was not
+    cloned.
+  - telescope — the picker: the fuzzy find, the preview, the sorters,
+    the sources, the batch pick. The upstream repository was not
+    cloned.
+  - The findings that need the upstream source are named in
+    plan/open-decisions.org instead of being guessed.

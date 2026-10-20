@@ -1,0 +1,20 @@
+#+TITLE: Rule 11 — The smallest slice that proves each rule
+# One job: the hard rule and what it demands in this program
+# Status: current; the rule text is the owner's and changes only with the owner.
+
+* The rule
+# the owner's words, repeated unchanged. Do not soften or reinterpret them here.
+  Smallest slice that proves each rule before adding more.
+
+* What it demands here
+# how this rule bites in this program. No examples; the plan carries the detail.
+  Plain text editing with keys comes before any notation feature.
+
+* What breaks it
+# the failure this rule exists to prevent.
+  A big slice that proves nothing and hides which rule broke.
+
+* Where it is proven
+# the checklist item that shows this rule holds; named 2026-10-16.
+  checklist/tier-1 item 05 — the build order itself
+

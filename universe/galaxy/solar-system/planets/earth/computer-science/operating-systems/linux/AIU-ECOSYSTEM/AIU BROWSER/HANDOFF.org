@@ -1,0 +1,53 @@
+#+TITLE: HANDOFF — AIU BROWSER
+# One job: everything a fresh conversation needs to start on this program.
+# Status: current at the ready-up of 2026-10-20; the plan is written, nothing is built.
+
+* What this program is
+# A file panel for the AIU editor, in the shape oil.nvim gave Neovim.
+  - It lists a tree, marks what changed in git, and acts: open, new,
+    rename, delete, move, copy — every action journalled and undoable.
+  - The placement is data, so it can sit on any edge of any program that
+    hosts it (rule 10).
+  - The keyboard is the plain one: no modifier, the trigger is the space
+    (rule 13).
+  - It hosts no daemon, no watcher and no timer (rule 03).
+
+* What binds it
+# the rules are binding; read them before designing anything.
+  - rules/ — the owner's hard rules, one file each.
+  - ../contract/ — the shared contract; read it before designing anything
+    that crosses programs.
+  - ../agents/ — the agent design both agents share.
+  - plan/package-tree.org — the register of the package: =browser/= and
+    every file, one job each.
+
+* Where the study comes from
+# read-only sources; nothing is modified and nothing is copied.
+  - oil.nvim — the plugin this panel is modelled on. The upstream
+    repository was NOT cloned for this plan: the study is the behaviour
+    of the plugin as it is documented and as it is known, and the
+    findings that need the source are named in plan/open-decisions.org.
+  - ../AIU EDITOR/ — the sibling program: the split, the wire, the gate
+    and the kit are the same shape, and the browser copies that shape
+    rather than inventing one.
+
+* Current state
+# what is true right now.
+  - The plan is complete: goal, non-goals, architecture, the package
+    tree, the build order, the outputs, the risks, the naming register
+    and the open decisions.
+  - No code exists yet. The light gate, the package tree and the first
+    slice are what is left.
+
+* Next step
+# one line, so a fresh conversation starts in the right place.
+  - TODO.org, top to bottom: item 1 — the tree lands with the light gate,
+    the package-tree.org register and the area table.
+
+* How to work here
+# house rules.
+  - AGENT.md governs the session; no tests for now, the light gate only
+    (root DECISIONS.org D-001).
+  - Small commits, explicit paths, never a blanket add, no pushes.
+  - Phone limits are recorded in ../WHEN-ON-LAPTOP.org the moment they
+    appear.

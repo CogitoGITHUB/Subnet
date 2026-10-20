@@ -1,0 +1,24 @@
+#+TITLE: Rule 14 — The editor is a general editor first
+# One job: the hard rule and what it demands in this program
+# Status: current; the rule text is the owner's and changes only with the owner.
+
+* The rule
+# the owner's words, repeated unchanged. Do not soften or reinterpret them here.
+  The editor is a general editor first. Useful on plain text and with CLI tools. AIU-NOTATION
+  is a pluggable engine it can host. When the notation engine changes, the editor can trigger
+  the engine build and, when that build finishes, automatically enters dev mode so I see the
+  update. The editor loader and config never depend on the notation.
+
+* What it demands here
+# how this rule bites in this program. No examples; the plan carries the detail.
+  The editor is useful on plain text with CLI tools before it hosts the notation, and its
+  loader never depends on it.
+
+* What breaks it
+# the failure this rule exists to prevent.
+  A loader or an editor that depends on the notation.
+
+* Where it is proven
+# the checklist item that shows this rule holds; named 2026-10-16.
+  checklist/tier-1 items 05 and 18
+

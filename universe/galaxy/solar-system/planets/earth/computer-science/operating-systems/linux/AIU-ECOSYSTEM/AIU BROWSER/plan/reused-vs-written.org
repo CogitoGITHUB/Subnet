@@ -1,0 +1,78 @@
+#+TITLE: Reused vs written — AIU BROWSER
+# One job: what is taken from where, and what is written here.
+# Status: current; the ready-up of 2026-10-20.
+
+* Taken from the ecosystem
+# the shapes that are copied on purpose.
+  - **The split** (rule 09, D-007): Rust for the hot path, Racket for
+    the meaning, the seam in =join/=.
+  - **The wire**: one line of JSON each way, through a pair of files.
+  - **The gate**: the same stages — paren-check, load-check, naming,
+    one-way, security-gate, language-split, comment-lint and the
+    program-specific checks.
+  - **The event record and the narration**: the same fields, the same
+    voice, the same one printer.
+  - **The journal-resume shape**: input-hash-keyed steps, SKIP with a
+    reason.
+  - **The policy-module-plus-gate pattern** for the delete and the
+    overwrite.
+  - **The read-free / mutate-gated split** for every AI surface.
+  - **The kit**: the same four surfaces and the same six proofs.
+
+* Taken from oil.nvim, in shape only
+# the modelled behaviour, never the code.
+  - A file window that is a first-class view of a directory, with the
+    cursor in it.
+  - The action set: open, new, new directory, rename, delete, move,
+    copy, toggle hidden.
+  - The git state per row.
+  - The drop target.
+
+* Taken from nvim-tree, in shape only
+# the modelled behaviour, never the code.
+  - The TREE, with nodes that open and close, a cursor that moves
+    through them, and a collapse-all.
+  - Find a file by name, change the root to the parent, toggle the
+    whole window, focus it, and the help.
+  - The live filter: the rows narrow as the filter is typed.
+  - The clipboard: cut, copy and paste, locally and between two panels.
+  - The git state per row, and the events and the public API.
+  - Several panels at once, each with its own root and its own cursor.
+
+* Taken from telescope.nvim, in shape only
+# the modelled behaviour, never the code.
+  - The fuzzy finder over a list: find, filter, preview, pick.
+  - The picker as a second surface, placed like any other piece: a
+    dropdown over the panel, or an overlay at the bottom.
+  - The preview of the item under the cursor: a file's first lines, a
+    branch's last commit.
+  - The sorters as data: the distance function is named, so the ranking
+    can change without touching the finder.
+  - The sources as a table: the tree, the git branches, the git commits,
+    the open files — a new source is one row in a table.
+  - The batch pick: several entries at once, which is what cut, copy and
+    move need.
+
+* Written here
+# the things that are this ecosystem's and could not be copied.
+  - The plain keyboard: no modifier, the space as the trigger, the
+    three modes (rule 13).
+  - The journalled tree actions and the undo.
+  - The security predicates: what may happen without asking.
+  - The placeable piece model (rule 10).
+  - The AI-link boundary and the kit.
+  - The plain fuzzy finder: the owner's own picker (Television) is the
+    one this program reaches for, and the distance function is this
+    ecosystem's.
+
+* Deliberately not taken
+# the drops, so nobody looks for them later.
+  - Lua, and the Neovim plugin API.
+  - The mouse.
+  - The `oil://` buffer scheme.
+  - The icon set: plain text, a kind and a size.
+  - The automatic updates of nvim-tree: a watcher is a timer, and this
+    ecosystem has no timers (rule 03).
+  - The language-server pickers of telescope: the language side belongs
+    to the editor.
+  - The Lua extension mechanism: a source is a row in a table here.

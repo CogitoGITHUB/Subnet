@@ -1,0 +1,17 @@
+#+TITLE: INDEX — AIU BROWSER/study/
+# One job: list every study file and the single source it studies.
+# Status: current; updated in the same commit as any change in this directory.
+
+* Files
+  - oil.org — oil.nvim: the file panel this program is modelled on
+  - nvim-tree.org — nvim-tree.lua: the tree browser this program is
+    modelled on
+  - telescope.org — telescope.nvim: the fuzzy finder this program is
+    modelled on
+
+* The rule
+# how a study is done here.
+  - Read-only: nothing is modified and nothing is copied.
+  - Names and behaviour only: what the thing does and what it is
+    called, not its code.
+  - A finding that was not confirmed against the source says so.

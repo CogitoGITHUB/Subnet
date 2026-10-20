@@ -1,0 +1,41 @@
+#+TITLE: Study — oil.nvim
+# One job: what oil.nvim does, in names and behaviour, and what this program takes from it.
+# Status: current; the ready-up of 2026-10-20.
+#
+# The upstream repository was NOT cloned for this plan. This study is
+# the plugin's documented behaviour and its known shape; anything that
+# needs the source is named in plan/open-decisions.org instead of being
+# guessed.
+
+* What it is
+  A file manager for Neovim: a floating or pinned window that shows a
+  directory, with a cursor, and the actions you expect of a file
+  manager. It is the most-used file manager in the Neovim ecosystem.
+
+* What it does
+  - Shows a directory as a list of entries, with icons for the kinds.
+  - Opens a file in the editor.
+  - Creates files and directories, renames them, deletes them.
+  - Moves and copies entries.
+  - Toggles the hidden files.
+  - Shows the git state of the tree.
+  - Acts as a drop target: files dropped into the window are moved
+    there.
+
+* What this program takes
+  - The panel as a first-class view of a directory, with a cursor in it.
+  - The action set: open, new, new directory, rename, delete, move,
+    copy, toggle hidden.
+  - The git state per row.
+  - The drop target.
+
+* What this program drops
+  - The mouse: the keyboard is the way here (rule 13).
+  - The Lua and the Neovim plugin API: this is a program with a
+    contract.
+  - The icon set: a kind and a size in plain text.
+
+* The findings that need the source
+  - How the drop target resolves a drop into a move or a copy.
+  - The exact order the entries are listed in.
+  - What the undo story is, if any.

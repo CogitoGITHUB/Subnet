@@ -1,0 +1,33 @@
+#+TITLE: Rule 07 — AI is first class on everything
+# One job: the hard rule and what it demands in this program
+# Status: current; the rule text is the owner's and changes only with the owner.
+
+* The rule
+# the owner's words, repeated unchanged. Do not soften or reinterpret them here.
+  AI is first class on everything, a hard need: I must never explain or copy-paste anything.
+  Anything I can see or select can be sent to an agent in one action: buffer text, a terminal
+  selection, a command and its output, a pane, a bar, a file in a picker, a notation node, a
+  package in PM. Each send automatically carries its full context. In dev mode the agent sees
+  what I see, and why. Live agent audit: when an agent changes a file, I see it as it happens
+  or as soon as possible, with no waiting and no guessing. The editor reacts to file-change
+  events, event-driven and with no timers, shows the change at once, marked with which agent
+  when the agent session reports it and otherwise marked external, and I can accept or undo. A
+  conflict between my unsaved typing and an agent write never loses either side. Agents have
+  full power; the safety net is git: an automatic checkpoint before agent actions wherever a
+  repo exists, easy rollback, and a stop switch. Secrets: use the existing secrets-for-AI
+  package so agents never receive tokens or passwords; redaction happens before anything is
+  written to disk or sent. Agents can also pull context through MCP and skills.
+
+* What it demands here
+# how this rule bites in this program. No examples; the plan carries the detail.
+  Buffer text, a notation node, a picker entry or a file goes to an agent in one action; live
+  agent audit shows agent writes as they land.
+
+* What breaks it
+# the failure this rule exists to prevent.
+  Anything the owner must explain or copy-paste by hand.
+
+* Where it is proven
+# the checklist item that shows this rule holds; named 2026-10-16.
+  checklist/tier-1 items 11 through 16
+

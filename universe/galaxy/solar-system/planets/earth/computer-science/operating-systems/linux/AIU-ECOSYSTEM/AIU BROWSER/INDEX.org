@@ -1,0 +1,25 @@
+#+TITLE: INDEX — AIU BROWSER/
+# One job: list every file in this directory and the single job of each.
+# Status: current; updated in the same commit as any change in this directory.
+
+* Files
+# one line per file: its name, then the single job it performs.
+
+  - ReadMe.md — what the program is and what it does today
+  - AGENT.md — the session rules: scope, the light gate, building, git
+  - HANDOFF.org — everything a fresh conversation needs to start here
+  - TODO.org — the single list of what is left, in build order
+  - INDEX.org — this file: every path and its one job
+
+* Subdirectories
+# one line per subdirectory and what it holds; each has its own index.
+
+  - plan/ — one topic per file, the general build plan
+  - rules/ — the hard rules, one file each
+  - decisions/ — choices already made, newest first
+  - research/ — program-specific findings only
+  - study/ — the oil.nvim study, read-only, names and behaviour only
+
+* Later
+# Start at HANDOFF.org. The rules are binding; the contract it points to
+# is shared with the other programs.

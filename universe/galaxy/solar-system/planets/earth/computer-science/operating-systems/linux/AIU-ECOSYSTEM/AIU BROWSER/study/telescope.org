@@ -1,0 +1,65 @@
+#+TITLE: Study — telescope.nvim
+# One job: what telescope does, in names and behaviour, and what this program takes from it.
+# Status: current; the ready-up of 2026-10-20.
+#
+# Read from the upstream README on 2026-10-20. The repository itself was
+# NOT cloned; the help file was not read. A finding that needs those is
+# named in plan/open-decisions.org.
+
+* What it is
+  A fuzzy finder over lists, in Neovim. Its own words: "Find, Filter,
+  Preview, Pick". It is modular: pickers, sorters, previewers, actions,
+  mappings, themes and extensions are separate pieces, and the community
+  adds new pickers as extensions.
+
+* What it does
+  - **Finds** in a list, fuzzily, as you type: the results narrow live.
+  - **Previews** the item under the cursor: a file's content, a grep
+    hit, a diff.
+  - **Picks** one or many: the selection can be confirmed, toggled, or
+    sent away in a batch.
+  - **Sorts** by a distance: fuzzy, Levenshtein, fzy, or with an index
+    bias so what was added recently floats up.
+  - **Lays out** in a place: a dropdown, a cursor-relative list, or an
+    overlay panel at the bottom of the screen.
+  - **Opens** what was picked: in a split, in a vertical split, or in a
+    new tab.
+  - **Picks from many sources**: files, git-tracked files, a grep over
+    the tree, live as you type, the open buffers, the old files, the
+    commands, the help tags, the quickfix list, the registers, the
+    keymaps; the language server's references, definitions, symbols and
+    diagnostics; the git commits, branches, status and stashes; the
+    tree-sitter symbols.
+
+* What this program takes
+  - **The fuzzy finder** over the browser's own rows: the find command
+    becomes a fuzzy find, and the results narrow as the query is typed.
+  - **The picker as a second surface**, placed like any other piece
+    (rule 10): a dropdown over the panel, or an overlay at the bottom.
+  - **The preview**: the item under the cursor shows what it is — for a
+    file, its first lines; for a git branch, its last commit.
+  - **The sorters** as data: the distance function is named, so the
+    ranking can be changed without touching the finder.
+  - **The sources as a table**: the picker is over a list of candidates
+    that comes from a named source — the tree, the git branches, the
+    git commits, the open files — and a new source is one entry in a
+    table, not a new program.
+  - **The batch pick**: several entries can be selected at once, which
+    is what cut, copy and move need.
+
+* What this program drops
+  - The language-server pickers: the language side belongs to the
+    editor, and the browser does not run a language server.
+  - The Neovim-internal pickers: buffers, registers, marks, keymaps,
+    autocommands, help tags, man pages. They are about a text editor's
+    inside; this program is about a tree.
+  - The Lua extensions mechanism: a source is a row in a table here.
+  - The floating window machinery: the placement is data.
+
+* The findings that need the source
+  - How the ranking scores a match, so this program's fuzzy distance
+    can be compared with it.
+  - How a large candidate list is kept fast, and whether the phone
+    needs the same trick.
+  - What the extension interface carries, so a new source can be added
+    the same way here.

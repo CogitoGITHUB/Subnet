@@ -1,0 +1,21 @@
+#+TITLE: INDEX — AIU BROWSER/plan/
+# One job: list every plan file and the single question it answers.
+# Status: current; updated in the same commit as any change in this directory.
+
+* Files
+  - goal.org — what the program is for, in one paragraph
+  - non-goals.org — what it will not carry, and why
+  - architecture.org — the pieces and how they fit
+  - package-tree.org — the register: every planned file, one job each
+  - naming-register.org — the names and why they are the names
+  - build-order.org — what lands first and what waits
+  - outputs.org — what the program gives the world
+  - risks.org — what can go wrong, and what is done about it
+  - reused-vs-written.org — what is taken and what is built
+  - tasks.org — the tasks the program declares and runs
+  - open-decisions.org — the decisions this project still owes
+  - phone-first-tests.org — the proofs that run on the phone
+
+* Later
+  # The plan is the map; the register (package-tree.org) is the law: a
+  # name that is not there does not exist yet.

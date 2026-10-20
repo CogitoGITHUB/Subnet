@@ -1,0 +1,30 @@
+#+TITLE: Outputs — AIU BROWSER
+# One job: what the program gives the world.
+# Status: current; the ready-up of 2026-10-20.
+
+* The outputs
+# each one, and who gets it.
+  - **A panel**, drawn on any edge, in plain text, with the tree's
+    rows: name, kind, size, git state.
+  - **A live session**, driven by plain keys, where the cursor moves
+    and the panel follows.
+  - **A journal**, so a change to the tree can be taken back.
+  - **One JSON surface**, shared by the CLI, the MCP server, the skill
+    and the plugin.
+  - **An MCP server**, so another program may ask the browser to list,
+    to open and to act.
+  - **A skill file**, whose examples run in the suite.
+  - **A read-only plugin**, for the agent side.
+  - **A picker**, placed like any other piece: a fuzzy find over the
+    tree, the branches and the commits, with a preview and a batch
+    pick.
+  - **The event feed and the sight files**, so an agent reads the
+    browser's state without asking it.
+
+* What the program never gives the world
+# the refusals, plainly.
+  - No daemon, no background service, no port anyone may talk to.
+  - No configuration file to edit: the work mode reads the source, the
+    bake makes the defaults (rule 02).
+  - No mouse-only feature.
+  - No way to change the tree without a why and a journal record.

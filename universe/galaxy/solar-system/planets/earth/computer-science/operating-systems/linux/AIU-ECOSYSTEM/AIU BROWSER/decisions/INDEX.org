@@ -1,0 +1,15 @@
+#+TITLE: INDEX — AIU BROWSER/decisions/
+# One job: list every decision file and the choice it records.
+# Status: current; updated in the same commit as any change in this directory.
+
+* Files
+  - first-slice.org — the shape of the first slice: a tree, listed and
+    drawn, and what that choice costs
+
+* The rule
+# how a decision is written here.
+  - One file per decision, newest first in this index.
+  - Each file says: what was decided, why, what it costs, and what it
+    takes to undo it.
+  - A decision that crosses programs needs a D-number in the root
+    DECISIONS.org, and the root log is read-only from this project.
