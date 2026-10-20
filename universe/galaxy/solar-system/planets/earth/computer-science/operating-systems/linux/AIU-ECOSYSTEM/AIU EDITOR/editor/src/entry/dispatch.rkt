@@ -32,7 +32,8 @@
          "../audit/accept.rkt"
          "../routes/routes.rkt"
          "../join/hot-path.rkt"
-         "live.rkt")
+         "live.rkt"
+         "plugin-verbs.rkt")
 
 ;; input-is-a-terminal? answers whether the standard input is a
 ;; terminal, and not a pipe. A terminal means the live session: the keys
@@ -393,7 +394,10 @@
         "checkpoint" checkpoint-verb
         "rollback" rollback-verb
         "stop" stop-verb
-        "stop" stop-verb))
+        "plugin" plugin-verb
+        "plugin-register" plugin-register-verb
+        "plugin-install" plugin-install-verb
+        "plugin-call" plugin-call-verb))
 
 ;; command-known? answers whether the table holds the name.
 (define (command-known? verb)

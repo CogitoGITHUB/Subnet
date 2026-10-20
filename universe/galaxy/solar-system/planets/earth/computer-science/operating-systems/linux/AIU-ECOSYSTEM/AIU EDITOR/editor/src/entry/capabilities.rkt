@@ -41,6 +41,10 @@
         (capability "agent-end" #t "end the agent's session")
         (capability "audit-accept" #t "accept a change of the audit")
         (capability "audit-undo" #t "undo a change of the audit")
+        (capability "plugin" #f "show the plugins the editor knows, and what pm says")
+        (capability "plugin-register" #t "register a plugin from its manifest")
+        (capability "plugin-install" #t "ask pm to install a plugin")
+        (capability "plugin-call" #t "call one seam call on one plugin")))
 
 ;; capability-names answers the names in the declaration, in a fixed
 ;; order.

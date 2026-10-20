@@ -23,7 +23,7 @@
 ;; in the tree.
 (define reading-actions
   '("list" "show" "read" "open" "find" "where" "git" "journal" "help"
-    "routes" "keys" "tasks" "dashboard" "agent" "audit"))
+    "routes" "keys" "tasks" "dashboard" "agent" "audit" "plugin"))
 
 ;; changing-actions are the actions that change the tree. Everything
 ;; else — including an action nobody knows — is treated as changing.
