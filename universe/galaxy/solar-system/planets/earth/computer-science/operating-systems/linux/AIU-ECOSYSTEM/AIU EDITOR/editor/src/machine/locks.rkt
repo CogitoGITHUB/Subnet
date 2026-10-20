@@ -38,7 +38,7 @@
 (define (release-lock l)
   (when (directory-exists? (lock-path l))
     (with-handlers ([exn:fail? (lambda (e) (void))])
-      (directory-delete (lock-path l))))
+      (delete-directory (lock-path l))))
   (semaphore-post (lock-signal l)))
 
 ;; with-lock runs the body while holding the lock, and always gives the lock

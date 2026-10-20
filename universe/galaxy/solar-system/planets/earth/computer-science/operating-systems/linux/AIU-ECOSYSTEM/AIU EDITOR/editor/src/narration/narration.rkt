@@ -35,6 +35,7 @@
 
 ;; The six voices, for every area above this one.
 (provide open-run
+         say
          step
          note
          warn

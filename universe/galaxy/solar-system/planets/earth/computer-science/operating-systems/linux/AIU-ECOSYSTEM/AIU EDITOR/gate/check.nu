@@ -19,6 +19,7 @@ use ./env.nu *
 # one and the kind of script it is.
 const STAGES = [
     {name: "paren-check", script: "read-check.rkt", kind: "racket"}
+    {name: "load-check", script: "load-check.rkt", kind: "racket-plain"}
     {name: "naming", script: "banned-words-lint.nu", kind: "nu"}
     {name: "one-way", script: "one-way-dependency-lint.nu", kind: "nu"}
     {name: "security-gate", script: "security-gate-lint.nu", kind: "nu"}

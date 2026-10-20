@@ -1,13 +1,14 @@
 #lang racket/base
+
 ;; One job: the one place HOME and XDG are read.
 ;; Registered in plan/package-tree.org; lands with TODO item 1.
 ;;
 ;; One scope seam for the environment and the roots: no other file in this
 ;; program reads an environment variable, so where the program looks is one
 ;; place to change and one place to look when a path is wrong.
-
 (require racket/file
          racket/path
+         racket/string
          "../errors/raise.rkt")
 
 ;; home-dir returns the user's home directory, and refuses when HOME is not

@@ -23,12 +23,27 @@
 ;; of the keys they hold. The bytes travel as hex, because the wire
 ;; carries text and a key may be any byte at all.
 (define (key-names bytes)
+  (define runs (key-runs bytes))
+  (map car runs))
+
+;; key-runs asks the hot path what the bytes are, and answers each key
+;; as a pair: its name and how many bytes it took. The byte count is
+;; what lets the reader drop the key that was run and keep the rest.
+(define (key-runs bytes)
   (define answer (ask-hot "keys" (hasheq 'bytes (bytes->hex bytes))))
   (if (response-ok answer)
-      (let* ([data (response-data answer)]
-             [names (hash-ref data 'names "")])
-        (if (string=? names "") '() (string-split names " ")))
+      (let ([data (response-data answer)])
+        (runs-of (hash-ref data 'names "") (hash-ref data 'lengths "")))
       '()))
+
+;; runs-of answers the pairs of a name and a length, one pair for each
+;; key the hot path named.
+(define (runs-of names lengths)
+  (if (string=? names "")
+      '()
+      (for/list ([name (in-list (string-split names " "))]
+                 [length (in-list (string-split lengths ","))])
+        (cons name (string->number length)))))
 
 ;; bytes->hex answers the hex of some bytes: two digits for each byte,
 ;; so the wire can carry a key that is not a character.
@@ -46,7 +61,7 @@
   (define bound (binding-of layer key))
   (cond
     [bound (list layer bound)]
-    [(and (string=? layer "insert") (text-key? key)) (list layer key)]
+    [(and (string=? layer "write") (text-key? key)) (list layer key)]
     [else (list "unclaimed" "")]))
 
 ;; text-key? answers whether a key carries text rather than a command: a
@@ -82,6 +97,7 @@
 
 ;; The keyboard, for the entry above it.
 (provide key-names
+         key-runs
          key-bytes
          bytes->hex
          hex->bytes

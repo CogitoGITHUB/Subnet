@@ -51,6 +51,7 @@ AIU EDITOR/              the project: context and docs stay where they are
     need-nu.nu           pinned Nu or exit 3; never fetches
     env.nu               the Nushell mirror of the one HOME seam
     read-check.rkt       the paren check: READ-BAD file:line, the bad form named
+    load-check.rkt       the load check: every module of the package really loads
     one-way-dependency-lint.nu  the area table above, enforced
     security-gate-lint.nu       predicates called, writers audited
     banned-words-lint.nu        the naming law, made mechanical
@@ -83,6 +84,7 @@ AIU EDITOR/              the project: context and docs stay where they are
       machine/           the machine seam and the block door
         INDEX.org
         directories.rkt  the one place HOME / XDG is read
+        terminal.rkt     the terminal: the raw mode, the settings, the bytes that arrive
         locks.rkt        one-writer locks: wait and retry, never force
         cancel.rkt       the cancellation door every blocking call passes
       security/          what may happen without asking
@@ -168,6 +170,7 @@ AIU EDITOR/              the project: context and docs stay where they are
         INDEX.org
         cli.rkt          argv to a command: one parser, one dispatch
         dispatch.rkt     the command table: one name, one function
+        live.rkt         the live session: the keys from the terminal, each one routed and run
         mcp.rkt          the MCP server: the same commands, the machine surface
         documents.rkt    the one JSON shape shared by CLI, MCP, skill and plugin
     tests/               mirrors src, area for area; opens when tests open (D-001)

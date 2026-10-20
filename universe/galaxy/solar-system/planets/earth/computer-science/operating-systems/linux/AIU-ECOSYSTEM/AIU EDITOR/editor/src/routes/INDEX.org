@@ -9,6 +9,7 @@
  - keymaps.rkt — the mapping tables, as data: the layers and their keys
  - routes.rkt — the routing: which layer sees a key first
  - keyboard.rkt — the keyboard: the bytes of a key become its name
+ - keyboard.rkt — the keyboard: the bytes of a key become its name
 
 * The area
 # The routes area is the editor's own half of the key routing. The shape

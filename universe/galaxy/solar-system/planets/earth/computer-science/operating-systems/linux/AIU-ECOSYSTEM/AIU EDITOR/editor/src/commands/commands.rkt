@@ -21,7 +21,7 @@
 ;; cursor stands — and the selection, which is the region around the
 ;; point when a selection is on. The point and the selection are boxes,
 ;; because a command changes them.
-(struct session (file journal point selection) #:transparent)
+(struct session (file journal point selection layer) #:transparent)
 
 ;; name<? orders two names, whether they are symbols or strings: the table
 ;; of commands is keyed by strings and the answers come back keyed by
@@ -128,6 +128,34 @@
 (define (command-send session words)
   (cons #t "the send action is not built yet: the agent boundary lands with the AI link"))
 
+;; command-mode changes the layer the editor is in: the visual layer goes
+;; to the write layer and the write layer goes back to the visual one.
+;; The owner's key is a double space in the visual layer and a double tab
+;; in the write layer, where a space is a typed space.
+(define (command-mode session words)
+  (define layer (the-layer session))
+  (define next (if (string=? layer "write") "visual" "write"))
+  (set-layer! session next)
+  (cons #t (format "layer: ~a" next)))
+
+;; command-visual-mode puts the editor in the visual layer, the general
+;; mode.
+(define (command-visual-mode session words)
+  (set-layer! session "visual")
+  (cons #t "layer: visual"))
+
+;; command-write-mode puts the editor in the write layer, where the keys
+;; are text.
+(define (command-write-mode session words)
+  (set-layer! session "write")
+  (cons #t "layer: write"))
+
+;; command-select-mode puts the editor in the select layer, where the
+;; selected text is what the commands act on.
+(define (command-select-mode session words)
+  (set-layer! session "select")
+  (cons #t "layer: select"))
+
 ;; commands is the table: one name, one function. The keys are compared
 ;; as text, so a name typed on the keyboard finds its function.
 (define commands
@@ -145,7 +173,11 @@
         "move-right" command-move-right
         "delete" command-delete
         "select" command-select
-        "send" command-send))
+        "send" command-send
+        "mode" command-mode
+        "visual-mode" command-visual-mode
+        "write-mode" command-write-mode
+        "select-mode" command-select-mode))
 
 ;; command-names answers the names in the table, in a fixed order.
 (define command-names
@@ -188,11 +220,21 @@
       (format "FAIL ~a" (hash-ref data 'what "the hot path refused the request"))))
 
 ;; make-session makes the session of one file: the file itself, the
-;; journal that holds the work that is not saved yet, the point and the
-;; selection. Nothing else is kept, so the session is the only thing that
-;; carries the state between commands.
+;; journal that holds the work that is not saved yet, the point, the
+;; selection and the layer the editor is in. Nothing else is kept, so the
+;; session is the only thing that carries the state between commands.
 (define (make-session file journal)
-  (session file journal (box 0) (box #f)))
+  (session file journal (box 0) (box #f) (box "visual")))
+
+;; the-layer answers the layer the editor is in: "visual", "write" or
+;; "select".
+(define (the-layer session)
+  (unbox (session-layer session)))
+
+;; set-layer! puts the editor in a layer, and answers the layer.
+(define (set-layer! session layer)
+  (set-box! (session-layer session) layer)
+  layer)
 
 ;; the-point answers where the cursor stands in this session.
 (define (the-point session)
@@ -239,12 +281,15 @@
          session-journal
          session-point
          session-selection
+         session-layer
          the-point
          move-to
          the-selection
          select-from
          select-off
          selection-text
+         the-layer
+         set-layer!
          run-command
          command-names
          answer-line

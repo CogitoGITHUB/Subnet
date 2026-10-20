@@ -32,8 +32,11 @@
 ;; source-lines are the lines of this file, read once.
 (define source-lines (file->lines tasks-source))
 
-;; say prints the words it was given as one line, and changes nothing.
-(define (say session args)
+;; task-say prints the words it was given as one line, and changes
+;; nothing. The function is named for what it is, so it never collides with
+;; the narration's say: the task's NAME is "say", and the function that
+;; runs it is task-say.
+(define (task-say session args)
   (string-join args " "))
 
 ;; insert puts the words into the buffer and journals the edit. In the
@@ -47,7 +50,7 @@
 ;; tasks is the table: one name, one function. The names are the names of
 ;; the tasks, and nothing else is a task.
 (define tasks
-  (hash "say" say
+  (hash "say" task-say
         "insert" insert))
 
 ;; task-names answers the names in the table, in a fixed order.
@@ -103,7 +106,7 @@
 
 ;; The task table and the runner, for the entry above them.
 (provide dry-run?
-         say
+         task-say
          insert
          tasks
          task-names

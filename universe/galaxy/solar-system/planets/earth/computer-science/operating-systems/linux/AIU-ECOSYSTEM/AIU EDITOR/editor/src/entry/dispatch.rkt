@@ -19,7 +19,16 @@
          "../dashboard/dashboard.rkt"
          "../routes/keyboard.rkt"
          "../routes/routes.rkt"
-         "../join/hot-path.rkt")
+         "../join/hot-path.rkt"
+         "live.rkt")
+
+;; input-is-a-terminal? answers whether the standard input is a
+;; terminal, and not a pipe. A terminal means the live session: the keys
+;; are read one at a time. A pipe means the scripted session: one
+;; command per line, so every proof that drives the editor with a pipe
+;; keeps working.
+(define (input-is-a-terminal?)
+  (terminal-port? (current-input-port)))
 
 ;; edit-session opens the file, then reads one command per line until the
 ;; session ends or the input ends. Every answer goes through the one
@@ -31,16 +40,19 @@
   ;; the journal's directory is made before the first edit: the hot path
   ;; writes there, and it must not have to create a directory to save work
   (ensure-dir (build-path (state-dir) "journal"))
-  (open-run "the editor" (format "editing ~a" file))
-  (print-line (answer-line (ask-hot "open" (hasheq 'file (path->string file)
-                                                 'journal (path->string journal)))))
-  (let loop ()
-    (define line (read-line (current-input-port)))
-    (unless (eof-object? line)
-      (define answer (run-command session line))
-      (define text (cdr answer))
-      (unless (string=? text "") (print-line text))
-      (when (car answer) (loop)))))
+  (if (input-is-a-terminal?)
+      (live-session file journal)
+      (begin
+        (open-run "the editor" (format "editing ~a" file))
+        (print-line (answer-line (ask-hot "open" (hasheq 'file (path->string file)
+                                                       'journal (path->string journal)))))
+        (let loop ()
+          (define line (read-line (current-input-port)))
+          (unless (eof-object? line)
+            (define answer (run-command session line))
+            (define text (cdr answer))
+            (unless (string=? text "") (print-line text))
+            (when (car answer) (loop)))))))
 
 ;; routes-walk runs the routing walk and prints one line per key: which
 ;; layer saw the key and what it meant there. The keys are the ones given
@@ -49,7 +61,7 @@
 ;; shape. The program-claims are the keys the focused program wants; they
 ;; are given as the words before the layer.
 (define (routes-walk args)
-  (define layer (if (null? args) "normal" (car args)))
+  (define layer (if (null? args) "visual" (car args)))
   (define claims (if (null? args) '() (cdr args)))
   (define keys (if (null? args)
                    (append (list reserved-prefix)
@@ -107,9 +119,9 @@
 ;; The bytes are given as hex, because a key may be any byte at all: the
 ;; walk answers the name of each key, the layer that saw it, and the
 ;; command it runs there. The layer may be named after the bytes, and it
-;; is the normal layer without one.
+;; is the visual layer without one.
 (define (keys-verb args)
-  (define layer (if (null? args) "normal" (car args)))
+  (define layer (if (null? args) "visual" (car args)))
   (define hexes (if (null? args) '() (cdr args)))
   (for-each
    (lambda (hex)

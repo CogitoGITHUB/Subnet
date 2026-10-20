@@ -117,7 +117,7 @@
         'lines (hash-ref data 'lines "0")
         'bytes (hash-ref data 'bytes "0")
         'pending (hash-ref data 'pending "0")
-        'layer "normal"))
+        'layer "visual"))
 
 ;; The dashboard, for the entry above it.
 (provide screen-width

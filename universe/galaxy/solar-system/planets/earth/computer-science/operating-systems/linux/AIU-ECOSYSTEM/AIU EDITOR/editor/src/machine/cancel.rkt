@@ -11,8 +11,10 @@
 (require "../errors/raise.rkt")
 
 ;; cancel-token is the door: a flag that says whether it is closed, and a
-;; signal that wakes whoever waits on it.
-(struct cancel-token (closed? signal) #:transparent)
+;; signal that wakes whoever waits on it. The door is mutable, because
+;; closing it changes it, and a struct that is not mutable has no
+;; mutator at all.
+(struct cancel-token (closed? signal) #:mutable #:transparent)
 
 ;; new-cancel-token makes a door that is open.
 (define (new-cancel-token)
@@ -40,3 +42,13 @@
 ;; await-cancel blocks until the door is closed. It ends on that event only.
 (define (await-cancel t)
   (sync (cancel-token-signal t)))
+
+;; The cancellation door, for the areas that take one.
+(provide cancel-token
+         cancel-token-closed?
+         cancel-token-signal
+         new-cancel-token
+         cancelled?
+         cancel
+         check-cancel
+         await-cancel)

@@ -8,6 +8,7 @@
  - INDEX.org — this index: every file of the entry area and its one job
  - cli.rkt — argv to a command: one parser, one dispatch
  - dispatch.rkt — the command table: one name, one function
+ - live.rkt — the live session: the keys from the terminal, each one routed and run
 
 * The area
 # The entry area is the ceiling of the program: it is the only place that

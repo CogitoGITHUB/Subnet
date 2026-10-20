@@ -63,7 +63,7 @@
      (define bound (binding-of layer key))
      (cond
        [bound (routing key "editor" bound)]
-       [(string=? layer "insert")
+       [(string=? layer "write")
         (define text (text-of key))
         (if text (routing key "editor" text) (routing key "unclaimed" #f))]
        [else (routing key "unclaimed" #f)])]))

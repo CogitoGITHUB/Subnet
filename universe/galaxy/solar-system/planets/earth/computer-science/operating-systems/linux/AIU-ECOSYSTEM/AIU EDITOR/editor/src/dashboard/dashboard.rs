@@ -128,14 +128,23 @@ pub fn draw(pieces: &[Piece], width: usize, height: usize) -> Vec<String> {
         right_width = 0;
     }
 
+    // The screen is as tall as the pieces need it, and never taller than
+    // the size given: a piece is never cut, in the width or in the height.
+    let mut middle_needed = 0usize;
+    for piece in &ordered {
+        let edge = piece.edge.as_str();
+        if edge != "top" && edge != "bottom" {
+            let needed = height_of(piece);
+            if needed > middle_needed {
+                middle_needed = needed;
+            }
+        }
+    }
+    let middle = middle_needed.max(height.saturating_sub(top_height + bottom_height));
+    let total = top_height + middle + bottom_height;
+
     let mut screen: Vec<Vec<char>> = Vec::new();
-    for _ in 0..top_height {
-        screen.push(vec![' '; width]);
-    }
-    for _ in 0..height.saturating_sub(top_height + bottom_height) {
-        screen.push(vec![' '; width]);
-    }
-    for _ in 0..bottom_height {
+    for _ in 0..total {
         screen.push(vec![' '; width]);
     }
     let middle_start = top_height;

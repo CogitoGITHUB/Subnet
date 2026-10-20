@@ -29,6 +29,8 @@ one line of JSON each way.
     state back exactly after a kill (item 5).
   - The routing: which layer sees a key first (item 4, the editor's
     half).
+  - The live session: the keys from the terminal, plain keys and the
+    trigger (item 6).
   - The task table: declare, list, run, sequence (item 17).
   - The dashboard and the placeable pieces (item 7).
   - The keyboard: the bytes of a key become its name (item 6, the part
@@ -241,6 +243,88 @@ The kitty keyboard protocol is **adopted, not invented**: the flags that
 ask the terminal to report the escape codes it would otherwise swallow
 are the protocol's own, and the reader uses no timer of its own. A lone
 escape is the escape key, and the next byte decides it.
+
+* The keyboard: plain keys, the trigger, the three modes
+
+**No modifier at all.** The editor binds no escape, no meta, no alt and
+no control key. Every key it takes is a key a person can press on its
+own: a letter, a digit, space, return, tab, backspace, an arrow or a
+function key. The reason is the owner's: the editor is driven from a
+phone, and a phone keyboard has none of those keys on it.
+
+**The trigger is space.** A trigger starts a sequence: the trigger and
+the key after it are the command. The trigger pressed twice is the mode
+change, so the mode changes with a *double space* and never with a
+modifier.
+
+**Three modes**, and they are named after what they are for:
+
+| Mode | What it is | The trigger |
+|---|---|---|
+| =visual= | the general mode: the commands live here | =space= |
+| =write= | the text mode: the keys are text | =tab= |
+| =select= | the selected text is what the commands act on | =space= |
+
+The write mode is the one place the trigger is not the space, because
+there a space is a typed space. Its trigger is the tab — the one plain
+key that is not text — and a double tab is the way back to the visual
+mode.
+
+What the keys do in the visual mode:
+
+  space space   the mode change: to the write mode
+  space w       the write mode
+  space v       the select mode
+  space s       save
+  space q       quit
+  space l       show the state of the file
+  space ?       help
+  space g       send what is selected to the agent
+  up down left right   move the point
+  backspace     delete
+
+and in the write mode the keys are the text you type, with =tab s= to
+save, =tab q= to quit and =tab v= to go back to the visual mode.
+
+The tables are data, in =editor/src/routes/keymaps.rkt=, so what the
+editor does with a key can be read without reading a function. The
+gate's =key-check= stage asks the hot path how each key is spelled and
+then what those bytes are: the name that comes back must be the name
+that went in, so the decoder and the keymaps can never drift apart.
+
+* The live session: the keys from the terminal
+
+When the input is a terminal the editor is the real editor: the keys are
+read one at a time, and each one is routed and run. When the input is a
+pipe it stays the scripted session — one command per line — so every
+proof that drives the editor with a pipe keeps working.
+
+  racket editor/src/entry/cli.rkt edit FILE
+
+The terminal is put in raw mode, so a key arrives without a return, and
+**the settings that were found are saved first**: the terminal is given
+back exactly as it was found, even when the editor was killed (the next
+run gives it back before it goes raw again).
+
+There is **no timer anywhere**. A read waits for the next byte, and a
+key that is the start of a sequence waits for the next key — the next key
+is an action, never a clock.
+
+A real run, driven under a pseudo-terminal on the phone:
+
+  bytes=0 file=/tmp/live-demo.txt lines=1 pending=0
+  layer: write
+  at=0 bytes=1 lines=1 pending=1
+  at=1 bytes=2 lines=1 pending=2
+  at=2 bytes=3 lines=1 pending=3
+  at=3 bytes=4 lines=1 pending=4
+  at=4 bytes=5 lines=1 pending=5
+  layer: visual
+  bytes=5 file=/tmp/live-demo.txt lines=1 pending=0
+  bye
+
+and the file held `hello` afterwards. A key that means nothing to
+anybody is said out loud: `no key is bound to s`.
 
 * The gate
 

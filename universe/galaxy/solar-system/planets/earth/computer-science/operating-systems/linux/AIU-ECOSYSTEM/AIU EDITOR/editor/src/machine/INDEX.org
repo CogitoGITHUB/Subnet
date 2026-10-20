@@ -8,6 +8,7 @@
   - directories.rkt — the one place HOME and XDG are read
   - locks.rkt — one-writer locks: wait and retry, never force
   - cancel.rkt — the cancellation door every blocking call passes
+  - terminal.rkt — the terminal: the raw mode, the settings, the bytes that arrive
 
 * Later
 # machine holds the effects that touch the world: the environment, the

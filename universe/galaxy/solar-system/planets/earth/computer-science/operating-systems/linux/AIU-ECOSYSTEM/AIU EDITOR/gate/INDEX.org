@@ -10,6 +10,7 @@
   - need-nu.nu — pinned Nu or exit 3; never fetches
   - env.nu — the Nushell mirror of the one HOME seam
   - read-check.rkt — the paren check: READ-BAD file:line, the bad form named
+  - load-check.rkt — the load check: every module of the package really loads
   - one-way-dependency-lint.nu — the area table above, enforced
   - security-gate-lint.nu — predicates called, writers audited
   - banned-words-lint.nu — the naming law, made mechanical

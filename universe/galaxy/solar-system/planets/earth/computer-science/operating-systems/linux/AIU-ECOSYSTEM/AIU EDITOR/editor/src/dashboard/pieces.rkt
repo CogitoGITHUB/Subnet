@@ -1,4 +1,5 @@
 #lang racket/base
+
 ;; One job: the placeable piece list — every piece of the dashboard, the
 ;; edge it sits on, the size it takes and the order it is placed in.
 ;; Registered in plan/package-tree.org; lands with TODO item 7.
@@ -15,6 +16,10 @@
 ;; it takes and the order it is placed in. The size is a count of lines
 ;; for the top and the bottom edges, and a count of columns for the
 ;; left and the right edges.
+(require racket/string)
+
+;; piece is one placeable piece: its name, the edge it sits on, the size
+;; it takes and the order it is placed in.
 (struct piece (name edge size order) #:transparent)
 
 ;; the-edges are the edges a piece may sit on: the four sides of the

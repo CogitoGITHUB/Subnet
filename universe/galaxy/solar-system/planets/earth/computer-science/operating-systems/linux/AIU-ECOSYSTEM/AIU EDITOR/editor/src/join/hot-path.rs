@@ -184,9 +184,13 @@ fn answer_for(request: &wire_json::Request) -> (bool, Vec<(String, String)>) {
             let mut reader = input::new_reader();
             input::push(&mut reader, &bytes);
             let mut names: Vec<String> = Vec::new();
+            let mut lengths: Vec<String> = Vec::new();
             loop {
                 match input::next_key(&mut reader) {
-                    Some(key) => names.push(key.name),
+                    Some(key) => {
+                        names.push(key.name);
+                        lengths.push(key.length.to_string());
+                    }
                     None => break,
                 }
             }
@@ -195,6 +199,7 @@ fn answer_for(request: &wire_json::Request) -> (bool, Vec<(String, String)>) {
                 vec![
                     ("count".to_string(), names.len().to_string()),
                     ("names".to_string(), names.join(" ")),
+                    ("lengths".to_string(), lengths.join(",")),
                     ("pending".to_string(), input::pending(&reader).to_string()),
                 ],
             )
