@@ -88,6 +88,7 @@ AIU EDITOR/              the project: context and docs stay where they are
         stop-switch.rkt  the stop switch: every running agent session for this project (D-010)
         locks.rkt        one-writer locks: wait and retry, never force
         cancel.rkt       the cancellation door every blocking call passes
+        http.rkt         the one HTTP client: one call, and a stream that stays open
       security/          what may happen without asking
         INDEX.org
         security.rkt     the total predicates: checkpoint-needed?, stop-scope, state-changing?
@@ -158,6 +159,7 @@ AIU EDITOR/              the project: context and docs stay where they are
         send.rkt         one action; no agent-specific code here (rule 08)
         bundle.rkt       the context bundle shape
         adapter.rkt      the adapter: the boundary one way, and the pins
+        opencode-adapter.rkt  the OpenCode client: the agent's own API in its own words
       picker/            Television as the picker
         INDEX.org
         picker.rkt       launch the picker over candidates

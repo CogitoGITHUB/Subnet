@@ -33,8 +33,8 @@ one line of JSON each way.
     trigger (item 6).
   - The dev mode: work mode, the bake, the last good (item 8, the
     editor's half).
-  - The send: the bundle and the boundary, with the agent refusing by
-    name (item 9, the editor's half).
+  - The send: the bundle reaches the agent, the events come back, and
+    the agent's write waits for the human (item 9).
   - The checkpoint, the rollback and the stop switch (item 12).
   - The task table: declare, list, run, sequence (item 17).
   - The dashboard and the placeable pieces (item 7).
@@ -428,10 +428,10 @@ a call is an action, and nothing polls in a loop.
 
   nu gate/check.nu
 
-Nine stages, and a green run ends:
+Ten stages, and a green run ends:
 
-  stages that checked nothing: 1 of 9
-  light gate: green, 9 stages ran
+  stages that checked nothing: 1 of 10
+  light gate: green, 10 stages ran
 
   paren-check     every Racket file reads
   naming          no banned word in any name
@@ -487,6 +487,8 @@ are in =research/join-on-the-phone.org=.
   editor/src/commands/    the command table: one name, one function
   editor/src/routes/      the routing: which layer sees a key first
   editor/src/entry/       argv, the dispatch, the session
+  editor/src/send/        the bundle, the boundary, the OpenCode client
+  editor/src/machine/     HOME, the terminal, the locks, the HTTP client
 
 The wire between the two halves is one line of JSON each way, and it
 travels through a PAIR OF FILES — one for the request and one for the
@@ -494,19 +496,39 @@ answer. That is a fact of this Racket build and not a choice:
 =racket/system= hands a child =/dev/null= for every stream that is not a
 file stream. The decision is D-008 in the root DECISIONS.org.
 
+* The agent: the boundary is real
+
+  racket editor/src/entry/cli.rkt send FILE TARGET WHY...
+
+opens a session with the agent, makes the checkpoint FIRST, hands the
+bundle over, and answers the whole truth of the send: the bundle as it
+went, what the agent said, the events that came back, and the
+permission asks that wait for the human.
+
+  racket editor/src/entry/cli.rkt agent
+  racket editor/src/entry/cli.rkt permit once REQUEST-ID
+
+The seam is OpenCode's headless server on the loopback, and the address
+and the password come from the environment: =AIU_AGENT_URL=,
+=AIU_AGENT_USER=, =AIU_AGENT_PASSWORD=, =AIU_AGENT_DIRECTORY=. The
+server prints a fresh password when it starts.
+
+The session is opened with every mutating action at =ask=, so the
+agent's write comes back as a permission ask and nothing lands until
+the human answers. The approval is never inferred.
+
 * What is not there yet
 
-  - The input is read on the RACKET side, one typed line at a time. The
-    =input/= area, with the keys read in Rust, lands when a stream can
-    carry them; =decisions/plain-text-slice.org= says what it costs and
-    what it takes to undo.
   - The multiplexer has no code, so the editor's half of the routing is
     all that can be built here. The walk that runs with the editor in a
-    pane is still owed.
+    pane is still owed, and so is the pane that would hold the agent
+    (TODO item 17).
   - The =security= area does not exist, so the gate's security stage has
     nothing to check.
-  - The =notation= seam, the =drawing= area, the dashboard, the agent
-    boundary, the kit — none of them are built.
+  - The =notation= seam and the kit — the MCP server, the skill and the
+    plugin — are not built.
+  - The second agent adapter was skipped by the owner, so one adapter
+    stands.
   - The root D-number for the reserved prefix is still owed: the root
     decision log is read-only from this project.
   - Nothing is long-lived. Every command is a one-shot call to the hot

@@ -27,7 +27,7 @@
 ;; usage says how the program is called, and stops.
 (define (usage why)
   (print-line (format "the editor: ~a" why))
-  (print-line "usage: racket cli.rkt edit FILE | routes | tasks | task | keys | dashboard | bake")
+  (print-line "usage: racket cli.rkt edit FILE | routes | tasks | task | keys | dashboard | bake | send | agent | permit")
   (exit 2))
 
 ;; The parser, for the outside world.

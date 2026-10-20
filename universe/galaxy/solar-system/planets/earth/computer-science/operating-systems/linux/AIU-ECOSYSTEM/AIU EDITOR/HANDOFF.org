@@ -1,6 +1,6 @@
 #+TITLE: HANDOFF — AIU EDITOR
 # One job: everything a fresh conversation needs to start on the editor.
-# Status: current after the ready-up (2026-10-17); the package is planned, nothing built yet.
+# Status: current at 2026-10-20; the package is built and working, and the agent boundary is real.
 
 * What this program is
 # A general editor first, built on the owner's neomacs work, with no daemon and no legacy baggage.
@@ -21,12 +21,24 @@
 
 * Current state
 # what is true right now.
-  - Base complete; the ready-up closed the decisions: the Racket–Rust seam, the Racket join, the first adapter and the stop switch are D-007..D-010; plan/open-decisions.org is a redirect stub.
-  - The package is planned at =editor/= per plan/package-tree.org; the work list is TODO.org; nothing is built.
+  - The package is built: the plain text slice, the journal and the
+    replay, the routing, the keyboard and the live session, the
+    dashboard, the dev mode, the tasks, the checkpoint and the stop
+    switch — and the agent boundary, which is real (TODO item 9).
+  - The light gate is green at 10 stages, and the security stage says
+    NOTHING-TO-CHECK: the =security= area does not exist yet.
+  - The decisions D-007..D-010 stand; the root D-number for the
+    reserved prefix is still owed, because the root decision log is
+    read-only from this project.
+  - The work list is TODO.org; the register is plan/package-tree.org.
 
 * Next step
 # one line, so a fresh conversation starts in the right place.
-  - TODO.org, top to bottom: item 1 (the tree lands with the light gate), then item 2 — tier-1 01, the Racket-in-binary probe that decides D-008 (the laptop builds where the phone cannot).
+  - TODO.org, top to bottom: item 11 (the live agent audit), then 13
+    (the secrets package), 14 (select and send), 15 (the kit) and 16
+    (the done line). The Hermes adapter was skipped by the owner on
+    2026-10-20, and item 17 (the agent opens beside the editor) waits
+    on the multiplexer having code.
 
 * How to work here
 # house rules.

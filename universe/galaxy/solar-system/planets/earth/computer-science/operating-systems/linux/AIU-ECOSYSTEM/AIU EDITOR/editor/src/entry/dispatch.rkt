@@ -27,6 +27,7 @@
          "../send/adapter.rkt"
          "../send/bundle.rkt"
          "../send/send.rkt"
+         "../send/opencode-adapter.rkt"
          "../routes/routes.rkt"
          "../join/hot-path.rkt"
          "live.rkt")
@@ -178,10 +179,11 @@
       (print-line (format "the bake is NOT good; the last good stays: ~a"
                           (or (last-good) "there is none")))))
 
-;; send-verb shows what a send would carry: the bundle, line by line, and
-;; then the adapter's answer. The file is the one being edited, the target
-;; is the named agent, and the why is the rest of the words. A send
-;; without a why is refused.
+;; send-verb sends what is selected to the named agent: it makes the
+;; checkpoint, delivers the bundle and answers the whole truth of the
+;; send. The file is the one being edited, the target is the named
+;; agent, and the why is the rest of the words. A send without a why is
+;; refused.
 (define (send-verb args)
   (define file (if (null? args) "" (car args)))
   (define rest (if (null? args) '() (cdr args)))
@@ -193,6 +195,60 @@
   ;; thing: the same bundle, the same checkpoint, the same refusal
   (define answer (send-command session (cons target (if (string=? why "") '() (list why)))))
   (print-line (cdr answer)))
+
+;; agent-verb answers the agent's state: the two pins, the session that
+;; is open, and the permission asks that wait for the human. The state
+;; is read, and reading is free (rule 07).
+(define (agent-verb args)
+  (define client (client-from-environment))
+  (define handle (read-handle))
+  (define the-pins (pins client))
+  (print-line (format "agent: opencode  session: ~a" (or handle "none is open")))
+  (print-line (format "pins: boundary ~a  agent ~a"
+                       (hash-ref the-pins 'boundary)
+                       (hash-ref the-pins 'agent)))
+  (when handle
+    (for-each
+     (lambda (ask)
+       (print-line (format "ask: ~a  action: ~a  files: ~a"
+                           (hash-ref ask 'id "unknown")
+                           (hash-ref ask 'action "unknown")
+                           (string-join (ask-files ask) " "))))
+     (client-permissions client handle))))
+
+;; permit-verb answers one permission ask the way the human said: once,
+;; always or reject. The approval is never inferred, and the request id
+;; is the id the ask was named with.
+(define (permit-verb args)
+  (define decision (if (null? args) "reject" (car args)))
+  (define request-id (if (null? (cdr args)) "" (cadr args)))
+  (cond
+    [(not (member decision '("once" "always" "reject")))
+     (print-line "the answer must be one of: once, always, reject")]
+    [(string=? request-id "")
+     (print-line "the answer needs the id of the ask: permit once ID")]
+    [else
+     (define client (client-from-environment))
+     (define handle (read-handle))
+     (if (not handle)
+         (print-line "there is no session open: attach an agent first")
+         (let-values ([(ok refusal) (answer-permission client handle request-id decision)])
+           (if ok
+               (print-line (format "the permission ask ~a is answered: ~a" request-id decision))
+               (print-line (format "the answer was refused: ~a" (hash-ref refusal 'what "the agent refused the answer"))))))]))
+
+;; agent-end-verb ends the session with the agent and forgets the
+;; handle: the session outlives the caller's screen, and this is how it
+;; is closed.
+(define (agent-end-verb args)
+  (define client (client-from-environment))
+  (define handle (read-handle))
+  (if (not handle)
+      (print-line "there is no session open: attach an agent first")
+      (let-values ([(ok refusal) (end-session client handle)])
+        (if ok
+            (print-line "the session is ended")
+            (print-line (format "the end was refused: ~a" (hash-ref refusal 'what "the session could not be ended")))))))
 
 ;; edit-file opens the file the user named and runs the editing session.
 ;; checkpoint-verb makes a checkpoint of a tree: the state the tree is put
@@ -245,6 +301,9 @@
         "dashboard" dashboard-verb
         "bake" bake-verb
         "send" send-verb
+        "agent" agent-verb
+        "permit" permit-verb
+        "agent-end" agent-end-verb
         "checkpoint" checkpoint-verb
         "rollback" rollback-verb
         "stop" stop-verb))

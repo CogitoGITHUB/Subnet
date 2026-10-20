@@ -60,12 +60,24 @@
                         (hash 'selection (bundle-selection bundle))))))
   (list header (hash 'references references)))
 
+;; bundle-target answers the named target of a bundle: the agent the
+;; bundle goes to. The target is named, never inferred.
+(define (bundle-target bundle)
+  (hash-ref (bundle-header bundle) 'target ""))
+
+;; bundle-text answers the text of a bundle: the document as the agent
+;; reads it, one part per line. It is the same text a person reads, so
+;; what the agent gets is never a different thing from what the human
+;; saw.
+(define (bundle-text bundle)
+  (string-join (bundle-lines bundle) "\n"))
+
 ;; bundle-lines answers the document of a bundle as lines of text, one
 ;; part per line, so a person can read what is about to be sent.
 (define (bundle-lines bundle)
   (define document (bundle-document bundle))
   (define header (car document))
-  (define references (cdr (hash-ref (cadr document) 'references)))
+  (define references (hash-ref (cadr document) 'references))
   (append
    (list (format "boundary: ~a  program: ~a  project: ~a  target: ~a"
                  (hash-ref header 'boundary)
@@ -91,4 +103,6 @@
          boundary-version
          make-bundle
          bundle-document
-         bundle-lines)
+         bundle-lines
+         bundle-text
+         bundle-target)
