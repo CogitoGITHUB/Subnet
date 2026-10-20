@@ -199,6 +199,86 @@ fn answer_for(request: &wire_json::Request) -> (bool, Vec<(String, String)>) {
                 ],
             )
         }
+        rust_exports::OP_INSERT_AT => {
+            let at = wire_json::arg(request, "at")
+                .trim()
+                .parse::<usize>()
+                .unwrap_or(0);
+            let more = wire_json::arg(request, "text");
+            let text = current_text(&file, &journal_path);
+            let mut state = buffer::new_buffer(&text);
+            let bytes = buffer::insert_at(&mut state, at, &more);
+            let record = format!("insert-at {} {}", at, journal::escape(&more));
+            let pending = journal::append_record(&journal_path, &record);
+            (
+                true,
+                vec![
+                    ("bytes".to_string(), bytes.to_string()),
+                    ("lines".to_string(), buffer::line_count(&state).to_string()),
+                    ("at".to_string(), at.to_string()),
+                    ("pending".to_string(), pending.to_string()),
+                ],
+            )
+        }
+        rust_exports::OP_DELETE_AT => {
+            let at = wire_json::arg(request, "at")
+                .trim()
+                .parse::<usize>()
+                .unwrap_or(0);
+            let count = wire_json::arg(request, "count")
+                .trim()
+                .parse::<usize>()
+                .unwrap_or(0);
+            let text = current_text(&file, &journal_path);
+            let mut state = buffer::new_buffer(&text);
+            let bytes = buffer::delete_at(&mut state, at, count);
+            let record = format!("delete-at {} {}", at, count);
+            let pending = journal::append_record(&journal_path, &record);
+            (
+                true,
+                vec![
+                    ("bytes".to_string(), bytes.to_string()),
+                    ("lines".to_string(), buffer::line_count(&state).to_string()),
+                    ("pending".to_string(), pending.to_string()),
+                ],
+            )
+        }
+        rust_exports::OP_MOVE => {
+            let at = wire_json::arg(request, "at")
+                .trim()
+                .parse::<usize>()
+                .unwrap_or(0);
+            let direction = wire_json::arg(request, "direction");
+            let text = current_text(&file, &journal_path);
+            let state = buffer::new_buffer(&text);
+            (
+                true,
+                vec![
+                    ("at".to_string(), buffer::move_point(&state, at, &direction).to_string()),
+                    ("line".to_string(), buffer::line_of(&state, at).to_string()),
+                ],
+            )
+        }
+        rust_exports::OP_SELECT => {
+            let from = wire_json::arg(request, "from")
+                .trim()
+                .parse::<usize>()
+                .unwrap_or(0);
+            let to = wire_json::arg(request, "to")
+                .trim()
+                .parse::<usize>()
+                .unwrap_or(0);
+            let text = current_text(&file, &journal_path);
+            let state = buffer::new_buffer(&text);
+            let chosen = buffer::text_range(&state, from, to);
+            (
+                true,
+                vec![
+                    ("text".to_string(), chosen),
+                    ("bytes".to_string(), buffer::byte_len(&state).to_string()),
+                ],
+            )
+        }
         rust_exports::OP_KEY_BYTES => {
             let name = wire_json::arg(request, "name");
             match input::encode_name(&name) {

@@ -65,11 +65,19 @@ racket splits a path that holds one.
 The session reads one command per line from the standard input and
 prints every answer in the one printer. The commands are:
 
-  insert TEXT   put the text into the buffer; the journal holds it
+  insert TEXT   put the text at the end of the buffer
+  type TEXT     put the text where the cursor stands
   save          write the buffer to the file and empty the journal
   show          answer the text as it stands
   journal       answer the journal's records
   replay        rebuild the state and answer what is waiting
+  move-up       move the cursor up a line
+  move-down     move the cursor down a line
+  move-left     move the cursor left a character
+  move-right    move the cursor right a character
+  delete        take one character out, before the cursor
+  select        turn the selection on where the cursor stands
+  send          send what is selected to the agent
   help          answer the names in the table
   quit          end the session
 
@@ -85,6 +93,19 @@ A real run:
 
 The numbers are: the bytes and the lines of the text, and =pending= — the
 records in the journal, the edits that are not saved yet.
+
+The **cursor** is a point in the text, and it moves: =move-left= and
+=move-right= a character, =move-up= and =move-down= a line, and =type=
+puts text where it stands. A session that typed at the cursor:
+
+  type hello world
+  move-left
+  move-left
+  type X
+
+leaves =hello worXld= — the X landed where the cursor stood. The
+journal records the place of every edit (=insert-at 14 and the second=),
+so the state comes back exactly after a kill.
 
 * The journal, and what a kill costs
 

@@ -38,3 +38,18 @@ pub const OP_KEYS: &str = "keys";
 /// sends that key. It is the way back of the decoding, and the check
 /// uses it to walk a name round and see that it comes back the same.
 pub const OP_KEY_BYTES: &str = "key-bytes";
+
+/// OP_INSERT_AT puts text into the buffer at a byte offset, and journals
+/// the edit with the place it happened.
+pub const OP_INSERT_AT: &str = "insert-at";
+
+/// OP_DELETE_AT takes text out of the buffer at a byte offset, and
+/// journals the edit with the place it happened.
+pub const OP_DELETE_AT: &str = "delete-at";
+
+/// OP_MOVE answers where the point goes when it moves: up or down a
+/// line, or left or right a character.
+pub const OP_MOVE: &str = "move";
+
+/// OP_SELECT answers the text between two byte offsets: the selection.
+pub const OP_SELECT: &str = "select";

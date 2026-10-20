@@ -46,13 +46,21 @@ pub fn clear(path: &str) {
     let _ = std::fs::write(path, "");
 }
 
-/// replay puts the journal's inserts back onto the text, and answers the
-/// text as it was before the crash. A record that is not an insert is
-/// skipped: the replay reads what the journal says and never guesses.
+/// replay puts the journal's edits back onto the text, and answers the
+/// text as it was before the crash. The records are read in the order
+/// they were written, and each one says where it happened, so the text
+/// comes back exactly. A record the replay does not know is skipped: the
+/// replay reads what the journal says and never guesses.
 pub fn replay(text: &str, records: &[String]) -> String {
     let mut grown = text.to_string();
     for record in records {
-        if let Some(more) = insert_text(record) {
+        if let Some((at, more)) = insert_at_text(record) {
+            grown.insert_str(at.min(grown.len()), &more);
+        } else if let Some((at, count)) = delete_at_text(record) {
+            let to = at.saturating_add(count).min(grown.len());
+            let at = at.min(grown.len());
+            grown = format!("{}{}", &grown[..at], &grown[to..]);
+        } else if let Some(more) = insert_text(record) {
             grown.push_str(&more);
         }
     }
@@ -60,10 +68,27 @@ pub fn replay(text: &str, records: &[String]) -> String {
 }
 
 /// insert_text reads the text of one insert record and answers it, and
-/// answers nothing when the record is not an insert.
+/// answers nothing when the record is not an insert. This is the first
+/// shape of the record: the text goes at the end.
 fn insert_text(record: &str) -> Option<String> {
     let rest = record.strip_prefix("insert ")?;
     Some(unescape(rest))
+}
+
+/// insert_at_text reads the place and the text of one insert-at record,
+/// and answers nothing when the record is not one.
+fn insert_at_text(record: &str) -> Option<(usize, String)> {
+    let rest = record.strip_prefix("insert-at ")?;
+    let (at, text) = rest.split_once(' ')?;
+    Some((at.parse().ok()?, unescape(text)))
+}
+
+/// delete_at_text reads the place and the count of one delete-at record,
+/// and answers nothing when the record is not one.
+fn delete_at_text(record: &str) -> Option<(usize, usize)> {
+    let rest = record.strip_prefix("delete-at ")?;
+    let (at, count) = rest.split_once(' ')?;
+    Some((at.parse().ok()?, count.parse().ok()?))
 }
 
 /// escape writes one text so it always stays on one line.

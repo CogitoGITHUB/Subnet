@@ -23,12 +23,21 @@
 
 ;; normal-keys are the keys of the normal layer: the key and the command
 ;; it runs. The command is a name from the command table, never a
-;; function, so the table can be read and checked on its own.
+;; function, so the table can be read and checked on its own. A key that
+;; moves the cursor names the way it moves, so the table says which
+;; arrow does what.
 (define normal-keys
   '(("C-s" "save")
     ("C-q" "quit")
     ("C-l" "show")
-    ("C-h" "help")))
+    ("C-h" "help")
+    ("up" "move-up")
+    ("down" "move-down")
+    ("left" "move-left")
+    ("right" "move-right")
+    ("backspace" "delete")
+    ("C-v" "select")
+    ("C-g" "send")))
 
 ;; insert-keys are the keys of the insert layer. In this layer the keys
 ;; are text, so the layer holds no table: the routing answers the text
