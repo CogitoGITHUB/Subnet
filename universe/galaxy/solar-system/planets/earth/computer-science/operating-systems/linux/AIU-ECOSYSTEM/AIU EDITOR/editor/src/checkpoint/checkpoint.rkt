@@ -16,6 +16,7 @@
 ;; Registered in plan/package-tree.org; lands with TODO item 12.
 
 (require racket/file
+         racket/path
          racket/list
          racket/path
          racket/port
@@ -85,7 +86,12 @@
 ;; tree-root answers the tree a file lives in: the top level git knows, or
 ;; the file's own directory when the tree is not a git one.
 (define (tree-root file)
-  (define directory (simplify-path (path->complete-path (build-path file 'up))))
+  ;; a directory is the tree it is in; a file is the tree of the
+  ;; directory that holds it
+  (define directory
+    (simplify-path
+     (path->complete-path
+      (if (directory-exists? file) file (build-path file 'up)))))
   (define answer (string-trim (run-git directory "rev-parse" "--show-toplevel")))
   (if (string=? answer "") directory answer))
 

@@ -1,0 +1,16 @@
+#+TITLE: INDEX — AIU EDITOR/editor/src/audit/
+# One job: list every file in this directory and the single job of each.
+# Status: current; updated in the same commit as any change in this directory.
+
+* Files
+# one line per file: its name, then the single job it performs.
+
+  - audit.rkt — the live audit: what changed in the tree, and who changed it
+  - accept.rkt — accept and undo: the human's answer, and the undo that is safe
+
+* The area
+# where it sits and who asks it.
+  The audit area is the second from the ceiling: only the entry is
+  above it. It asks the send area (what the agent reported) and the
+  checkpoint area (what changed), and it owns the marks that say which
+  is which.
