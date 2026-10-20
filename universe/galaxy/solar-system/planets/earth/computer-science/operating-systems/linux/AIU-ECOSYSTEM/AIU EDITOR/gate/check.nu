@@ -31,6 +31,7 @@ const STAGES = [
     {name: "secret-check", script: "secret-check.rkt", kind: "racket-plain"}
     {name: "kit-check", script: "kit-check.rkt", kind: "racket-plain"}
     {name: "plugin-check", script: "plugin-check.rkt", kind: "racket-plain"}
+    {name: "send-check", script: "send-check.rkt", kind: "racket-plain"}
 ]
 
 # run-one stage returns what happened, and never raises: a stage that fails is
