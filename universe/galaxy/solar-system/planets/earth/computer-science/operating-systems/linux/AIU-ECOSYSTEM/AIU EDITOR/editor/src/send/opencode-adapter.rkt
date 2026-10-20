@@ -155,7 +155,8 @@
       (let loop ([events '()] [text ""])
         (define line (http-stream-line stream))
         (cond
-          [(eof-object? line)
+          ;; nothing at all means the body is done: the feed ended
+          [(or (eof-object? line) (not line))
            (close-input-port (http-stream-port stream))
            (values (reverse events) text #f)]
           [else

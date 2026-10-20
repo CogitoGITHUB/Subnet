@@ -20,6 +20,7 @@
          racket/string
          "../machine/directories.rkt"
          "../machine/stop-switch.rkt"
+         "../security/redact.rkt"
          "bundle.rkt"
          "opencode-adapter.rkt")
 
@@ -77,7 +78,10 @@
     [(not handle)
      (values #f (refusal "no session is open: attach an agent first"))]
     [else
-     (define-values (message refusal) (client-deliver client handle (bundle-text bundle)))
+     ;; the bundle passes the redaction seam on the way out: no secret
+     ;; ever reaches an agent, by construction (rule 07)
+     (define-values (message refusal)
+       (client-deliver client handle (redact-text (bundle-text bundle))))
      (if message (values message #f) (values #f refusal))]))
 
 ;; subscribe opens the agent's event feed and answers the stream, or

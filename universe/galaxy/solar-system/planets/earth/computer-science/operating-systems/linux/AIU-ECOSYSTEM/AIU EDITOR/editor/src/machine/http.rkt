@@ -140,7 +140,7 @@
       (chunked-line (http-stream-port stream) (http-stream-buffer stream))
       (read-line (http-stream-port stream))))
 
-;; chunked-line answers the next line of a chunked body, or nothing when
+;; chunked-line answers the next line of a chunked body, or NOTHING when
 ;; the body is done. The text of a chunk that has no line in it yet
 ;; waits in the buffer, and the next chunk is read when it is needed.
 (define (chunked-line in buffer)
@@ -148,7 +148,12 @@
     (define parts (first-line (unbox buffer)))
     (if (not (null? (cdr parts)))
         (begin (set-box! buffer (cdr parts)) (car parts))
-        (begin (fill-chunk! in buffer) (loop)))))
+        ;; the body is done when the last chunk was read: the stream
+        ;; ends there, and the end is told and not waited for. A reader
+        ;; that loops on the end spins forever and burns the battery.
+        (if (fill-chunk! in buffer)
+            (loop)
+            #f))))
 
 ;; first-line answers the first line of a text and the rest of it. The
 ;; rest is nothing when the text holds no line at all.
@@ -166,15 +171,16 @@
 (define (fill-chunk! in buffer)
   (define size-line (read-line in))
   (cond
-    [(eof-object? size-line) (set-box! buffer "")]
+    [(eof-object? size-line) (set-box! buffer "") #f]
     [(string=? (string-trim size-line) "") (fill-chunk! in buffer)]
     [else
      (define size (string->number (string-trim (car (string-split size-line ";"))) 16))
      (if (= size 0)
-         (set-box! buffer "")
+         (begin (set-box! buffer "") #f)
          (let ([chunk (bytes->string/utf-8 (read-bytes size in))])
            (read-line in)
-           (set-box! buffer (string-append (unbox buffer) chunk))))]))
+           (set-box! buffer (string-append (unbox buffer) chunk))
+           #t))]))
 
 ;; read-body reads the body of a reply. A chunked body is read chunk by
 ;; chunk, because that is how the server sends it when the length is

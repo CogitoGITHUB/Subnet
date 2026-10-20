@@ -12,6 +12,7 @@
 (require racket/list
          racket/path
          racket/string
+         "../buffer/selection.rkt"
          "../join/protocol.rkt"
          "../join/hot-path.rkt"
          "../journal/replay.rkt")
@@ -78,6 +79,11 @@
   (if (response-ok answer)
       (begin
         (move-to session (string->number (hash-ref (response-data answer) 'at "0")))
+        ;; in the select layer the cursor GROWS the region: that is what
+        ;; a selection is, and the region is the buffer area's
+        (when (string=? (the-layer session) "select")
+          (set-box! (session-selection session)
+                     (grow-region (the-selection session) (the-point session))))
         (cons #t (format "point=~a" (the-point session))))
       (cons #t "the cursor could not be moved")))
 
@@ -264,9 +270,10 @@
   (unbox (session-selection session)))
 
 ;; select-from puts the start of the selection at a place, and turns the
-;; selection on. The selection runs from that place to the cursor.
+;; selection on. The selection is a REGION: it runs from that place to
+;; the cursor, and the region is the buffer area's.
 (define (select-from session at)
-  (set-box! (session-selection session) at)
+  (set-box! (session-selection session) (start-region at))
   at)
 
 ;; select-off turns the selection off.
@@ -278,13 +285,10 @@
 ;; when there is no selection. The hot path holds the text, so it is
 ;; asked for the region.
 (define (selection-text session)
-  (define from (the-selection session))
-  (if (and from (not (string=? (number->string from) "")))
-      (let ([answer (ask session "select" (hasheq 'from (number->string from)
-                                            'to (number->string (the-point session))))])
-        (if (response-ok answer)
-            (hash-ref (response-data answer) 'text "")
-            ""))
+  (define answer
+    (region-text (lambda (op args) (ask session op args)) (the-selection session)))
+  (if (hash? answer)
+      (hash-ref answer 'text "")
       ""))
 
 ;; The command table, for every area above this one.

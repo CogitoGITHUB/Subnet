@@ -24,6 +24,7 @@
          racket/string
          "../checkpoint/checkpoint.rkt"
          "../commands/commands.rkt"
+         "../security/security.rkt"
          "adapter.rkt"
          "bundle.rkt"
          "opencode-adapter.rkt")
@@ -60,7 +61,11 @@
 ;; leaves the program without one.
 (define (send-bundle session the-bundle)
   (define tree (tree-root (session-file session)))
-  (define made (checkpoint tree (bundle-why the-bundle)))
+  ;; the security predicate asks whether this action needs a checkpoint
+  ;; before it happens: a send changes the tree, so it does
+  (define made (if (checkpoint-needed? "send")
+                   (checkpoint tree (bundle-why the-bundle))
+                   #f))
   (define client (client-from-environment))
   (define-values (handle attach-refusal) (attach client))
   (define feed (subscribe client))
