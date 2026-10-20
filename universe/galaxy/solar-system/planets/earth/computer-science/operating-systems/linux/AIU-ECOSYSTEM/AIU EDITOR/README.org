@@ -36,7 +36,9 @@ one line of JSON each way.
     it did, and both halves print their start (item 8, the editor's
     half).
   - The send: the bundle reaches the agent, the events come back, and
-    the agent's write waits for the human (item 9).
+    the agent's write waits for the human (item 9). The whole turn is
+    proved against a local stub agent that speaks the agent's own wire
+    (the gate stage =send-check=).
   - The region: the selection model, and the region that travels in the
     bundle (item 14).
   - The live audit: what changed in the tree, who changed it, the
@@ -576,10 +578,11 @@ the human answers. The approval is never inferred.
   - pm itself does not run on this phone: its Racket package database
     cannot be read by this Racket, so =plugin-install= says so and
     installs nothing. That break is pm's to fix.
-  - The send's turn is not proved end to end on the phone: the bundle
-    reaches the agent, but the event feed never says the turn is done,
-    so the wait still hangs. The region travelling is proved by the
-    model, not by a finished turn.
+  - The send's turn is proved against a local stub agent, not against the
+    live agent server: a real turn against the OpenCode host on this
+    phone takes the host down with it, so the live proof is the one in
+    =research/opencode-round-trip.org= and the standing proof is the
+    gate stage =send-check=, which speaks the same wire.
   - The second agent adapter was skipped by the owner, so one adapter
     stands.
   - The root D-number for the reserved prefix is still owed: the root
