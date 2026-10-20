@@ -30,6 +30,7 @@ one line of JSON each way.
   - The routing: which layer sees a key first (item 4, the editor's
     half).
   - The task table: declare, list, run, sequence (item 17).
+  - The dashboard and the placeable pieces (item 7).
   - The one-way lint, which really checks the area law now.
 
 * The hard rules that bind it
@@ -164,14 +165,41 @@ do and changes nothing — the file and the journal stay untouched:
 A name the table does not hold is refused by name, never guessed at:
 =there is no task named nosuchtask; ask for one of: insert, say=.
 
+* The dashboard: the placeable pieces
+
+The dashboard is the status and the context display. The placement is
+**data**: a piece names an edge, a width and an order, so any piece can
+go on any edge and several pieces can share one.
+
+  racket editor/src/entry/cli.rkt dashboard FILE
+
+draws the screen, one line per row:
+
+  /tmp/tasks-demo.txt  1 lines  41 bytes  1 pending
+  layer normal  agent idle -
+  normal C-s -> save
+  normal C-q -> quit
+  normal C-l -> show
+  normal C-h -> help
+
+A piece is never cut: a piece whose text needs more room than its size
+says gets the room it needs, so the same piece fits any edge. The same
+piece was placed on all five edges — top, bottom, left, right and
+floating — and every one of them put it where it was asked.
+
+The meaning is Racket and the drawing is Rust; the two meet in the join
+area. The gate's eighth stage, `dashboard-check.rkt`, checks that every
+piece of the placeable piece list is really drawn, and it fails on a
+piece welded to an edge the drawing does not know.
+
 * The gate
 
   nu gate/check.nu
 
-Seven stages, and a green run ends:
+Eight stages, and a green run ends:
 
-  stages that checked nothing: 1 of 7
-  light gate: green, 7 stages ran
+  stages that checked nothing: 1 of 8
+  light gate: green, 8 stages ran
 
   paren-check     every Racket file reads
   naming          no banned word in any name
@@ -181,6 +209,7 @@ Seven stages, and a green run ends:
   comment-lint    every file has a header and every definition a comment
   route-check     the reserved prefix is bound by no layer, and every
                   route names a command that exists
+  dashboard-check every piece of the placeable piece list is really drawn
 
 The route check is the seventh stage, and it was proved on a copy with
 both faults planted: it named the layer and the key that took the
