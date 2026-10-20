@@ -42,6 +42,10 @@
  - src/devloop/start.rkt — the measured start: the number, and the mode the program is in
  - src/devloop/bake.rkt — the bake: the config becomes first-class defaults
  - src/devloop/last-good.rkt — keep last good; a bad bake never ships
+ - src/send/INDEX.org — the send area: the bundle and the boundary
+ - src/send/send.rkt — the one action; no agent-specific code here (rule 08)
+ - src/send/bundle.rkt — the context bundle shape
+ - src/send/adapter.rkt — the adapter: the boundary one way, and the pins
  - src/routes/INDEX.org — the routes area: the layers and the routing
  - src/routes/keymaps.rkt — the mapping tables, as data: the layers and their keys
  - src/routes/routes.rkt — the routing: which layer sees a key first

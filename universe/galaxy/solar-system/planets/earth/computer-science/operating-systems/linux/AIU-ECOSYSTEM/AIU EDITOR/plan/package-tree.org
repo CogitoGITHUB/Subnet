@@ -152,6 +152,7 @@ AIU EDITOR/              the project: context and docs stay where they are
         INDEX.org
         send.rkt         one action; no agent-specific code here (rule 08)
         bundle.rkt       the context bundle shape
+        adapter.rkt      the adapter: the boundary one way, and the pins
       picker/            Television as the picker
         INDEX.org
         picker.rkt       launch the picker over candidates

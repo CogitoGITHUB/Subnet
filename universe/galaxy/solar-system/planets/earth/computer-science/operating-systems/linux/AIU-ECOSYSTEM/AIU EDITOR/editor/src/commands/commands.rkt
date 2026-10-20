@@ -123,8 +123,9 @@
   (select-from session (the-point session))
   (cons #t (selection-text session)))
 
-;; command-send sends what is selected to the agent. The agent boundary
-;; is not built yet, so the command says so rather than pretending.
+;; command-send sends what is selected to the agent. The send area is ABOVE
+;; this one, so this cannot call it: the send area puts its own command
+;; here when it loads, and this is only the place it stands until then.
 (define (command-send session words)
   (cons #t "the send action is not built yet: the agent boundary lands with the AI link"))
 
@@ -157,27 +158,39 @@
   (cons #t "layer: select"))
 
 ;; commands is the table: one name, one function. The keys are compared
-;; as text, so a name typed on the keyboard finds its function.
-(define commands
+;; as text, so a name typed on the keyboard finds its function. The table
+;; is MUTABLE: an area above this one may add its own command to it.
+;; command-table is the table as data: one name and one function per
+;; command.
+(define command-table
   (hash "insert" command-insert-words
-        "type" command-type
-        "save" command-save
-        "show" command-show
-        "journal" command-journal
-        "replay" command-replay
-        "help" command-help
-        "quit" command-quit
-        "move-up" command-move-up
-        "move-down" command-move-down
-        "move-left" command-move-left
-        "move-right" command-move-right
-        "delete" command-delete
-        "select" command-select
-        "send" command-send
-        "mode" command-mode
-        "visual-mode" command-visual-mode
-        "write-mode" command-write-mode
-        "select-mode" command-select-mode))
+                           "type" command-type
+                           "save" command-save
+                           "show" command-show
+                           "journal" command-journal
+                           "replay" command-replay
+                           "help" command-help
+                           "quit" command-quit
+                           "move-up" command-move-up
+                           "move-down" command-move-down
+                           "move-left" command-move-left
+                           "move-right" command-move-right
+                           "delete" command-delete
+                           "select" command-select
+                           "send" command-send
+                           "mode" command-mode
+                           "visual-mode" command-visual-mode
+                           "write-mode" command-write-mode
+                           "select-mode" command-select-mode))
+
+;; commands is the table: one name, one function. The keys are compared
+;; as text, so a name typed on the keyboard finds its function. The table
+;; is MUTABLE: an area above this one may add its own command to it.
+(define commands
+  (let ([table (make-hash)])
+    (for ([entry (in-list (hash->list command-table))])
+      (hash-set! table (car entry) (cdr entry)))
+    table))
 
 ;; command-names answers the names in the table, in a fixed order.
 (define command-names
@@ -275,7 +288,8 @@
       ""))
 
 ;; The command table, for every area above this one.
-(provide session
+(provide commands
+         session
          make-session
          session-file
          session-journal

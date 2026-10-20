@@ -21,6 +21,9 @@
          "../dashboard/dashboard.rkt"
          "../routes/keyboard.rkt"
          "../routes/keymaps.rkt"
+         "../send/adapter.rkt"
+         "../send/bundle.rkt"
+         "../send/send.rkt"
          "../routes/routes.rkt"
          "../join/hot-path.rkt"
          "live.rkt")
@@ -172,6 +175,36 @@
       (print-line (format "the bake is NOT good; the last good stays: ~a"
                           (or (last-good) "there is none")))))
 
+;; send-verb shows what a send would carry: the bundle, line by line, and
+;; then the adapter's answer. The file is the one being edited, the target
+;; is the named agent, and the why is the rest of the words. A send
+;; without a why is refused.
+(define (send-verb args)
+  (define file (if (null? args) "" (car args)))
+  (define rest (if (null? args) '() (cdr args)))
+  (define target (if (null? rest) "opencode" (car rest)))
+  (define why (if (null? rest) "" (string-join (cdr rest) " ")))
+  (define path (path->complete-path (if (string=? file "") "untitled" file)))
+  (define session (make-session path (journal-path-for path)))
+  (define the-bundle
+    (make-bundle "aiu-editor" "aiu-ecosystem" target
+                 (selection-text session)
+                 (path->string path)
+                 (the-point session)
+                 #f
+                 why))
+  (cond
+    [(not the-bundle)
+     (print-line "a send needs a why: say what the sender was doing")]
+    [else
+     (for-each print-line (bundle-lines the-bundle))
+     (let ([answer (deliver opencode-adapter the-bundle)])
+       (if (car answer)
+           (print-line (format "sent to ~a" target))
+           (print-line (format "the send was refused: ~a — ~a"
+                               (hash-ref (cdr answer) 'what)
+                               (hash-ref (cdr answer) 'what_to_do)))))])) 
+
 ;; edit-file opens the file the user named and runs the editing session.
 (define (edit-file args)
   (if (null? args)
@@ -186,7 +219,8 @@
         "tasks" tasks-verb
         "keys" keys-verb
         "dashboard" dashboard-verb
-        "bake" bake-verb))
+        "bake" bake-verb
+        "send" send-verb))
 
 ;; command-known? answers whether the table holds the name.
 (define (command-known? verb)

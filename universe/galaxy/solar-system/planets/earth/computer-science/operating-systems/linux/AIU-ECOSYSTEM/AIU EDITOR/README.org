@@ -33,6 +33,8 @@ one line of JSON each way.
     trigger (item 6).
   - The dev mode: work mode, the bake, the last good (item 8, the
     editor's half).
+  - The send: the bundle and the boundary, with the agent refusing by
+    name (item 9, the editor's half).
   - The task table: declare, list, run, sequence (item 17).
   - The dashboard and the placeable pieces (item 7).
   - The keyboard: the bytes of a key become its name (item 6, the part
@@ -364,6 +366,33 @@ information, not a gate:
 
 The baked mode is chosen with `AIU_EDITOR_MODE=baked` in the
 environment; anything else is the work mode.
+
+* The send: the one action to an agent
+
+The editor's one action is to build a bundle and call the boundary. The
+bundle carries the contract's shape and **no agent-specific key and no
+secret** — the adapter translates, and the program never learns which
+agent answers.
+
+  racket editor/src/entry/cli.rkt send FILE TARGET WHY...
+
+  boundary: 1  program: aiu-editor  project: aiu-ecosystem  target: opencode
+  why: checking the send shape
+  position: 0
+  selection:
+  the send was refused: the agent is not attached — attach an agent first: the agent boundary is the one way to reach one
+
+The **why is mandatory**: a send without a reason is refused, because a
+send nobody can explain is a send that cannot be audited.
+
+The adapter is the boundary one way — open or attach a session, send a
+bundle, subscribe to the events, answer a permission ask, cancel, end —
+and it reports the two pins: the boundary version it implements and the
+agent version it was verified against. There is **no silent downgrade**:
+what the agent cannot do today, the adapter refuses *by name*.
+
+The boundary is one-sided until an agent is attached, and it says so
+rather than pretending.
 
 * The gate
 

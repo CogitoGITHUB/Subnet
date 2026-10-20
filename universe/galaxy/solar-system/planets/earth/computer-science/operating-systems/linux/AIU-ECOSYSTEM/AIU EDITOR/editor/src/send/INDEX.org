@@ -1,0 +1,25 @@
+#+TITLE: INDEX — AIU EDITOR/editor/src/send/
+# One job: list every file in the send area and the single job of each.
+# Status: current; updated in the same commit as any change in this directory.
+
+* Files
+# one line per file: its name, then the single job it performs.
+
+ - INDEX.org — this index: every file of the send area and its one job
+ - send.rkt — the bundle: the text, the files, the context
+ - adapter.rkt — the adapter: the boundary one way
+
+* The area
+# what the area is and what it owes.
+# The send area is the ONE action: build a bundle, call the boundary. The
+# bundle carries no agent-specific key and no secret: the adapter
+# translates, and the program never learns which agent answers.
+#
+# The area is ABOVE the commands area, so the commands may not reach up
+# to it. The area wires itself into the command table when it loads, and
+# the entry loads it, so the key finds the real command.
+#
+# The adapter refuses BY NAME what the agent cannot do today: there is
+# no silent downgrade. The two pins are reported too — the boundary
+# version the adapter implements and the agent version it was verified
+# against.
