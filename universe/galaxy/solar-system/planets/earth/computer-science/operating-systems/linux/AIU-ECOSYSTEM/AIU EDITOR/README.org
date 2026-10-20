@@ -31,10 +31,25 @@ one line of JSON each way.
     half).
   - The live session: the keys from the terminal, plain keys and the
     trigger (item 6).
-  - The dev mode: work mode, the bake, the last good (item 8, the
-    editor's half).
+  - The dev mode: work mode, the bake, the last good, and the Rust
+    half of the bake too — the bake rebuilds the hot path and says what
+    it did, and both halves print their start (item 8, the editor's
+    half).
   - The send: the bundle reaches the agent, the events come back, and
     the agent's write waits for the human (item 9).
+  - The region: the selection model, and the region that travels in the
+    bundle (item 14).
+  - The live audit: what changed in the tree, who changed it, the
+    accept, and the undo that refuses by name when the file changed
+    again (item 11).
+  - The secrets seam: the total predicates, the redaction, and the
+    no-secrets check on a real bundle (item 13).
+  - The kit: one JSON envelope, the capability declaration, the MCP
+    server, the skill file and the OpenCode plugin — with the gate
+    stage that proves the six things (item 15).
+  - The plugin system: the editor asks pm, loads a plugin across the
+    seam, refuses a missing plugin by name, and runs with no plugin at
+    all (item 17, the editor's side).
   - The checkpoint, the rollback and the stop switch (item 12).
   - The task table: declare, list, run, sequence (item 17).
   - The dashboard and the placeable pieces (item 7).
@@ -424,6 +439,38 @@ a call is an action, and nothing polls in a loop.
   racket editor/src/entry/cli.rkt stop stop    # throw it
   racket editor/src/entry/cli.rkt stop start   # clear it
 
+* The plugin system: the editor asks pm, it never installs
+
+A plugin is a package with a manifest. pm owns the package; the editor
+owns how it talks to it, and the editor NEVER installs anything by
+itself: it asks pm, and pm's rule is the editor's rule (reading is
+free, changing the disk needs the human's =--confirm=).
+
+  - =editor/src/notation/seam.rkt= — the calls the editor makes across
+    the boundary: =describe=, =read-file=, =insert-text=, =save-file=.
+    One JSON request and one JSON answer, both through files, so no
+    session crosses the boundary.
+  - =editor/src/notation/manifest.rkt= — what the editor knows about one
+    plugin: name, version, the pm package, the spec, the command that
+    starts it, the calls it provides. A manifest that misses a field is
+    refused, and the field is named.
+  - =editor/src/notation/pm.rkt= — the pm seam: =pm apply SPEC --confirm=
+    only with the human's word, =pm verify VAULT LOCKFILE NAME= is free
+    to read. pm's path comes from =AIU_PM_CLI=, or it is found by
+    walking up the tree.
+  - =editor/src/notation/loader.rkt= — loading a plugin. One that is not
+    installed is refused BY NAME; one that fails to load never takes
+    the editor down; a child that hangs is bounded so the editor does
+    not hang with it.
+
+The verbs: =plugin= (what is there, and what pm says), =plugin-register=,
+=plugin-install=, =plugin-call=. The gate stage
+=gate/plugin-check.rkt= proves the five things: a registered plugin
+answers a seam call, a plugin that is not registered is refused by
+name, a call the editor does not make is refused, the editor runs with
+the plugin absent, and the editor never installs anything without the
+human's word.
+
 * The gate
 
   nu gate/check.nu
@@ -523,10 +570,16 @@ the human answers. The approval is never inferred.
     all that can be built here. The walk that runs with the editor in a
     pane is still owed, and so is the pane that would hold the agent
     (TODO item 17).
-  - The =security= area does not exist, so the gate's security stage has
-    nothing to check.
-  - The =notation= seam and the kit — the MCP server, the skill and the
-    plugin — are not built.
+  - The notation's own side is not built: the seam, the manifest and
+    the loader are here, but the notation engine that answers them is
+    another project (its item 11).
+  - pm itself does not run on this phone: its Racket package database
+    cannot be read by this Racket, so =plugin-install= says so and
+    installs nothing. That break is pm's to fix.
+  - The send's turn is not proved end to end on the phone: the bundle
+    reaches the agent, but the event feed never says the turn is done,
+    so the wait still hangs. The region travelling is proved by the
+    model, not by a finished turn.
   - The second agent adapter was skipped by the owner, so one adapter
     stands.
   - The root D-number for the reserved prefix is still owed: the root
