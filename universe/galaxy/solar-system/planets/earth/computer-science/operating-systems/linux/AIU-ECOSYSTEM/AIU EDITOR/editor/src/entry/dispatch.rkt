@@ -7,7 +7,8 @@
 ;; The order of this file is the order Racket reads it: the table comes
 ;; after the functions it names, so it can be built when the file loads.
 
-(require racket/path
+(require racket/list
+         racket/path
          racket/port
          racket/string
          "../narration/print-console.rkt"
@@ -16,6 +17,7 @@
          "../commands/commands.rkt"
          "../commands/tasks.rkt"
          "../dashboard/dashboard.rkt"
+         "../routes/keyboard.rkt"
          "../routes/routes.rkt"
          "../join/hot-path.rkt")
 
@@ -101,6 +103,29 @@
        (loop (cdr rest) '() (if (null? current) runs (cons (reverse current) runs)))]
       [else (loop (cdr rest) (cons (car rest) current) runs)])))
 
+;; keys-verb answers what the bytes of a key are and what they mean.
+;; The bytes are given as hex, because a key may be any byte at all: the
+;; walk answers the name of each key, the layer that saw it, and the
+;; command it runs there. The layer may be named after the bytes, and it
+;; is the normal layer without one.
+(define (keys-verb args)
+  (define layer (if (null? args) "normal" (car args)))
+  (define hexes (if (null? args) '() (cdr args)))
+  (for-each
+   (lambda (hex)
+     (define names (key-names (hex->bytes hex)))
+     (if (null? names)
+         (print-line (format "~a -> no key" hex))
+         (for-each
+          (lambda (name)
+            (define answer (route-of-key name '() layer))
+            (print-line (format "~a -> ~a ~a"
+                                name
+                                (first answer)
+                                (if (string=? (second answer) "") "-" (second answer)))))
+          names)))
+   hexes))
+
 ;; dashboard-verb draws the dashboard and prints it, one line per row of
 ;; the screen. The file is the one being edited; without a file the
 ;; dashboard shows the editor alone.
@@ -123,6 +148,7 @@
         "routes" routes-walk
         "task" task-verb
         "tasks" tasks-verb
+        "keys" keys-verb
         "dashboard" dashboard-verb))
 
 ;; command-known? answers whether the table holds the name.

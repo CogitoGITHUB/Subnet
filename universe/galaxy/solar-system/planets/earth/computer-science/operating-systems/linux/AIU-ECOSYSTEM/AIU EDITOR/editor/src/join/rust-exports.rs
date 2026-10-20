@@ -28,3 +28,13 @@ pub const OP_REPLAY: &str = "replay";
 /// OP_DASHBOARD draws the dashboard: the pieces are placed on a screen and
 /// the screen comes back as one text, the lines separated by newlines.
 pub const OP_DASHBOARD: &str = "dashboard";
+
+/// OP_KEYS answers the keys in a run of bytes: the name of each key and
+/// how many bytes it took. The meaning side holds the keymaps, so it
+/// decides what a name means.
+pub const OP_KEYS: &str = "keys";
+
+/// OP_KEY_BYTES answers the bytes of a key name: the way a terminal
+/// sends that key. It is the way back of the decoding, and the check
+/// uses it to walk a name round and see that it comes back the same.
+pub const OP_KEY_BYTES: &str = "key-bytes";

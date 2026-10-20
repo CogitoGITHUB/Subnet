@@ -1,0 +1,23 @@
+#+TITLE: INDEX — AIU EDITOR/editor/src/input/
+# One job: list every file in the input area and the single job of each.
+# Status: current; updated in the same commit as any change in this directory.
+
+* Files
+# one line per file: its name, then the single job it performs.
+
+ - INDEX.org — this index: every file of the input area and its one job
+ - read.rs — read the bytes that arrive and say which key they are
+ - keys.rs — the sequence parsing: what a key is, and its name
+ - kitty.rs — the kitty keyboard protocol's opt-in flags, adopted not invented
+
+* The area
+# what the area is and what it owes.
+# The input area is Rust: the side that sees the bytes (rule 09, D-007).
+# The keymaps stay in Racket, and this area never holds a key of its
+# own — it answers the NAME of a key and the meaning side decides what
+# that name means.
+#
+# The reader never uses a timer of its own. The kitty keyboard
+# protocol's flags are what tell a key apart: the terminal is asked to
+# report the escape codes it would otherwise swallow, so a key is never
+# guessed at and a lone escape is the escape key.

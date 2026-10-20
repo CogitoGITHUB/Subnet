@@ -41,6 +41,11 @@
  - src/routes/INDEX.org — the routes area: the layers and the routing
  - src/routes/keymaps.rkt — the mapping tables, as data: the layers and their keys
  - src/routes/routes.rkt — the routing: which layer sees a key first
+ - src/routes/keyboard.rkt — the keyboard: the bytes of a key become its name
+ - src/input/INDEX.org — the input area: the bytes in, read in Rust
+ - src/input/read.rs — read the bytes that arrive and say which key they are
+ - src/input/keys.rs — the sequence parsing: what a key is, and its name
+ - src/input/kitty.rs — the kitty keyboard protocol's opt-in flags, adopted not invented
  - src/dashboard/INDEX.org — the dashboard area: the pieces and their drawing
  - src/dashboard/dashboard.rkt — the meaning: what each piece shows, and the call that draws it
  - src/dashboard/pieces.rkt — the placeable piece list: the edges, the sizes, the order

@@ -8,6 +8,8 @@
 mod buffer;
 #[path = "../dashboard/dashboard.rs"]
 mod dashboard;
+#[path = "../input/read.rs"]
+mod input;
 #[path = "../journal/journal.rs"]
 mod journal;
 #[path = "wire-json.rs"]
@@ -176,6 +178,46 @@ fn answer_for(request: &wire_json::Request) -> (bool, Vec<(String, String)>) {
                 true,
                 vec![("screen".to_string(), screen.join("\n"))],
             )
+        }
+        rust_exports::OP_KEYS => {
+            let bytes = input::from_hex(&wire_json::arg(request, "bytes"));
+            let mut reader = input::new_reader();
+            input::push(&mut reader, &bytes);
+            let mut names: Vec<String> = Vec::new();
+            loop {
+                match input::next_key(&mut reader) {
+                    Some(key) => names.push(key.name),
+                    None => break,
+                }
+            }
+            (
+                true,
+                vec![
+                    ("count".to_string(), names.len().to_string()),
+                    ("names".to_string(), names.join(" ")),
+                    ("pending".to_string(), input::pending(&reader).to_string()),
+                ],
+            )
+        }
+        rust_exports::OP_KEY_BYTES => {
+            let name = wire_json::arg(request, "name");
+            match input::encode_name(&name) {
+                Some(bytes) => (
+                    true,
+                    vec![
+                        ("name".to_string(), name),
+                        ("bytes".to_string(), input::to_hex(&bytes)),
+                    ],
+                ),
+                None => (
+                    false,
+                    vec![
+                        ("kind".to_string(), "err-unknown-key".to_string()),
+                        ("what".to_string(), format!("there is no key named {}", name)),
+                        ("what_to_do".to_string(), "ask for a key the decoder knows".to_string()),
+                    ],
+                ),
+            }
         }
         _ => (
             false,

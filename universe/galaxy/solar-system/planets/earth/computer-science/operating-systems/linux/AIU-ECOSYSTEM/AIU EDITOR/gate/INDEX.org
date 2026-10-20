@@ -16,6 +16,7 @@
   - language-split-lint.nu — only join/ may cross Rust and Racket
   - comment-lint.nu — every file has a header, every definition a comment
   - route-check.rkt — the route check: the reserved prefix is bound by no layer
+  - key-check.rkt — the key check: the decoder and the keymaps agree
   - dashboard-check.rkt — the dashboard check: every piece is really drawn
 
 * Later

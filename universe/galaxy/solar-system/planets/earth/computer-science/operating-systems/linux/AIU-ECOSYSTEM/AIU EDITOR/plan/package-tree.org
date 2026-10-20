@@ -127,6 +127,7 @@ AIU EDITOR/              the project: context and docs stay where they are
         INDEX.org
         routes.rkt       the routing: focused program first; the reserved prefix
         keymaps.rkt      the mapping tables, as data
+        keyboard.rkt     the keyboard: the bytes of a key become its name
       input/             keys in (hot path, Rust)
         INDEX.org
         read.rs          read keys and escape sequences; hand to routes
