@@ -1,0 +1,15 @@
+#+TITLE: INDEX — AIU EDITOR/editor/src/security/
+# One job: list every file in this directory and the single job of each.
+# Status: current; updated in the same commit as any change in this directory.
+
+* Files
+# one line per file: its name, then the single job it performs.
+
+  - security.rkt — the total predicates: what changes the tree, what can be taken back, what needs a checkpoint
+  - redact.rkt — the redaction seam: what may not leave this program
+
+* The area
+# where it sits and who asks it.
+  The security area is the fourth from the floor: errors, narration,
+  machine, security. The send area asks the redaction seam for every
+  bundle, and the audit area asks the predicates, so both are above it.
