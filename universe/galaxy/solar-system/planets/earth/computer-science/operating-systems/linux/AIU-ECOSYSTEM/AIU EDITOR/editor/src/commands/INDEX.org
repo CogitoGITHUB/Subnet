@@ -7,6 +7,7 @@
 
  - INDEX.org — this index: every file of the commands area and its one job
  - commands.rkt — the command table: one name, one function
+ - tasks.rkt — the task table and the runner: declare, list, run, sequence
 
 * The area
 # The commands area is the meaning side: it says what a typed line means, and

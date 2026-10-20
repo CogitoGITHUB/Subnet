@@ -129,4 +129,5 @@
          session-journal
          run-command
          command-names
-         answer-line)
+         answer-line
+         ask)
