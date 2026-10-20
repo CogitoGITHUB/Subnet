@@ -73,6 +73,37 @@
                 "the hot path program is not there"
                 "build the editor crate, or set AIU_HOT_PATH_BIN to the hot path program")))
 
+;; crate-dir answers the Rust crate of this package: the directory that
+;; holds the manifest. The environment wins, so a machine that keeps the
+;; crate somewhere else is named in one place. The search walks up from
+;; where the program runs, because this Racket does not say where a file
+;; of its own sits.
+(define (crate-dir)
+  (define named (getenv "AIU_EDITOR_CRATE"))
+  (if (and named (not (string=? named "")))
+      (path->complete-path named)
+      (let loop ([at (simplify-path (current-directory))])
+        (define up (simplify-path (build-path at "..")))
+        ;; the crate is the package's own Rust half: it sits in the
+        ;; "editor" directory of the package, or in the package itself
+        (define candidates (list (build-path at "editor") at))
+        (define found (for/or ([candidate (in-list candidates)])
+                        (and (file-exists? (build-path candidate "Cargo.toml"))
+                             candidate)))
+        (cond
+          [found found]
+          [(string=? (path->string at) (path->string up)) (car candidates)]
+          [else (loop up)]))))
+
+;; target-dir answers where cargo builds: the directory that holds the
+;; hot path's binary. The environment wins; the binary's own place is
+;; the answer when it is not named.
+(define (target-dir)
+  (define named (getenv "AIU_CARGO_TARGET_DIR"))
+  (if (and named (not (string=? named "")))
+      (path->complete-path named)
+      (simplify-path (build-path (hot-path-bin) "../.."))))
+
 ;; journal-path-for answers where the journal of one file lives: in the
 ;; state directory, named after the file and a short key of its path, so
 ;; two files never share one journal.
@@ -111,5 +142,7 @@
          cache-dir
          racket-bin
          hot-path-bin
+         crate-dir
+         target-dir
          journal-path-for
          ensure-dir)

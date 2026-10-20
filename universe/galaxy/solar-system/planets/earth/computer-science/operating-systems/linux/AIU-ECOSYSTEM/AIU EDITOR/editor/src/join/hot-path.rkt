@@ -9,11 +9,28 @@
 (require "transport.rkt"
          "../machine/directories.rkt")
 
+;; first-call-ms holds how long the first call to the hot path took.
+;; The hot path is a child: every question starts it and ends it, so its
+;; start is the time its first question took.
+(define first-call-ms (box #f))
+
 ;; ask-hot sends one request to the hot path and answers its response.
 ;; The arguments are names and values, all strings: the hot path's reader
-;; stays small and never guesses.
+;; stays small and never guesses. The first call is measured, because
+;; that is the hot path's start.
 (define (ask-hot op args)
-  (call-over-wire (hot-path-bin) '() (hasheq 'op op 'args args)))
+  (define started (current-inexact-milliseconds))
+  (define answer (call-over-wire (hot-path-bin) '() (hasheq 'op op 'args args)))
+  (when (not (unbox first-call-ms))
+    (set-box! first-call-ms
+              (inexact->exact (round (- (current-inexact-milliseconds) started)))))
+  answer)
+
+;; hot-path-start-ms answers the hot path's measured start, or nothing
+;; when the hot path has not been called yet.
+(define (hot-path-start-ms)
+  (unbox first-call-ms))
 
 ;; The call that asks the hot path.
-(provide ask-hot)
+(provide ask-hot
+         hot-path-start-ms)

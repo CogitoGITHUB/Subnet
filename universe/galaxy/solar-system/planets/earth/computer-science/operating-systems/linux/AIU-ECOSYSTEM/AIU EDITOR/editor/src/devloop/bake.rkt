@@ -16,6 +16,7 @@
 (require racket/file
          racket/list
          racket/string
+         racket/system
          "../machine/directories.rkt"
          "last-good.rkt"
          "start.rkt")
@@ -31,8 +32,8 @@
   (if good
       (begin
         (keep-last-good path)
-        (list path #t))
-      (list path #f)))
+        (list path #t (bake-rust)))
+      (list path #f (bake-rust))))
 
 ;; write-baked-module writes the tables into a module that holds them as
 ;; first-class defaults. The module is generated, so it says so at the
@@ -53,6 +54,47 @@
     #:exists 'truncate)
   path)
 
+;; bake-rust rebuilds the hot path, so the RUST half of the program
+;; comes from the same bake as the Racket half. It answers what it did:
+;; the path of the binary, whether the build was good, how long it
+;; took, and where the build said what it said.
+;;
+;; The build is MANUAL and it may run long: the owner starts it when
+;; they decide, and it says what it did when it is done. There is no
+;; timer and no watcher in here (rule 03, rule 04).
+(define (bake-rust)
+  (define log (build-path (state-dir) "baked" "cargo-build.log"))
+  (ensure-dir (build-path (state-dir) "baked"))
+  (define started (current-inexact-milliseconds))
+  (define code
+    (run-build
+     (format "cd ~a && CARGO_TARGET_DIR=~a cargo build > ~a 2>&1"
+             (shell-quote (path->string (crate-dir)))
+             (shell-quote (path->string (target-dir)))
+             (shell-quote (path->string log)))))
+  (define took (inexact->exact (round (- (current-inexact-milliseconds) started))))
+  (hash 'binary (path->string (hot-path-bin))
+        'good (= code 0)
+        'ms took
+        'log (path->string log)))
+
+;; run-build runs a build command and answers its exit code. The code is
+;; asked of the shell through a file, because this Racket's system
+;; answers yes or no and not the code the command left.
+(define (run-build command)
+  (define code-file (build-path (state-dir) "baked" "exit-code"))
+  (when (file-exists? code-file) (delete-file code-file))
+  (system (format "~a; echo $? > ~a 2>/dev/null"
+                  command (shell-quote (path->string code-file))))
+  (if (file-exists? code-file)
+      (string->number (string-trim (file->string code-file)))
+      #f))
+
+;; shell-quote answers a text that a shell will read as one word.
+(define (shell-quote text)
+  (string-append "'" (string-replace text "'" "'\\''") "'"))
+
 ;; The bake, for the entry above it.
 (provide bake
+         bake-rust
          write-baked-module)

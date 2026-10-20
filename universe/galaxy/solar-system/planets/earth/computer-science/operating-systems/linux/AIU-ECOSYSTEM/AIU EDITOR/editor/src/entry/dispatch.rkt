@@ -58,6 +58,12 @@
         (open-run "the editor" (format "editing ~a" file))
         (print-line (answer-line (ask-hot "open" (hasheq 'file (path->string file)
                                                        'journal (path->string journal)))))
+        ;; the hot path's start is printed with the first answer: the
+        ;; hot path is a child, and its start is the time its first
+        ;; question took
+        (let ([hot-start (hot-path-start-ms)])
+          (when hot-start
+            (print-line (format "the hot path's first call took ~a ms" hot-start))))
         (let loop ()
           (define line (read-line (current-input-port)))
           (unless (eof-object? line)
@@ -175,11 +181,19 @@
   (define result (bake keymaps baked-good?))
   (define path (car result))
   (define good (cadr result))
+  (define rust (caddr result))
   (print-line (format "baked: ~a" path))
   (if good
       (print-line (format "the bake is good and is now the last good: ~a" (last-good)))
       (print-line (format "the bake is NOT good; the last good stays: ~a"
                           (or (last-good) "there is none"))))
+  ;; the RUST half is said too: a half that was not built is named, and
+  ;; it is never silent
+  (print-line
+   (format "the hot path was built: ~a (in ~a ms; the build said what it said in ~a)"
+           (if (hash-ref rust 'good #f) "yes" "NO")
+           (hash-ref rust 'ms 0)
+           (hash-ref rust 'log "-"))))
 
 ;; send-verb sends what is selected to the named agent: it makes the
 ;; checkpoint, delivers the bundle and answers the whole truth of the
