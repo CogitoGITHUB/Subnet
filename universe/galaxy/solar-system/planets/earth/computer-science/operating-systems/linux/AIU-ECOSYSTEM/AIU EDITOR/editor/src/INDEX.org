@@ -12,6 +12,7 @@
  - journal/ — the record of every edit, and the work that is not saved yet
  - buffer/ — the text state: bytes, lines, offsets
  - commands/ — the command table: what a typed line means
+ - devloop/ — the work mode, the bake and the last good
  - routes/ — the routing: which layer sees a key first, and the keyboard
  - input/ — the keys in, read in Rust
  - drawing/ — the screen's one place: the attach, the layout, the paint

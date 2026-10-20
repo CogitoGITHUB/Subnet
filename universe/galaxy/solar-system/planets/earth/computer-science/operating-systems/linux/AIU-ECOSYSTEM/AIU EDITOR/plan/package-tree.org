@@ -102,10 +102,9 @@ AIU EDITOR/              the project: context and docs stay where they are
         hot-path.rkt     the call that asks the hot path; the other side of the seam
       devloop/           work mode and the bake (rule 02)
         INDEX.org
-        work.rkt         work mode: loads config live from source
         bake.rkt         the bake: config becomes first-class defaults
         last-good.rkt    keep last good; a bad bake never ships
-        start.rkt        the measured start: the number is recorded
+        start.rkt        the measured start: the number, and the mode
       journal/           every edit written as it happens (rule 01)
         INDEX.org
         journal.rs       append every edit; replayable, in order

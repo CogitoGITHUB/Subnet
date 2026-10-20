@@ -38,6 +38,10 @@
  - src/commands/INDEX.org — the commands area: the command table
  - src/commands/commands.rkt — the command table: one name, one function
  - src/commands/tasks.rkt — the task table and the runner: declare, list, run, sequence
+ - src/devloop/INDEX.org — the devloop area: the work mode and the bake
+ - src/devloop/start.rkt — the measured start: the number, and the mode the program is in
+ - src/devloop/bake.rkt — the bake: the config becomes first-class defaults
+ - src/devloop/last-good.rkt — keep last good; a bad bake never ships
  - src/routes/INDEX.org — the routes area: the layers and the routing
  - src/routes/keymaps.rkt — the mapping tables, as data: the layers and their keys
  - src/routes/routes.rkt — the routing: which layer sees a key first

@@ -31,6 +31,8 @@ one line of JSON each way.
     half).
   - The live session: the keys from the terminal, plain keys and the
     trigger (item 6).
+  - The dev mode: work mode, the bake, the last good (item 8, the
+    editor's half).
   - The task table: declare, list, run, sequence (item 17).
   - The dashboard and the placeable pieces (item 7).
   - The keyboard: the bytes of a key become its name (item 6, the part
@@ -325,6 +327,43 @@ A real run, driven under a pseudo-terminal on the phone:
 
 and the file held `hello` afterwards. A key that means nothing to
 anybody is said out loud: `no key is bound to s`.
+
+* The dev mode: work mode, the bake, the last good
+
+The program runs in one of two modes, and the mode is the owner's
+choice, read **once at the start** — there is no watcher, no poll and no
+timer anywhere in it.
+
+**The work mode** loads the config *live from the source*: the tables
+are read at every start, so an edit to the source is seen at the next
+start.
+
+**The bake** makes the config into first-class defaults in a generated
+module, so the baked program carries them inside it and needs no user
+config at startup.
+
+  racket editor/src/entry/cli.rkt bake
+
+bakes, checks the result, and keeps it only when the check says yes:
+
+  started in 3 ms, work mode, the config from the source tree
+  baked: /root/home/shape/.local/state/aiu-editor/baked/keymaps.rkt
+  the bake is good and is now the last good: …/baked/keymaps.rkt
+
+**A bake that is not good never ships** — the last good stays the last
+good, and the bad one is kept beside it to look at. That was proved on a
+copy with the bake planted broken:
+
+  the bake is NOT good; the last good stays: …/baked/keymaps.rkt
+
+**The measured start** is printed with the first answer, and it is
+information, not a gate:
+
+  started in 3 ms, work mode, the config from the source tree
+  started in 101 ms, baked mode, the config from …/baked/keymaps.rkt
+
+The baked mode is chosen with `AIU_EDITOR_MODE=baked` in the
+environment; anything else is the work mode.
 
 * The gate
 

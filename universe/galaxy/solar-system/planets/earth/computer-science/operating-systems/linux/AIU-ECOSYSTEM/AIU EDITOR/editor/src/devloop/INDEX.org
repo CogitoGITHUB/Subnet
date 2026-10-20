@@ -1,0 +1,27 @@
+#+TITLE: INDEX — AIU EDITOR/editor/src/devloop/
+# One job: list every file in the devloop area and the single job of each.
+# Status: current; updated in the same commit as any change in this directory.
+
+* Files
+# one line per file: its name, then the single job it performs.
+
+ - INDEX.org — this index: every file of the devloop area and its one job
+ - start.rkt — the measured start: the number, and the mode the program is in
+ - bake.rkt — the bake: the config becomes first-class defaults
+ - last-good.rkt — keep last good; a bad bake never ships
+
+* The area
+# what the area is and what it owes.
+# The work mode loads the config live from the source: the tables are
+# read at every start, so an edit to the source is seen at the next
+# start. The bake makes the config into first-class defaults in a
+# generated module, so the baked program carries them inside it and
+# needs no user config at startup.
+#
+# There is NO timer and no watcher in here. The rebuild is manual: the
+# owner starts it when they decide, it may run long, and it says what it
+# did when it is done. The measured start is information, not a gate.
+#
+# The devloop area is BELOW the routes, so it may not require them: the
+# bake takes the config as an argument and the entry decides what the
+# config is.

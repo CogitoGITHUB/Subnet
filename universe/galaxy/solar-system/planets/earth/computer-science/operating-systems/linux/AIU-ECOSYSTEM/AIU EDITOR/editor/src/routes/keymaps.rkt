@@ -22,7 +22,8 @@
 ;; A key may be a SEQUENCE of keys, and the names of the keys are joined
 ;; by a space: "space space" is the double space.
 
-(require racket/string)
+(require racket/string
+         "../devloop/start.rkt")
 
 ;; reserved-prefix is the key the multiplexer keeps for itself. It applies
 ;; everywhere, so the editor never binds it: a binding that collides with
@@ -84,19 +85,26 @@
     ("space v" "visual-mode")))
 
 ;; keymaps is the whole table: a layer name and the keys of that layer.
-;; The tables are put in with cons, not with a quote: a quoted list would
-;; hold the NAMES of the tables, not the tables themselves.
+;; The tables are put in with list, not with cons and not with a quote:
+;; a quoted list would hold the NAMES of the tables, and a cons would be
+;; written flat by the bake — the shape of the tables has to survive the
+;; round trip through the baked module.
+;;
+;; In the work mode the tables are these ones, read from the source at
+;; every start. In the baked mode they are the ones the bake made into
+;; first-class defaults, and the source is not read at all.
 (define keymaps
-  (list (cons "visual" normal-keys)
-        (cons "write" insert-keys)
-        (cons "select" select-keys)))
+  (or (and (string=? (mode) "baked") (baked-tables))
+      (list (list "visual" normal-keys)
+            (list "write" insert-keys)
+            (list "select" select-keys))))
 
 ;; keys-of answers the keys of one layer, or nothing when the table holds
 ;; no layer by that name. The keys of a layer are pairs: a key and the
 ;; command it runs.
 (define (keys-of layer)
   (define found (assoc layer keymaps))
-  (if found (cdr found) '()))
+  (if found (cadr found) '()))
 
 ;; binding-of answers the command one key runs in one layer, or nothing
 ;; when the layer binds no such key. A binding is a pair of a key and a
