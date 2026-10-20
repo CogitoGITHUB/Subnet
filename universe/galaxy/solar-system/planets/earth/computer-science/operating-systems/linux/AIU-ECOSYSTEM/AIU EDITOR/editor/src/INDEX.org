@@ -19,6 +19,7 @@
  - models/ — the semantic models: what exists and where it sits
  - dashboard/ — the dashboard: the placeable pieces and their drawing
  - send/ — the one action: the bundle and the boundary
+ - checkpoint/ — the git checkpoints and the stop switch
  - entry/ — the ceiling: argv, the dispatch, the session
 
 * Later

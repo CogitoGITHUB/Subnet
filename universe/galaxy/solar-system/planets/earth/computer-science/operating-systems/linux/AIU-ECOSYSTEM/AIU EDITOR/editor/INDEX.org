@@ -42,6 +42,9 @@
  - src/devloop/start.rkt — the measured start: the number, and the mode the program is in
  - src/devloop/bake.rkt — the bake: the config becomes first-class defaults
  - src/devloop/last-good.rkt — keep last good; a bad bake never ships
+ - src/checkpoint/INDEX.org — the checkpoint area: the checkpoints and the stop switch
+ - src/checkpoint/checkpoint.rkt — checkpoint before agent actions
+ - src/checkpoint/rollback.rkt — rollback to a checkpoint
  - src/send/INDEX.org — the send area: the bundle and the boundary
  - src/send/send.rkt — the one action; no agent-specific code here (rule 08)
  - src/send/bundle.rkt — the context bundle shape

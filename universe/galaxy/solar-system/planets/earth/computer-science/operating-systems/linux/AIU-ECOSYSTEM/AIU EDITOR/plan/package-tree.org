@@ -85,6 +85,7 @@ AIU EDITOR/              the project: context and docs stay where they are
         INDEX.org
         directories.rkt  the one place HOME / XDG is read
         terminal.rkt     the terminal: the raw mode, the settings, the bytes that arrive
+        stop-switch.rkt  the stop switch: every running agent session for this project (D-010)
         locks.rkt        one-writer locks: wait and retry, never force
         cancel.rkt       the cancellation door every blocking call passes
       security/          what may happen without asking
@@ -161,7 +162,6 @@ AIU EDITOR/              the project: context and docs stay where they are
         INDEX.org
         checkpoint.rkt   checkpoint before agent actions
         rollback.rkt     rollback to a checkpoint
-        stop.rkt         the stop switch: every running agent session for this project (D-010)
       audit/             the live audit (rule 07)
         INDEX.org
         audit.rkt        file-change events in; agent or external marks out

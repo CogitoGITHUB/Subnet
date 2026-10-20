@@ -21,6 +21,9 @@
          "../dashboard/dashboard.rkt"
          "../routes/keyboard.rkt"
          "../routes/keymaps.rkt"
+         "../checkpoint/checkpoint.rkt"
+         "../checkpoint/rollback.rkt"
+         "../machine/stop-switch.rkt"
          "../send/adapter.rkt"
          "../send/bundle.rkt"
          "../send/send.rkt"
@@ -205,6 +208,40 @@
                                (hash-ref (cdr answer) 'what)
                                (hash-ref (cdr answer) 'what_to_do)))))])) 
 
+;; checkpoint-verb makes a checkpoint of the tree: the state the tree is
+;; put back to when an agent does something the human did not want. The
+;; words are the why.
+(define (checkpoint-verb args)
+  (define root (if (null? args) "." (car args)))
+  (define why (string-join (if (null? args) '() (cdr args)) " "))
+  (define made (checkpoint (path->complete-path root) why))
+  (if made
+      (print-line (format "checkpoint: ~a" made))
+      (print-line "a checkpoint needs a why: say what the agent was about to do")))
+
+;; rollback-verb puts the tree back to a checkpoint.
+(define (rollback-verb args)
+  (define root (if (null? args) "." (car args)))
+  (define commit (if (null? args) "" (cadr args)))
+  (define answer (rollback (path->complete-path root) commit))
+  (if (car answer)
+      (print-line (format "the tree is back at ~a" (car answer)))
+      (print-line (format "the rollback was refused: ~a" (cdr answer)))))
+
+;; stop-verb throws or clears the stop switch: while it is thrown, every
+;; agent session for this project stops.
+(define (stop-verb args)
+  (define what (if (null? args) "stop" (car args)))
+  (cond
+    [(string=? what "stop")
+     (throw-switch)
+     (print-line "the stop switch is thrown: every agent session for this project stops")]
+    [(string=? what "start")
+     (clear-switch)
+     (print-line "the stop switch is cleared: the agent sessions may run again")]
+    [else
+     (print-line (format "the stop switch is ~a" (if (stopped?) "thrown" "clear")))]))
+
 ;; edit-file opens the file the user named and runs the editing session.
 (define (edit-file args)
   (if (null? args)
@@ -220,7 +257,10 @@
         "keys" keys-verb
         "dashboard" dashboard-verb
         "bake" bake-verb
-        "send" send-verb))
+        "send" send-verb
+        "checkpoint" checkpoint-verb
+        "rollback" rollback-verb
+        "stop" stop-verb))
 
 ;; command-known? answers whether the table holds the name.
 (define (command-known? verb)

@@ -1,0 +1,23 @@
+#+TITLE: INDEX — AIU EDITOR/editor/src/checkpoint/
+# One job: list every file in the checkpoint area and the single job of each.
+# Status: current; updated in the same commit as any change in this directory.
+
+* Files
+# one line per file: its name, then the single job it performs.
+
+ - INDEX.org — this index: every file of the checkpoint area and its one job
+ - checkpoint.rkt — checkpoint before agent actions
+ - rollback.rkt — rollback to a checkpoint
+
+* The area
+# what the area is and what it owes.
+# The checkpoint is made BEFORE an agent acts, not after: that is the
+# whole point of it. The files are added one by one — never a blanket add
+# — and the note names the files that were NOT tracked, so nothing is
+# lost silently.
+#
+# The rollback puts the tree back to a checkpoint, and it never guesses:
+# a commit that is not there is refused by name.
+#
+# The stop switch lives in the MACHINE area, below this one, because the
+# send area asks it on every call and an area may only reach downward.

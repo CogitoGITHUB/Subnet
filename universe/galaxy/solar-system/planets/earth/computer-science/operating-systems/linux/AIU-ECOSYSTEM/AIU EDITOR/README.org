@@ -35,6 +35,7 @@ one line of JSON each way.
     editor's half).
   - The send: the bundle and the boundary, with the agent refusing by
     name (item 9, the editor's half).
+  - The checkpoint, the rollback and the stop switch (item 12).
   - The task table: declare, list, run, sequence (item 17).
   - The dashboard and the placeable pieces (item 7).
   - The keyboard: the bytes of a key become its name (item 6, the part
@@ -393,6 +394,31 @@ what the agent cannot do today, the adapter refuses *by name*.
 
 The boundary is one-sided until an agent is attached, and it says so
 rather than pretending.
+
+* The checkpoint, the rollback and the stop switch
+
+A checkpoint is made **before an agent acts** — that is the whole point
+of it. The files are added **one by one**, never a blanket add, and the
+commit's note names the files that were *not* tracked, so nothing is
+lost silently.
+
+  racket editor/src/entry/cli.rkt checkpoint TREE WHY...
+  racket editor/src/entry/cli.rkt rollback TREE COMMIT
+
+The rollback puts the tree back and never guesses: a commit that is not
+there is refused by name. Proved on a copy of a tree — the agent
+changed the file, and the rollback put it back:
+
+  checkpoint: aab5c83
+  the tree is back at aab5c83
+
+The **stop switch** is coarse (D-010): it stops every agent session for
+this project, and there is no per-session and no per-agent toggle. It is
+a file in the state directory, and the adapter asks it on every call —
+a call is an action, and nothing polls in a loop.
+
+  racket editor/src/entry/cli.rkt stop stop    # throw it
+  racket editor/src/entry/cli.rkt stop start   # clear it
 
 * The gate
 

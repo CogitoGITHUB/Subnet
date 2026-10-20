@@ -9,6 +9,7 @@
   - locks.rkt — one-writer locks: wait and retry, never force
   - cancel.rkt — the cancellation door every blocking call passes
   - terminal.rkt — the terminal: the raw mode, the settings, the bytes that arrive
+  - stop-switch.rkt — the stop switch: every running agent session for this project (D-010)
 
 * Later
 # machine holds the effects that touch the world: the environment, the

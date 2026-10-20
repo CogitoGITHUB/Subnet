@@ -13,6 +13,7 @@
 
 (require racket/list
          racket/string
+         "../machine/stop-switch.rkt"
          "bundle.rkt")
 
 ;; adapter is one agent behind the boundary: its name, the boundary
@@ -40,10 +41,17 @@
 
 ;; deliver sends a bundle to the agent and answers what came back. The
 ;; reply comes back as a file the editor can read.
+;;
+;; The stop switch is asked FIRST: while it is thrown, no bundle goes to
+;; any agent session for this project (D-010).
 (define (deliver a bundle)
-  (if (and (adapter-attached? a) (bundle? bundle))
-      (cons #f (refusal a "the agent takes no bundle yet"))
-      (cons #f (refusal a "the agent is not attached"))))
+  (cond
+    [(stopped?)
+     (cons #f (refusal a "the stop switch is thrown: every agent session for this project stops"))]
+    [(and (adapter-attached? a) (bundle? bundle))
+     (cons #f (refusal a "the agent takes no bundle yet"))]
+    [else
+     (cons #f (refusal a "the agent is not attached"))]))
 
 ;; events answers the events of a session, subscribed to. It is a list of
 ;; the one event record, enriched with the agent identity and the
