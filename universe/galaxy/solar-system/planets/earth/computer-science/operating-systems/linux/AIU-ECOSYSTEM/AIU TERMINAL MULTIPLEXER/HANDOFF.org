@@ -1,6 +1,6 @@
 #+TITLE: HANDOFF — AIU TERMINAL MULTIPLEXER
 # One job: everything a fresh conversation needs to start on the multiplexer.
-# Status: current after the ready-up (2026-10-17); the package is planned, nothing built yet.
+# Status: current 2026-10-21; the tree and the gate are landed, the holder is being built.
 
 * What this program is
 # Shells, panes, a layout tree, and a session holder with detach and reattach.
@@ -17,11 +17,20 @@
 * Current state
 # what is true right now.
   - Base complete; the ready-up closed the decisions: the route (D-002), herdr as the tested candidate (D-003), the control surface (D-004), the shared key-routing handover (D-005) and the log shape (D-006); plan/open-decisions.org is a redirect stub.
-  - The package is planned at =multiplexer/= per plan/package-tree.org; the work list is TODO.org; nothing is built.
+  - The TREE LANDED (=5a8908e7=): the package is =multiplexer/= with the floor areas =errors/=, =narration/= and =machine/=, and the gate is green at 7 stages (the security gate prints NOTHING-TO-CHECK until that area exists). Every module really loads.
+  - The ROUTE IS DECIDED (=937a2c9e=): this phone builds Rust — a tiny binary builds in 7.9 s, starts in 23 ms, and a pty works here (=/dev/pts/N=). The numbers are in =research/tiny-binary-probe.org=; the holder is therefore written and built on this phone, with herdr kept behind the same contract as the fallback.
+  - The owner switched the priority on 2026-10-21: this program is built FIRST, and the AIU-PM and the AIU EDITOR implementation are paused until it works. Both say so in their own README and TODO.
+  - README.org now says what this program is and what works today.
 
 * Next step
 # one line, so a fresh conversation starts in the right place.
-  - TODO.org, top to bottom: item 1 (the tree lands with the light gate); item 2 — tier-1 02, the tiny-binary probe on the phone that decides the route and confirms D-002/D-003; herdr runs the daily panes if it passes.
+  - TODO.org, top to bottom: item 3 — the holder and the tty facade, the design is already written down in =plan/holder-design.org= (one shell, one session, one log, one socket, two clients; a shell survives a detach). Then item 4 (panes and layouts), item 5 (key routing), and the rest in order.
+
+* The phone facts, measured 2026-10-21
+# what was already proved here, so nobody measures it twice.
+  - Rust: =/root/home/shape/.cargo/bin/cargo=, rustc 1.99.0, host =aarch64-unknown-linux-gnu=. Cargo MUST run =--offline=; the registry cache holds =libc= and =serde_json= only — no other dependency may be added.
+  - A pty works: =posix_openpt= + =grantpt= + =unlockpt= + =ptsname_r= gives =/dev/pts/N=, and a forked =/bin/sh= under it reads back its own prompt.
+  - The build writes its target directory outside the tree (=CARGO_TARGET_DIR=), so nothing but source lands in the package.
 
 * How to work here
 # house rules.
