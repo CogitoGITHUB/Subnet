@@ -24,3 +24,7 @@
     drawn on one terminal, the mode line says the mode, the keymap explorer
     opens on Space and shows the keys, and a key in insert mode reaches the
     focused pane's own program
+  - send-probe/probe.nu — the phone proof of the send to both agents: the
+    selection, the command record and the why travel in one bundle to the
+    multiplexer's own agent and to the editor's agent, and the seam holds a
+    secret out

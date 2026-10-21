@@ -1083,9 +1083,11 @@ impl Screen {
         Action::Nothing
     }
 
-    /// send_region asks the holder to send the region to the agent. The
-    /// bundle is built by the holder, where the redaction seam is, and
-    /// the agent that is open is the one that receives it.
+    /// send_region asks the holder to send the region to the agents. The
+    /// bundle is built by the holder, where the redaction seam is, and the
+    /// agents that are open are the ones that receive it. The pane the
+    /// region came from is named, so the holder can add that pane's command
+    /// record to the bundle.
     fn send_region(&mut self, lines: &[String]) -> Action {
         let text = self.select.region(lines);
         if text.is_empty() {
@@ -1093,12 +1095,14 @@ impl Screen {
             return Action::Nothing;
         }
         let program = self.agent_program.clone();
-        self.message = "the region is on its way to the agent".to_string();
+        let pane = self.focused_pane();
+        self.message = "the region is on its way to the agents".to_string();
         Action::Request(json!({
             "op": "send-agent",
             "selection": text,
             "target": agent_name(&program),
-            "why": "the owner sent the picked text to the agent",
+            "from": pane,
+            "why": "the owner sent the picked text to the agents",
         }))
     }
 
@@ -1336,7 +1340,7 @@ fn line_holds(line: &str, what: &str) -> bool {
 
 /// agent_name answers the name of the agent program: the last piece of its
 /// path. The target of a bundle is named, never inferred.
-fn agent_name(program: &str) -> String {
+pub fn agent_name(program: &str) -> String {
     program
         .rsplit('/')
         .next()

@@ -283,7 +283,7 @@ impl Options {
                 }
                 "--help" => {
                     println!(
-                        "client --state-dir DIR [--op state|attach|detach|read|send|screen] [--data TEXT] [--pane NAME] [--agent-program PROGRAM] [--since N] [--count N]"
+                        "client --state-dir DIR [--op state|attach|detach|read|send|send-agent|screen] [--data TEXT] [--pane NAME] [--agent-program PROGRAM] [--since N] [--count N]"
                     );
                     std::process::exit(0);
                 }
@@ -318,6 +318,19 @@ impl Options {
                 let mut request = json!({ "op": "send", "client": CLIENT_NAME, "data": self.data });
                 if !self.pane.is_empty() {
                     request["pane"] = Value::from(self.pane.clone());
+                }
+                request
+            }
+            "send-agent" => {
+                let mut request = json!({
+                    "op": "send-agent",
+                    "client": CLIENT_NAME,
+                    "selection": self.data,
+                    "target": screen::agent_name(&self.agent_program),
+                    "why": "the owner sent the picked text to the agents",
+                });
+                if !self.pane.is_empty() {
+                    request["from"] = Value::from(self.pane.clone());
                 }
                 request
             }

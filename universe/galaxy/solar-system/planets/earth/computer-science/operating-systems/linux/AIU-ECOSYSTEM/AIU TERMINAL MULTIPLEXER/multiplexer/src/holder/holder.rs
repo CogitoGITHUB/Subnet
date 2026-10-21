@@ -74,8 +74,16 @@ struct Pane {
     /// args are the arguments the program was started with: a restarted pane
     /// runs the same program the same way.
     args: Vec<String>,
+    /// typed is what the owner has typed into this pane since the last
+    /// newline: the command the pane is given is the line that ends here.
+    typed: String,
     shell: shells::Shell,
 }
+
+/// AGENT_PANES are the panes a bundle goes to: the multiplexer's own agent
+/// and the editor's agent. Both run the same agent program, so one bundle
+/// serves both, and a pane with another name is not an agent.
+const AGENT_PANES: [&str; 2] = ["agent", "editor-agent"];
 
 /// pane_log_tail answers the last words one pane's program said, as the
 /// session's log holds them. It reads the log and never the drawing.
@@ -98,6 +106,54 @@ fn pane_log_tail(session: &Session, pane: &str, limit: usize) -> String {
         }
     }
     lines.join("\n")
+}
+
+/// command_record answers the command one pane was given and what that pane
+/// printed after it: the two parts of one record, read from the log. A pane
+/// with no command yet answers nothing, and the bundle carries neither part.
+fn command_record(session: &Session, pane: &str) -> (String, String) {
+    if pane.is_empty() {
+        return (String::new(), String::new());
+    }
+    let held = match log::Log::records(&session.log_path) {
+        Ok(held) => held,
+        Err(_) => return (String::new(), String::new()),
+    };
+    let mut command = String::new();
+    let mut at = 0;
+    for (number, record) in held.iter().enumerate() {
+        let of_pane = record
+            .get("inputs")
+            .and_then(|inputs| inputs.get("pane"))
+            .and_then(|value| value.as_str());
+        let is_command = record.get("kind").and_then(|value| value.as_str()) == Some("command");
+        if is_command && of_pane == Some(pane) {
+            command = record
+                .get("inputs")
+                .and_then(|inputs| inputs.get("command"))
+                .and_then(|value| value.as_str())
+                .unwrap_or("")
+                .to_string();
+            at = number + 1;
+        }
+    }
+    if command.is_empty() {
+        return (String::new(), String::new());
+    }
+    let mut said: Vec<String> = Vec::new();
+    for record in held.iter().skip(at) {
+        if record.get("who").and_then(|value| value.as_str()) != Some(pane) {
+            continue;
+        }
+        if let Some(text) = record
+            .get("outputs")
+            .and_then(|outputs| outputs.get("text"))
+            .and_then(|value| value.as_str())
+        {
+            said.push(text.to_string());
+        }
+    }
+    (command, said.join("\n"))
 }
 
 /// Fields are the story of one record: what happened, who did it, why, and
@@ -178,6 +234,7 @@ fn run(args: &[String]) -> Result<(), String> {
             tab: pane.tab,
             weight: pane.weight,
             args: Vec::new(),
+            typed: String::new(),
             shell,
         });
     }
@@ -770,6 +827,30 @@ fn answer(session: &mut Session, at: usize, line: &str) -> Result<bool, String> 
                 }
             };
             if sent {
+                // The command the pane was given: the typed text since the
+                // last newline. The log holds it, so a later send can carry
+                // the command and what the pane printed after it.
+                session.panes[target].typed.push_str(data);
+                let typed = session.panes[target].typed.clone();
+                let command = match typed.rfind('\n') {
+                    Some(at) => Some(typed[..at].to_string()),
+                    None => None,
+                };
+                if let Some(command) = command {
+                    let kept = typed.rsplit('\n').next().unwrap_or("").to_string();
+                    session.panes[target].typed = kept;
+                    let record = session.record(Fields {
+                        kind: "command",
+                        who: "holder",
+                        what: "the pane was given a command",
+                        why: "the owner typed it in that pane",
+                        how: "the typed text was read up to the newline that ended it",
+                        inputs: json!({ "pane": pane_name.clone(), "command": command }),
+                        outputs: json!({}),
+                        result: json!({}),
+                    });
+                    session.write(&record);
+                }
                 let record = session.record(Fields {
                     kind: "info",
                     who: "client",
@@ -806,28 +887,15 @@ fn answer(session: &mut Session, at: usize, line: &str) -> Result<bool, String> 
                 .and_then(|value| value.as_str())
                 .unwrap_or("")
                 .to_string();
-            let agent = session
-                .panes
-                .iter()
-                .position(|pane| pane.name == "agent");
-            let agent = match agent {
-                Some(at) => at,
-                None => {
-                    let record = session.record(Fields {
-                        kind: "fail",
-                        who: "holder",
-                        what: "the picked text was not sent",
-                        why: "there is no agent pane open",
-                        how: "the panes were looked for and no agent was found",
-                        inputs: json!({ "target": target }),
-                        outputs: json!({}),
-                        result: json!({ "why": "there is no agent pane open" }),
-                    });
-                    session.write(&record);
-                    answer_client(session, at, &record);
-                    return Ok(false);
-                }
-            };
+            let from = request
+                .get("from")
+                .and_then(|value| value.as_str())
+                .unwrap_or("")
+                .to_string();
+            // The command record: the command the pane was given and what
+            // that pane printed after it, read from the log — the truth, and
+            // never a copy the screen made by hand.
+            let (command, output) = command_record(session, &from);
             let made = bundle::Bundle::make(
                 "aiu-multiplexer",
                 "aiu-ecosystem",
@@ -839,7 +907,30 @@ fn answer(session: &mut Session, at: usize, line: &str) -> Result<bool, String> 
                 &why,
             );
             let text = match made {
-                Some(bundle) => format!("{}\n", bundle.text()),
+                Some(bundle) => {
+                    let bundle = bundle.carrying(&command, &output);
+                    let text = format!("{}\n", bundle.text());
+                    // The seam has already been through the bundle; this
+                    // asks the seam again, and a text that would still
+                    // change is refused by name instead of written to an
+                    // agent's terminal.
+                    if !bundle::carries_no_secret(&text) {
+                        let record = session.record(Fields {
+                            kind: "fail",
+                            who: "holder",
+                            what: "the picked text was not sent",
+                            why: "the bundle would carry a secret",
+                            how: "the redaction seam was asked again and the text would change",
+                            inputs: json!({ "target": target, "from": from }),
+                            outputs: json!({}),
+                            result: json!({ "why": "the bundle would carry a secret" }),
+                        });
+                        session.write(&record);
+                        answer_client(session, at, &record);
+                        return Ok(false);
+                    }
+                    text
+                }
                 None => {
                     let record = session.record(Fields {
                         kind: "fail",
@@ -856,16 +947,55 @@ fn answer(session: &mut Session, at: usize, line: &str) -> Result<bool, String> 
                     return Ok(false);
                 }
             };
-            let pane_name = session.panes[agent].name.clone();
-            let sent = session.panes[agent].shell.send(text.as_bytes());
+            // The destinations: the multiplexer's own agent and the editor's
+            // agent. Both panes run the same agent program, so one bundle
+            // serves both and neither is told which one it is.
+            let destinations: Vec<usize> = AGENT_PANES
+                .iter()
+                .filter_map(|name| session.panes.iter().position(|pane| &pane.name == name))
+                .collect();
+            if destinations.is_empty() {
+                let record = session.record(Fields {
+                    kind: "fail",
+                    who: "holder",
+                    what: "the picked text was not sent",
+                    why: "there is no agent pane open",
+                    how: "the panes were looked for and no agent was found",
+                    inputs: json!({ "target": target, "from": from }),
+                    outputs: json!({}),
+                    result: json!({ "why": "there is no agent pane open" }),
+                });
+                session.write(&record);
+                answer_client(session, at, &record);
+                return Ok(false);
+            }
+            let mut went: Vec<String> = Vec::new();
+            for pane_index in destinations {
+                let pane_name = session.panes[pane_index].name.clone();
+                let sent = session.panes[pane_index].shell.send(text.as_bytes());
+                let record = session.record(Fields {
+                    kind: if sent.is_ok() { "info" } else { "fail" },
+                    who: "holder",
+                    what: "the bundle went to the agent",
+                    why: "the owner sent the picked text",
+                    how: "the bundle was written to the agent's terminal",
+                    inputs: json!({ "bytes": text.len(), "pane": pane_name.clone(), "target": target }),
+                    outputs: json!({}),
+                    result: json!({}),
+                });
+                session.write(&record);
+                if sent.is_ok() {
+                    went.push(pane_name);
+                }
+            }
             let record = session.record(Fields {
-                kind: if sent.is_ok() { "info" } else { "fail" },
+                kind: "info",
                 who: "holder",
-                what: "the picked text went to the agent",
-                why: "the owner sent the picked text",
-                how: "the bundle was written to the agent's terminal",
-                inputs: json!({ "bytes": text.len(), "pane": pane_name, "target": target }),
-                outputs: json!({}),
+                what: "the bundle went to the agents",
+                why: "the owner sent the picked text to the agents",
+                how: "the same bundle was written to every agent pane that is open",
+                inputs: json!({ "target": target, "from": from, "agents": went.len() }),
+                outputs: json!({ "agents": went.join(",") }),
                 result: json!({}),
             });
             session.write(&record);
@@ -1027,6 +1157,7 @@ fn answer(session: &mut Session, at: usize, line: &str) -> Result<bool, String> 
                 tab: tab.clone(),
                 weight: 1,
                 args: args.clone(),
+                typed: String::new(),
                 shell: opened,
             });
             let record = session.record(Fields {

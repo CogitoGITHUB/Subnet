@@ -30,6 +30,18 @@ const SECRET_WORDS: [&str; 11] = [
     "-----begin",
 ];
 
+/// REDACTION is the marker that says a value was hidden.
+const REDACTION: &str = "[redacted]";
+
+/// carries_a_secret answers whether a text holds something the seam would
+/// hide: a line that names a credential and does not already carry the
+/// marker. A marked line is safe, so the question is about the value and not
+/// about the name — the name stays in the text on purpose.
+pub fn carries_a_secret(text: &str) -> bool {
+    text.split('\n')
+        .any(|line| names_a_credential(line) && !line.trim_end().ends_with(REDACTION))
+}
+
 /// redact_text answers the text with everything that looks like a secret
 /// taken out of it.
 pub fn redact_text(text: &str) -> String {
@@ -106,5 +118,12 @@ mod tests {
             redacted,
             "first line\npassword[redacted]\nlast line"
         );
+    }
+
+    #[test]
+    fn a_marked_line_holds_no_secret_any_more() {
+        assert!(carries_a_secret("export api_key=sk-abcdef"));
+        assert!(!carries_a_secret("export api_key[redacted]"));
+        assert!(!carries_a_secret("the build finished in 4 seconds"));
     }
 }

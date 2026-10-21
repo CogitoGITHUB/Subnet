@@ -55,7 +55,7 @@ that way.
 | The MCP surface: sessions, records, send | Implemented and verified |
 | The key routing between the multiplexer and the editor | In progress: the routes are named, the walk with the editor in a pane is owed |
 | The dev mode: work mode, the bake, the last good | Implemented and verified: the config is reloaded live, and the bake keeps the last good |
-| Select and send to both agents, with the context | Planned (TODO item 8) |
+| Select and send to both agents, with the context | Implemented and verified: the selection, the command record and the why travel in one bundle to every agent pane that is open |
 | The Television channels | Implemented and verified: three read-only channels, and television reads all three |
 | The screen's own rows and the levels (`l` and `L`) | Implemented and verified: the mode row, the specifics, the events, the hints, and level 0 |
 | The workspace engine inside the multiplexer | Implemented and verified: the key group, the panel, the holder's seam and the mode line (TODO item 16 is partly done) |
