@@ -48,6 +48,15 @@ task.
     The phone proof is =tools/holder-probe/probe.nu= — after the client
     detached, the shell was still alive and still writing to the log, and
     a second client found the same session and the same shell.
+  - The agent surface works (=88ce654c=): the MCP server over stdio talks
+    to a holder's socket, so an AI agent can list the sessions, read a
+    session's records and send to a session's shell. Reading is free; a
+    send changes what a session does, so it needs the human's token and
+    the server checks the token itself. The phone proof is
+    =tools/mcp-probe/probe.nu=. Both this program's server and the
+    editor's are registered in OpenCode on this phone, and both skills
+    are installed, so an OpenCode session can drive the multiplexer and
+    the editor without the owner touching the terminal.
   - Every one of the ten modules really loads: each was required on
     its own and answered.
 
@@ -90,14 +99,15 @@ added.
 
 * What is not there yet
 
-  - The agent surface, the panes, the layouts, the key routing, the
-    command records, the Television channels, the dev loop, the control
-    surface and the kit: the build order in =plan/build-order.org= and
-    the work list in =TODO.org= say what is left, in order.
-  - The agent surface is the owner's addition of 2026-10-21: the MCP
-    server over the holder's socket, the skill, and the OpenCode
-    registration, so a true OpenCode session drives the multiplexer and
-    the editor without the owner touching the terminal.
+  - The panes, the layouts, the key routing, the command records, the
+    Television channels, the dev loop, the control surface and the kit:
+    the build order in =plan/build-order.org= and the work list in
+    =TODO.org= say what is left, in order.
+  - The key that opens the agent with the context of the pane
+    (=plan/agent-opens-here.org=): one key in the focused pane opens
+    OpenCode beside it with that pane's output already attached, and
+    nothing is copied by hand. It waits on the panes, the key routing
+    and select-and-send.
   - The =join/= seam: nothing crosses Rust and Racket yet, and the
     language-split lint keeps it that way.
   - The key routing, the command records, the agent panes, the dev
