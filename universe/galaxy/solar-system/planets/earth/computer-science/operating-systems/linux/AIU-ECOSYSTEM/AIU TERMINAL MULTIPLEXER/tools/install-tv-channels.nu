@@ -33,16 +33,20 @@ def main [
     print $"  mkdir -p ($cable)"
     let records_ln = ($src | path join 'tm-records.toml' | path expand)
     let panes_ln = ($src | path join 'tm-panes.toml' | path expand)
+    let sessions_ln = ($src | path join 'tm-sessions.toml' | path expand)
     print $"  ln -sfn ($records_ln) ($cable | path join 'tm-records.toml')"
     print $"  ln -sfn ($panes_ln) ($cable | path join 'tm-panes.toml')"
+    print $"  ln -sfn ($sessions_ln) ($cable | path join 'tm-sessions.toml')"
     print ""
     print "Required environment (export before launching tv):"
     print $"  TM_STATE_DIR=<the holder's state dir>  # the session's own directory"
     print "  TM_LAYOUT=<the layout file>           # optional, defaults to"
     print "                                          $TM_STATE_DIR/layout.json"
+    print "  TM_SESSIONS_DIR=<the sessions dir>    # for tm-sessions"
     print ""
     print "Then list and launch:"
     print "  tv list-channels"
     print "  tv tm-records"
     print "  tv tm-panes"
+    print "  tv tm-sessions"
 }

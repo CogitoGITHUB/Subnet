@@ -55,7 +55,7 @@ that way.
 | The key routing between the multiplexer and the editor | In progress: the routes are named, the walk with the editor in a pane is owed |
 | The dev mode: work mode, the bake, the last good | Planned (TODO item 7) |
 | Select and send to both agents, with the context | Planned (TODO item 8) |
-| The Television channels | Implemented and verified: two read-only channels, and television reads both |
+| The Television channels | Implemented and verified: three read-only channels, and television reads all three |
 | The workspace engine inside the multiplexer | Planned (TODO item 16) |
 | The Git inspection layer inside the multiplexer | Implemented and verified: the key group, the panel and the holder's seam |
 | The screen selection (the biomechanical model) | Planned: the design is in `plan/screen-selection.org` |
@@ -260,8 +260,9 @@ a different contract rather than guessing.
 - The editor is the other half of the key routing, and the multiplexer holds the reserved
   prefix (decision D-005).
 - Television is the picker for the channels. The `tv` binary is on this phone now
-  (television 0.15.9, built from the source): it reads the cable directory, and both
-  channels in `picker/` are in it. The channels are read-only — the picker browses
+  (television 0.15.9, built from the source): it reads the cable directory, and the
+  three channels in `picker/` are in it — the records of a session, the panes of a
+  session, and the live sessions themselves. The channels are read-only — the picker browses
   data, it never executes — and `tools/install-tv-channels.nu` only prints the commands
   that install them.
 

@@ -1,0 +1,27 @@
+# tm-sessions: the live sessions of the multiplexer, read-only.
+#
+# The sessions directory holds one directory per session, and each of
+# them holds the holder's own JSON: the event log, the socket and the
+# layout. This channel browses those sessions and does nothing else: no
+# session is started, stopped or touched, and there is no action here,
+# because a picker selects and never executes.
+#
+# TM_SESSIONS_DIR is required: it names the sessions directory, and
+# without it the channel lists nothing.
+
+[metadata]
+name = "tm-sessions"
+description = "The live sessions of the multiplexer: the name and the run"
+requirements = ["nu"]
+
+[source]
+command = "ls ($env.TM_SESSIONS_DIR) | where type == dir | get name | path basename | each { |name| let log = ($env.TM_SESSIONS_DIR | path join $name 'events.log'); let run = (if ($log | path exists) { (open --raw $log | lines | first | from json | get -o outputs | get -o session) } else { '' }); $'($name)  ($run)' } | str join (char newline)"
+shell = "nu"
+
+[preview]
+command = "open --raw ($env.TM_SESSIONS_DIR | path join '{split:\\t:0}' 'events.log') | lines | first | from json | to json --raw"
+shell = "nu"
+
+[ui.preview_panel]
+size = 55
+header = "{}"
