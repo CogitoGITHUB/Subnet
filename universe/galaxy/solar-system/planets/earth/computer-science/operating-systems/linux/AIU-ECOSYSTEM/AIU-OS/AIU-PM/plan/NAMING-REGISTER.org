@@ -21,6 +21,10 @@ does; =core=, =main=, =server=, =backends=, =handler=, =manager= and
   a fake git for tests; never production
 - =package-manager/src/git/git-repo.rkt=
   clone, fetch, pin, export: every repository operation
+- =package-manager/src/git/link-target.rkt=
+  the target text of a symbolic link, read without following it; the
+  one spawn the store's content address needs, put BELOW the store so
+  the store stays pure
 - =package-manager/src/install/install-command.rkt=
   builds a prefix for an already-applied plan
 - =package-manager/src/queue/jobs.rkt=

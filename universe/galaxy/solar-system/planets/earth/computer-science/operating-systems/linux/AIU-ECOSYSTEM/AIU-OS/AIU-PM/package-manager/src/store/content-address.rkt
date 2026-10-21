@@ -66,7 +66,7 @@
          racket/string
          openssl/sha1
          "../errors/error-type.rkt"
-         "../process/run.rkt"
+         "../git/link-target.rkt"
          "../spec/spec.rkt"
          "../spec/plan-hash.rkt"
          "../narration/narration.rkt")
@@ -120,27 +120,11 @@
   (format "~s ~s ~a ~a" path kind mode fact))
 
 ;; path -> string, the target text of a symlink, read WITHOUT following
-;; it. This Racket exports no read-symlink, and the two alternatives are
-;; both wrong: resolve-path follows the link (so a dangling link cannot
-;; be hashed at all) and file bytes would hash the link as if it were a
-;; regular file. So the read is one readlink through the one spawn path;
-;; a link is a rare entry, and a tree whose link targets are not read is
-;; a tree the address pretends to cover.
+;; it. The store does not spawn: the area law says store/ may not reach
+;; up to process/, so the read belongs to git/, which may. The store
+;; asks git for the target and hashes the answer.
 (define (link-target p)
-  (define exe
-    (or (find-executable-path "readlink")
-        (raise-pm-error 'config 'tree-hash "readlink is not on PATH"
-                        #:fields `(("path" . ,(path->string p)))
-                        #:hint "the address cannot be computed without it, so the build must run")))
-  (define res
-    (spawn-and-wait exe (list (path->string p))
-                    #:cwd (path->string (path-only p))
-                    #:kind 'config #:operation "read-link"))
-  (unless (zero? (result-exit res))
-    (raise-pm-error 'config 'tree-hash "tree entry is unreadable"
-                    #:fields `(("path" . ,(path->string p)))
-                    #:hint "the address cannot be computed, so the build must run"))
-  (string-trim (string-join (result-stdout-lines res) "\n")))
+  (read-link-target (path->string p)))
 
 ;; path -> (listof (cons string string)), relative path and its line.
 ;; A symlink is hashed AS a link (its target, no mode bits, never
