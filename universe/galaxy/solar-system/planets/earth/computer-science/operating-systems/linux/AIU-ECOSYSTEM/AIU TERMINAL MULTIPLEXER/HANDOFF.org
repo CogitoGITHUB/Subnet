@@ -1,6 +1,6 @@
 #+TITLE: HANDOFF — AIU TERMINAL MULTIPLEXER
 # One job: everything a fresh conversation needs to start on the multiplexer.
-# Status: current 2026-10-21; the tree and the gate are landed, the holder is being built.
+# Status: current 2026-10-21; the tree, the gate and the holder are landed; the agent surface is next.
 
 * What this program is
 # Shells, panes, a layout tree, and a session holder with detach and reattach.
@@ -19,12 +19,14 @@
   - Base complete; the ready-up closed the decisions: the route (D-002), herdr as the tested candidate (D-003), the control surface (D-004), the shared key-routing handover (D-005) and the log shape (D-006); plan/open-decisions.org is a redirect stub.
   - The TREE LANDED (=5a8908e7=): the package is =multiplexer/= with the floor areas =errors/=, =narration/= and =machine/=, and the gate is green at 7 stages (the security gate prints NOTHING-TO-CHECK until that area exists). Every module really loads.
   - The ROUTE IS DECIDED (=937a2c9e=): this phone builds Rust — a tiny binary builds in 7.9 s, starts in 23 ms, and a pty works here (=/dev/pts/N=). The numbers are in =research/tiny-binary-probe.org=; the holder is therefore written and built on this phone, with herdr kept behind the same contract as the fallback.
+  - THE HOLDER WORKS (=abab3340=): a shell on a pty in a session that outlives every client, an append-only log flushed per record, and a unix socket in the session's state directory. The client is a thin screen. The phone proof is =tools/holder-probe/probe.nu=: after the detach the shell was still alive and still writing to the log, and a second client found the same session and the same shell. What the phone cannot do is recorded, not promised: the holder dies with the session that started it, so the promise is about the DETACH.
   - The owner switched the priority on 2026-10-21: this program is built FIRST, and the AIU-PM and the AIU EDITOR implementation are paused until it works. Both say so in their own README and TODO.
+  - The owner's second addition of 2026-10-21: a true OpenCode session must be able to DRIVE the multiplexer and the editor — the MCP server over the holder's socket, the skill, and the OpenCode registration (TODO item 4). The editor's own kit is already built (its MCP server over stdio, its one JSON envelope); what is missing is the registration and the multiplexer's half.
   - README.org now says what this program is and what works today.
 
 * Next step
 # one line, so a fresh conversation starts in the right place.
-  - TODO.org, top to bottom: item 3 — the holder and the tty facade, the design is already written down in =plan/holder-design.org= (one shell, one session, one log, one socket, two clients; a shell survives a detach). Then item 4 (panes and layouts), item 5 (key routing), and the rest in order.
+  - TODO.org, top to bottom: item 4 — the agent surface (the owner's addition): the MCP server over the holder's socket, the skill, and the OpenCode registration for the multiplexer AND the editor. Then item 5 (panes and layouts), item 6 (key routing), and the rest in order.
 
 * The phone facts, measured 2026-10-21
 # what was already proved here, so nobody measures it twice.
