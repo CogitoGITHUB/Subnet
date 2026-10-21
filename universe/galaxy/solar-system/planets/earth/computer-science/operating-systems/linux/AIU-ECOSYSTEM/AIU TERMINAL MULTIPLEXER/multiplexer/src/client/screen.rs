@@ -641,10 +641,7 @@ impl Screen {
                 self.move_focus(-1);
                 Action::Nothing
             }
-            Command::OpenAgent => {
-                let program = self.agent_program.clone();
-                self.open_pane("agent".to_string(), program, self.focused_tab())
-            }
+            Command::OpenAgent => self.open_agent(),
             Command::OpenEditor => {
                 let program = self.editor_program.clone();
                 self.open_pane("editor".to_string(), program, self.focused_tab())
@@ -658,6 +655,34 @@ impl Screen {
                 Action::Nothing
             }
         }
+    }
+
+    /// open_agent asks the holder for an agent pane beside the focused one,
+    /// with the context of that pane attached: the shell output, the shell,
+    /// the place and the why. Nothing is copied by hand.
+    ///
+    /// The context is the tail of the pane's log: the holder sends every
+    /// record to the clients that watch it, so the screen already holds
+    /// what the log holds.
+    fn open_agent(&mut self) -> Action {
+        let program = self.agent_program.clone();
+        let target = agent_name(&program);
+        let pane = self.focused_pane();
+        let why = format!("the owner asked for the agent beside the pane {}", pane);
+        self.message = format!("the agent is opening with the context of {}", pane);
+        // The context is the tail of that pane's log, and the log belongs to
+        // the holder: the screen asks for the context and never copies it.
+        Action::Request(json!({
+            "op": "open",
+            "name": "agent",
+            "program": program,
+            "tab": self.focused_tab(),
+            "context": {
+                "pane": pane,
+                "target": target,
+                "why": why,
+            }
+        }))
     }
 
     /// open_pane asks the holder for a pane with a program in it.
@@ -812,6 +837,25 @@ impl Screen {
     }
 }
 
+/// line_holds answers whether a record on the wire says a thing.
+fn line_holds(line: &str, what: &str) -> bool {
+    match serde_json::from_str::<Value>(line) {
+        Ok(value) => value.get("what").and_then(|part| part.as_str()) == Some(what),
+        Err(_) => false,
+    }
+}
+
+/// agent_name answers the name of the agent program: the last piece of its
+/// path. The target of a bundle is named, never inferred.
+fn agent_name(program: &str) -> String {
+    program
+        .rsplit('/')
+        .next()
+        .filter(|name| !name.is_empty())
+        .unwrap_or(program)
+        .to_string()
+}
+
 /// clip answers the text with no more than width characters, and no more
 /// than one line.
 fn clip(text: &str, width: usize) -> String {
@@ -851,7 +895,12 @@ pub fn session(
     let mut pending = String::new();
     let mut out = std::io::stdout();
     let mut leave = false;
-    while !leave {
+    let mut detached = false;
+    let mut keys_done = false;
+    // A client that leaves must be heard: it detaches and waits for the
+    // holder's answer, so a request it asked for is never lost to a
+    // connection that closed too early.
+    while !leave || !detached {
         // The window: the terminal's size is the session's size, and the
         // holder tells every pane — the shells and the editors alike.
         let size = tty::window_size(libc::STDOUT_FILENO).unwrap_or((80, 24));
@@ -871,7 +920,7 @@ pub fn session(
 
         // The keys are only read once the screen knows the panes: a key that
         // arrives before the state would go to a pane the screen has not met.
-        let ready = !screen.panes.is_empty();
+        let ready = !screen.panes.is_empty() && !keys_done;
         let mut fds = vec![libc::pollfd {
             fd,
             events: libc::POLLIN,
@@ -906,6 +955,9 @@ pub fn session(
                     continue;
                 }
                 take_record(&mut screen, &line);
+                if line_holds(&line, "the client detached") {
+                    detached = true;
+                }
             }
         }
 
@@ -915,7 +967,14 @@ pub fn session(
             let mut buffer = [0u8; 1024];
             let got = wire::read(libc::STDIN_FILENO, &mut buffer)?;
             if got == 0 {
-                break;
+                // The keys are over: the client detaches and waits to be
+                // answered, and the wait ends on the answer.
+                keys_done = true;
+                if !leave {
+                    leave = true;
+                    wire::ask(fd, &json!({ "op": "detach", "client": client_name }))?;
+                }
+                continue;
             }
             for action in screen.key(&buffer[..got]) {
                 match action {
@@ -937,7 +996,11 @@ pub fn session(
                         request["client"] = Value::from(client_name);
                         wire::ask(fd, &request)?;
                     }
-                    Action::Quit => leave = true,
+                    Action::Quit => {
+                        leave = true;
+                        keys_done = true;
+                        wire::ask(fd, &json!({ "op": "detach", "client": client_name }))?;
+                    }
                 }
             }
         }

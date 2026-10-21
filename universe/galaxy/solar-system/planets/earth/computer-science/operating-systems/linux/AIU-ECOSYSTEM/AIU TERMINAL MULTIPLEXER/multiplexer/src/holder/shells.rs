@@ -18,8 +18,8 @@ pub struct Shell {
 
 impl Shell {
     /// start opens a terminal and runs one program on it, sized as asked.
-    pub fn start(program: &str, cols: u16, rows: u16) -> Result<Shell, String> {
-        let pty = facade::open_shell(program, cols, rows)?;
+    pub fn start(program: &str, args: &[String], cols: u16, rows: u16) -> Result<Shell, String> {
+        let pty = facade::open_shell(program, args, cols, rows)?;
         Ok(Shell {
             pid: pty.pid,
             master: pty.master,

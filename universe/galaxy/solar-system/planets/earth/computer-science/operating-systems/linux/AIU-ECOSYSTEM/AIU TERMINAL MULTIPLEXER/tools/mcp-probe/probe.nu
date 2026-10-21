@@ -120,7 +120,21 @@ def main [
     let records = (answer-of $said.stdout 6)
     let records_text = (text-of $records | from json)
     let log = ($records_text | get -o data | get -o records | default [])
-    let said_hello = ($log | where {|r| $r | get -o outputs | get -o text | default "" | str contains "sent-with-the-token" } | length)
+
+    # The shell answers in its own time: the records are read again until
+    # the answer is there. Every wait ends on an event — the records are
+    # read again — and never on a clock.
+    let read_records = $"{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"tools/call\",\"params\":{\"name\":\"multiplexer_records\",\"arguments\":{\"session\":\"($session)\",\"since\":0}}}"
+    mut said_hello = ($log | where {|r| $r | get -o outputs | get -o text | default "" | str contains "sent-with-the-token" } | length)
+    mut tries = 0
+    while $said_hello == 0 and $tries < 20 {
+        let again = ($read_records | ^$server --sessions-dir $sessions_dir | complete)
+        let again_records = (answer-of $again.stdout 1)
+        let again_text = (text-of $again_records | from json)
+        let again_log = ($again_text | get -o data | get -o records | default [])
+        $said_hello = ($again_log | where {|r| $r | get -o outputs | get -o text | default "" | str contains "sent-with-the-token" } | length)
+        $tries = $tries + 1
+    }
     check "the agent reads what the shell said" ($said_hello > 0) $"hits=($said_hello)"
 
     # the holder goes away with the probe

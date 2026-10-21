@@ -16,6 +16,9 @@
 #[path = "../tty/tty.rs"] mod tty;
 mod layout;
 mod log;
+
+#[path = "../agents/bundle.rs"]
+mod bundle;
 mod shells;
 
 use libc::c_int;
@@ -61,7 +64,33 @@ struct Pane {
     name: String,
     tab: String,
     weight: u16,
+    /// args are the arguments the program was started with: a restarted pane
+    /// runs the same program the same way.
+    args: Vec<String>,
     shell: shells::Shell,
+}
+
+/// pane_log_tail answers the last words one pane's program said, as the
+/// session's log holds them. It reads the log and never the drawing.
+fn pane_log_tail(session: &Session, pane: &str, limit: usize) -> String {
+    let held = match log::Log::records(&session.log_path) {
+        Ok(held) => held,
+        Err(_) => return String::new(),
+    };
+    let mut lines: Vec<String> = Vec::new();
+    for record in held.iter().rev().take(limit).rev() {
+        if record.get("who").and_then(|value| value.as_str()) != Some(pane) {
+            continue;
+        }
+        if let Some(text) = record
+            .get("outputs")
+            .and_then(|outputs| outputs.get("text"))
+            .and_then(|value| value.as_str())
+        {
+            lines.push(text.to_string());
+        }
+    }
+    lines.join("\n")
 }
 
 /// Fields are the story of one record: what happened, who did it, why, and
@@ -133,7 +162,7 @@ fn run(args: &[String]) -> Result<(), String> {
     let mut panes: Vec<Pane> = Vec::new();
     let mut tabs: Vec<String> = Vec::new();
     for pane in wanted.panes {
-        let shell = shells::Shell::start(&pane.program, pane.cols, pane.rows)?;
+        let shell = shells::Shell::start(&pane.program, &[], pane.cols, pane.rows)?;
         if !tabs.contains(&pane.tab) {
             tabs.push(pane.tab.clone());
         }
@@ -141,6 +170,7 @@ fn run(args: &[String]) -> Result<(), String> {
             name: pane.name,
             tab: pane.tab,
             weight: pane.weight,
+            args: Vec::new(),
             shell,
         });
     }
@@ -344,16 +374,21 @@ fn serve(session: &mut Session) -> Result<(), String> {
             return Err("the holder cannot wait for events".to_string());
         }
 
-        let mut ended = false;
+        let mut ended: Vec<usize> = Vec::new();
         for pane_at in 0..pane_count {
             if fds[pane_at].revents & (libc::POLLIN | libc::POLLHUP) == 0 {
                 continue;
             }
             if !read_shell(session, pane_at)? {
-                ended = true;
+                ended.push(pane_at);
             }
         }
-        if ended {
+        // A pane whose program ended goes on its own: the session and the
+        // other panes go on. The session ends when the last pane is gone.
+        for pane_at in ended.into_iter().rev() {
+            close_pane(session, pane_at);
+        }
+        if session.panes.is_empty() {
             break;
         }
 
@@ -425,7 +460,26 @@ fn serve(session: &mut Session) -> Result<(), String> {
 /// pane's name. It answers whether the session continues.
 fn read_shell(session: &mut Session, pane_at: usize) -> Result<bool, String> {
     let mut buffer = [0u8; 4096];
-    let got = session.panes[pane_at].shell.read(&mut buffer)?;
+    // A terminal that breaks is one pane's program gone: the session and
+    // the other panes go on.
+    let got = match session.panes[pane_at].shell.read(&mut buffer) {
+        Ok(got) => got,
+        Err(why) => {
+            let pane_name = session.panes[pane_at].name.clone();
+            let record = session.record(Fields {
+                kind: "info",
+                who: &pane_name,
+                what: "the pane ended",
+                why: "its program is gone and its terminal is closed",
+                how: "the read of the terminal failed and the pane was let go",
+                inputs: json!({ "pane": pane_name }),
+                outputs: json!({}),
+                result: json!({ "why": why }),
+            });
+            session.write(&record);
+            return Ok(false);
+        }
+    };
     if got == 0 {
         return Ok(false);
     }
@@ -443,6 +497,24 @@ fn read_shell(session: &mut Session, pane_at: usize) -> Result<bool, String> {
     });
     session.write(&record);
     Ok(true)
+}
+
+/// close_pane lets one pane go: its terminal is closed, the log says so,
+/// and the panes that are left go on.
+fn close_pane(session: &mut Session, pane_at: usize) {
+    let pane = session.panes.remove(pane_at);
+    close(pane.shell.master);
+    let record = session.record(Fields {
+        kind: "info",
+        who: &pane.name,
+        what: "the pane ended",
+        why: "its program is gone",
+        how: "the terminal was closed and the pane was let go",
+        inputs: json!({ "pane": pane.name.clone() }),
+        outputs: json!({ "panes": session.panes.len() }),
+        result: json!({}),
+    });
+    session.write(&record);
 }
 
 /// read_client takes what a client sent and answers it. It answers whether
@@ -663,7 +735,84 @@ fn answer(session: &mut Session, at: usize, line: &str) -> Result<bool, String> 
                 answer_client(session, at, &record);
                 return Ok(false);
             }
-            let opened = match shells::Shell::start(&program, session.cols, session.rows) {
+            let mut args: Vec<String> = request
+                .get("args")
+                .and_then(|value| value.as_array())
+                .map(|items| {
+                    items
+                        .iter()
+                        .filter_map(|item| item.as_str().map(|word| word.to_string()))
+                        .collect()
+                })
+                .unwrap_or_default();
+            // The context: the tail of the pane's own log, asked of the log
+            // itself. The screen never copies the text by hand and never
+            // scrapes the drawing: the log is the truth.
+            if let Some(context) = request.get("context") {
+                let pane_of = context
+                    .get("pane")
+                    .and_then(|value| value.as_str())
+                    .unwrap_or("")
+                    .to_string();
+                let target = context
+                    .get("target")
+                    .and_then(|value| value.as_str())
+                    .unwrap_or("")
+                    .to_string();
+                let why = context
+                    .get("why")
+                    .and_then(|value| value.as_str())
+                    .unwrap_or("")
+                    .to_string();
+                let selection = pane_log_tail(session, &pane_of, 50);
+                let made = bundle::Bundle::make(
+                    "aiu-multiplexer",
+                    "aiu-ecosystem",
+                    &target,
+                    &selection,
+                    "",
+                    "",
+                    "",
+                    &why,
+                );
+                match made {
+                    Some(bundle) => {
+                        let text = bundle.text();
+                        args.push("--prompt".to_string());
+                        args.push(text);
+                        // The send is a record: the log says what was sent,
+                        // to whom and why, before the pane that carries it
+                        // opens.
+                        let record = session.record(Fields {
+                            kind: "info",
+                            who: "client",
+                            what: "the context went to the agent",
+                            why: "the owner asked for the agent beside this pane",
+                            how: "the bundle was built from the pane's log and the pane was opened with it",
+                            inputs: json!({ "pane": name.clone(), "program": program.clone(), "client": client_name(&request) }),
+                            outputs: json!({ "target": target, "bytes": selection.len() }),
+                            result: json!({ "document": bundle.document() }),
+                        });
+                        session.write(&record);
+                    }
+                    None => {
+                        let record = session.record(Fields {
+                            kind: "fail",
+                            who: "holder",
+                            what: "the agent pane did not open",
+                            why: "a send needs a reason",
+                            how: "the bundle was refused because the why was blank",
+                            inputs: json!({ "pane": name.clone(), "program": program.clone() }),
+                            outputs: json!({}),
+                            result: json!({ "why": "the why of the send was blank" }),
+                        });
+                        session.write(&record);
+                        answer_client(session, at, &record);
+                        return Ok(false);
+                    }
+                }
+            }
+            let opened = match shells::Shell::start(&program, &args, session.cols, session.rows) {
                 Ok(shell) => shell,
                 Err(why) => {
                     let record = session.record(Fields {
@@ -701,6 +850,7 @@ fn answer(session: &mut Session, at: usize, line: &str) -> Result<bool, String> 
                 name: name.clone(),
                 tab: tab.clone(),
                 weight: 1,
+                args: args.clone(),
                 shell: opened,
             });
             let record = session.record(Fields {
@@ -709,7 +859,7 @@ fn answer(session: &mut Session, at: usize, line: &str) -> Result<bool, String> 
                 what: "a pane opened",
                 why: "the client asked for a pane",
                 how: "a terminal was opened, the program was started on it, the pane joined the session",
-                inputs: json!({ "pane": name, "tab": tab, "program": program, "client": client_name(&request) }),
+                inputs: json!({ "pane": name, "tab": tab, "program": program, "args": args.len(), "client": client_name(&request) }),
                 outputs: json!({ "pid": pid, "panes": session.panes.len() }),
                 result: json!({}),
             });

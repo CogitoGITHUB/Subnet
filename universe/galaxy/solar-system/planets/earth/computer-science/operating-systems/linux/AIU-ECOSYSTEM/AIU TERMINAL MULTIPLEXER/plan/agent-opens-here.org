@@ -76,6 +76,26 @@
   - Select and send (item 8): the bundle is what travels, and that is where
     the bundle is built.
 
+* What landed
+# the shape that is in the code now, and where the proof is.
+  - The key is =p o= in the panes map: it asks the holder for a pane named
+    =agent= that runs the agent program with the context attached.
+  - The context is built by the holder, not by the screen: the holder holds
+    the log, so the holder asks the log for the tail of that pane's records
+    and builds the bundle from it (=src/agents/bundle.rs=). The screen
+    never copies the text and never scrapes the drawing.
+  - The bundle is the editor's shape, the same one: the header, the
+    selection, and the why. The why is mandatory, and the target is named
+    (=opencode=), never inferred.
+  - The bundle passes the redaction seam (=src/agents/redact.rs=), the
+    editor's rules in the multiplexer: a line that names a credential keeps
+    its name and loses its value.
+  - The send is a record: the holder writes what was sent, to whom and why,
+    before the pane opens.
+  - The proof is in the screen probe: the key opens the pane, the bundle
+    names the multiplexer and the agent, and the context reaches the
+    program that runs in the pane.
+
 * What the phone has to show first
 # what is measured here and what waits for the laptop, in the plan's own words.
   - Here: one pane, one agent pane, the context attached, and the send

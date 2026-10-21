@@ -52,6 +52,9 @@
   - src/agents/tools.rs — the capabilities as data, and the work of each one
     over a session's wire
   - src/agents/envelope.rs — the one envelope every surface answers with
+  - src/agents/bundle.rs — the context bundle a send carries: the selection, the
+    file, the position, the address and the why, the shape the editor sends
+  - src/agents/redact.rs — the redaction seam: what may not leave the multiplexer
   - src/agents/capabilities.json — the declaration: the names, whether each one
     changes what a session does, and what it is for
   - src/client/ — the thin screen that attaches to a holder

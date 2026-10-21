@@ -133,6 +133,41 @@ def main [
     let panes_told = ($told | get -o outputs | default {} | get -o panes | default [] | length)
     check "every pane was told the size" ($panes_told >= 2) $"panes=($panes_told)"
 
+    # 7. the key that opens the agent beside the pane, with the context of
+    #    that pane attached. The agent is a plain script here, so the proof
+    #    is about the multiplexer and not about the phone's memory.
+    let agent = ($state_dir | path join "agent.sh")
+    '#!/bin/sh
+for a in "$@"; do echo "ARG $a"; done' | save --force $agent
+    chmod +x $agent
+
+    let opened = (do -i {
+        ^printf "po" | ^$client --state-dir $state_dir --op screen --agent-program $agent
+    } | complete)
+
+    let after = (records $client $state_dir)
+    let sends = ($after | where {|r| ($r | get -o what | default "") == "the context went to the agent" })
+    check "the send is a record" (($sends | length) > 0) $"records=($sends | length)"
+
+    let bundle = ($sends | last | get -o result | default {})
+    let header = ($bundle | get -o document | default {} | get -o header | default {})
+    check "the bundle names the multiplexer" (($header | get -o program | default "") == "aiu-multiplexer") $"header=($header)"
+    check "the bundle names the agent" (($header | get -o target | default "") == "agent.sh") $"target=($header | get -o target | default "")"
+
+    let panes = ($after | where {|r| (($r | get -o what | default "") == "a pane opened") and (($r | get -o inputs | default {} | get -o pane | default "") == "agent") })
+    check "the agent pane opened" (($panes | length) > 0) $"panes=($panes | length)"
+
+    # The program got the context: the script prints what it was given. The
+    # wait ends on the records arriving, never on a clock.
+    mut agent_hits = 0
+    mut agent_tries = 0
+    while $agent_hits == 0 and $agent_tries < 20 {
+        let again = (records $client $state_dir)
+        $agent_hits = ($again | where {|r| ($r | get -o outputs | default {} | get -o text | default "") | str contains "boundary: 1  program: aiu-multiplexer" } | length)
+        $agent_tries = $agent_tries + 1
+    }
+    check "the context reached the agent program" ($agent_hits > 0) $"hits=($agent_hits)"
+
     # the holder goes away with the probe
     let pid_file = ($state_dir | path join "holder.pid")
     if ($pid_file | path exists) {

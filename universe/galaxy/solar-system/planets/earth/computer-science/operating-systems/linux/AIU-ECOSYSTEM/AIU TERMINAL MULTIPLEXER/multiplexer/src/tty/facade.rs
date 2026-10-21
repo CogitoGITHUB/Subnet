@@ -24,7 +24,7 @@ pub struct Pty {
 
 /// open_shell starts one program on a new terminal, sized as asked, and
 /// answers the master side together with what was measured while opening it.
-pub fn open_shell(program: &str, cols: u16, rows: u16) -> Result<Pty, String> {
+pub fn open_shell(program: &str, args: &[String], cols: u16, rows: u16) -> Result<Pty, String> {
     let master = unsafe { libc::posix_openpt(libc::O_RDWR | libc::O_NOCTTY) };
     if master < 0 {
         return Err("posix_openpt refused: this phone has no pty to give".to_string());
@@ -69,7 +69,7 @@ pub fn open_shell(program: &str, cols: u16, rows: u16) -> Result<Pty, String> {
         eprintln!("holder: the terminal refused its size: {}", why);
     }
 
-    let child = fork_shell(slave_path.clone(), program);
+    let child = fork_shell(slave_path.clone(), program, args);
     close(slave);
     match child {
         Ok(pid) => {
@@ -148,7 +148,7 @@ pub fn close(fd: c_int) {
 /// fork_shell forks and, in the child, becomes the session leader on the slave
 /// with the program's three standard streams on it. The child never returns:
 /// it execs, or exits 127 and the holder records that.
-fn fork_shell(slave_path: String, program: &str) -> Result<libc::pid_t, String> {
+fn fork_shell(slave_path: String, program: &str, args: &[String]) -> Result<libc::pid_t, String> {
     let path = match CString::new(program) {
         Ok(value) => value,
         Err(_) => return Err("the shell path holds a nul byte".to_string()),
@@ -157,7 +157,13 @@ fn fork_shell(slave_path: String, program: &str) -> Result<libc::pid_t, String> 
         Ok(value) => value,
         Err(_) => return Err("the pty slave name holds a nul byte".to_string()),
     };
-    let argv: Vec<CString> = vec![path.clone()];
+    let mut argv: Vec<CString> = vec![path.clone()];
+    for argument in args {
+        match CString::new(argument.as_str()) {
+            Ok(value) => argv.push(value),
+            Err(_) => return Err("an argument of the program holds a nul byte".to_string()),
+        }
+    }
     let mut pointers: Vec<*const libc::c_char> = argv.iter().map(|a| a.as_ptr()).collect();
     pointers.push(std::ptr::null());
 
