@@ -32,6 +32,7 @@
   - learned/ — what the package manager already proved; PM is the read-only source
   - pm-integration/ — what PM must gain, listed, never done here
   - research/ — one file per studied subject, shared lessons
+  - workspace/ — the shared workspace engine: the one model and the one store that the editor and the multiplexer both read and write; written 2026-10-21
 
 * Later
 # Read HANDOFF.org first; it says what a fresh conversation needs. WHEN-ON-LAPTOP.org is living: append to it the moment a phone limit appears.

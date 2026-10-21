@@ -1,0 +1,37 @@
+#+TITLE: INDEX — AIU-ECOSYSTEM/workspace/
+# One job: list every file and directory in this package and the single job
+# of each.
+# Status: current; updated in the same commit as any change in the package.
+
+* What this package is
+# one paragraph: what it is for, and what it is not.
+  The workspace engine: the one model and the one store that the text
+  editor and the terminal multiplexer both read and write. It owns the
+  workspace, the projects, the resource references, the presentations, the
+  shared context and the record of the operations that were carried out. It
+  owns no buffer, no terminal and no process, and it is not a daemon: it
+  has no listener, no thread and no timer.
+
+  The design it follows is in =../WORKSPACE.org=, and the words it obeys
+  are in =../contract/workspace-model.org=, =../contract/workspace-operations.org=,
+  =../contract/workspace-mode-line.org= and =../contract/workspace-ai-context.org=.
+
+* Files
+# one line per file: its name, then the single job it performs.
+
+  - INDEX.org — this index: every file and directory of the package, with its job
+  - Cargo.toml — what the package is: the engine as a library and as a one-shot program
+  - Cargo.lock — the exact versions of the two crates this phone can fetch, pinned
+  - src/ — the package's source: the model, the store, the operations and the snapshot
+
+* Directories
+# one line per directory and what it holds.
+
+  - src/ — the engine's source, one area per file
+  - src/bin/ — the one-shot program: one request in a file, one answer in a file
+
+* The two programs that use it
+# who reaches it, and how.
+  - The multiplexer uses it as a library inside its own process.
+  - The editor reaches it over the join seam that already carries the two
+    languages (D-008), so the Racket side never writes the store itself.

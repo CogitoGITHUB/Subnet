@@ -1,0 +1,19 @@
+#+TITLE: INDEX — AIU-ECOSYSTEM/workspace/src/
+# One job: list every file in this directory and the single job of each.
+# Status: current; updated in the same commit as any change in this directory.
+
+* Files
+# one line per file: its name, then the single job it performs.
+
+  - INDEX.org — this index: every file of the directory and its one job
+  - lib.rs — the engine itself: it opens a state directory and answers the operations
+  - model.rs — the workspace, the project, the resource reference, the presentation and the context, and how each is written
+  - store.rs — the files that hold the workspaces, the lock that keeps one writer at a time, and the write that never leaves half a file
+  - operations.rs — the one envelope, the catalogue of operations, and the dispatch that answers each request with its state
+  - snapshot.rs — the one document an agent reads to understand the workspace
+
+* Directories
+# one line per directory and what it holds.
+
+  - bin/ — the one-shot program: one request in a file, one answer in a file
+  - bin/workspace.rs — the program that answers one request for the editor's join seam
