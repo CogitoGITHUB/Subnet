@@ -224,12 +224,16 @@
 ;; directory name is name/slot/version-hash12 (store.rkt's own layout),
 ;; so the walk is exactly three levels and never has to guess.
 (define (stuck-marker-findings store-dir)
+  ;; append*, not for*/list alone: the inner for/list returns a LIST per
+  ;; (name slot), so a bare for*/list gives a list of lists and every
+  ;; later store-marker-present? call gets a list where a path belongs.
   (define versioned
-    (for*/list ([name (in-list (subdirectories store-dir))]
-                [slot (in-list (subdirectories (build-path store-dir name)))])
-      (define slot-dir (build-path store-dir name slot))
-      (for/list ([v (in-list (subdirectories slot-dir))])
-        (build-path slot-dir v))))
+    (append*
+     (for*/list ([name (in-list (subdirectories store-dir))]
+                 [slot (in-list (subdirectories (build-path store-dir name)))])
+       (define slot-dir (build-path store-dir name slot))
+       (for/list ([v (in-list (subdirectories slot-dir))])
+         (build-path slot-dir v)))))
   (for/list ([dir (in-list versioned)]
              #:when (store-marker-present? dir))
     (note 'doctor (format "an incomplete marker is still in ~a" dir))
@@ -289,7 +293,7 @@
                                      (string-append
                                       "the manifest could not be read: "
                                       (exn-message e))
-                                     'manifest-unreadable))))])
+                                     'manifest-unreadable)))])
                   (define entries (manifest-read manifest))
                   (note 'doctor (format "~a entr(ies) in the manifest"
                                           (length entries)))
@@ -299,7 +303,7 @@
                            (format "entry ~a names no namespace, so the vault
                                     cannot answer for it"
                                    (manifest-entry-name e))
-                           'manifest-namespace-absent))]))))
+                           'manifest-namespace-absent)))]))))
 
 ;; path-string -> (listof doctor-finding). The lock record sits BESIDE
 ;; the vault root, and its owner record beside that. A record there
@@ -312,7 +316,10 @@
   (with-op 'doctor "locks" "a lock record left beside the vault outlived its run"
            #:how (dir-text lock)
            (lambda ()
-             (if (not (link-exists? lock))
+             ;; file-exists?, not link-exists?: the record is a plain file,
+             ;; and link-exists? answers #t only for a symlink, so the
+             ;; check could never fire on the record it names.
+             (if (not (file-exists? lock))
                  '()
                  (begin
                    (note 'doctor (format "a lock record is present at ~a"
@@ -322,7 +329,7 @@
                                  "this lock file is present, so no other pm run
                                   can touch the vault until a human removes
                                   it"
-                                 (if (link-exists? owner)
+                                 (if (file-exists? owner)
                                      (format "; its owner record is ~a"
                                              (dir-text owner))
                                      ""))

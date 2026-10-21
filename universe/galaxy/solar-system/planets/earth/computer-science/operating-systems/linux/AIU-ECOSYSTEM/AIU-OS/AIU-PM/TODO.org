@@ -237,13 +237,6 @@ done when: the design's behaviours and invariants have tests; a
 tests: =tests/backup/=.
 deps: none inside D; phase order needs B and C.
 
-** pm doctor
-what: say what is wrong without changing anything (step 23);
-  =entry/doctor-report.rkt=, read-only.
-done when: the report names planted problems and writes nothing.
-tests: =tests/entry/=.
-deps: none.
-
 ** export and import
 what: a setup that can leave the machine (step 24):
   =store/bundle-format.rkt=, =install/export-profile.rkt=,

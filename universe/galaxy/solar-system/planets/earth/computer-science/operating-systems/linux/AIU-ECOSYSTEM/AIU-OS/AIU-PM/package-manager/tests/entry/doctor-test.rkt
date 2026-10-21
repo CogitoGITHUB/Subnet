@@ -70,13 +70,15 @@
   (define pinned-lock
     (string-append
      "(lockfile (format-version 2)\n"
-     "  (pins (demo \"1.0.0\""
+     "  (pins ((demo \"1.0.0\""
      " \"1111111111111111111111111111111111111111\""
      " \"https://example.org/demo.git\""
-     " lts () \"spec-hash\" \"input-hash\" ())))\n"))
+     " lts () \"spec-hash\" \"input-hash\" ()))))\n"))
 
   ;; The same file with nothing pinned yet: valid, and empty.
-  (define empty-lock "(lockfile (format-version 2) (pins))\n")
+  ;; The lock's pins field holds ONE value -- the list of entries -- so an
+  ;; empty lock is (pins ()), the shape write-lockfile emits.
+  (define empty-lock "(lockfile (format-version 2) (pins ()))\n")
 
   ;; ---------------------------------------------------------------------------
   ;; PROOFS 1 and 2: a state root with planted problems, then the proof
