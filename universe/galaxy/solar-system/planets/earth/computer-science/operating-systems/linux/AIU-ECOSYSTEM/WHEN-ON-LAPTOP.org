@@ -15,6 +15,8 @@
   - Long test runs | a full test pass of the package manager took many minutes of near-idle time and hundreds of child processes on this phone | learned from PM
   - Terminal graphics | not yet proven that the terminal on this phone can draw the optional graphics tier | planned, notation rendering
   - Multi-hour uninterrupted work | the phone is a phone; long builds and long suites are planned around, not fought | standing
+  - Rust dependency fetching | cargo here can only use the local registry cache: =libc= and =serde_json= are cached, and no other crate can be fetched, so a dependency that is not cached cannot be used on the phone | measured 2026-10-21, multiplexer tiny-binary probe
+  - Background process survival | a process started from a shell dies with the session that started it; the holder's promise to outlive its client is therefore a promise about a DETACH, not about Android killing the phone's processes | measured 2026-10-21, multiplexer holder
 
 * How to add
 # Three rules, so the list stays useful.
