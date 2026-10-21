@@ -22,7 +22,7 @@
 ;; cursor stands — and the selection, which is the region around the
 ;; point when a selection is on. The point and the selection are boxes,
 ;; because a command changes them.
-(struct session (file journal point selection layer) #:transparent)
+(struct session (file journal point selection layer level) #:transparent)
 
 ;; name<? orders two names, whether they are symbols or strings: the table
 ;; of commands is keyed by strings and the answers come back keyed by
@@ -166,6 +166,14 @@
 ;; commands is the table: one name, one function. The keys are compared
 ;; as text, so a name typed on the keyboard finds its function. The table
 ;; is MUTABLE: an area above this one may add its own command to it.
+;; command-level-down hides one level of the editor's own rows.
+(define (command-level-down session words)
+  (cons #t (format "level: ~a" (set-level! session (max 0 (- (the-level session) 1))))))
+
+;; command-level-up shows one level more of the editor's own rows.
+(define (command-level-up session words)
+  (cons #t (format "level: ~a" (set-level! session (min 3 (+ (the-level session) 1))))))
+
 ;; command-table is the table as data: one name and one function per
 ;; command.
 (define command-table
@@ -187,7 +195,9 @@
                            "mode" command-mode
                            "visual-mode" command-visual-mode
                            "write-mode" command-write-mode
-                           "select-mode" command-select-mode))
+                           "select-mode" command-select-mode
+                           "level-down" command-level-down
+                           "level-up" command-level-up))
 
 ;; commands is the table: one name, one function. The keys are compared
 ;; as text, so a name typed on the keyboard finds its function. The table
@@ -243,7 +253,7 @@
 ;; selection and the layer the editor is in. Nothing else is kept, so the
 ;; session is the only thing that carries the state between commands.
 (define (make-session file journal)
-  (session file journal (box 0) (box #f) (box "visual")))
+  (session file journal (box 0) (box #f) (box "visual") (box 2)))
 
 ;; the-layer answers the layer the editor is in: "visual", "write" or
 ;; "select".
@@ -254,6 +264,17 @@
 (define (set-layer! session layer)
   (set-box! (session-layer session) layer)
   layer)
+
+;; the-level answers how much of the editor's own furniture is drawn:
+;; level 1 is the mode line and the status, level 2 adds the rest of the
+;; pieces, level 3 adds the hints, and level 0 draws nothing at all.
+(define (the-level session)
+  (unbox (session-level session)))
+
+;; set-level! puts the level and answers it.
+(define (set-level! session level)
+  (set-box! (session-level session) level)
+  level)
 
 ;; the-point answers where the cursor stands in this session.
 (define (the-point session)
@@ -300,6 +321,7 @@
          session-point
          session-selection
          session-layer
+         session-level
          the-point
          move-to
          the-selection
@@ -308,6 +330,8 @@
          selection-text
          the-layer
          set-layer!
+         the-level
+         set-level!
          run-command
          command-names
          answer-line

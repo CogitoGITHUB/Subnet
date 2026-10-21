@@ -25,7 +25,7 @@
 ;; it must be there: a piece that shows only half of its text is a piece
 ;; that was cut, which is the fault this check exists to catch.
 (define (piece-is-drawn piece screen)
-  (define text (string-trim (piece-content (piece-name piece) (fake-state))))
+  (define text (string-trim (piece-content (piece-name piece) (fake-state) 3)))
   (and (not (string=? text ""))
        (for/and ([line (in-list (string-split text "\n"))])
          (for/or ([row (in-list screen)])
@@ -52,7 +52,8 @@
      (for/list ([piece (in-list the-pieces)]
                 #:when (not (piece-is-drawn piece (draw-screen))))
        (format "the piece ~a is in the placeable piece list, but its text is not on the screen"
-               (piece-name piece)))))
+               (piece-name piece)))
+     (level-faults)))
   (if (null? faults)
       (begin
         (printf "OK dashboard-check — ~a pieces checked, every one of them is drawn\n"
@@ -65,7 +66,26 @@
 
 ;; draw-screen answers the drawn screen, one line per row.
 (define (draw-screen)
-  (draw-dashboard the-pieces (fake-state)))
+  (draw-dashboard the-pieces (fake-state) 3))
+
+;; level-faults answers the faults of the levels: at level 0 nothing is
+;; drawn at all, and at level 1 the mode line is there and the pieces of
+;; the second level are not.
+(define (level-faults)
+  (define empty (draw-dashboard (pieces-at 0) (fake-state) 0))
+  (define one (draw-dashboard (pieces-at 1) (fake-state) 1))
+  (append
+   ;; The screen is always as tall as it is; at level 0 every row of it is
+   ;; blank, because no piece is drawn.
+   (if (for/or ([row (in-list empty)]) (not (string=? (string-trim row) "")))
+       (list "level 0 draws something, and it should draw nothing")
+       '())
+   (if (for/or ([row (in-list one)]) (string-contains? row "L1"))
+       '()
+       (list "level 1 does not draw the mode line"))
+   (if (for/or ([row (in-list one)]) (string-contains? row "agent"))
+       (list "level 1 draws a piece of the second level")
+       '())))
 
 ;; The check, for the dispatcher above.
 (module+ main

@@ -242,6 +242,15 @@ names an edge, a width and an order, so any piece can go on any edge and several
 can share one. A piece is never cut: a piece whose text needs more room than its size
 says gets the room it needs.
 
+**The rows and the levels.** The editor's own furniture is rows and not one clipped
+line, and the level says how much of it there is. Level 1 is the mode line and the
+status; level 2 adds the buffer bar (the layer, the agent, the Git line) and the
+sidebar; level 3 adds the hints row to the mode line. Level 0 draws no furniture at
+all: the editor's own area takes the screen, which is what a compact view needs. The
+keys `space d` and `space u` hide one level and show one more, and the mode line says
+which level stands. The dashboard command takes the level as its second argument
+(`dashboard FILE LEVEL`), so any level can be drawn.
+
 **The Git facts.** The editor asks the shared Git layer about the file's own
 directory, over the join seam: the hot path asks the layer, and the facts cross as
 names and values — the repository, the branch, the distance from the upstream, the
@@ -310,7 +319,7 @@ The CLI:
 racket editor/src/entry/cli.rkt edit FILE       # a session, one command per line
 racket editor/src/entry/cli.rkt routes          # the routing walk
 racket editor/src/entry/cli.rkt keys LAYER HEX… # the name of each key
-racket editor/src/entry/cli.rkt dashboard FILE   # the dashboard, one line per row
+racket editor/src/entry/cli.rkt dashboard FILE LEVEL   # the dashboard, one line per row
 racket editor/src/entry/cli.rkt git FILE          # the Git facts of the file
 racket editor/src/entry/cli.rkt git-diff FILE [unstaged|staged|all]  # the hunks, and the comparison
 racket editor/src/entry/cli.rkt git-history FILE  # the commits of the repository

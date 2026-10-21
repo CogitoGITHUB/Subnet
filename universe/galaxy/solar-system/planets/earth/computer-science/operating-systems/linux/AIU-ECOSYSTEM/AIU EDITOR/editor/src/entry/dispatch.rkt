@@ -163,10 +163,17 @@
 ;; dashboard shows the editor alone.
 (define (dashboard-verb args)
   (define file (if (null? args) "" (car args)))
+  (define level (dashboard-level (if (< (length args) 2) "" (cadr args))))
   (define path (path->complete-path (if (string=? file "") "untitled" file)))
   (define journal (journal-path-for path))
   (define state (session-state (path->string path) (path->string journal)))
-  (for-each print-line (draw-dashboard the-pieces state)))
+  (for-each print-line (draw-dashboard (pieces-at level) state level)))
+
+;; dashboard-level answers the level the dashboard is drawn at: the level
+;; the owner names, and the second level when nobody names one.
+(define (dashboard-level said)
+  (define level (and (not (string=? said "")) (string->number said)))
+  (if (and level (<= 0 level) (<= level 3)) level 2))
 
 ;; baked-good? asks whether the baked module holds the tables it was
 ;; given: the bake is good when what it wrote is what it was given.

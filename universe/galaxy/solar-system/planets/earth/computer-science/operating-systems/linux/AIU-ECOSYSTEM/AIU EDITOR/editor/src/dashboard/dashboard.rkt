@@ -48,14 +48,9 @@
 ;; piece-content answers the text one piece shows, given the state of the
 ;; session: the file being edited, the counts, the pending edits and the
 ;; layer the editor is in. A piece with no text of its own shows nothing.
-(define (piece-content name state)
+(define (piece-content name state level)
   (case name
-    [("modeline")
-     (format "~a  ~a lines  ~a bytes  ~a pending"
-             (state-file state)
-             (state-lines state)
-             (state-bytes state)
-             (state-pending state))]
+    [("modeline") (modeline state level)]
     [("buffer-bar")
      (format "layer ~a  agent ~a ~a  |  ~a"
              (state-layer state)
@@ -94,6 +89,24 @@
               (hash-ref state 'git-unstaged "0")
               (hash-ref state 'git-untracked "0"))))
 
+;; modeline answers the rows of the mode line: the level, the file and
+;; the layer at level 1; the counts of the buffer at level 2; the keys at
+;; level 3. The mode line is rows and not one long line, so nothing is
+;; cut and the owner reads all of it.
+(define (modeline state level)
+  (define rows
+    (list (format "L~a  ~a  ~a" level (state-file state) (state-layer state))))
+  (when (>= level 2)
+    (set! rows
+          (append rows
+                  (list (format "~a lines  ~a bytes  ~a pending"
+                                 (state-lines state)
+                                 (state-bytes state)
+                                 (state-pending state))))))
+  (when (>= level 3)
+    (set! rows (append rows (list "space ?:keys  space d:less  space u:more"))))
+  (string-join rows "\n"))
+
 ;; piece-fields answers one piece as the fields the drawing reads: the
 ;; name, the edge, the size, the order and the text, separated by tabs.
 (define (piece-fields piece text)
@@ -107,7 +120,7 @@
 
 ;; piece-args answers the arguments of the drawing call: the width, the
 ;; height, the number of pieces and the pieces themselves.
-(define (piece-args pieces state)
+(define (piece-args pieces state level)
   (let loop ([rest pieces] [index 0] [args (hash 'width (number->string screen-width)
                                                 'height (number->string screen-height))])
     (if (null? rest)
@@ -116,15 +129,15 @@
               (+ index 1)
               (hash-set args
                         (string->symbol (format "piece~a" index))
-                        (piece-fields (car rest) (piece-content (piece-name (car rest)) state)))))))
+                        (piece-fields (car rest) (piece-content (piece-name (car rest)) state level)))))))
 
 ;; draw-dashboard asks the hot path to draw the pieces and answers the
 ;; lines of the screen, top first. The screen comes back as one text
 ;; with the lines separated by newlines.
-(define (draw-dashboard pieces state)
+(define (draw-dashboard pieces state level)
   (define answer
     (ask-hot "dashboard"
-             (piece-args pieces state)))
+             (piece-args pieces state level)))
   (if (response-ok answer)
       (string-split (hash-ref (response-data answer) 'screen "") "\n")
       (list (format "FAIL the dashboard could not be drawn: ~a"
@@ -158,8 +171,10 @@
 (provide screen-width
          screen-height
          agent-status
+         modeline
          piece-content
          draw-dashboard
          session-state
          the-pieces
+         pieces-at
          pieces-of)

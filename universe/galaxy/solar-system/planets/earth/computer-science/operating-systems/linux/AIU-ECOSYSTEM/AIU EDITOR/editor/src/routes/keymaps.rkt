@@ -59,6 +59,8 @@
     ("space s" "save")
     ("space q" "quit")
     ("space l" "show")
+    ("space d" "level-down")
+    ("space u" "level-up")
     ("space ?" "explorer")
     ("space g" "send")
     ("up" "move-up")

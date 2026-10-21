@@ -19,8 +19,8 @@
 (require racket/string)
 
 ;; piece is one placeable piece: its name, the edge it sits on, the size
-;; it takes and the order it is placed in.
-(struct piece (name edge size order) #:transparent)
+;; it takes, the order it is placed in and the level it is drawn at.
+(struct piece (name edge size order level) #:transparent)
 
 ;; the-edges are the edges a piece may sit on: the four sides of the
 ;; screen, and floating, which is a piece that sits on its own in the
@@ -30,12 +30,13 @@
 ;; the-pieces is the placeable piece list: every piece the dashboard
 ;; shows. The order is inside an edge, and the edges themselves are
 ;; drawn in the order a screen is: the top, then the sides, then the
-;; bottom.
+;; bottom. The level says when a piece is drawn: the mode line and the
+;; status are always there, and the rest comes with the second level.
 (define the-pieces
-  (list (piece "modeline" "top" 1 0)
-        (piece "buffer-bar" "top" 1 1)
-        (piece "sidebar" "left" 20 0)
-        (piece "status" "bottom" 1 0)))
+  (list (piece "modeline" "top" 1 0 1)
+        (piece "buffer-bar" "top" 1 1 2)
+        (piece "sidebar" "left" 20 0 2)
+        (piece "status" "bottom" 1 0 1)))
 
 ;; pieces-of answers the pieces that sit on one edge, in the order they
 ;; are placed in.
@@ -43,12 +44,20 @@
   (sort (filter (lambda (p) (string=? (piece-edge p) edge)) the-pieces)
         < #:key piece-order))
 
+;; pieces-at answers the pieces that are drawn at a level: a piece is
+;; drawn when its own level is at or under the level the owner stands at.
+;; Level 0 draws nothing at all: the editor's own area takes the screen.
+(define (pieces-at level)
+  (filter (lambda (p) (<= (piece-level p) level)) the-pieces))
+
 ;; The placeable piece list, for the meaning side above it.
 (provide piece
          piece-name
          piece-edge
          piece-size
          piece-order
+         piece-level
          the-edges
          the-pieces
+         pieces-at
          pieces-of)
