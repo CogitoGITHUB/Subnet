@@ -191,6 +191,14 @@ for a in "$@"; do echo "ARG $a"; done' | save --force $agent
     let gdrawn = ($gitted.stdout | default "")
     check "the panel shows the git" ($gdrawn | str contains "the git") $"drawn=($gdrawn | str length)"
 
+    # 9. the worktree browser: every worktree of the repository, one
+    #    line each, and the path under it.
+    let worktreed = (do -i {
+        ^printf "gw" | ^$client --state-dir $state_dir --op screen
+    } | complete)
+    let wdrawn = ($worktreed.stdout | default "")
+    check "the worktree browser draws the worktrees" ($wdrawn | str contains "the worktrees") $"drawn=($wdrawn | str length)"
+
     # the holder goes away with the probe
     let pid_file = ($state_dir | path join "holder.pid")
     if ($pid_file | path exists) {

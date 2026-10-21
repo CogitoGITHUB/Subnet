@@ -124,7 +124,7 @@ prefix chord. A Control key the owner presses belongs to the program in the pane
 | arrows | move the focus between the panes |
 | `t` `p` `c` `s` | the tabs, the panes, the commands, the sessions |
 | `p o` | open the agent beside the focused pane, with that pane's context |
-| `g` | the git: the overview, the changed files, the diff, the history, the branches |
+| `g` | the git: the overview, the changed files, the diff, the history, the branches, the worktrees |
 
 **The keymap explorer.** Space opens it in visual mode. It is a panel over the panes, not
 a new screen. It shows the keys of the map it is showing, what each one means, whether it
@@ -141,7 +141,9 @@ it is written before the pane opens. The design is in `plan/agent-opens-here.org
 **The git panel.** The key group `g` opens the git, and the panel shows what the
 shared layer read: the repository, the branch and its distance from the upstream, the
 worktrees with their counts, the changed files with the marks of the layer, the diff of
-the working tree against the index, the history, and the branches. The holder asks the
+the working tree against the index, the history, the branches, and the worktree browser:
+every worktree of the repository, one line each, with the branch it stands on, the
+changes it holds, and where it lives. The holder asks the
 layer and the layer only reads: no command it can run changes a repository, an index, a
 branch or a worktree. The panel says which comparison it shows, and an unknown upstream
 is never shown as "up to date".

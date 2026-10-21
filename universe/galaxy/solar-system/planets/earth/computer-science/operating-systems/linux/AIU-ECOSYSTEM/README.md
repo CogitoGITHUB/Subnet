@@ -165,6 +165,7 @@ models, rules, configuration).
 | The workspace model, store and operations | workspace | Implemented and verified |
 | One read-only Git model, with the worktrees | git-inspection | Implemented and verified |
 | The git panel in the multiplexer: the branch, the changes, the worktrees | Multiplexer | Implemented and verified |
+| The worktree browser in the multiplexer: every worktree of the repository | Multiplexer | Implemented and verified |
 | The git facts in the editor, over the join seam | Editor | Implemented and verified |
 | The file panel: the tree, the rows, the picker | Browser | Planned |
 | The workflow engine over notation | Workflow engine | Planned |

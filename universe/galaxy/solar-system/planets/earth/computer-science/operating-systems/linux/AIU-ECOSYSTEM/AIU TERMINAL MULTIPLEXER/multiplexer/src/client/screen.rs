@@ -665,6 +665,7 @@ impl Screen {
             Command::GitDiff => self.show_git("diff"),
             Command::GitHistory => self.show_git("history"),
             Command::GitBranches => self.show_git("branches"),
+            Command::GitWorktrees => self.show_git("worktrees"),
         }
     }
 

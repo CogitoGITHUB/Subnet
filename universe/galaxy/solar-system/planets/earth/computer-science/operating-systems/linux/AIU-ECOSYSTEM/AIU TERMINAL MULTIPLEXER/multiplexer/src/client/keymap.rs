@@ -106,6 +106,8 @@ pub enum Command {
     GitHistory,
     /// GitBranches shows the branches and their distance.
     GitBranches,
+    /// GitWorktrees shows every worktree of the repository.
+    GitWorktrees,
 }
 
 /// Action is what a binding does: run a command, or open a sub-map.
@@ -313,6 +315,13 @@ pub static GIT: &[Binding] = &[
         bytes: b"gb",
         about: "the branches, and how far they are from their upstream",
         action: Action::Command(Command::GitBranches),
+        need: Need::Always,
+    },
+    Binding {
+        keys: "g w",
+        bytes: b"gw",
+        about: "the worktrees: every one of them, and the changes it holds",
+        action: Action::Command(Command::GitWorktrees),
         need: Need::Always,
     },
 ];

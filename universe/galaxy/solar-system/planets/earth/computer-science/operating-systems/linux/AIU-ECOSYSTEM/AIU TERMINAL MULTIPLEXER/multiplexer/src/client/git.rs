@@ -18,6 +18,7 @@ use serde_json::Value;
 pub fn lines(want: &str, data: &Value) -> Vec<String> {
     match want {
         "changed" => changed(data),
+        "worktrees" => worktrees(data),
         "diff" => diff(data),
         "history" => history(data),
         "branches" => branches(data),
@@ -89,6 +90,56 @@ fn changed(data: &Value) -> Vec<String> {
             "  {}{} {:<40} {}",
             staged, unstaged, path, what_the_file_is(&index, &working)
         ));
+    }
+    lines
+}
+
+/// worktrees answers the lines of the worktree browser: every worktree
+/// of the repository, one line each, with the branch it stands on, the
+/// changes it holds, and where it lives.
+///
+/// The worktree the head is on is marked, so the owner knows which one
+/// the commands of this multiplexer touch. A worktree that is locked or
+/// prunable says so: the layer read both facts from Git.
+fn worktrees(data: &Value) -> Vec<String> {
+    let repository = data.get("repository").cloned().unwrap_or(Value::Null);
+    let held = list(&repository, "worktrees");
+    let mut lines: Vec<String> = Vec::new();
+    lines.push(format!("  the worktrees: {}", held.len()));
+    for worktree in &held {
+        let path = text(worktree, "path").unwrap_or_default();
+        let head = text(worktree, "head").unwrap_or_default();
+        let divergence = text(worktree, "divergence").unwrap_or_default();
+        let detached = worktree
+            .get("detached")
+            .and_then(|value| value.as_bool())
+            .unwrap_or(false);
+        let locked = worktree
+            .get("locked")
+            .and_then(|value| value.as_bool())
+            .unwrap_or(false);
+        let prunable = worktree
+            .get("prunable")
+            .and_then(|value| value.as_bool())
+            .unwrap_or(false);
+        let mut line = format!("  {:<16} {:<34}", head, counts(worktree));
+        if detached {
+            line.push_str(" detached");
+        }
+        if !divergence.is_empty() {
+            line.push_str(&format!("  {}", divergence));
+        }
+        if locked {
+            line.push_str("  locked");
+        }
+        if prunable {
+            line.push_str("  prunable");
+        }
+        lines.push(line);
+        lines.push(format!("    {}", path));
+    }
+    if held.is_empty() {
+        lines.push("  there are no worktrees".to_string());
     }
     lines
 }
@@ -279,6 +330,30 @@ mod tests {
         });
         let lines = lines("overview", &data);
         assert!(lines.iter().any(|line| line.contains("/repo/linked") && line.contains("side")));
+    }
+
+    #[test]
+    fn a_worktree_browser_names_every_worktree() {
+        let data = json!({
+            "repository": {
+                "root": "/repo",
+                "worktrees": [
+                    { "path": "/repo", "head": "main", "detached": false,
+                      "locked": false, "prunable": false,
+                      "divergence": "in step with the upstream",
+                      "counts": { "staged": 0, "unstaged": 1, "untracked": 0, "conflicted": 0 } },
+                    { "path": "/repo/side", "head": "side", "detached": true,
+                      "locked": true, "prunable": false,
+                      "divergence": "no upstream",
+                      "counts": { "staged": 2, "unstaged": 0, "untracked": 0, "conflicted": 0 } }
+                ]
+            }
+        });
+        let lines = lines("worktrees", &data);
+        assert!(lines[0].contains("the worktrees: 2"), "the count: {:?}", lines);
+        assert!(lines.iter().any(|line| line.contains("/repo/side") && line.contains("side")));
+        assert!(lines.iter().any(|line| line.contains("detached")), "the detached one says so: {:?}", lines);
+        assert!(lines.iter().any(|line| line.contains("locked")), "the locked one says so: {:?}", lines);
     }
 
     #[test]
