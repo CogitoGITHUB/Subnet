@@ -1,0 +1,35 @@
+#+TITLE: INDEX — AIU TERMINAL MULTIPLEXER/multiplexer/
+# One job: list every file and directory in the package and the single job of each.
+# Status: current; updated in the same commit as any change in the package.
+#
+# This file is the register the gate reads: the naming-register stage fails when
+# a path here names nothing, or a path in the package is named nowhere.
+
+* Files
+# one line per file and directory: its name, then the single job it performs.
+
+  - INDEX.org — this index: every file and directory of the package, with its job
+  - src/ — the package's Racket source, one area per directory
+  - src/errors/ — the error type and how it renders (the floor of the area table)
+  - src/errors/INDEX.org — the error area: the record, the raise, the render
+  - src/errors/err.rkt — the error record: what happened, who, where
+  - src/errors/raise.rkt — the one raise helper; nothing raises around it
+  - src/errors/render.rkt — how an error prints: one shape, never a dump
+  - src/narration/ — how work speaks: events, the wait door, the printer
+  - src/narration/INDEX.org — the narration area: events, voice, wait, printer
+  - src/narration/events.rkt — the event record: schema only, decides nothing
+  - src/narration/narration.rkt — a run's voice: open, step, note, warn, skip, decide
+  - src/narration/wait-door.rkt — wait-for / wait-done; why is never blank
+  - src/narration/print-console.rkt — the ONE printer to the terminal
+  - src/machine/ — the machine seam and the block door
+  - src/machine/INDEX.org — the machine area: environment, locks, the door
+  - src/machine/directories.rkt — the one place HOME / XDG is read
+  - src/machine/locks.rkt — one-writer locks: wait and retry, never force
+  - src/machine/cancel.rkt — the cancellation door every blocking call passes
+
+* Later
+# the areas planned but not landed; plan/package-tree.org is the register for
+# them, and no empty directory is created before the item that needs it.
+  - security, join, devloop, tty, holder, panes, routing, layouts, records,
+    client, agents, control and entry land with the items that need them.
+  - tests and test-doubles open when tests open (root DECISIONS.org D-001).

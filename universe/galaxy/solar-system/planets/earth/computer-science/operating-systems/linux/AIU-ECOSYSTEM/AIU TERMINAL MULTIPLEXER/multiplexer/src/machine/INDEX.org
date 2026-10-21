@@ -1,0 +1,14 @@
+#+TITLE: INDEX — AIU TERMINAL MULTIPLEXER/multiplexer/src/machine/
+# One job: list every file in this directory and the single job of each.
+# Status: current; updated in the same commit as any change in this directory.
+
+* Files
+# one line per file: its name, then the single job it performs.
+
+  - directories.rkt — the one place HOME / XDG is read
+  - locks.rkt — one-writer locks: wait and retry, never force
+  - cancel.rkt — the cancellation door every blocking call passes
+
+* Later
+# machine is the seam to the phone: nothing here decides policy, it answers
+# where things are, who may hold a lock, and whether work was cancelled.

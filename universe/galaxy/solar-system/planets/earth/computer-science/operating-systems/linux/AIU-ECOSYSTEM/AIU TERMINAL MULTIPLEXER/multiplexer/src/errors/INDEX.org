@@ -1,0 +1,14 @@
+#+TITLE: INDEX — AIU TERMINAL MULTIPLEXER/multiplexer/src/errors/
+# One job: list every file in this directory and the single job of each.
+# Status: current; updated in the same commit as any change in this directory.
+
+* Files
+# one line per file: its name, then the single job it performs.
+
+  - err.rkt — the error record: what happened, who, where
+  - raise.rkt — the one raise helper; nothing raises around it
+  - render.rkt — how an error prints: one shape, never a dump
+
+* Later
+# errors is the floor of the area table: these files require nothing of the
+# package, and every other area may require them.
