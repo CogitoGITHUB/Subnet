@@ -432,7 +432,7 @@ fn answer(session: &mut Session, at: usize, line: &str) -> Result<bool, String> 
             let record = session.state("the client asked for the state");
             session.write(&record);
             answer_client(session, at, &record);
-            Ok(true)
+            Ok(false)
         }
         "read" => {
             let since = request.get("since").and_then(|value| value.as_u64()).unwrap_or(0);
@@ -498,7 +498,7 @@ fn answer(session: &mut Session, at: usize, line: &str) -> Result<bool, String> 
                 session.write(&record);
                 answer_client(session, at, &record);
             }
-            Ok(true)
+            Ok(false)
         }
         other => {
             let record = session.record(Fields {

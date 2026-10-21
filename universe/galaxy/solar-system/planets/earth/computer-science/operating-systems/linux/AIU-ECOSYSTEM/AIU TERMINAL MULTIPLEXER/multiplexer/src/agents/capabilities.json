@@ -1,0 +1,17 @@
+[
+  {
+    "name": "multiplexer_sessions",
+    "mutates": false,
+    "description": "the sessions the multiplexer holds, with what each one holds right now"
+  },
+  {
+    "name": "multiplexer_records",
+    "mutates": false,
+    "description": "the records of one session, from a number onwards; the log is the record"
+  },
+  {
+    "name": "multiplexer_send",
+    "mutates": true,
+    "description": "send text to the shell of one session; it changes what the session does, so it needs the human's token"
+  }
+]

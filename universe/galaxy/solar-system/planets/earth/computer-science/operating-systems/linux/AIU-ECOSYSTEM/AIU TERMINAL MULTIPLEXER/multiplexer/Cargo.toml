@@ -16,6 +16,10 @@ path = "src/holder/holder.rs"
 name = "client"
 path = "src/client/client.rs"
 
+[[bin]]
+name = "mux-mcp"
+path = "src/agents/mcp.rs"
+
 [dependencies]
 # The only two crates this phone can fetch: the offline registry cache holds
 # nothing else (see AIU-ECOSYSTEM/WHEN-ON-LAPTOP.org).

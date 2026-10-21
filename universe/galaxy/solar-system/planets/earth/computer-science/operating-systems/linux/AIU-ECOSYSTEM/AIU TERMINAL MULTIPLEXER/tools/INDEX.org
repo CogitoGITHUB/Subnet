@@ -11,3 +11,6 @@
     prints the measured build and start times
   - holder-probe/probe.nu — the phone proof of the holder: a client attaches,
     detaches, and the shell is still alive and still writing to the log
+  - mcp-probe/probe.nu — the phone proof of the agent surface: an AI agent
+    lists the sessions, sends to a session, and is refused without the
+    human's token

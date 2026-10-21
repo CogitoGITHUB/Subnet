@@ -1,0 +1,15 @@
+#+TITLE: INDEX — AIU TERMINAL MULTIPLEXER/multiplexer/src/agents/
+# One job: list every file in this directory and the single job of each.
+# Status: current; updated in the same commit as any change in this directory.
+
+* Files
+# one line per file: its name, then the single job it performs.
+
+  - INDEX.org — the agents area: the door an AI agent comes in by
+  - mcp.rs — the MCP server over stdio: one request per line, one answer
+    per line, the one envelope
+  - tools.rs — the capabilities as data, and the work of each one over a
+    session's wire
+  - envelope.rs — the one envelope every surface answers with
+  - capabilities.json — the declaration: the names, whether each one changes
+    what a session does, and what it is for

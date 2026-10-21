@@ -43,6 +43,16 @@
   - src/holder/shells.rs — the shells of one session: started on a terminal and
     tracked
   - src/holder/log.rs — one append-only log file per session, flushed per record
+  - src/holder/wire.rs — the session's wire: one JSON object per line, both ways
+  - src/agents/ — the door an AI agent comes in by
+  - src/agents/INDEX.org — the agents area: the server, the tools, the envelope
+  - src/agents/mcp.rs — the MCP server over stdio: one request per line, one
+    answer per line, the one envelope
+  - src/agents/tools.rs — the capabilities as data, and the work of each one
+    over a session's wire
+  - src/agents/envelope.rs — the one envelope every surface answers with
+  - src/agents/capabilities.json — the declaration: the names, whether each one
+    changes what a session does, and what it is for
   - src/client/ — the thin screen that attaches to a holder
   - src/client/INDEX.org — the client area: one program, one job
   - src/client/client.rs — the client: attaches, asks, reads and detaches; it

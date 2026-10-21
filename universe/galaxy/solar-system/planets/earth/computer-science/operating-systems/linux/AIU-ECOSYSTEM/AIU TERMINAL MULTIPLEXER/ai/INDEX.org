@@ -5,8 +5,12 @@
 * Files
 # one line per file: its name, then the single job it performs. This index is updated in the same commit as any change here.
 
-  - none yet
+  - skills/multiplexer/SKILL.md — the skill: what an agent may do with the
+    sessions, and what the phone cannot do
+  - opencode-plugin/session-watch.js — the read-only watcher: it prints a
+    session's log and never writes it
 
 * Later
 # How this program speaks through the agent boundary; the shared design lives in AIU-ECOSYSTEM/agents/.
-
+  - the plugin system that OpenCode loads, once the plugin's own shape lands
+    in this program (the editor's is the model).
