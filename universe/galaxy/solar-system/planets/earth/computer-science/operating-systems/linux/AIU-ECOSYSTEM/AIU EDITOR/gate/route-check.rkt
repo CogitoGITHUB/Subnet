@@ -16,12 +16,15 @@
 (require racket/list
          racket/set
          "../editor/src/routes/routes.rkt"
-         "../editor/src/commands/commands.rkt")
+         "../editor/src/commands/commands.rkt"
+         "../editor/src/dashboard/explorer.rkt")
 
 ;; known-commands answers the names the command table holds, as a set, so
 ;; the check can ask about a command name in one step.
 (define known-commands
-  (for/set ([name (in-list command-names)]) name))
+  ;; The table is read as it stands: a command that was added when its
+  ;; module was loaded is a command the editor really holds.
+  (for/set ([name (in-list (hash-keys commands))]) name))
 
 ;; unknown-command-routes answers the routes that name a command the
 ;; command table does not hold. Each one is a route that would run

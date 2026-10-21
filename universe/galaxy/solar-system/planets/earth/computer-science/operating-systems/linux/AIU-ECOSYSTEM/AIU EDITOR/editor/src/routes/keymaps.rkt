@@ -59,7 +59,7 @@
     ("space s" "save")
     ("space q" "quit")
     ("space l" "show")
-    ("space ?" "help")
+    ("space ?" "explorer")
     ("space g" "send")
     ("up" "move-up")
     ("down" "move-down")

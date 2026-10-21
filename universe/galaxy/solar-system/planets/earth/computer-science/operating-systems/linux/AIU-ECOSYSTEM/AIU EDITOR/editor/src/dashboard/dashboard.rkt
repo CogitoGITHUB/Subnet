@@ -15,7 +15,7 @@
          racket/string
          "../join/hot-path.rkt"
          "../join/protocol.rkt"
-         "../routes/routes.rkt"
+         "explorer.rkt"
          "pieces.rkt")
 
 ;; state-file answers the file of a state.
@@ -63,10 +63,9 @@
              (hash-ref agent-status 'agent)
              (git-line state))]
     [("sidebar")
-     (string-join
-      (for/list ([route (in-list (route-commands))])
-        (format "~a ~a -> ~a" (first route) (second route) (third route)))
-      "\n")]
+     ;; The sidebar is the explorer: the keys of the editor's own tables
+     ;; and what each one means, drawn from the tables themselves.
+     (string-join (explorer-lines) "\n")]
     [("status")
      (format "~a  ~a"
              (hash-ref agent-status 'state)

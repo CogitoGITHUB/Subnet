@@ -8,6 +8,7 @@
  - INDEX.org — this index: every file of the dashboard area and its one job
  - dashboard.rkt — the meaning: what each piece shows, and the call that draws it
  - pieces.rkt — the placeable piece list: the edges, the sizes, the order
+ - explorer.rkt — the keymap explorer: the editor's own keys, drawn from the editor's own tables
  - dashboard.rs — the drawing: the pieces are placed on a screen and the screen is written out
 
 * The area

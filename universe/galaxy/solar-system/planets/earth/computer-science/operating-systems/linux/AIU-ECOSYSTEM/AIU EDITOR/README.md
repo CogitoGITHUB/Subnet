@@ -56,7 +56,7 @@ the one-way lint and the language-split lint keep every other area clean.
 | The tasks: declare, list, run, sequence | Implemented and verified |
 | The dashboard and the placeable pieces | Implemented and verified |
 | The agent opens beside the editor | Planned (TODO item 18) |
-| The editor's own keymap explorer | Planned (TODO item 15) |
+| The editor's own keymap explorer | Implemented and verified: the panel is drawn from the editor's own tables |
 | The workspace engine joins the editor | Planned (TODO item 20) |
 | The Git inspection layer inside the editor | Implemented and verified: the facts, the diff and the history cross the join seam, and the layer only reads |
 | The Git state in the editor's own bar: the branch, the file's state, the counts | Implemented and verified: the facts come with the state of the file |
@@ -167,6 +167,16 @@ first, so the terminal is given back exactly as it was found even when the edito
 killed. There is **no timer anywhere**: a read waits for the next byte, and a key that
 starts a sequence waits for the next key. A key that means nothing to anybody is said out
 loud.
+
+**The keymap explorer.** The key `space ?` opens the editor's own keymap explorer: the
+panel shows every layer with the keys it binds and the command each key runs, and then the
+commands that no key runs, so every command of the table is in the panel. The panel is
+drawn from the editor's own tables — the keymaps and the command table — and not written
+by hand, so a binding cannot be shown wrongly: there is nothing to show it wrongly from.
+The editor keeps its own mode names and its own keys; the model is the multiplexer's
+(`AIU TERMINAL MULTIPLEXER/plan/keymap-explorer.org`) and the code is not shared. The
+gate stage `explorer-check` holds the line: every command of the table is in the panel,
+and every key names a command that exists.
 
 **The keyboard.** The decoding is Rust (the `input/` area) and the keymaps and the meaning
 stay in Racket (the `routes/` area), as decision D-007 says. The kitty keyboard protocol
@@ -422,6 +432,7 @@ The light gate is the only entry point, and it is green at fourteen stages:
 | `comment-lint` | every file has a header, every definition a comment |
 | `route-check` | the reserved prefix is bound by no layer, and every route names a command that exists |
 | `key-check` | the decoder and the keymaps agree on every key |
+| `explorer-check` | every command of the table is in the explorer's panel |
 | `dashboard-check` | every piece of the placeable piece list is really drawn |
 | `secret-check` | a real bundle comes out of the seam clean, and nothing on disk holds a secret |
 | `kit-check` | the six proofs: the envelope, the frozen codes, the gating, the skill examples, the read-only plugin, the flushed feed |
