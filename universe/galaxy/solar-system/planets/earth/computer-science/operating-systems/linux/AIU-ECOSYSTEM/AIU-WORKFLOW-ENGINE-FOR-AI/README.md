@@ -33,7 +33,7 @@ What belongs elsewhere:
 - the agent adapters, the MCP servers and the skills belong to the programs that own
   them;
 - the Git layer that would be used by the workflow's own actions is
-  `../git-inspection`, and it is read-only: a workflow that changes a repository would
+  `../shared-layers/git-inspection`, and it is read-only: a workflow that changes a repository would
   need the future permission-checked layer, not that one.
 
 ## Current status

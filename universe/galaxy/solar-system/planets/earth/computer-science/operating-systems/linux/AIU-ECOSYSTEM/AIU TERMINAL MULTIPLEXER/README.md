@@ -25,8 +25,8 @@ What belongs here:
 What belongs elsewhere:
 
 - the editor's buffers, tabs and modes stay the editor's;
-- the shared workspace belongs to the `../workspace` package;
-- the Git model belongs to the `../git-inspection` package;
+- the shared workspace belongs to the `../shared-layers/workspace` package;
+- the Git model belongs to the `../shared-layers/git-inspection` package;
 - pm's packages and install belong to pm.
 
 The area law binds the package: the areas are lowest first (`errors`, `narration`,
@@ -243,7 +243,7 @@ a different contract rather than guessing.
 - `libc` and `serde_json`, and nothing else: the phone's cargo registry cache holds no
   other crate, so no other dependency may be added.
 - The tty is the Linux pty (`/dev/pts/N`), measured working on this phone.
-- The shared `../workspace` package and the shared `../git-inspection` package are the two
+- The shared `../shared-layers/workspace` package and the shared `../shared-layers/git-inspection` package are the two
   integrations that are planned and not yet made.
 - The editor is the other half of the key routing, and the multiplexer holds the reserved
   prefix (decision D-005).

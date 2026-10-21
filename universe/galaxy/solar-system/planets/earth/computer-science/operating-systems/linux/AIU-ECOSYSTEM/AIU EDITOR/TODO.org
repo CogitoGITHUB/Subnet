@@ -11,7 +11,7 @@
 
 * PAUSED 2026-10-21 -- the TERMINAL MULTIPLEXER is built first.
 The owner switched the priority on 2026-10-21. The editor's
-implementation stops here until the multiplexer works; =README.org= says
+implementation stops here until the multiplexer works; =README.md= says
 the same thing at the top. Nothing in this tree is rewritten or thrown
 away: the tree stays exactly as the gate last saw it.
 
@@ -35,7 +35,7 @@ away: the tree stays exactly as the gate last saw it.
   multiplexer builds, its gate is green, and persistent sessions plus
   attach/detach are proved on the phone; (2) this file names the
   multiplexer work as done and lists what the editor still owes;
-  (3) =README.org= says what the integration is, with the paths.
+  (3) =README.md= says what the integration is, with the paths.
 - THE EXACT NEXT TASK for the editor, after the multiplexer works:
   item 18 — the agent opens beside the editor, with the context already
   in it. It is a multiplexer pane beside the editor's pane, with the
@@ -133,7 +133,7 @@ away: the tree stays exactly as the gate last saw it.
     - What it is: a task is a plain function on the meaning side (rule 09) that takes the session and the string arguments, and answers one line. Its doc line is the comment block above its own definition, so =tasks= and the help come from the source and never from a second list. The table lives in =commands/tasks.rkt=.
     - What was proved on the phone: =racket editor/src/entry/cli.rkt tasks= lists the table with the doc line of every task (=insert — insert puts the words into the buffer and journals the edit…=); =cli.rkt task FILE NAME WORDS…= runs one task and prints its line through the one printer (=hello the task runner=); a =--= between two runs makes a sequence, and the three runs of =say first run -- insert a real line -- say second run= ran in that order, with the insert landing in the journal (=insert a real line=); =--dry-run= opens the scope where a task that acts prints what it would do (=would insert: a line that must not land=) and the file and the journal stayed untouched; a name the table does not hold is refused by name (=there is no task named nosuchtask; ask for one of: insert, say=).
 
-  20. TODO (owner addition, 2026-10-21) — The workspace engine joins the editor: the editor reads and writes the shared workspace through the engine (=AIU-ECOSYSTEM/workspace/=), its own tabs and buffers stay its own, its mode line shows the workspace and the project, and it can ask the multiplexer for what the multiplexer owns; done when: a key opens the project context, the mode line names the workspace and the project, and closing the editor leaves the workspace and the multiplexer untouched; deps: 15, 18, the engine.
+  20. TODO (owner addition, 2026-10-21) — The workspace engine joins the editor: the editor reads and writes the shared workspace through the engine (=AIU-ECOSYSTEM/shared-layers/workspace/=), its own tabs and buffers stay its own, its mode line shows the workspace and the project, and it can ask the multiplexer for what the multiplexer owns; done when: a key opens the project context, the mode line names the workspace and the project, and closing the editor leaves the workspace and the multiplexer untouched; deps: 15, 18, the engine.
 
 * After the done line
 # what continues on its own.

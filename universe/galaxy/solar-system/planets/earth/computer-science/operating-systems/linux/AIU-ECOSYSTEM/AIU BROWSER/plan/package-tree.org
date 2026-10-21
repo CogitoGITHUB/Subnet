@@ -34,7 +34,7 @@
 #+begin_example
 AIU BROWSER/              the project: context and docs stay where they are
   AGENT.md               the session rules (landed)
-  ReadMe.md              what the program is and what it does today
+  README.md               what the program is and what it does today
   TODO.org               the one list of what is left, in build order
   HANDOFF.org            everything a fresh conversation needs
   research/              program-specific findings only

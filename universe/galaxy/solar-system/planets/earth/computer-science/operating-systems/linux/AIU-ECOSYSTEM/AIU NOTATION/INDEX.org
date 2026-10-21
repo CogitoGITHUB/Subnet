@@ -5,7 +5,7 @@
 * Files
 # one line per file: its name, then the single job it performs. This index is updated in the same commit as any change here.
 
-  - README.org — what the program is, in one short read; status lives elsewhere
+  - README.md — what the program is, in one short read; status lives elsewhere
   - HANDOFF.org — everything a fresh conversation needs to start on this program
   - AGENT.md — the session rules: scope, the light gate, building, git
   - INDEX.org — this index: every file and folder here with its single job

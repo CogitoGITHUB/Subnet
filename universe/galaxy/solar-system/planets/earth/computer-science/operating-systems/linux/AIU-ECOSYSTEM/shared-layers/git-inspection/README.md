@@ -35,7 +35,7 @@ What belongs elsewhere:
   permissions, and it is not built here.
 
 The design is in `plan/git-inspection.org`, and the decision is D-019 in the root
-`../DECISIONS.org`.
+`../../DECISIONS.org`.
 
 ## The read-only boundary
 
@@ -286,9 +286,9 @@ growing a mutating command.
   the model, the worktrees, and the order the stages land in.
 - `INDEX.org` — every file in this package, with its job.
 - `src/INDEX.org` — the same for the code.
-- `../WORKSPACE.org` — the other shared package, and the pattern this one follows.
-- `../DECISIONS.org` — decision D-019, the Git integration.
-- `../contract/` — the contracts the two programs share.
+- `../../WORKSPACE.org` — the other shared package, and the pattern this one follows.
+- `../../DECISIONS.org` — decision D-019, the Git integration.
+- `../../contract/` — the contracts the two programs share.
 
 ## Development
 

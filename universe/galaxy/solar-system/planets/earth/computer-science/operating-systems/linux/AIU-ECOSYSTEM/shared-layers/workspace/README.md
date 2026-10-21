@@ -38,9 +38,9 @@ What belongs elsewhere:
   not the things;
 - the Git model belongs to the `../git-inspection` package.
 
-The design is in `../WORKSPACE.org`, and the words it obeys are frozen in four contracts:
-`../contract/workspace-model.org`, `../contract/workspace-operations.org`,
-`../contract/workspace-mode-line.org` and `../contract/workspace-ai-context.org`.
+The design is in `../../WORKSPACE.org`, and the words it obeys are frozen in four contracts:
+`../../contract/workspace-model.org`, `../../contract/workspace-operations.org`,
+`../../contract/workspace-mode-line.org` and `../../contract/workspace-ai-context.org`.
 
 ## Current status
 
@@ -149,7 +149,7 @@ cat /tmp/ws-answer.json
 - The state directory is an argument, never a fixed path: one environment, one store.
 - The protocol version is in the envelope, so a reader knows which shape it got.
 - The model and the operations are frozen in the four workspace contracts; a change to
-  them goes through the root decision log (`../DECISIONS.org`, D-018).
+  them goes through the root decision log (`../../DECISIONS.org`, D-018).
 
 ## Dependencies and integration
 
@@ -198,15 +198,15 @@ are already frozen, so the work is the reading and the writing, not the design.
 
 ## Related documentation
 
-- `../WORKSPACE.org` — the shared workspace architecture: the audit of the two programs,
+- `../../WORKSPACE.org` — the shared workspace architecture: the audit of the two programs,
   the boundaries, where the engine lives, and the order the work lands in.
-- `../contract/workspace-model.org` — the model.
-- `../contract/workspace-operations.org` — the operations and the envelope.
-- `../contract/workspace-mode-line.org` — what the mode lines of both programs show.
-- `../contract/workspace-ai-context.org` — what an agent reads.
+- `../../contract/workspace-model.org` — the model.
+- `../../contract/workspace-operations.org` — the operations and the envelope.
+- `../../contract/workspace-mode-line.org` — what the mode lines of both programs show.
+- `../../contract/workspace-ai-context.org` — what an agent reads.
 - `INDEX.org` — every file in this package, with its job.
 - `src/INDEX.org` — the same for the code.
-- `../DECISIONS.org` — decision D-018, the shared workspace.
+- `../../DECISIONS.org` — decision D-018, the shared workspace.
 
 ## Development
 

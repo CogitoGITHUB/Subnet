@@ -23,8 +23,8 @@ What belongs elsewhere:
 - the terminal, the panes and the session belong to the terminal multiplexer;
 - the workflow of an AI agent belongs to the agent and its adapter;
 - the plugins themselves belong to pm: the editor asks pm and never installs;
-- the shared workspace belongs to the `../workspace` package;
-- the Git model belongs to the `../git-inspection` package.
+- the shared workspace belongs to the `../shared-layers/workspace` package;
+- the Git model belongs to the `../shared-layers/git-inspection` package.
 
 The area law binds the package. The areas, lowest first:
 
@@ -330,7 +330,7 @@ The `X` lands where the point stood, and the journal records the place of every 
 - pm: the plugin system asks pm, and pm's `--confirm` is the editor's rule.
 - OpenCode: the first and only agent adapter (decision D-009). The second adapter, Hermes,
   was skipped by the owner, so one adapter stands.
-- The shared `../workspace` package and the shared `../git-inspection` package are the two
+- The shared `../shared-layers/workspace` package and the shared `../shared-layers/git-inspection` package are the two
   integrations that are planned and not yet made.
 
 ## Validation, invariants, and error handling

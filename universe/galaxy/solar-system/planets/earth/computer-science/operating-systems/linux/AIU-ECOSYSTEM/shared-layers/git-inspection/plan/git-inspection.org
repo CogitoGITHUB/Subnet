@@ -14,14 +14,14 @@
   - The multiplexer is Rust: the holder owns the session, its panes and its
     log; the client is a thin screen with its keys in one table
     (=multiplexer/src/client/keymap.rs=).
-  - The workspace engine (=AIU-ECOSYSTEM/workspace=) is the one model both
+  - The workspace engine (=AIU-ECOSYSTEM/shared-layers/workspace=) is the one model both
     programs read, and it is Rust with the same two crates.
   - Nothing in either tree reads Git. There is no second parser to keep in
     step, so there is nothing to reuse and nothing to break.
 
 * Where the layer lives, and why
 # the one place the model and the parser are.
-  - The layer is a Rust package of its own: =AIU-ECOSYSTEM/git-inspection/=.
+  - The layer is a Rust package of its own: =AIU-ECOSYSTEM/shared-layers/git-inspection/=.
   - The multiplexer uses it as a library inside its own process, the way it
     will use the workspace engine.
   - The editor uses it through the join seam it already has: its Rust hot

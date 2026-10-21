@@ -58,8 +58,8 @@ What belongs elsewhere:
 
 - the long-running processes belong to the terminal multiplexer;
 - the editor asks pm for plugins; pm owns the packages, the editor owns the conversation;
-- the workspace model belongs to the `../../workspace` package, and the Git model to
-  `../../git-inspection` — pm's vault is Git clones, but it is pm's own vault, not the
+- the workspace model belongs to the `../../shared-layers/workspace` package, and the Git model to
+  `../../shared-layers/git-inspection` — pm's vault is Git clones, but it is pm's own vault, not the
   shared read-only layer.
 
 ## Current status

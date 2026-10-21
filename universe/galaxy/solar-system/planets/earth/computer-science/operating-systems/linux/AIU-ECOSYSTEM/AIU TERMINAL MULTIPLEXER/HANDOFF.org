@@ -27,7 +27,7 @@
   - The owner's third addition of 2026-10-21: in the tm, one key opens OpenCode with the context of the pane the owner is in — the shell output, the shell, the place and the why — and nothing is copied by hand. The design is =plan/agent-opens-here.org=; it waits on the panes, the key routing and select-and-send.
   - The owner's priority of 2026-10-21: the keymap explorer, in BOTH the multiplexer and the text editor. The multiplexer's half is done; the editor's half is TODO item 15 and uses the same schema with the editor's own mode names and its own command table.
   - The owner switched the priority on 2026-10-21: this program is built FIRST, and the AIU-PM and the AIU EDITOR implementation are paused until it works. Both say so in their own README and TODO.
-  - README.org now says what this program is and what works today.
+  - README.md now says what this program is and what works today.
 
 * Next step
 # one line, so a fresh conversation starts in the right place.

@@ -1,4 +1,4 @@
-#+TITLE: INDEX — AIU-ECOSYSTEM/git-inspection/
+#+TITLE: INDEX — AIU-ECOSYSTEM/shared-layers/git-inspection/
 # One job: list every file and directory in this package and the single job
 # of each.
 # Status: current; updated in the same commit as any change in the package.

@@ -52,7 +52,7 @@
 
 * Where the engine lives
 # the decision, and why it is this and not the other ways.
-  - The engine is one Rust package of its own, at =AIU-ECOSYSTEM/workspace/=,
+  - The engine is one Rust package of its own, at =AIU-ECOSYSTEM/shared-layers/workspace/=,
     above the two programs and below neither. It depends on the same two
     crates the multiplexer already fetches, so the phone's offline
     registry still serves it.

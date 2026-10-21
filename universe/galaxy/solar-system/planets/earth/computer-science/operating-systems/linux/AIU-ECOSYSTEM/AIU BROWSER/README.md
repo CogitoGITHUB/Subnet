@@ -154,7 +154,7 @@ three programs it takes its shapes from, in `study/oil.org`, `study/nvim-tree.or
   dashboard, or a pane beside the editor in the multiplexer.
 - It will open files through the editor's MCP surface, not by writing to the editor.
 - The git state per row, the branches and the commits will be read from the shared Git
-  layer (`../git-inspection`), so there is one Git parser in the ecosystem.
+  layer (`../shared-layers/git-inspection`), so there is one Git parser in the ecosystem.
 - The clipboard is shared between panels, so several panels can work on the same tree.
 
 ## Validation, invariants, and error handling

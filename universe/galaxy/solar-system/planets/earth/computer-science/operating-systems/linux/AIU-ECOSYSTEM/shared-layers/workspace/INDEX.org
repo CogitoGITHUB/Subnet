@@ -1,4 +1,4 @@
-#+TITLE: INDEX — AIU-ECOSYSTEM/workspace/
+#+TITLE: INDEX — AIU-ECOSYSTEM/shared-layers/workspace/
 # One job: list every file and directory in this package and the single job
 # of each.
 # Status: current; updated in the same commit as any change in the package.
@@ -12,9 +12,9 @@
   owns no buffer, no terminal and no process, and it is not a daemon: it
   has no listener, no thread and no timer.
 
-  The design it follows is in =../WORKSPACE.org=, and the words it obeys
-  are in =../contract/workspace-model.org=, =../contract/workspace-operations.org=,
-  =../contract/workspace-mode-line.org= and =../contract/workspace-ai-context.org=.
+  The design it follows is in =../../WORKSPACE.org=, and the words it obeys
+  are in =../../contract/workspace-model.org=, =../../contract/workspace-operations.org=,
+  =../../contract/workspace-mode-line.org= and =../../contract/workspace-ai-context.org=.
 
 * Files
 # one line per file: its name, then the single job it performs.

@@ -218,7 +218,7 @@
 #+begin_example
 AIU NOTATION/            the project: context and docs stay where they are
   AGENT.md               the session rules (landed)
-  README.org             what the program is in one read; status lives elsewhere (landed)
+  README.md              what the program is in one read; status lives elsewhere (landed)
   HANDOFF.org            what a fresh conversation needs to start here (landed)
   INDEX.org              every file and folder here, one job each (landed)
   ROOT-REQUEST-D014.org  the root-log text the owner carries for the mark sign (landed)

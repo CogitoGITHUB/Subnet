@@ -26,8 +26,8 @@ them are written down and the bridges are explicit.
 | Notation | The text format: the engine, the model | [notation](<AIU NOTATION/README.md>) |
 | Browser | The file panel for the editor | [browser](<AIU BROWSER/README.md>) |
 | Workflow engine | The planned engine over notation | [engine](AIU-WORKFLOW-ENGINE-FOR-AI/README.md) |
-| workspace | The shared workspace model and store | [workspace](workspace/README.md) |
-| git-inspection | The shared read-only Git model | [git](git-inspection/README.md) |
+| shared-layers/workspace | The shared workspace model and store | [workspace](shared-layers/workspace/README.md) |
+| shared-layers/git-inspection | The shared read-only Git model | [git](shared-layers/git-inspection/README.md) |
 
 `contract/` holds the one written contract between the programs. `DECISIONS.org` is the
 ecosystem decision log, append-only, newest first. `HARD-RULES.org` holds the rules that
@@ -44,8 +44,8 @@ table says which stage each is in.
 | Terminal multiplexer | In progress | light gate green, 7 stages |
 | Editor | In progress | light gate green, 14 stages |
 | Notation | In progress | light gate green, 7 stages |
-| workspace | Implemented and verified | 20 cargo tests |
-| git-inspection | Implemented and verified | 51 cargo tests |
+| shared-layers/workspace | Implemented and verified | 20 cargo tests |
+| shared-layers/git-inspection | Implemented and verified | 51 cargo tests |
 | AIU BROWSER | Planned | the plan, the rules, the studies |
 | Workflow engine | Planned | the concept and the plan |
 
@@ -130,8 +130,8 @@ graph TD
 Solid lines are integrations that exist today. Dashed lines are planned or written but not
 built.
 
-The two shared Rust packages exist because the editor and the multiplexer must not hold two
-copies of the same meaning. The **workspace engine** owns the workspace, the projects, the
+The two shared Rust packages live in `shared-layers/`, because the editor and the
+multiplexer must not hold two copies of the same meaning. The **workspace engine** owns the workspace, the projects, the
 resource references, the presentations and the shared context, and it is not a daemon: it
 has no listener, no thread and no timer. The **Git inspection layer** owns the discovery,
 the commands, the parsing and the states of a repository, and it is read-only by
@@ -213,7 +213,7 @@ cd ..
 /root/home/shape/opt/nushell/0.116.1/nu --no-config-file gate/check.nu
 
 # the shared Git layer
-cd ../git-inspection
+cd shared-layers/git-inspection
 CARGO_TARGET_DIR=/tmp/opencode/git-target cargo test --offline
 ```
 
@@ -304,7 +304,8 @@ The order of record is `checklist/tier-1/`, and each program keeps its own list 
 - **AIU-WORKFLOW-ENGINE-FOR-AI** — the notation's grammar, the mind-map structure, the
   interpreter, the validator, the runtime, the model providers, and the state, logging,
   checkpoints and recovery.
-- **Shared** — the workspace engine joins both programs; the Git inspection layer is built
+- **Shared** (`shared-layers/`) — the workspace engine joins both programs; the Git
+  inspection layer is built
   and waits for the editor's and the multiplexer's use of it.
 
 ## Contracts and constraints
