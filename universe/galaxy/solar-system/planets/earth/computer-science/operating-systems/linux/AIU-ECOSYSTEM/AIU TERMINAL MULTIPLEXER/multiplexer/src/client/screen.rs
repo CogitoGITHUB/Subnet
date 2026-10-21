@@ -47,6 +47,9 @@ pub enum Action {
     Request(Value),
     /// Quit leaves the multiplexer; the session goes on.
     Quit,
+    /// AskEditor asks the editor what it owns, over the editor's own MCP
+    /// server: the answer comes back as the editor's own words.
+    AskEditor,
 }
 
 /// PaneView is one pane as the screen sees it: its name, its tab, how much
@@ -122,6 +125,10 @@ pub struct Screen {
     /// reserved says that the owner pressed the reserved prefix: the next
     /// key is the multiplexer's own, whatever mode stands.
     reserved: bool,
+    /// editor_mcp is the command that starts the editor's own MCP server:
+    /// the program and what it runs. It is the seam the multiplexer asks
+    /// the editor through.
+    editor_mcp: Vec<String>,
 }
 
 impl Screen {
