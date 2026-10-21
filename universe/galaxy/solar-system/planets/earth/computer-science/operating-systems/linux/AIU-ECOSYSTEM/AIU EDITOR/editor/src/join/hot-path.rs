@@ -76,9 +76,12 @@ fn answer_for(request: &wire_json::Request) -> (bool, Vec<(String, String)>) {
             (true, git_facts::history(path))
         }
         rust_exports::OP_GIT_DIFF => {
-            // The diff of one file, in the layer's own marks.
+            // The diff of one file, in the layer's own marks. The
+            // comparison is named by the caller: unstaged, staged or
+            // all.
             let path = std::path::Path::new(&file);
-            (true, git_facts::diff(path))
+            let asked = wire_json::arg(request, "comparison");
+            (true, git_facts::diff(path, &asked))
         }
         rust_exports::OP_GIT => {
             // The Git facts of the file's own directory. The shared layer
@@ -90,15 +93,19 @@ fn answer_for(request: &wire_json::Request) -> (bool, Vec<(String, String)>) {
             let text = current_text(&file, &journal_path);
             let state = buffer::new_buffer(&text);
             let pending = journal::records(&journal_path).len();
-            (
-                true,
-                vec![
-                    ("file".to_string(), file),
-                    ("lines".to_string(), buffer::line_count(&state).to_string()),
-                    ("bytes".to_string(), buffer::byte_len(&state).to_string()),
-                    ("pending".to_string(), pending.to_string()),
-                ],
-            )
+            let mut facts = vec![
+                ("file".to_string(), file.clone()),
+                ("lines".to_string(), buffer::line_count(&state).to_string()),
+                ("bytes".to_string(), buffer::byte_len(&state).to_string()),
+                ("pending".to_string(), pending.to_string()),
+            ];
+            // The Git facts of the file are part of the file's state: the
+            // shared layer is asked, and it only reads. A file that is in
+            // no repository is refused by name, and the facts say so.
+            for (name, value) in git_facts::facts(std::path::Path::new(&file)) {
+                facts.push((name, value));
+            }
+            (true, facts)
         }
         rust_exports::OP_INSERT => {
             let more = wire_json::arg(request, "text");

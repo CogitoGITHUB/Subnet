@@ -84,7 +84,28 @@ pub fn facts(file: &Path) -> Vec<(String, String)> {
 /// index against HEAD are never shown as one thing. The marks are the
 /// layer's marks, so the editor and the multiplexer say the same thing
 /// about the same line.
-pub fn diff(file: &Path) -> Vec<(String, String)> {
+pub fn diff(file: &Path, asked: &str) -> Vec<(String, String)> {
+    // The comparison is named, and a name that is not one of the three
+    // is refused by name: the working tree against the index, the index
+    // against HEAD and the working tree against HEAD are three different
+    // things and are never shown as one.
+    let comparison = match asked {
+        "" | "unstaged" => Comparison::WorkingVsIndex,
+        "staged" => Comparison::IndexVsHead,
+        "all" => Comparison::WorkingVsHead,
+        other => {
+            return vec![
+                ("git-diff-state".to_string(), "unknown".to_string()),
+                (
+                    "git-diff-why".to_string(),
+                    format!(
+                        "the comparison {} is not one of: unstaged, staged, all",
+                        other
+                    ),
+                ),
+            ]
+        }
+    };
     let file = std::fs::canonicalize(file).unwrap_or_else(|_| file.to_path_buf());
     let file = file.as_path();
     let directory = match file.parent() {
@@ -101,7 +122,7 @@ pub fn diff(file: &Path) -> Vec<(String, String)> {
         }
     };
     let wanted = relative_to(git.root(), file);
-    let hunks = match git.diff(Some(&wanted), Comparison::WorkingVsIndex) {
+    let hunks = match git.diff(Some(&wanted), comparison) {
         Ok(hunks) => hunks,
         Err(why) => {
             return vec![
@@ -125,7 +146,7 @@ pub fn diff(file: &Path) -> Vec<(String, String)> {
     vec![
         (
             "git-diff-comparison".to_string(),
-            Comparison::WorkingVsIndex.name().to_string(),
+            comparison.name().to_string(),
         ),
         ("git-diff-file".to_string(), wanted),
         ("git-diff-hunks".to_string(), hunks.len().to_string()),

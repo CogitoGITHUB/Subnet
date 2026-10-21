@@ -59,6 +59,7 @@ the one-way lint and the language-split lint keep every other area clean.
 | The editor's own keymap explorer | Planned (TODO item 15) |
 | The workspace engine joins the editor | Planned (TODO item 20) |
 | The Git inspection layer inside the editor | Implemented and verified: the facts, the diff and the history cross the join seam, and the layer only reads |
+| The Git state in the editor's own bar: the branch, the file's state, the counts | Implemented and verified: the facts come with the state of the file |
 | The kit conformance across both programs | In progress: the editor's clauses hold, the shared checklist does not close |
 | The done line | In progress: the editor's clauses hold, the rest is named and blocked |
 
@@ -260,9 +261,18 @@ prints them newest first: the short id, the summary, the author and the date, an
 files each commit touched. The layer reads the commits and gives them back; nothing in
 the editor decides what a commit means.
 
+**The Git state in the editor's bar.** The state of the file carries what Git says
+about it: the branch, the file's own state in the working tree, and the counts of the
+repository. The file's state in the index and in the working tree are two different
+states, and the bar says so when they differ: a file that is changed and not staged
+shows the index's state beside it. A file that is in no repository says that, and never
+says the tree is clean.
+
 **The diff of a file.** The editor asks the same layer for the diff, and the answer
 names the comparison, so the working tree against the index and the index against HEAD
-are never shown as one thing. The hunks say where they are on both sides, and the lines
+are never shown as one thing. The comparison is named by the caller: `unstaged` (the
+working tree against the index), `staged` (the index against HEAD) and `all` (the working
+tree against HEAD); a name that is not one of the three is refused by name. The hunks say where they are on both sides, and the lines
 that changed carry the layer's marks: `+` for an added line, `-` for a removed one, and a
 space for a context line.
 
@@ -292,7 +302,7 @@ racket editor/src/entry/cli.rkt routes          # the routing walk
 racket editor/src/entry/cli.rkt keys LAYER HEX… # the name of each key
 racket editor/src/entry/cli.rkt dashboard FILE   # the dashboard, one line per row
 racket editor/src/entry/cli.rkt git FILE          # the Git facts of the file
-racket editor/src/entry/cli.rkt git-diff FILE     # the hunks of the file, and the comparison they are
+racket editor/src/entry/cli.rkt git-diff FILE [unstaged|staged|all]  # the hunks, and the comparison
 racket editor/src/entry/cli.rkt git-history FILE  # the commits of the repository
 racket editor/src/entry/cli.rkt tasks           # the task table
 racket editor/src/entry/cli.rkt task FILE NAME WORDS…

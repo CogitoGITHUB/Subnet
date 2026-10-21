@@ -57,10 +57,11 @@
              (state-bytes state)
              (state-pending state))]
     [("buffer-bar")
-     (format "layer ~a  agent ~a ~a"
+     (format "layer ~a  agent ~a ~a  |  ~a"
              (state-layer state)
              (hash-ref agent-status 'state)
-             (hash-ref agent-status 'agent))]
+             (hash-ref agent-status 'agent)
+             (git-line state))]
     [("sidebar")
      (string-join
       (for/list ([route (in-list (route-commands))])
@@ -71,6 +72,28 @@
              (hash-ref agent-status 'state)
              (hash-ref agent-status 'on))]
     [else ""]))
+
+;; git-line answers the one line the editor shows about Git: the branch,
+;; the state of the file in the working tree, and the counts of the
+;; repository.
+;;
+;; The file's state in the index and in the working tree are two states,
+;; and they are told apart when they differ: a file that is changed and
+;; not staged says so. A file that is in no repository says that, and
+;; never says the tree is clean.
+(define (git-line state)
+  (define branch (hash-ref state 'git-branch "-"))
+  (define index (hash-ref state 'git-index "unknown"))
+  (define working (hash-ref state 'git-state "unknown"))
+  (if (string=? working "unknown")
+      (format "~a  not in a repository" branch)
+      (format "~a  ~a~a  ~a staged, ~a unstaged, ~a untracked"
+              branch
+              working
+              (if (string=? index "unchanged") "" (format " (the index: ~a)" index))
+              (hash-ref state 'git-staged "0")
+              (hash-ref state 'git-unstaged "0")
+              (hash-ref state 'git-untracked "0"))))
 
 ;; piece-fields answers one piece as the fields the drawing reads: the
 ;; name, the edge, the size, the order and the text, separated by tabs.
@@ -109,7 +132,14 @@
                     (hash-ref (response-data answer) 'what "the hot path refused the request")))))
 
 ;; session-state answers the state of the editing session: the file, the
-;; counts, the pending edits and the layer the editor is in.
+;; counts, the pending edits, the layer the editor is in, and what Git
+;; says about the file.
+;;
+;; The Git facts come from the shared layer over the same seam: the
+;; branch, the file's own state in the index and in the working tree,
+;; which are two different states, and the counts of the repository. A
+;; file that is in no repository says so, and never says the tree is
+;; clean.
 (define (session-state file journal)
   (define answer (ask-hot "open" (hasheq 'file file 'journal journal)))
   (define data (response-data answer))
@@ -117,7 +147,13 @@
         'lines (hash-ref data 'lines "0")
         'bytes (hash-ref data 'bytes "0")
         'pending (hash-ref data 'pending "0")
-        'layer "visual"))
+        'layer "visual"
+        'git-branch (hash-ref data 'git-branch "-")
+        'git-state (hash-ref data 'git-state (hash-ref data 'git-file-working "unknown"))
+        'git-index (hash-ref data 'git-file-index "unknown")
+        'git-staged (hash-ref data 'git-staged "0")
+        'git-unstaged (hash-ref data 'git-unstaged "0")
+        'git-untracked (hash-ref data 'git-untracked "0")))
 
 ;; The dashboard, for the entry above it.
 (provide screen-width

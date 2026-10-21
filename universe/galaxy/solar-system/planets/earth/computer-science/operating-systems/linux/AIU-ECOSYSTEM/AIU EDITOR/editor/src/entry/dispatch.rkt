@@ -359,8 +359,10 @@
 ;; buffer is never saved to find out, and nothing is changed.
 (define (git-diff-verb args)
   (define file (if (null? args) "" (car args)))
+  (define asked (if (or (null? args) (null? (cdr args))) "unstaged" (cadr args)))
   (define path (path->complete-path (if (string=? file "") "untitled" file)))
-  (define answer (ask-hot "git-diff" (hasheq 'file (path->string path))))
+  (define answer (ask-hot "git-diff" (hasheq 'file (path->string path)
+                                           'comparison asked)))
   (define data (response-data answer))
   (define text (hash-ref data 'git-diff-text ""))
   (if (string=? text "")
