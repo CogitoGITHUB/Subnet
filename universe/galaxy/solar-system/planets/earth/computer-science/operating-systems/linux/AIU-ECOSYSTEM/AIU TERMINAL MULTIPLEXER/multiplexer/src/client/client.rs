@@ -13,6 +13,7 @@
 #[path = "../tty/tty.rs"] mod tty;
 
 mod git;
+mod workspace;
 mod keymap;
 mod screen;
 mod select;

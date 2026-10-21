@@ -47,6 +47,8 @@
     and the model's own data given back
   - src/holder/layout.rs — the layout file: the panes a session holds, by name
   - src/holder/wire.rs — the session's wire: one JSON object per line, both ways
+  - src/holder/workspace.rs — the workspace seam of the holder: the shared
+    engine asked, and the facts given back
   - src/agents/ — the door an AI agent comes in by
   - src/agents/INDEX.org — the agents area: the server, the tools, the envelope
   - src/agents/mcp.rs — the MCP server over stdio: one request per line, one
@@ -71,6 +73,8 @@
     commands and the keymap explorer read this one table
   - src/client/select.rs — the selection: the point, the ring of marks and
     the text between them
+  - src/client/workspace.rs — the workspace panel: the shared workspace as the
+    multiplexer shows it
 
 * Later
 # the areas planned but not landed; plan/package-tree.org is the register for

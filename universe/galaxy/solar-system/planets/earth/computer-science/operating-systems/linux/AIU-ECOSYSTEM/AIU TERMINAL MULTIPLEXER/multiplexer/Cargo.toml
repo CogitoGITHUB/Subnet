@@ -28,3 +28,7 @@ serde_json = "1.0"
 # The shared read-only Git layer, by path: one Git model for this program
 # and for the editor, so the two cannot disagree about what Git says.
 git-inspection = { path = "../../shared-layers/git-inspection" }
+# The shared workspace engine, by path: one workspace, one set of projects
+# and one context for this program and for the editor, so the two cannot
+# disagree about what the work is.
+workspace = { path = "../../shared-layers/workspace" }

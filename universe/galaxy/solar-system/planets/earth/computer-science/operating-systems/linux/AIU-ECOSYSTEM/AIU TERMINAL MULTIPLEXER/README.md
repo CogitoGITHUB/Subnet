@@ -57,7 +57,7 @@ that way.
 | The dev mode: work mode, the bake, the last good | Planned (TODO item 7) |
 | Select and send to both agents, with the context | Planned (TODO item 8) |
 | The Television channels | Implemented and verified: three read-only channels, and television reads all three |
-| The workspace engine inside the multiplexer | Planned (TODO item 16) |
+| The workspace engine inside the multiplexer | Implemented and verified: the key group, the panel, the holder's seam and the mode line (TODO item 16 is partly done) |
 | The Git inspection layer inside the multiplexer | Implemented and verified: the key group, the panel and the holder's seam |
 | The screen selection (the biomechanical model) | In progress: the multiplexer side landed; the editor's side and the wheel are owed |
 | The kit conformance and the done line | Planned (TODO items 11 and 12) |
@@ -126,11 +126,24 @@ prefix chord. A Control key the owner presses belongs to the program in the pane
 | `t` `p` `c` `s` | the tabs, the panes, the commands, the sessions |
 | `p o` | open the agent beside the focused pane, with that pane's context |
 | `g` | the git: the overview, the changed files, the diff, the history, the branches, the worktrees |
+| `w` | the workspace: the workspaces and their projects, the project context, the opening of a project |
 
 **The keymap explorer.** Space opens it in visual mode. It is a panel over the panes, not
 a new screen. It shows the keys of the map it is showing, what each one means, whether it
 runs a command or opens a group, and whether it can run now. A group key opens that group,
 a command key runs the command, and the Escape cancels at any depth.
+
+**The workspace.** The workspace is the one thing this program and the editor share
+(D-018), and the shared engine owns it. The multiplexer asks the engine through its own
+holder, in process, like the Git layer: the client asks, the holder asks the engine, and
+the engine's own envelope is the answer. The key group `w` opens the workspace: the
+workspaces and their projects, the project context as it stands, and the opening of a
+project context — the owner names the project in the command line (`:workspace open
+NAME`; the same line creates a workspace and registers a project). The mode line names
+the workspace and the project (`ws:` and `pr:`), and the holder's state carries them, so
+a client that attaches sees them at once. The tabs and the panes stay the multiplexer's
+own, and the multiplexer writes the workspace only when the owner asks for a change:
+closing it leaves the workspace and the editor untouched.
 
 **The selection.** The key `v` opens the selection on the focused pane: the mode line says
 `SELECT`, and the keys are the keys of the owner's biomechanical input layer. The arrows

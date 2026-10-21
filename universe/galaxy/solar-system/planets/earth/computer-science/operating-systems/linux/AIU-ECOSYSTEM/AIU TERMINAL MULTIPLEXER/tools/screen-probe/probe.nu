@@ -218,6 +218,28 @@ for a in "$@"; do echo "ARG $a"; done' | save --force $agent
     check "the escape leaves the selection and does nothing" ($edrawn | str contains "nothing was copied") $"drawn=($edrawn | str length)"
     check "the escape leaves the mode" ($edrawn | str contains "VISUAL") $"drawn=($edrawn | str length)"
 
+    # 11. the workspace: the engine behind the holder holds the
+    #    workspaces, their projects and the context. The multiplexer asks
+    #    the engine and writes through it, and the mode line names the
+    #    workspace and the project.
+    let worked = (do -i {
+        ^printf ":workspace create the-work\n:workspace project the-first\n:workspace open the-first\n" | ^$client --state-dir $state_dir --op screen
+    } | complete)
+    let wdrawn = ($worked.stdout | default "")
+    check "the mode line names the workspace" ($wdrawn | str contains "ws:the-work") $"drawn=($wdrawn | str length)"
+    check "the mode line names the project" ($wdrawn | str contains "pr:the-first") $"drawn=($wdrawn | str length)"
+
+    let after_workspace = (records $client $state_dir)
+    let workspaces = ($after_workspace | where {|r| ($r | get -o what | default "") == "the workspace was read" })
+    check "the workspace is read as a record" (($workspaces | length) > 0) $"records=($workspaces | length)"
+
+    let wdata = ($workspaces | last | get -o outputs | default {} | get -o workspace | default {})
+    let wprojects = ($wdata | get -o workspaces | default [] | get -o 0 | default {} | get -o projects | default [] | length)
+    check "the workspace holds the project" ($wprojects > 0) $"projects=($wprojects)"
+
+    let wproject = ($wdata | get -o workspaces | default [] | get -o 0 | default {} | get -o projects | default [] | get -o 0 | default {} | get -o name | default "")
+    check "the workspace names the project" ($wproject == "the-first") $"project=($wproject)"
+
     # the holder goes away with the probe
     let pid_file = ($state_dir | path join "holder.pid")
     if ($pid_file | path exists) {

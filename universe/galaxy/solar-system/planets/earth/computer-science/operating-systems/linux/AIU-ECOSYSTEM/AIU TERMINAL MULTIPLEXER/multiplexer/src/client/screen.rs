@@ -94,6 +94,15 @@ pub struct Screen {
     /// was asked for.
     git: Option<Value>,
     git_want: String,
+    /// workspace is what the shared engine answered, and workspace_view is
+    /// which view was asked for.
+    workspace: Option<Value>,
+    workspace_view: String,
+    /// workspace_name is the workspace this session works on, and
+    /// project_name is the project the context stands on. The mode line
+    /// names both.
+    workspace_name: String,
+    project_name: String,
 }
 
 impl Screen {
@@ -120,6 +129,10 @@ impl Screen {
             panel: None,
             git: None,
             git_want: String::new(),
+            workspace: None,
+            workspace_view: String::new(),
+            workspace_name: String::new(),
+            project_name: String::new(),
         }
     }
 
@@ -197,6 +210,11 @@ impl Screen {
                     lines,
                 });
             }
+        }
+        // The workspace comes with the state: the mode line names the
+        // workspace and the project as soon as the client attaches.
+        if let Some(workspace) = outputs.get("workspace") {
+            self.take_workspace_data(workspace);
         }
         if self.focused >= panes.len() {
             self.focused = 0;
@@ -437,6 +455,13 @@ impl Screen {
         // the line is cut at the end, so what the owner must read is at
         // the front.
         let mut line = format!("-- {} -- ", self.mode_name());
+        if !self.workspace_name.is_empty() {
+            line.push_str(&format!("ws:{} ", self.workspace_name));
+            if !self.project_name.is_empty() {
+                line.push_str(&format!("pr:{} ", self.project_name));
+            }
+            line.push_str("-- ");
+        }
         if !self.message.is_empty() {
             line.push_str(&self.message);
             line.push_str(" -- ");
@@ -514,11 +539,14 @@ impl Screen {
                     at += 1;
                 }
                 Mode::Command => {
-                    let now = self.command_key(&bytes[at..]);
+                    // One key at a time: the enter key ends the command
+                    // line, and the keys after it belong to the screen
+                    // again.
+                    let now = self.command_key(bytes[at]);
                     if !matches!(now, Action::Nothing) {
                         actions.push(now);
                     }
-                    at = bytes.len();
+                    at += 1;
                 }
                 Mode::Select => {
                     // The escape stands alone or it begins an arrow key:
@@ -615,32 +643,33 @@ impl Screen {
 
     /// command_key reads a key in the COMMAND line: the words are the
     /// multiplexer's.
-    fn command_key(&mut self, bytes: &[u8]) -> Action {
-        for byte in bytes {
-            match *byte {
-                ESCAPE => {
-                    self.mode = Mode::Visual;
-                    self.command.clear();
-                    return Action::Nothing;
-                }
-                ENTER => {
-                    let said = self.command.trim().to_string();
-                    self.command.clear();
-                    self.mode = Mode::Visual;
-                    return self.run_command(&said);
-                }
-                BACKSPACE => {
-                    self.command.pop();
-                }
-                byte if byte >= 0x20 => {
-                    if self.command.chars().count() < 200 {
-                        self.command.push(byte as char);
-                    }
-                }
-                _ => {}
+    fn command_key(&mut self, byte: u8) -> Action {
+        match byte {
+            ESCAPE => {
+                self.mode = Mode::Visual;
+                self.command.clear();
+                Action::Nothing
             }
+            // The enter key, however it arrives: a terminal sends a
+            // carriage return, a pipe sends a line feed.
+            ENTER | b'\n' => {
+                let said = self.command.trim().to_string();
+                self.command.clear();
+                self.mode = Mode::Visual;
+                self.run_command(&said)
+            }
+            BACKSPACE => {
+                self.command.pop();
+                Action::Nothing
+            }
+            byte if byte >= 0x20 => {
+                if self.command.chars().count() < 200 {
+                    self.command.push(byte as char);
+                }
+                Action::Nothing
+            }
+            _ => Action::Nothing,
         }
-        Action::Nothing
     }
 
     /// run does what the command says, and answers what the client must do
@@ -686,7 +715,7 @@ impl Screen {
             }
             Command::TabRename => {
                 self.mode = Mode::Command;
-                self.command = ":tab rename ".to_string();
+                self.command = "tab rename ".to_string();
                 Action::Nothing
             }
             Command::TabNext => {
@@ -712,7 +741,7 @@ impl Screen {
             }
             Command::PaneRename => {
                 self.mode = Mode::Command;
-                self.command = ":pane rename ".to_string();
+                self.command = "pane rename ".to_string();
                 Action::Nothing
             }
             Command::PaneNext => {
@@ -742,6 +771,15 @@ impl Screen {
             Command::GitHistory => self.show_git("history"),
             Command::GitBranches => self.show_git("branches"),
             Command::GitWorktrees => self.show_git("worktrees"),
+            Command::WorkspaceList => self.show_workspace("list"),
+            Command::WorkspaceContext => self.show_workspace("context"),
+            Command::WorkspaceOpen => {
+                // The owner names the project, and the name follows in the
+                // command line.
+                self.mode = Mode::Command;
+                self.command = "workspace open ".to_string();
+                Action::Nothing
+            }
             Command::EnterSelect => {
                 self.mode = Mode::Select;
                 self.select = Selection::new();
@@ -774,6 +812,69 @@ impl Screen {
             "op": "git",
             "what": want
         }))
+    }
+
+    /// show_workspace asks the holder what the shared workspace holds, and
+    /// the answer fills the panel. The holder asks the engine, and the
+    /// engine owns the workspaces, the projects and the context.
+    fn show_workspace(&mut self, view: &str) -> Action {
+        self.workspace_view = view.to_string();
+        self.message = format!("the workspace is being read: {}", view);
+        Action::Request(json!({
+            "op": "workspace",
+            "what": view
+        }))
+    }
+
+    /// take_workspace reads the engine's answer and fills the panel with
+    /// it.
+    fn take_workspace(&mut self, record: &Value) {
+        let data = match record
+            .get("outputs")
+            .and_then(|outputs| outputs.get("workspace"))
+        {
+            Some(data) => data.clone(),
+            None => return,
+        };
+        self.take_workspace_data(&data);
+        let lines = crate::workspace::lines(&self.workspace_view, &data);
+        self.panel = Some(Panel {
+            title: format!("the workspace — {}", self.workspace_view),
+            lines,
+        });
+    }
+
+    /// take_workspace_data keeps the names the mode line shows: the
+    /// workspace this session works on, and the project the context
+    /// stands on.
+    fn take_workspace_data(&mut self, data: &Value) {
+        self.workspace = Some(data.clone());
+        let id = data
+            .get("workspace")
+            .and_then(|value| value.as_str())
+            .unwrap_or("")
+            .to_string();
+        if id.is_empty() {
+            self.workspace_name = String::new();
+        } else {
+            let name = data
+                .get("workspaces")
+                .and_then(|held| held.as_array())
+                .and_then(|held| {
+                    held.iter().find(|one| {
+                        one.get("id").and_then(|value| value.as_str()) == Some(id.as_str())
+                    })
+                })
+                .and_then(|one| one.get("name").and_then(|value| value.as_str()))
+                .unwrap_or(&id)
+                .to_string();
+            self.workspace_name = name;
+        }
+        self.project_name = data
+            .get("project")
+            .and_then(|value| value.as_str())
+            .unwrap_or("")
+            .to_string();
     }
 
     /// take_git reads the layer's answer and fills the panel with it.
@@ -1007,6 +1108,23 @@ impl Screen {
             })),
             ["pane", "next"] => self.run(Command::PaneNext),
             ["pane", "previous"] => self.run(Command::PanePrevious),
+            ["workspace"] => self.run(Command::WorkspaceList),
+            ["workspace", "context"] => self.run(Command::WorkspaceContext),
+            ["workspace", "open", name] => Action::Request(json!({
+                "op": "workspace",
+                "what": "open",
+                "name": name
+            })),
+            ["workspace", "create", name] => Action::Request(json!({
+                "op": "workspace",
+                "what": "create",
+                "name": name
+            })),
+            ["workspace", "project", name] => Action::Request(json!({
+                "op": "workspace",
+                "what": "project",
+                "name": name
+            })),
             ["agent"] => self.run(Command::OpenAgent),
             ["editor"] => self.run(Command::OpenEditor),
             ["records"] => self.run(Command::ShowRecords),
@@ -1348,6 +1466,9 @@ fn take_record(screen: &mut Screen, line: &str) {
             .unwrap_or("");
         screen.push_text(who, text);
         return;
+    }
+    if what == "the workspace was read" {
+        screen.take_workspace(&record);
     }
     if what == "the git state was read" {
         screen.take_git(&record);

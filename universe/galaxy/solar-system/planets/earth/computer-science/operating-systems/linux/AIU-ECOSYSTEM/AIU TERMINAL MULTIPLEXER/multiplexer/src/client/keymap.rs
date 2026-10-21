@@ -34,6 +34,7 @@ pub enum Context {
     Commands,
     Sessions,
     Git,
+    Workspace,
     Select,
 }
 
@@ -47,6 +48,7 @@ impl Context {
             Context::Commands => "the commands",
             Context::Sessions => "the sessions",
             Context::Git => "the git",
+            Context::Workspace => "the workspace",
             Context::Select => "the selection",
         }
     }
@@ -61,6 +63,7 @@ impl Context {
             Context::Commands => b"c",
             Context::Sessions => b"s",
             Context::Git => b"g",
+            Context::Workspace => b"w",
             Context::Select => b"",
         }
     }
@@ -113,6 +116,12 @@ pub enum Command {
     GitBranches,
     /// GitWorktrees shows every worktree of the repository.
     GitWorktrees,
+    /// WorkspaceList shows the workspaces and their projects.
+    WorkspaceList,
+    /// WorkspaceContext shows the project context as it stands.
+    WorkspaceContext,
+    /// WorkspaceOpen asks for the name of the project to open.
+    WorkspaceOpen,
     /// EnterSelect opens the selection on the focused pane.
     EnterSelect,
     /// SelectLeft moves the point one character to the left.
@@ -314,6 +323,41 @@ pub static ROOT: &[Binding] = &[
         bytes: b"v",
         about: "the selection: pick the text on the screen",
         action: Action::Map(Context::Select),
+        need: Need::Always,
+    },
+    Binding {
+        keys: "w",
+        bytes: b"w",
+        about: "the workspace: the shared work of this program and the editor",
+        action: Action::Map(Context::Workspace),
+        need: Need::Always,
+    },
+];
+
+/// WORKSPACE is the map of the workspace. Every sequence starts with the key
+/// that opens the map. The workspace is the one thing this program and the
+/// editor share, and the engine behind it owns the workspaces, the projects
+/// and the context.
+pub static WORKSPACE: &[Binding] = &[
+    Binding {
+        keys: "w w",
+        bytes: b"ww",
+        about: "the workspaces and their projects",
+        action: Action::Command(Command::WorkspaceList),
+        need: Need::Always,
+    },
+    Binding {
+        keys: "w p",
+        bytes: b"wp",
+        about: "the project context as it stands",
+        action: Action::Command(Command::WorkspaceContext),
+        need: Need::Always,
+    },
+    Binding {
+        keys: "w o",
+        bytes: b"wo",
+        about: "open the project context: the name of the project follows",
+        action: Action::Command(Command::WorkspaceOpen),
         need: Need::Always,
     },
 ];
@@ -601,6 +645,7 @@ pub fn bindings(context: Context) -> &'static [Binding] {
         Context::Commands => COMMANDS,
         Context::Sessions => SESSIONS,
         Context::Git => GIT,
+        Context::Workspace => WORKSPACE,
         Context::Select => SELECT,
     }
 }

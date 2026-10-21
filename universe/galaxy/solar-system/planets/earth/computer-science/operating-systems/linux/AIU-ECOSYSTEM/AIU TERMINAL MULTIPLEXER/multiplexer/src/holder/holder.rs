@@ -17,6 +17,7 @@
 mod git;
 mod layout;
 mod log;
+mod workspace;
 
 #[path = "../agents/bundle.rs"]
 mod bundle;
@@ -45,6 +46,11 @@ struct Client {
 struct Session {
     run_id: String,
     state_dir: PathBuf,
+    /// workspace_dir is where the shared workspace engine keeps its files.
+    workspace_dir: PathBuf,
+    /// workspace is the workspace this session works on, when the owner
+    /// names one.
+    workspace: String,
     log_path: PathBuf,
     socket_path: PathBuf,
     log: log::Log,
@@ -180,6 +186,8 @@ fn run(args: &[String]) -> Result<(), String> {
     let mut session = Session {
         run_id,
         state_dir: options.state_dir.clone(),
+        workspace_dir: options.workspace_dir.clone(),
+        workspace: options.workspace.clone(),
         log_path,
         socket_path,
         log,
@@ -288,6 +296,9 @@ impl Session {
     /// the clients, and the contracts a client must agree with.
     fn state(&mut self, why: &str) -> Value {
         let attached = self.clients.iter().filter(|c| c.attached).count();
+        let workspace_dir = self.workspace_dir.clone();
+        let workspace_name = self.workspace.clone();
+        let workspace = workspace::read(&workspace_dir, &workspace_name, "list");
         let mut panes: Vec<Value> = Vec::new();
         for pane in &self.panes {
             panes.push(json!({
@@ -326,7 +337,8 @@ impl Session {
                 "clients": self.clients.len(),
                 "attached": attached,
                 "event-contract": EVENT_CONTRACT,
-                "holder-contract": HOLDER_CONTRACT
+                "holder-contract": HOLDER_CONTRACT,
+                "workspace": workspace.data
             }),
             result: json!({}),
         })
@@ -633,6 +645,47 @@ fn answer(session: &mut Session, at: usize, line: &str) -> Result<bool, String> 
                 how: "the shared git layer was asked, and it only reads",
                 inputs: json!({ "what": what, "path": directory.display().to_string() }),
                 outputs: json!({ "git": answer.data }),
+                result: json!({}),
+            });
+            session.write(&record);
+            answer_client(session, at, &record);
+            Ok(true)
+        }
+        "workspace" => {
+            // The client asks what the shared workspace holds, or asks
+            // for a change: the engine is asked, and the engine owns the
+            // workspaces, the projects and the context.
+            let what = request
+                .get("what")
+                .and_then(|value| value.as_str())
+                .unwrap_or("list")
+                .to_string();
+            let project = request
+                .get("project")
+                .and_then(|value| value.as_str())
+                .unwrap_or("")
+                .to_string();
+            let name = request
+                .get("name")
+                .and_then(|value| value.as_str())
+                .unwrap_or("")
+                .to_string();
+            let directory = session.workspace_dir.clone();
+            let workspace_name = session.workspace.clone();
+            let answer = match what.as_str() {
+                "create" | "project" | "open" => {
+                    workspace::write(&directory, &workspace_name, &what, &name)
+                }
+                _ => workspace::read(&directory, &workspace_name, &what),
+            };
+            let record = session.record(Fields {
+                kind: if answer.ok { "info" } else { "fail" },
+                who: "holder",
+                what: "the workspace was read",
+                why: "the client asked what the workspace holds",
+                how: "the shared workspace engine was asked, and it answered in its own envelope",
+                inputs: json!({ "what": what, "name": name, "project": project }),
+                outputs: json!({ "workspace": answer.data, "why": answer.reason }),
                 result: json!({}),
             });
             session.write(&record);
@@ -1259,6 +1312,12 @@ struct Options {
     layout: Option<PathBuf>,
     cols: u16,
     rows: u16,
+    /// workspace_dir is where the shared workspace engine keeps its files:
+    /// it is an argument, and no environment variable names it.
+    workspace_dir: PathBuf,
+    /// workspace is the workspace this session works on, when the owner
+    /// names one. Empty means the only one there is.
+    workspace: String,
 }
 
 impl Options {
@@ -1268,6 +1327,8 @@ impl Options {
         let mut layout: Option<PathBuf> = None;
         let mut cols: u16 = 80;
         let mut rows: u16 = 24;
+        let mut workspace_dir: Option<PathBuf> = None;
+        let mut workspace = String::new();
         let mut at = 0;
         while at < args.len() {
             let name = args[at].clone();
@@ -1288,6 +1349,14 @@ impl Options {
                     layout = Some(PathBuf::from(value));
                     at += 2;
                 }
+                "--workspace-dir" => {
+                    workspace_dir = Some(PathBuf::from(value));
+                    at += 2;
+                }
+                "--workspace" => {
+                    workspace = value;
+                    at += 2;
+                }
                 "--cols" => {
                     cols = value
                         .parse()
@@ -1302,7 +1371,7 @@ impl Options {
                 }
                 "--help" => {
                     println!(
-                        "holder --state-dir DIR [--shell PROGRAM] [--layout FILE] [--cols N] [--rows N]"
+                        "holder --state-dir DIR [--shell PROGRAM] [--layout FILE] [--cols N] [--rows N] [--workspace-dir DIR] [--workspace NAME]"
                     );
                     std::process::exit(0);
                 }
@@ -1310,12 +1379,15 @@ impl Options {
             }
         }
         let state_dir = state_dir.ok_or("the holder needs --state-dir")?;
+        let workspace_dir = workspace_dir.unwrap_or_else(|| state_dir.join("workspace"));
         Ok(Options {
             state_dir,
             shell,
             layout,
             cols,
             rows,
+            workspace_dir,
+            workspace,
         })
     }
 }
