@@ -1,0 +1,81 @@
+#+TITLE: The holder and the tty facade — the minimal design (build-order step 2)
+#+AUTHOR: Shape
+
+One job: the concrete design of the holder, small enough to be built in
+one commit and proved on this phone. The plan (plan/architecture.org,
+plan/build-order.org) says WHAT the holder is; this says HOW, in the
+fewest files that can be true.
+
+* What the holder is
+
+A process that owns the shells of one session and the session's log. It
+outlives every client: the client is a thin screen that attaches and
+detaches, and the holder does not notice.
+
+It has NO CONFIG and NO TIMERS (rule 03): it reads no config file, it
+starts no clock, and it never polls. Every wait ends on an event
+(rule 04) — the shell wrote something, the shell exited, the client
+asked, the socket closed.
+
+* The files, and the one job of each
+
+| file | its one job |
+|------|-------------|
+| =src/tty/tty.rs= | the terminal: raw mode, size, escape handling |
+| =src/tty/facade.rs= | the one way shells and panes touch a terminal: open a pty, size it, read and write bytes |
+| =src/tty/measure.rs= | what works under proot is measured, never assumed |
+| =src/holder/shells.rs= | spawn and track the shells, through =tty/= |
+| =src/holder/log.rs= | one append-only log file per session, flushed per record (D-006) |
+| =src/holder/holder.rs= | the session: outlives every client, and serves the socket |
+
+* The seam between the client and the holder
+
+A unix socket in the session's state directory. The Racket side of that
+socket is =src/control/socket.rkt=, and it lands with build-order step
+8; the holder's side is part of =holder.rs= and lands now, because a
+holder with nothing to attach to proves nothing.
+
+The protocol is one JSON object per line, the ecosystem's event shape
+(rule 07): the same shape the CLI, the MCP server, the skill and the
+plugin use. The client says =attach=, =detach=, =read= or =state=; the
+holder answers with records and never dies because a client went.
+
+* The proof (build-order step 2; rule 01)
+
+1. The holder starts, makes its session directory, spawns ONE shell
+   under a pty, and appends every byte the shell writes to the
+   session's log.
+2. A client attaches, sees the shell's output, and detaches.
+3. The shell is still alive after the client is gone: the holder's pid
+   and the shell's pid are printed, and the shell's output keeps
+   landing in the log.
+4. A second client attaches and finds the SAME session: the same log,
+   the same shell, still running.
+5. What the phone cannot do is RECORDED, not promised: if Android kills
+   the holder, the log says which session died, and the next client
+   says the session is gone instead of pretending.
+
+* The smallest slice (rule 11)
+
+One shell, one session, one log, one socket, two clients. No panes yet
+(step 3), no key routing (step 4), no layouts, no agent pane.
+
+* The phone facts, measured 2026-10-21
+
+- a pty works here: =openpty= answers =/dev/pts/N= (the probe under
+  =tools/tiny-binary-probe/= and the note in
+  =research/tiny-binary-probe.org=);
+- Rust builds here: a tiny binary builds in 7.9 s and starts in 23 ms;
+- so the holder is written and built on this phone, and its own build
+  time is written down when it is first built.
+
+* The rules that bind this code
+
+- 01 never lose work: the log IS the record, and a detach loses
+  nothing.
+- 03 the holder has no config and no timers.
+- 04 every wait ends on an event; no sleep in a loop, ever.
+- 05 every action is logged with who and why: each record names its
+  session and its shell.
+- 06 observability: the holder answers =state= with what it holds.
+- 09 language split: the holder is Rust; only =join/= ever crosses.

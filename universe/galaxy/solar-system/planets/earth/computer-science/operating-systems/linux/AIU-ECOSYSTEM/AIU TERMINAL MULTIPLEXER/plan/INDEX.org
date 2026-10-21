@@ -15,6 +15,7 @@
   - reused-vs-written.org — what comes from the package manager, what comes from research, what is written here; filled 2026-10-16
   - open-decisions.org — retired 2026-10-17; the closed decisions live in the root DECISIONS.org (D-002..D-004, D-006; D-005 shared); kept as a redirect
   - package-tree.org — the package directory, the area law, and every planned directory and file with its single job
+  - holder-design.org — the minimal design of the holder and the tty facade: the files, the seam, and the proof that a shell survives a detach (build-order step 2)
 
 * Later
 # One topic per file, filled in step 8. Plans stay general; detailed design comes later.
