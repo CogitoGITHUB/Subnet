@@ -32,6 +32,7 @@
          "../audit/accept.rkt"
          "../routes/routes.rkt"
          "../join/hot-path.rkt"
+         "../join/protocol.rkt"
          "live.rkt"
          "plugin-verbs.rkt")
 
@@ -334,6 +335,24 @@
             (print-line "the session is ended")
             (print-line (format "the end was refused: ~a" (hash-ref refusal 'what "the session could not be ended")))))))
 
+;; git-verb asks what Git says about the file, and prints the facts.
+;;
+;; The shared layer is asked over the seam, and it only reads: no
+;; repository, index, branch or worktree is changed, and the editor's
+;; buffer is never saved to find out. A file that is not inside a
+;; repository is refused by name, and the refusal is printed.
+(define (git-verb args)
+  (define file (if (null? args) "" (car args)))
+  (define path (path->complete-path (if (string=? file "") "untitled" file)))
+  (define answer (ask-hot "git" (hasheq 'file (path->string path))))
+  (define data (response-data answer))
+  (for ([key (in-list (sort (hash-keys data)
+                            (lambda (one other)
+                              (string<? (symbol->string one)
+                                        (symbol->string other)))))])
+    (print-line (format "~a: ~a" (symbol->string key)
+                              (hash-ref data key)))))
+
 ;; edit-file opens the file the user named and runs the editing session.
 ;; checkpoint-verb makes a checkpoint of a tree: the state the tree is put
 ;; back to when an agent does something the human did not want. The first
@@ -383,6 +402,7 @@
         "tasks" tasks-verb
         "keys" keys-verb
         "dashboard" dashboard-verb
+        "git" git-verb
         "bake" bake-verb
         "send" send-verb
         "agent" agent-verb

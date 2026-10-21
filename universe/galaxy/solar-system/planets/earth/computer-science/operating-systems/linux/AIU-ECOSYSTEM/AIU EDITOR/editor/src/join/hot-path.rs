@@ -12,6 +12,8 @@ mod dashboard;
 mod input;
 #[path = "../journal/journal.rs"]
 mod journal;
+#[path = "git-facts.rs"]
+mod git_facts;
 #[path = "wire-json.rs"]
 mod wire_json;
 #[path = "rust-exports.rs"]
@@ -68,6 +70,12 @@ fn answer_for(request: &wire_json::Request) -> (bool, Vec<(String, String)>) {
     let op = request.op.as_str();
 
     match op {
+        rust_exports::OP_GIT => {
+            // The Git facts of the file's own directory. The shared layer
+            // is asked, and it only reads.
+            let path = std::path::Path::new(&file);
+            (true, git_facts::facts(path))
+        }
         rust_exports::OP_OPEN => {
             let text = current_text(&file, &journal_path);
             let state = buffer::new_buffer(&text);

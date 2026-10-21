@@ -165,6 +165,7 @@ models, rules, configuration).
 | The workspace model, store and operations | workspace | Implemented and verified |
 | One read-only Git model, with the worktrees | git-inspection | Implemented and verified |
 | The git panel in the multiplexer: the branch, the changes, the worktrees | Multiplexer | Implemented and verified |
+| The git facts in the editor, over the join seam | Editor | Implemented and verified |
 | The file panel: the tree, the rows, the picker | Browser | Planned |
 | The workflow engine over notation | Workflow engine | Planned |
 | The key routing between the two programs | both | In progress |
@@ -352,8 +353,9 @@ the language split (only `join/` crosses between Rust and Racket), the naming re
 - The multiplexer and the editor are not yet connected: the key routing walk with the
   editor in a pane is owed, and the agent-opens-here key exists on the multiplexer's side
   only.
-- The Git inspection layer is built, verified, and read by the multiplexer. The editor
-  does not read it yet, and the workspace engine is read by neither.
+- The Git inspection layer is built, verified, and read by both programs: the
+  multiplexer's panel and the editor's facts. The workspace engine is read by neither
+  yet, and the editor has no in-file indicators or diff views yet.
 - pm does not run on this phone: its Racket package database cannot be read by the phone's
   Racket, so the editor's plugin install says so and installs nothing.
 - The Television picker is not on the phone, so the TV channels can only be written and

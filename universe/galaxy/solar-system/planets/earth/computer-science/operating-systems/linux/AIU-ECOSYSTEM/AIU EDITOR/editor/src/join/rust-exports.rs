@@ -53,3 +53,8 @@ pub const OP_MOVE: &str = "move";
 
 /// OP_SELECT answers the text between two byte offsets: the selection.
 pub const OP_SELECT: &str = "select";
+
+/// OP_GIT answers the Git facts of a file: the repository, the branch,
+/// the distance, the counts, and the file's own state. The shared layer
+/// is asked, and it only reads.
+pub const OP_GIT: &str = "git";

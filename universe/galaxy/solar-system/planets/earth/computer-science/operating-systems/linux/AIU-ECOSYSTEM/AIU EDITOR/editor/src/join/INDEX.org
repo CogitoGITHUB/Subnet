@@ -14,6 +14,8 @@
  - hot-path.rs — the Rust side of the seam: one request file in, one answer file out
  - wire-json.rs — the Rust side of the wire shape: read a request, write a response
  - rust-exports.rs — the functions the meaning side may call, one per crossing
+ - git-facts.rs — the Git facts the hot path answers with: the shared layer asked,
+   and the facts given back
 
 * The area
 # The join area is the only place the two languages meet (rule 09).

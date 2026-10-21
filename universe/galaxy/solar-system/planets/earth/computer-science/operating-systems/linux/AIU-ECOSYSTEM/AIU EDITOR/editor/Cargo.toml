@@ -13,3 +13,8 @@ edition = "2021"
 [[bin]]
 name = "hot-path"
 path = "src/join/hot-path.rs"
+
+[dependencies]
+# The shared read-only Git layer, by path: one Git model for this program
+# and for the multiplexer, so the two cannot disagree about what Git says.
+git-inspection = { path = "../../shared-layers/git-inspection" }

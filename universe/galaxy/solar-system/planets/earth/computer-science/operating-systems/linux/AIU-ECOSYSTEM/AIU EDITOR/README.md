@@ -58,7 +58,7 @@ the one-way lint and the language-split lint keep every other area clean.
 | The agent opens beside the editor | Planned (TODO item 18) |
 | The editor's own keymap explorer | Planned (TODO item 15) |
 | The workspace engine joins the editor | Planned (TODO item 20) |
-| The Git inspection layer inside the editor | Planned: the layer is built and verified, the editor does not read it yet |
+| The Git inspection layer inside the editor | Implemented and verified: the facts cross the join seam, and the layer only reads |
 | The kit conformance across both programs | In progress: the editor's clauses hold, the shared checklist does not close |
 | The done line | In progress: the editor's clauses hold, the rest is named and blocked |
 
@@ -231,6 +231,30 @@ names an edge, a width and an order, so any piece can go on any edge and several
 can share one. A piece is never cut: a piece whose text needs more room than its size
 says gets the room it needs.
 
+**The Git facts.** The editor asks the shared Git layer about the file's own
+directory, over the join seam: the hot path asks the layer, and the facts cross as
+names and values — the repository, the branch, the distance from the upstream, the
+counts of staged, unstaged, untracked and conflicted files, the freshness, and the
+file's own state in the index and in the working tree, which are two different states.
+The layer only reads: no repository, index, branch or worktree is changed, and the
+editor's buffer is never saved to find out. A file that is not inside a repository is
+refused by name.
+
+```
+$ racket editor/src/entry/cli.rkt git ../README.md
+git-branch: main
+git-conflicts: 0
+git-divergence: in step with the upstream
+git-file: universe/.../AIU-ECOSYSTEM/README.md
+git-file-index: unchanged
+git-file-working: clean
+git-freshness: fresh
+git-repository: /root/home/shape/Subnet
+git-staged: 0
+git-unstaged: 6
+git-untracked: 1
+```
+
 **The plugin system.** A plugin is a package with a manifest. pm owns the package; the
 editor owns how it talks to it, and the editor **never installs anything by itself**: it
 asks pm, and pm's rule is the editor's rule. The verbs are `plugin`, `plugin-register`,
@@ -245,6 +269,7 @@ racket editor/src/entry/cli.rkt edit FILE       # a session, one command per lin
 racket editor/src/entry/cli.rkt routes          # the routing walk
 racket editor/src/entry/cli.rkt keys LAYER HEX… # the name of each key
 racket editor/src/entry/cli.rkt dashboard FILE   # the dashboard, one line per row
+racket editor/src/entry/cli.rkt git FILE          # the Git facts of the file
 racket editor/src/entry/cli.rkt tasks           # the task table
 racket editor/src/entry/cli.rkt task FILE NAME WORDS…
 racket editor/src/entry/cli.rkt task --dry-run FILE NAME WORDS...
