@@ -158,7 +158,7 @@ const WAIT_DOOR_ALLOW = [
    "joined only after the status line said the child finished"]
   ["drainer-join-after-status" "package-manager/src/process/run.rkt" 149
    "joined only after the status line said the child finished"]
-  ["parallel-fetch-join" "package-manager/src/store/update.rkt" 234
+  ["parallel-fetch-join" "package-manager/src/store/update.rkt" 233
    "DEBT: a minutes-long join that should be wrapped in the wait door later"]
   ["zero-timeout-cancel-poll" "package-manager/src/install/apply.rkt" 165
    "sync/timeout 0 is a poll, not a wait: it cannot block"]
@@ -188,7 +188,7 @@ const WAIT_DOOR_ALLOW = [
    "a file lock with #:max-delay 0 is a probe: it cannot block"]
   ["mirror-lock-deadline" "package-manager/src/git/git-repo.rkt" 221
    "DEBT: a real 30-600s un-narrated block on the mirror lock"]
-  ["mcp-stdio-loop" "package-manager/src/entry/mcp-tools.rkt" 504
+  ["mcp-stdio-loop" "package-manager/src/entry/mcp-tools.rkt" 513
    "the MCP stdio loop reads one request line per call and narrates per message"]
   ["vault-table-guard" "package-manager/src/git/vault-lock.rkt" 42
    "the table guard is held across two hash operations; it is the lock, not a wait"]

@@ -18,7 +18,6 @@
 * PAUSED 2026-10-19 -- NOTATION took the session. PM resumes here.
 Uncommitted, path-scoped, in this order; each commit removes its own
 =TODO.org= item:
-- S2-04 the new =wait-door-lint= stage in =gate/check.nu= (D-060).
 - =pm doctor=: =src/entry/doctor-report.rkt= + new
   =tests/entry/doctor-test.rkt=.
 - binary cache: =src/store/content-address.rkt=,
@@ -42,16 +41,6 @@ swallowed S2-03, P-02 and G-02/G-07), and the S-04 proof script
 =/tmp/opencode/s04-proof.sh= (backup =/tmp/opencode/git-env-rkt.s04.bak=).
 
 * PHASE A -- foundation and gates
-
-** S2-04 no un-narrated blocking primitive
-what: a lint stage over non-test sources: every blocking primitive
-  (=sync=, =thread-wait=, =semaphore-wait=, =channel-get/put=,
-  =read-line=, =subprocess-wait=, timeouts) sits inside the wait door
-  or in a named allowlist; narrow until every hit is real, prove it
-  bites, then switch on by default (D-060).
-done when: the stage runs by default and a planted violation fails.
-tests: the stage itself + the gate stage list.
-deps: none.
 
 ** S-04 gate turns red when an enforcement call is deleted
 what: prove the gate bites: delete an enforcement call, see red with
