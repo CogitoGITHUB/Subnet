@@ -11,7 +11,7 @@
 
 * Items
 # in build order.
-  1. DONE (the tree landed in =c46f1a71=; the light gate green at 7 stages) — The tree lands — create =multiplexer/= per plan/package-tree.org: INDEX.org, the floor areas and gate/ with its first stages; done when: the light gate is green; deps: none.
+  1. DONE (the tree landed in =5a8908e7=; the light gate green at 7 stages) — The tree lands — create =multiplexer/= per plan/package-tree.org: INDEX.org, the floor areas and gate/ with its first stages; done when: the light gate is green; deps: none.
   2. Tiny binary (tier-1 item 02): the probe that decides the route — measured build and start on the phone; done when: the numbers are written down and the adopt-or-own route is confirmed (D-002); if it passes, herdr runs the daily panes (D-003) while ours is built behind the same contract; deps: none.
   3. Holder and tty facade (item 03): a shell in a terminal that survives detach, with the session log; done when: a shell survives a client detach as far as the phone allows, and every log record is flushed; deps: 1.
   4. Panes and layouts (item 04): done when: a real work layout is restored from its file on the phone; deps: 3.
