@@ -57,6 +57,12 @@ task.
     editor's are registered in OpenCode on this phone, and both skills
     are installed, so an OpenCode session can drive the multiplexer and
     the editor without the owner touching the terminal.
+  - The panes work (=b9541c94=): a layout file names the panes a session
+    holds, each pane is a shell with a name, and every record the session
+    writes carries the pane's name. A send is aimed at a pane by name. The
+    phone proof is =tools/panes-probe/probe.nu=. What is not there yet is
+    the DRAWING: the panes on one terminal, side by side, which is the next
+    slice of this item and the ground the key routing needs.
   - Every one of the ten modules really loads: each was required on
     its own and answered.
 
