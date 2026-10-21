@@ -4,13 +4,15 @@
 
 * What
 # the work, in a line or two.
-  Work mode loads live from source; the manual bake keeps the last good
-  build; the baked binary prints its measured start — in the editor and
-  the multiplexer.
+  Work mode loads live from source; the config is reloaded live, so a
+  change to it is in force without a restart; the manual bake keeps the
+  last good build; the baked binary prints its measured start — in the
+  editor and the multiplexer.
 
 * Done when
 # the single observable check.
-  A bake cycle on the phone plus each binary's printed start.
+  A bake cycle on the phone, each binary's printed start, and a change
+  to the config seen without a restart in both programs.
 
 * Dependencies
 # the items that must be DONE first.

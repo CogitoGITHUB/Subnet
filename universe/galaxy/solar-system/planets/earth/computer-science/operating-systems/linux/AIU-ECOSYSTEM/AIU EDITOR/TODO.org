@@ -145,6 +145,8 @@ away: the tree stays exactly as the gate last saw it.
 
   20. TODO (owner addition, 2026-10-21) — The workspace engine joins the editor: the editor reads and writes the shared workspace through the engine (=AIU-ECOSYSTEM/shared-layers/workspace/=), its own tabs and buffers stay its own, its mode line shows the workspace and the project, and it can ask the multiplexer for what the multiplexer owns; done when: a key opens the project context, the mode line names the workspace and the project, and closing the editor leaves the workspace and the multiplexer untouched; deps: 15, 18, the engine.
 
+  24. TODO (owner addition, 2026-10-21) — The config is reloaded live in dev mode: the editor watches the config it was started with and takes the new one in without a restart, so a change to the config is seen at once and the editor says that it reloaded; done when: a change to the config is in force without restarting the editor, and the reload is on the record; deps: 8, the devloop.
+
 * After the done line
 # what continues on its own.
   - The program's own checklist from checklist/tier-2/ content; tier 3 stays plan only until the owner opens it.
