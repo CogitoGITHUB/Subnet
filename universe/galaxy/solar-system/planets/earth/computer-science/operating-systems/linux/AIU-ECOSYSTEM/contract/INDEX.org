@@ -19,6 +19,10 @@
   - key-routing.org — how a key finds its owner across multiplexer, editor and the programs inside panes; filled 2026-10-16
   - contract-versioning.org — how the contract itself is versioned and what a version bump means; filled 2026-10-16
   - rebuilt-client-vs-running-holder.org — what happens when a rebuilt client meets a holder that still runs the old contract; filled 2026-10-16
+  - workspace-model.org — the workspace, the project and the resource reference: the hierarchy, who owns each part, and what survives what; written 2026-10-21
+  - workspace-operations.org — the one operation envelope, the operations themselves, who may ask for what, and the two channels the request travels; written 2026-10-21
+  - workspace-mode-line.org — the fields both mode lines show about the workspace, and the rules that keep them true; written 2026-10-21
+  - workspace-ai-context.org — the snapshot an agent reads to understand the workspace, the queries it may ask, and the limits on what it may then do; written 2026-10-21
 
 * Later
 # The one written contract, filled 2026-10-16 as the working draft. Frozen only when a program and an adapter both depend on a piece.

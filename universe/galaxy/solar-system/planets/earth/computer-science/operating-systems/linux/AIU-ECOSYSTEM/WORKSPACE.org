@@ -1,0 +1,139 @@
+#+TITLE: WORKSPACE — the shared workspace architecture
+# One job: the audit of what exists today, the boundaries it gives, the
+# engine that fills the gap, and the order the work lands in.
+# Status: written 2026-10-21 from the owner's unified workspace
+# specification; the contracts beside it are the frozen words.
+
+* What the audit found
+# the facts in the two trees, each with the place it was read from.
+  - The multiplexer is two Rust programs in one package: the holder owns
+    the session, the client is a thin screen. The holder keeps its state in
+    one state directory: =events.log=, =holder.sock=, =holder.pid=, and it
+    speaks one JSON object per line over a unix socket. It already
+    survives a client that goes away, and its tabs and panes and shells
+    are its own.
+  - The client is modal already: VISUAL, INSERT, COMMAND and the keymap
+    explorer, with the keys in one table in =src/client/keymap.rs= and the
+    screen in =src/client/screen.rs=. It keeps the last 400 lines of each
+    pane and draws them.
+  - The editor is Racket. Its command table is in =src/commands/commands.rkt=
+    and its session is file, journal, point, selection and layer. Its keys
+    are data in =src/routes/keymaps.rkt=, and the layer routing is in
+    =src/routes/routes.rkt=. It keeps its journal and its locks under its
+    own state directory, and it has a working OpenCode adapter that speaks
+    HTTP to a running OpenCode.
+  - The two programs meet in one place already: the join area of the
+    editor, which carries one line of JSON each way between Racket and
+    Rust over files and a child process. That seam is D-008.
+  - Television is already known here: the picker is outside the program,
+    the program ships channels over its own JSON, and the channel is
+    read-only. The facts are in =learned/television-integration.org=.
+  - Nothing today holds a workspace, a project, or a reference from one
+    program to a resource of the other. The gap is real and it is exactly
+    the gap this architecture fills.
+
+* The boundaries
+# what belongs to whom, and what never crosses.
+  - The workspace engine is above both programs. It owns the workspace, the
+    projects, the resource references, the presentations, the shared
+    context and the record of cross-program operations. It owns nothing
+    else: no buffer text, no pty, no process.
+  - The editor owns its buffers, tabs, point, selection and layout. The
+    multiplexer owns its tabs, panes, sessions, ptys and layout. Neither
+    writes the other's part, and neither rebuilds its own state from what
+    the engine remembers.
+  - The engine holds a report of what an application last said. That is a
+    report, not an authority.
+  - The workspace outlives both programs. Closing one leaves the other and
+    the workspace untouched. Unregistering a reference forgets a pointer;
+    removing a project forgets a project; deleting a workspace forgets a
+    workspace. None of the three stops a process, closes a tab or deletes
+    a file.
+
+* Where the engine lives
+# the decision, and why it is this and not the other ways.
+  - The engine is one Rust package of its own, at =AIU-ECOSYSTEM/workspace/=,
+    above the two programs and below neither. It depends on the same two
+    crates the multiplexer already fetches, so the phone's offline
+    registry still serves it.
+  - The multiplexer uses the engine as a library inside its own process.
+  - The editor uses it through the join seam that already carries the two
+    languages, so the Racket side never writes the store itself and never
+    keeps a second copy of the rules.
+  - The store is files in one state directory, and the state directory is
+    an argument. A write is a write beside the old file and a rename over
+    it, so a reader never sees half a file. One writer at a time, by a
+    lock the engine holds, and a reader takes no lock at all.
+  - The engine is NOT a daemon. It has no listener, no thread and no
+    timer. A program asks it when it wakes on an event.
+  - The other ways were refused on purpose: a daemon is a new thing to
+    keep alive on a phone; two implementations of the same model drift;
+    and putting the engine inside one program would make the other program
+    depend on that program's tree.
+
+* How the two programs talk
+# the two channels, and why there are two.
+  - Workspace operations go to the engine, in the envelope that
+    =contract/workspace-operations.org= freezes. Both programs speak it.
+  - Operations about the multiplexer's own resources go to the holder over
+    the socket it already keeps open, in the JSON lines it already speaks.
+  - Operations about the editor's own resources go into the editor's
+    mailbox in the engine. The editor takes its mail when it wakes on an
+    event and writes the result back. No daemon, no listener, no tick.
+  - The multiplexer commands the editor never run a program by themselves:
+    an operation that runs a process or closes something asks the human
+    first, in the program that owns it.
+
+* The order the work lands in
+# the dependency order, and what each step proves.
+  1. The audit and the contracts. Done in this document and beside it.
+  2. The engine: the model, the store, the operations, the queries. It
+     proves: the store survives a restart, the identifiers are stable, a
+     bad file is reported and kept, and one writer at a time holds.
+  3. The editor joins: its own tabs, its mode line, its keymap group, and
+     its requests to the multiplexer.
+  4. The multiplexer joins: its own tabs, its mode line, its keymap group,
+     and its requests to the editor.
+  5. Television: the channels over the engine's JSON, so the picker
+     browses and never acts.
+  6. The cross-program operations, both directions, with their states.
+  7. The AI context: the snapshot, the queries, the permissions.
+  8. The whole system, verified as one thing.
+
+* What is at risk
+# the risks, each with what it would cost and what holds it.
+  - Two copies of the model would drift. Held by one implementation in one
+    package, and by the editor reaching it only through the seam.
+  - A stale mode line would look true. Held by the version in every
+    snapshot and by the rule that an unknown field is left out.
+  - A stored terminal would look alive. Held by separating saved intent
+    from observed state in the model.
+  - A retry would run a destructive operation twice. Held by the request
+    identifier and the rule that a duplicate is answered, never re-run.
+  - The store would be written by two programs at once. Held by the lock
+    and the rename.
+  - The engine would grow into a service. Held by the rule that it has no
+    listener, no thread and no timer, and by the contract that an
+    application reports its own liveness.
+
+* The work that was already in flight
+# where the owner's earlier order sits in this one.
+  - The screen selection for the multiplexer and the editor, copied from
+    the owner's biomechanical input layer, lands after the engine and
+    before the editor joins. It is a use of the workspace, not a part of
+    it.
+  - The OpenCode integration for the multiplexer, and the editor's part of
+    it, lands with the editor's join: the context a send carries becomes
+    a resource reference in the workspace, so the agent and the editor can
+    be in the same project without either owning the other's state.
+
+* The words
+# the contracts this architecture is built on.
+  - =contract/workspace-model.org= — the hierarchy, the ownership, the
+    identity and the lifecycle.
+  - =contract/workspace-operations.org= — the envelope, the operations,
+    the permissions and the two channels.
+  - =contract/workspace-mode-line.org= — the fields and the rules that
+    keep them true.
+  - =contract/workspace-ai-context.org= — the snapshot, the queries and
+    the permissions an agent has.

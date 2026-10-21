@@ -12,6 +12,7 @@
   - CLEANUP-LOG.org — every retired or deleted doc: why it left, and the last commit it was live in
   - SESSION-MAP.org — which session works what, and in which order
   - WHEN-ON-LAPTOP.org — the living list of everything the phone cannot do or can only partly do
+  - WORKSPACE.org — the shared workspace architecture: the audit of the two programs, the boundaries, where the engine lives, and the order the work lands in; written 2026-10-21
   - AGENTS.md — ecosystem build rules already here; the starting point for any build work
   - HARD-RULES.org — the binding ecosystem rules, each written so a gate can check it
   - ReadMe.md — the public face: what the ecosystem is and its four components

@@ -1,0 +1,53 @@
+#+TITLE: Workspace mode line
+# One job: the fields both mode lines show about the workspace, and the
+# rules that keep them true.
+# Status: written 2026-10-21 from the owner's unified workspace specification;
+# the working draft until a program and an adapter both depend on it.
+
+* The rule
+# what a mode line is for, and what it must never become.
+  A mode line shows what is true now. It is written for a person, it is
+  short, and it is never the place an agent reads the workspace from. The
+  machine-readable truth is the workspace snapshot, and it lives elsewhere.
+
+* The common fields
+# the same meaning in both programs, whatever each line looks like.
+  - workspace — the name of the workspace, and its short identifier.
+  - project — the name of the active project, and its short identifier.
+  - context — what is being worked on: the active resource and its kind.
+  - owner — the program that owns the active resource.
+  - availability — live, stale or gone, for the active resource and for the
+    other program.
+  - sync — whether the mode line is showing the current state, or a state
+    that is known to be behind.
+  - pending — the operations that are accepted or running, and the ones
+    that were rejected or failed.
+
+* The fields each program adds
+# what is its own, and stays its own.
+  - The editor adds: the file or buffer, the editor tab, the editor mode,
+    whether the buffer is modified, and the point and the selection.
+  - The multiplexer adds: the terminal tab, the pane, the session state,
+    the multiplexer mode, and whether the client is attached or detached.
+
+* Keeping it true
+# the rules that stop a stale line from looking fresh.
+  - The line is drawn from a cached copy of the workspace state. It is
+    refreshed when the workspace version changes, and never by asking the
+    other program while the owner is typing.
+  - A line that cannot be refreshed says so: the sync field says the state
+    is behind, and the name it shows is marked as the last known one.
+  - The line changes when the workspace changes, the project changes, the
+    active resource changes, the mode changes, or an operation finishes.
+  - The line is never drawn half: a field that is not known is left out
+    rather than filled with a guess.
+
+* What the owner can do with it
+# the operations the mode line leads to, all by key.
+  - Inspect the workspace, the project and the shared context.
+  - Switch workspace, switch project.
+  - Open the resource discovery for the workspace, the project or the
+    other program.
+  - Inspect whether the other program is there, and what it is doing.
+  - Inspect the operations that are pending, and the ones that failed.
+  - Open the full workspace status.

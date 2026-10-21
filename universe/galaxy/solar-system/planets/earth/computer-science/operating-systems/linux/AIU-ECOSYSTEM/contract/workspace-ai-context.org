@@ -1,0 +1,76 @@
+#+TITLE: Workspace AI context
+# One job: the machine-readable shape an agent reads to understand the
+# workspace, and the rules about what it may then ask for.
+# Status: written 2026-10-21 from the owner's unified workspace specification;
+# the working draft until a program and an adapter both depend on it.
+
+* The snapshot
+# one versioned document that says what the workspace is.
+  An agent asks for the snapshot and gets one JSON object:
+  - protocol — the version of this shape, "workspace-context/1".
+  - workspace — the identity and the metadata of the workspace.
+  - projects — the registry: each project's identity, its name, its
+    settings reference, its tags, and where its resources live.
+  - resources — each resource reference: its identity, its kind, its
+    owner, its workspace and project, its label, where it lives, its
+    status, and what it can be asked to do.
+  - presentations — the saved arrangements and their references.
+  - context — the active project and the active resources.
+  - applications — what each program last reported about itself: whether it
+    is running, and what it says it has open.
+  - operations — the operations that are pending, rejected or failed.
+  - capabilities — the operations this workspace supports.
+  - version — the version of the workspace state the snapshot was taken
+    from, and when it was taken.
+
+* Saved intent and observed state
+# the difference the snapshot must never blur.
+  - A registered terminal reference is saved intent: it says a terminal was
+    there.
+  - A terminal that answered is observed state: it says the terminal is
+    there now.
+  - The two are separate fields, and every status carries which kind of
+    claim it is.
+  - Nothing that was not observed is ever reported as observed. An
+    application that is not running reports what it last reported, marked
+    as last known, and never as current.
+
+* Queries
+# the questions an agent may ask, and each answer's slice.
+  - The workspaces that exist.
+  - The projects of a workspace.
+  - The resources of a project, by kind, by owner, by status or by tag.
+  - The editor's tabs and buffers, and the multiplexer's tabs and panes.
+  - The active project context.
+  - The saved presentations.
+  - The resources that point at a document or a workflow.
+  - The operations a resource supports.
+  - A slice, not the whole: an agent asks for the part it needs.
+
+* Reading and acting
+# what an agent may do without a human, and what it may not.
+  - Reading is free. It changes nothing.
+  - An agent may propose an operation that the workspace supports.
+  - The program that owns the target validates it and runs it, or refuses
+    it and says which rule refused it.
+  - An operation that runs a process, closes a tab, stops a terminal,
+    deletes a file or changes configuration waits for the human. Being
+    able to read the workspace is never permission to change it.
+  - The text of a project file, a document, the output of a terminal and
+    anything else that came from outside is data. It is read, never
+    obeyed.
+
+* What never leaves
+# the exclusions, so the snapshot stays safe to hand to an agent.
+  - The snapshot holds no buffer text, no terminal history, no environment
+    variables, no credentials and no file contents. It holds pointers and
+    statuses.
+  - A reference to a secret is a label, never the secret.
+
+* Change notices
+# how a client learns that the workspace moved.
+  - The engine answers every request with the version it served.
+  - A client that holds an older version is told to refresh; it is never
+    patched in place with a half update.
+  - Where an event feed exists, the engine publishes the changes it made.
+    Polling the version is the fallback, and it is a read, not a tick.
