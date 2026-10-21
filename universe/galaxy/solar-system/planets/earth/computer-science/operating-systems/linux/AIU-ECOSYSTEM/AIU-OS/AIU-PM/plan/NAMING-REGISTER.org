@@ -115,6 +115,8 @@ does; =core=, =main=, =server=, =backends=, =handler=, =manager= and
   one process runs every test file
 - =gate/tree.nu=
   prints the tree for a human to read
+- =gate/enforcement-call-proof.nu=
+  deletes one enforcement call, shows the gate red, restores, shows green
 
 * Files moved whole and unsplit, and why
 

@@ -15,7 +15,40 @@
 # item says otherwise. The gate runs with
 # =~/opt/nushell/0.116.1/nu --no-config-file gate/check.nu=.
 
-* PAUSED 2026-10-19 -- NOTATION took the session. PM resumes here.
+* PAUSED 2026-10-21 -- the TERMINAL MULTIPLEXER is built first.
+The owner switched the priority on 2026-10-21. pm's implementation stops
+here until the multiplexer works; the docs in =README.md= say the same
+thing. Nothing in this tree is rewritten or thrown away.
+
+- WHAT IS PAUSED: every item below that is not documentation. The
+  items are kept in place, in order, with their deps — they are the
+  backlog, and they resume in this order.
+- THE DEPENDENCY: =../AIU TERMINAL MULTIPLEXER/= — persistent sessions,
+  a process lifecycle, and attach/detach. pm's long commands
+  (=apply=, =fetch=, =backup=) run in their own multiplexer session, so
+  a run that takes minutes keeps running after the terminal that started
+  it is gone, and the event feed is read where the editor's output is.
+- STATUS AT THE PAUSE: the tree is GREEN. Full gate on =28384b5f=:
+  111 test files, 1586 checks, 0 failed; =one-way-dependency-lint= 0 new
+  violations; =wait-door-lint= 0 violations. Landed on the way to the
+  pause: =pm doctor= (=c357dd8e=), the binary cache (=abb66ac7=), the
+  security rule naming itself (=ad48f78f=), the wait door enforced by
+  default (=f0d1e8d8=), and the store no longer reaching up to process
+  (=28384b5f=).
+- RESUME CONDITIONS (all three, then the work continues): (1) the
+  multiplexer builds, its gate is green, and persistent sessions plus
+  attach/detach are proved on the phone; (2) this file names the
+  multiplexer work as done and lists what pm still owes; (3) =README.md=
+  says what the integration is, with the paths.
+- THE EXACT NEXT TASK for pm, after the multiplexer works: the ONE-WAY
+  LAW gap (D-044) — close the 7 known unpaid area-pairs
+  (=git security=, =git spec=, =queue git=, =queue spec=, =security git=,
+  =spec git=, =store install=) so =one-way-dependency-lint= reports zero
+  known unpaid edges. The plan is written down in
+  =plan/ONE-WAY-LAW-PLAN.org= (7 commit-sized steps, least risky
+  first). After that: S-04, S-02, G-02 + G-07, then the G-03..G-12
+  spine, then the rest of this list in the order it stands.
+
 Uncommitted, path-scoped, in this order; each commit removes its own
 =TODO.org= item:
 - =pm doctor=: =src/entry/doctor-report.rkt= + new
@@ -41,14 +74,6 @@ swallowed S2-03, P-02 and G-02/G-07), and the S-04 proof script
 =/tmp/opencode/s04-proof.sh= (backup =/tmp/opencode/git-env-rkt.s04.bak=).
 
 * PHASE A -- foundation and gates
-
-** S-04 gate turns red when an enforcement call is deleted
-what: prove the gate bites: delete an enforcement call, see red with
-  =file:line=, restore it; the proof goes into the commit message
-  (D-060).
-done when: the proof is in the commit.
-tests: =security-gate-lint= stage.
-deps: none.
 
 * PHASE B -- structure and safety
 ** one-way law gap
