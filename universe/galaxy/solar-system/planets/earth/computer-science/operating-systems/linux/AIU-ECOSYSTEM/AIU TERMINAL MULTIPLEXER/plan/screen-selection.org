@@ -1,0 +1,105 @@
+#+TITLE: The screen selection
+# One job: how the owner picks text on the screen with keys, in the
+# multiplexer and in the text editor, the way the biomechanical input layer
+# does it.
+# Status: written 2026-10-21 from the owner's request and from the owner's own
+# biomechanical input layer; the code lands with the items it names.
+
+* What the owner asked
+# the owner's words, in one line, and the shape it takes here.
+  - The selection must be on the tm and on the text editor, and it must be
+    the one the owner already set up in the biomechanical input layer: keys
+    navigate the screen, and the text that is under the keys is selected.
+
+* What the biomechanical layer does
+# the facts read out of the owner's own code, so this is a copy and not a
+# guess; the file names are the ones in the Cyberdeck-Emacs tree.
+  - The selection is an OVERLAY on the current mode, not a mode of its own:
+    the pick is a read-key loop with overlays over the text, and the modal
+    state is untouched while it runs.
+  - The candidates are the VISIBLE text only: the pick searches
+    window-start to window-end, and by default across every window.
+  - A candidate is picked first, and a SECOND key then says what to do with
+    it. Those keys are x, X, t, m, n, y, Y, i and z: kill and move, kill and
+    stay, teleport, mark, copy, yank, yank the line, spell, and zap to the
+    character.
+  - ESC and C-g abort the pick, and an aborted pick does NOTHING.
+  - There is no anchor key. The anchor is a mark, and the marks live in a
+    ring: a mark is pushed and popped. A region is two picks: the begin and
+    the end.
+  - The wheel scrolls the window while a pick runs, and the pick restarts
+    over the fresh text.
+  - The state marker tells which mode stands ([NOR], [VIS] and the rest);
+    the pick itself has no marker, only the menu title while it is up.
+
+* What this program takes and what it refuses
+# the copy, and the two refusals, each with its reason.
+  - TAKEN: the overlay (the pick runs over the current mode and the mode is
+    untouched); the visible text only (a thing that is off the screen cannot
+    be picked); the second key for the action (the pick says WHAT, the action
+    key says WHAT TO DO); the abort that does nothing; the mark as the
+    anchor, with a ring of marks.
+  - REFUSED: the wheel. There is no mouse in this program; the screen is
+    navigated with keys, so the scroll is a key too.
+  - REFUSED: the timer. The biomechanical layer has a reader with a clock in
+    it; this program has no clock anywhere, so every wait is an event.
+
+* The shape in the multiplexer
+# what the tm does with the pick.
+  - The tm has a SELECT map beside its other maps, and the select mode is
+    entered from the visual mode with one plain key. The mode line says
+    which mode stands, the way it says it for the other modes.
+  - The candidates are the visible lines of the FOCUSED pane: the lines the
+    tm draws, not the whole history. A line that has scrolled out of the
+    pane cannot be picked, because it cannot be seen.
+  - The point moves over the candidates with the arrow keys, by word with
+    two keys, and the view scrolls with the page keys. The anchor is a mark:
+    one key sets the mark where the point stands, and the region is from
+    the mark to the point.
+  - The action keys are the ones the biomechanical layer uses, and they do
+    what the tm can do with text:
+    - copy: the picked text goes into the tm's own ring, and the tm answers
+      with the line it copied.
+    - send: the picked text rides the context bundle to the agent, which is
+      the one shape every program sends.
+    - open the agent here: the picked text rides the bundle, and a pane
+      opens beside with the agent in it.
+  - ESC leaves the select mode and does nothing else: no text is copied, no
+    bundle is sent, no pane opens.
+
+* The shape in the text editor
+# what the editor does with the pick, and what it already has.
+  - The editor already has a select layer and a region model: the region
+    grows as the point moves, and the region rides the bundle when the
+    editor sends.
+  - The editor's pick is the same overlay over the editor's own visible
+    text: the candidates are the lines the editor shows, the point moves
+    with the same keys, and the mark is the editor's region anchor.
+  - The action keys are the editor's: copy into the editor's ring, send the
+    region to the agent, and zap the region out of the buffer.
+  - The editor keeps its own mode names: the visual layer, the write layer
+    and the select layer stay as they are, and the pick is an overlay on the
+    visual layer, not a fourth layer.
+
+* What it must not do
+# the refusals, each with the rule it refuses by.
+  - No copy and paste by hand: the text travels from the program to the
+    agent without the owner touching it (rule 01).
+  - No agent-specific keys in the bundle: the adapter translates, and no
+    program learns which agent answers (rule 07).
+  - No timers: the pick waits on keys, and the send waits on the program
+    (rule 04).
+  - No mouse anywhere: every step of the pick is a key (rule 13).
+  - No secret in a picked line: the bundle passes the redaction seam, and
+    the text that leaves the program is redacted the way every send is.
+
+* The proof
+# what shows it works, for each program.
+  - The multiplexer: a probe that drives the select mode with keys and
+    checks the answer — the point moves, the mark holds, the region is the
+    text between them, the copy puts the text in the ring, the send builds
+    the bundle, and the escape does nothing.
+  - The editor: the same probe against the editor's pick, plus the editor's
+    gate stages green.
+  - The rule both hold: the picked text is the visible text, and the text
+    that is not on the screen cannot be picked.

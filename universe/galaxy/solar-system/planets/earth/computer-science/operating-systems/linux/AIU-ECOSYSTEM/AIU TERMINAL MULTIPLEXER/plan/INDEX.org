@@ -20,6 +20,7 @@
   - panes-design.org — the minimal design of the panes and the layout file: what a pane is, what the file says, and the proof (build-order step 3)
   - modes-tabs-and-the-window.org — the modes (normal, insert, command), the tabs, the mode line, and the one window the tm and the editor share: the keys per mode, what the mode line says, and how one size reaches every pane at once (owner addition 2026-10-21)
   - keymap-explorer.org — the keymap as one table of bindings, and the keymap explorer that draws that same table: the modes, the maps, what Space opens, and how Escape cancels at any depth (owner priority 2026-10-21)
+  - screen-selection.org — the screen selection: the owner's biomechanical model (an overlay, the visible text only, a second key for the action, the escape that does nothing) in the multiplexer and in the text editor (owner priority 2026-10-21)
 
 * Later
 # One topic per file, filled in step 8. Plans stay general; detailed design comes later.
