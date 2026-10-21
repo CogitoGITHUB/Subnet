@@ -10,19 +10,32 @@ use std::path::Path;
 /// the layout it wants, and the size it asks for.
 pub struct Pane {
     pub name: String,
+    pub tab: String,
     pub program: String,
     pub weight: u16,
     pub cols: u16,
     pub rows: u16,
 }
 
-/// read answers the panes of the layout file. A file that is not there, or
+/// Layout is what a layout file says: the direction the panes are laid out
+/// in, and the panes themselves.
+pub struct Layout {
+    pub direction: String,
+    pub panes: Vec<Pane>,
+}
+
+/// read answers the layout of the layout file. A file that is not there, or
 /// that holds no pane, is an error the caller names.
-pub fn read(path: &Path) -> Result<Vec<Pane>, String> {
+pub fn read(path: &Path) -> Result<Layout, String> {
     let body = std::fs::read_to_string(path)
         .map_err(|why| format!("the layout {} cannot be read: {}", path.display(), why))?;
     let parsed: Value = serde_json::from_str(&body)
         .map_err(|why| format!("the layout {} is not JSON: {}", path.display(), why))?;
+    let direction = parsed
+        .get("direction")
+        .and_then(|value| value.as_str())
+        .unwrap_or("row")
+        .to_string();
     let panes = parsed
         .get("panes")
         .and_then(|value| value.as_array())
@@ -41,6 +54,11 @@ pub fn read(path: &Path) -> Result<Vec<Pane>, String> {
             .and_then(|value| value.as_str())
             .unwrap_or("/bin/sh")
             .to_string();
+        let tab = item
+            .get("tab")
+            .and_then(|value| value.as_str())
+            .unwrap_or("main")
+            .to_string();
         let weight = item
             .get("weight")
             .and_then(|value| value.as_u64())
@@ -55,6 +73,7 @@ pub fn read(path: &Path) -> Result<Vec<Pane>, String> {
             .unwrap_or(24) as u16;
         held.push(Pane {
             name,
+            tab,
             program,
             weight,
             cols,
@@ -64,16 +83,23 @@ pub fn read(path: &Path) -> Result<Vec<Pane>, String> {
     if held.is_empty() {
         return Err(format!("the layout {} holds no panes", path.display()));
     }
-    Ok(held)
+    Ok(Layout {
+        direction,
+        panes: held,
+    })
 }
 
 /// one answers the smallest layout there is: a single pane, running a shell.
-pub fn one(name: &str, program: &str, cols: u16, rows: u16) -> Vec<Pane> {
-    vec![Pane {
-        name: name.to_string(),
-        program: program.to_string(),
-        weight: 1,
-        cols,
-        rows,
-    }]
+pub fn one(name: &str, program: &str, cols: u16, rows: u16) -> Layout {
+    Layout {
+        direction: "row".to_string(),
+        panes: vec![Pane {
+            name: name.to_string(),
+            tab: "main".to_string(),
+            program: program.to_string(),
+            weight: 1,
+            cols,
+            rows,
+        }],
+    }
 }

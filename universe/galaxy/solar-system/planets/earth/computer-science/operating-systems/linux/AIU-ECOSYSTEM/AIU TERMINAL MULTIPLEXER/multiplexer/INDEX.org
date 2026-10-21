@@ -58,6 +58,10 @@
   - src/client/INDEX.org — the client area: one program, one job
   - src/client/client.rs — the client: attaches, asks, reads and detaches; it
     holds nothing of its own
+  - src/client/screen.rs — the screen: the panes drawn on one terminal, the
+    mode line, the tab bar, the keymap explorer panel, and the redraw
+  - src/client/keymap.rs — the keymap: the keys that mean what, as data; the
+    commands and the keymap explorer read this one table
 
 * Later
 # the areas planned but not landed; plan/package-tree.org is the register for

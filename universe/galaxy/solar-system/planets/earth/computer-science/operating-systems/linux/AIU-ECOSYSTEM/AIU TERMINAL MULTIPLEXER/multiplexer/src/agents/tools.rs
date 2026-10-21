@@ -247,6 +247,7 @@ fn ask_holder(session_dir: &Path, request: Value) -> Result<Vec<Value>, String> 
             break;
         }
         pending.push_str(&String::from_utf8_lossy(&buffer[..got]));
+        let mut last = false;
         while let Some(at) = pending.find('\n') {
             let line = pending[..at].trim().to_string();
             pending = pending[at + 1..].to_string();
@@ -254,12 +255,28 @@ fn ask_holder(session_dir: &Path, request: Value) -> Result<Vec<Value>, String> 
                 continue;
             }
             match serde_json::from_str::<Value>(&line) {
-                Ok(value) => held.push(value),
+                Ok(value) => {
+                    // The holder marks the last answer of a request, so the
+                    // agent knows the answer is complete without waiting for
+                    // the connection to close.
+                    if value
+                        .get("result")
+                        .and_then(|result| result.get("final"))
+                        .and_then(|flag| flag.as_bool())
+                        .unwrap_or(false)
+                    {
+                        last = true;
+                    }
+                    held.push(value);
+                }
                 Err(why) => {
                     wire::close(fd);
                     return Err(format!("the holder sent a line that is not a record: {}", why));
                 }
             }
+        }
+        if last {
+            break;
         }
     }
     wire::close(fd);

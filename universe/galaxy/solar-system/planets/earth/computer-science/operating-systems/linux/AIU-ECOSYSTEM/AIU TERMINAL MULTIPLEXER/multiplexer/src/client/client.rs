@@ -9,6 +9,11 @@
 // it, never on a clock.
 
 #[path = "../holder/wire.rs"] mod wire;
+#[allow(dead_code)]
+#[path = "../tty/tty.rs"] mod tty;
+
+mod keymap;
+mod screen;
 
 use serde_json::{json, Value};
 use std::path::PathBuf;
@@ -40,6 +45,21 @@ fn run(args: &[String]) -> Result<i32, String> {
     wire::wait_for_socket(&socket_path)?;
 
     let fd = wire::connect(&socket_path)?;
+
+    if options.op == "screen" {
+        // The screen is its own life: it attaches, draws the panes, and
+        // answers the keys until the owner leaves.
+        let answer = screen::session(
+            fd,
+            CLIENT_NAME,
+            options.agent_program.clone(),
+            options.editor_program.clone(),
+        );
+        wire::close(fd);
+        answer?;
+        return Ok(0);
+    }
+
     wire::ask(fd, &options.request())?;
 
     let mut refused = false;
@@ -78,6 +98,7 @@ fn run(args: &[String]) -> Result<i32, String> {
             }
             pending.push_str(&String::from_utf8_lossy(&buffer[..got]));
             let mut lines = 0u64;
+            let mut done = false;
             while let Some(at) = pending.find('\n') {
                 let answer = pending[..at].trim().to_string();
                 pending = pending[at + 1..].to_string();
@@ -93,13 +114,18 @@ fn run(args: &[String]) -> Result<i32, String> {
                 if options.op == "attach" {
                     if let Some(wanted) = options.count {
                         if printed >= wanted {
+                            done = true;
                             break;
                         }
                     }
-                } else if options.op != "read" {
-                    // one answer is the whole answer for state and for send
+                } else if is_final(&answer) {
+                    // the answer says it is the last one of this request
+                    done = true;
                     break;
                 }
+            }
+            if done {
+                break;
             }
             if options.op == "attach" {
                 if let Some(wanted) = options.count {
@@ -113,7 +139,9 @@ fn run(args: &[String]) -> Result<i32, String> {
             continue;
         }
 
-        if watching_stdin && fds[1].revents & libc::POLLIN != 0 {
+        // A pipe that is at its end says POLLHUP, not POLLIN: the end of the
+        // keys is an event too, and the client must hear it.
+        if watching_stdin && fds[1].revents & (libc::POLLIN | libc::POLLHUP) != 0 {
             let mut buffer = [0u8; 1024];
             let got = wire::read(libc::STDIN_FILENO, &mut buffer)?;
             if got == 0 {
@@ -154,12 +182,28 @@ fn is_refusal(line: &str) -> bool {
     }
 }
 
+/// is_final answers whether a record is the last one of its request: the
+/// holder marks the answer, so the reader knows it is complete without
+/// waiting for the connection to close.
+fn is_final(line: &str) -> bool {
+    match serde_json::from_str::<Value>(line) {
+        Ok(value) => value
+            .get("result")
+            .and_then(|result| result.get("final"))
+            .and_then(|flag| flag.as_bool())
+            .unwrap_or(false),
+        Err(_) => false,
+    }
+}
+
 /// Options are the client's arguments.
 struct Options {
     state_dir: PathBuf,
     op: String,
     data: String,
     pane: String,
+    agent_program: String,
+    editor_program: String,
     since: u64,
     count: Option<u64>,
 }
@@ -170,6 +214,8 @@ impl Options {
         let mut op = "state".to_string();
         let mut data = String::new();
         let mut pane = String::new();
+        let mut agent_program = "opencode".to_string();
+        let mut editor_program = "editor".to_string();
         let mut since: u64 = 0;
         let mut count: Option<u64> = None;
         let mut at = 0;
@@ -196,6 +242,14 @@ impl Options {
                     pane = value;
                     at += 2;
                 }
+                "--agent-program" => {
+                    agent_program = value;
+                    at += 2;
+                }
+                "--editor-program" => {
+                    editor_program = value;
+                    at += 2;
+                }
                 "--since" => {
                     since = value
                         .parse()
@@ -212,7 +266,7 @@ impl Options {
                 }
                 "--help" => {
                     println!(
-                        "client --state-dir DIR [--op state|attach|detach|read|send] [--data TEXT] [--since N] [--count N]"
+                        "client --state-dir DIR [--op state|attach|detach|read|send|screen] [--data TEXT] [--pane NAME] [--agent-program PROGRAM] [--since N] [--count N]"
                     );
                     std::process::exit(0);
                 }
@@ -225,6 +279,8 @@ impl Options {
             op,
             data,
             pane,
+            agent_program,
+            editor_program,
             since,
             count,
         })

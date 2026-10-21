@@ -45,6 +45,10 @@ struct Session {
     socket_path: PathBuf,
     log: log::Log,
     panes: Vec<Pane>,
+    tabs: Vec<String>,
+    direction: String,
+    cols: u16,
+    rows: u16,
     seq: u64,
     started: Instant,
     listen_fd: c_int,
@@ -55,6 +59,7 @@ struct Session {
 /// is how everything else talks about the pane.
 struct Pane {
     name: String,
+    tab: String,
     weight: u16,
     shell: shells::Shell,
 }
@@ -124,11 +129,17 @@ fn run(args: &[String]) -> Result<(), String> {
         Some(path) => layout::read(path)?,
         None => layout::one("main", &options.shell, options.cols, options.rows),
     };
+    let direction = wanted.direction.clone();
     let mut panes: Vec<Pane> = Vec::new();
-    for pane in wanted {
+    let mut tabs: Vec<String> = Vec::new();
+    for pane in wanted.panes {
         let shell = shells::Shell::start(&pane.program, pane.cols, pane.rows)?;
+        if !tabs.contains(&pane.tab) {
+            tabs.push(pane.tab.clone());
+        }
         panes.push(Pane {
             name: pane.name,
+            tab: pane.tab,
             weight: pane.weight,
             shell,
         });
@@ -142,6 +153,10 @@ fn run(args: &[String]) -> Result<(), String> {
         socket_path,
         log,
         panes,
+        tabs,
+        direction,
+        cols: options.cols,
+        rows: options.rows,
         seq: 0,
         started: Instant::now(),
         listen_fd,
@@ -246,6 +261,7 @@ impl Session {
         for pane in &self.panes {
             panes.push(json!({
                 "name": pane.name.clone(),
+                "tab": pane.tab.clone(),
                 "pid": pane.shell.pid,
                 "alive": pane.shell.alive_now(),
                 "program": pane.shell.program.clone(),
@@ -261,6 +277,13 @@ impl Session {
             inputs: json!({}),
             outputs: json!({
                 "session": self.run_id.clone(),
+                "direction": self.direction.clone(),
+                "tabs": Value::Array(
+                    self.tabs
+                        .iter()
+                        .map(|tab| Value::from(tab.clone()))
+                        .collect::<Vec<Value>>(),
+                ),
                 "panes": Value::Array(panes),
                 "log": self.log_path.display().to_string(),
                 "socket": self.socket_path.display().to_string(),
@@ -424,9 +447,29 @@ fn read_shell(session: &mut Session, pane_at: usize) -> Result<bool, String> {
 
 /// read_client takes what a client sent and answers it. It answers whether
 /// the client stays connected.
+///
+/// A client whose socket breaks is one client gone, not the session gone: the
+/// read error is answered as "that client is finished", and the panes go on
+/// without it.
 fn read_client(session: &mut Session, at: usize) -> Result<bool, String> {
     let mut buffer = [0u8; 4096];
-    let got = read_from(session.clients[at].fd, &mut buffer)?;
+    let got = match read_from(session.clients[at].fd, &mut buffer) {
+        Ok(got) => got,
+        Err(why) => {
+            let record = session.record(Fields {
+                kind: "info",
+                who: "holder",
+                what: "the client is gone",
+                why: "its socket broke while the holder was reading it",
+                how: "the read failed and the client was let go",
+                inputs: json!({ "fd": session.clients[at].fd }),
+                outputs: json!({}),
+                result: json!({ "why": why }),
+            });
+            session.write(&record);
+            return Ok(false);
+        }
+    };
     if got == 0 {
         return Ok(false);
     }
@@ -491,7 +534,9 @@ fn answer(session: &mut Session, at: usize, line: &str) -> Result<bool, String> 
             let record = session.state("the client asked for the state");
             session.write(&record);
             answer_client(session, at, &record);
-            Ok(false)
+            // The client stays: a screen asks for the state and then keeps
+            // asking things of the same connection.
+            Ok(true)
         }
         "read" => {
             let since = request.get("since").and_then(|value| value.as_u64()).unwrap_or(0);
@@ -520,8 +565,12 @@ fn answer(session: &mut Session, at: usize, line: &str) -> Result<bool, String> 
                 result: json!({}),
             });
             session.write(&done);
-            let _ = write_to(session.clients[at].fd, done.to_string().as_bytes());
-            Ok(false)
+            // The last answer of this request: the reader knows the records
+            // are all there without waiting for the connection to close.
+            answer_client(session, at, &done);
+            // The client stays: the answer says it is the last one of this
+            // request, and the client closes the connection when it is done.
+            Ok(true)
         }
         "send" => {
             let data = request.get("data").and_then(|value| value.as_str()).unwrap_or("");
@@ -580,7 +629,281 @@ fn answer(session: &mut Session, at: usize, line: &str) -> Result<bool, String> 
                 session.write(&record);
                 answer_client(session, at, &record);
             }
-            Ok(false)
+            // The client stays: a screen sends a key and then sends the next.
+            Ok(true)
+        }
+        "open" => {
+            let wanted = request
+                .get("name")
+                .and_then(|value| value.as_str())
+                .unwrap_or("")
+                .to_string();
+            let program = request
+                .get("program")
+                .and_then(|value| value.as_str())
+                .unwrap_or("/bin/sh")
+                .to_string();
+            let name = if wanted.is_empty() {
+                format!("pane-{}", session.panes.len() + 1)
+            } else {
+                wanted
+            };
+            if session.panes.iter().any(|pane| pane.name == name) {
+                let record = session.record(Fields {
+                    kind: "fail",
+                    who: "holder",
+                    what: "the pane did not open",
+                    why: "a pane of that name is already open",
+                    how: "the name was looked for among the open panes and refused",
+                    inputs: json!({ "pane": name }),
+                    outputs: json!({}),
+                    result: json!({ "why": format!("a pane named {} is already open", name) }),
+                });
+                session.write(&record);
+                answer_client(session, at, &record);
+                return Ok(false);
+            }
+            let opened = match shells::Shell::start(&program, session.cols, session.rows) {
+                Ok(shell) => shell,
+                Err(why) => {
+                    let record = session.record(Fields {
+                        kind: "fail",
+                        who: "holder",
+                        what: "the pane did not open",
+                        why: "the program could not be started",
+                        how: "the terminal refused the program",
+                        inputs: json!({ "pane": name, "program": program }),
+                        outputs: json!({}),
+                        result: json!({ "why": why }),
+                    });
+                    session.write(&record);
+                    answer_client(session, at, &record);
+                    return Ok(false);
+                }
+            };
+            let pid = opened.pid;
+            let tab = request
+                .get("tab")
+                .and_then(|value| value.as_str())
+                .filter(|value| !value.is_empty())
+                .map(|value| value.to_string())
+                .unwrap_or_else(|| {
+                    session
+                        .tabs
+                        .first()
+                        .cloned()
+                        .unwrap_or_else(|| "main".to_string())
+                });
+            if !session.tabs.contains(&tab) {
+                session.tabs.push(tab.clone());
+            }
+            session.panes.push(Pane {
+                name: name.clone(),
+                tab: tab.clone(),
+                weight: 1,
+                shell: opened,
+            });
+            let record = session.record(Fields {
+                kind: "info",
+                who: "holder",
+                what: "a pane opened",
+                why: "the client asked for a pane",
+                how: "a terminal was opened, the program was started on it, the pane joined the session",
+                inputs: json!({ "pane": name, "tab": tab, "program": program, "client": client_name(&request) }),
+                outputs: json!({ "pid": pid, "panes": session.panes.len() }),
+                result: json!({}),
+            });
+            session.write(&record);
+            answer_client(session, at, &record);
+            Ok(true)
+        }
+        "resize" => {
+            let cols = request
+                .get("cols")
+                .and_then(|value| value.as_u64())
+                .unwrap_or(0) as u16;
+            let rows = request
+                .get("rows")
+                .and_then(|value| value.as_u64())
+                .unwrap_or(0) as u16;
+            if cols == 0 || rows == 0 {
+                let record = session.record(Fields {
+                    kind: "fail",
+                    who: "holder",
+                    what: "the window did not change",
+                    why: "the size asked for is not a size",
+                    how: "the columns and the rows were read and refused",
+                    inputs: json!({ "cols": cols, "rows": rows }),
+                    outputs: json!({}),
+                    result: json!({ "why": "a window needs columns and rows".to_string() }),
+                });
+                session.write(&record);
+                answer_client(session, at, &record);
+                return Ok(false);
+            }
+            // One window for the whole session: every pane — a shell or an
+            // editor — is told the same size, so what the owner sees in one
+            // pane is what the other pane draws.
+            let mut told: Vec<String> = Vec::new();
+            for pane in &session.panes {
+                let set = tty::set_window_size(pane.shell.master, cols, rows);
+                if set.is_ok() {
+                    unsafe {
+                        libc::kill(-pane.shell.pid, libc::SIGWINCH);
+                    }
+                    told.push(pane.name.clone());
+                }
+            }
+            session.cols = cols;
+            session.rows = rows;
+            let record = session.record(Fields {
+                kind: "info",
+                who: "holder",
+                what: "the window changed",
+                why: "the client told the session the size of the terminal",
+                how: "every pane's terminal was resized and every program was told to redraw",
+                inputs: json!({ "cols": cols, "rows": rows, "client": client_name(&request) }),
+                outputs: json!({ "panes": Value::Array(
+                    told.iter().map(|name| Value::from(name.clone())).collect::<Vec<Value>>()
+                ) }),
+                result: json!({}),
+            });
+            session.write(&record);
+            answer_client(session, at, &record);
+            Ok(true)
+        }
+        "rename" => {
+            let kind = request
+                .get("kind")
+                .and_then(|value| value.as_str())
+                .unwrap_or("")
+                .to_string();
+            let name = request
+                .get("name")
+                .and_then(|value| value.as_str())
+                .unwrap_or("")
+                .to_string();
+            let to = request
+                .get("to")
+                .and_then(|value| value.as_str())
+                .unwrap_or("")
+                .to_string();
+            if name.is_empty() || to.is_empty() {
+                let record = session.record(Fields {
+                    kind: "fail",
+                    who: "holder",
+                    what: "the name did not change",
+                    why: "a rename needs the old name and the new one",
+                    how: "the names were read and refused",
+                    inputs: json!({ "kind": kind, "name": name, "to": to }),
+                    outputs: json!({}),
+                    result: json!({ "why": "a rename needs the old name and the new one".to_string() }),
+                });
+                session.write(&record);
+                answer_client(session, at, &record);
+                return Ok(true);
+            }
+            let mut changed: Vec<String> = Vec::new();
+            if kind == "tab" {
+                for tab in session.tabs.iter_mut() {
+                    if *tab == name {
+                        *tab = to.clone();
+                        changed.push(name.clone());
+                    }
+                }
+                for pane in session.panes.iter_mut() {
+                    if pane.tab == name {
+                        pane.tab = to.clone();
+                    }
+                }
+            } else {
+                for pane in session.panes.iter_mut() {
+                    if pane.name == name {
+                        pane.name = to.clone();
+                        changed.push(name.clone());
+                    }
+                }
+            }
+            if changed.is_empty() {
+                let record = session.record(Fields {
+                    kind: "fail",
+                    who: "holder",
+                    what: "the name did not change",
+                    why: "there is nothing of that name to rename",
+                    how: "the name was looked for and refused by name",
+                    inputs: json!({ "kind": kind, "name": name, "to": to }),
+                    outputs: json!({}),
+                    result: json!({ "why": format!("there is no {} named {}", kind, name) }),
+                });
+                session.write(&record);
+                answer_client(session, at, &record);
+                return Ok(true);
+            }
+            let record = session.record(Fields {
+                kind: "info",
+                who: "holder",
+                what: "the name changed",
+                why: "the client asked for another name",
+                how: "the name was looked for and replaced",
+                inputs: json!({ "kind": kind, "name": name, "to": to, "client": client_name(&request) }),
+                outputs: json!({ "renamed": Value::Array(
+                    changed.iter().map(|n| Value::from(n.clone())).collect::<Vec<Value>>()
+                ) }),
+                result: json!({}),
+            });
+            session.write(&record);
+            answer_client(session, at, &record);
+            Ok(true)
+        }
+        "close" => {
+            let kind = request
+                .get("kind")
+                .and_then(|value| value.as_str())
+                .unwrap_or("pane")
+                .to_string();
+            let name = request
+                .get("name")
+                .and_then(|value| value.as_str())
+                .unwrap_or("")
+                .to_string();
+            let mut closed: Vec<String> = Vec::new();
+            if kind == "tab" {
+                for pane in session.panes.iter_mut() {
+                    if pane.tab == name {
+                        unsafe {
+                            libc::kill(pane.shell.pid, libc::SIGTERM);
+                        }
+                        closed.push(pane.name.clone());
+                    }
+                }
+                session.panes.retain(|pane| pane.tab != name);
+                session.tabs.retain(|tab| *tab != name);
+            } else {
+                for pane in session.panes.iter_mut() {
+                    if pane.name == name {
+                        unsafe {
+                            libc::kill(pane.shell.pid, libc::SIGTERM);
+                        }
+                        closed.push(pane.name.clone());
+                    }
+                }
+                session.panes.retain(|pane| pane.name != name);
+            }
+            let record = session.record(Fields {
+                kind: "info",
+                who: "holder",
+                what: "it closed",
+                why: "the client asked for it to close",
+                how: "the programs were told to end and the panes were let go",
+                inputs: json!({ "kind": kind, "name": name, "client": client_name(&request) }),
+                outputs: json!({ "closed": Value::Array(
+                    closed.iter().map(|n| Value::from(n.clone())).collect::<Vec<Value>>()
+                ) }),
+                result: json!({}),
+            });
+            session.write(&record);
+            answer_client(session, at, &record);
+            Ok(true)
         }
         other => {
             let record = session.record(Fields {
@@ -592,7 +915,7 @@ fn answer(session: &mut Session, at: usize, line: &str) -> Result<bool, String> 
                 inputs: json!({ "op": other }),
                 outputs: json!({}),
                 result: json!({
-                    "ops": ["attach", "detach", "read", "state", "send"]
+                    "ops": ["attach", "detach", "read", "state", "send", "open"]
                 }),
             });
             answer_client(session, at, &record);
@@ -640,7 +963,9 @@ fn attach(session: &mut Session, at: usize, request: &Value) -> Result<bool, Str
     session.clients[at].attached = true;
     let record = session.state("the client attached and the contracts agree");
     session.write(&record);
-    answer_client(session, at, &record);
+    // The answer is not the last one: the client stays and watches what the
+    // session says next.
+    answer_client_more(session, at, &record);
     Ok(true)
 }
 
@@ -824,7 +1149,23 @@ fn write_to(fd: c_int, bytes: &[u8]) -> Result<(), String> {
 
 /// answer_client puts one record on one client's wire and says so when it
 /// cannot: a client that gets no answer must hear why.
+///
+/// The answer is marked as the last one of that request, so a reader knows
+/// when the answer is complete without waiting for the connection to close.
 fn answer_client(session: &mut Session, at: usize, record: &Value) {
+    let fd = session.clients[at].fd;
+    let mut answer = record.clone();
+    if let Some(result) = answer.get_mut("result").and_then(|value| value.as_object_mut()) {
+        result.insert("final".to_string(), Value::Bool(true));
+    }
+    if let Err(why) = write_to(fd, record_line(&answer).as_bytes()) {
+        eprintln!("holder: the client on fd {} was not answered: {}", fd, why);
+    }
+}
+
+/// answer_client_more puts one record on a client's wire without marking it
+/// as the last one: the client stays and watches what comes next.
+fn answer_client_more(session: &mut Session, at: usize, record: &Value) {
     let fd = session.clients[at].fd;
     if let Err(why) = write_to(fd, record_line(record).as_bytes()) {
         eprintln!("holder: the client on fd {} was not answered: {}", fd, why);

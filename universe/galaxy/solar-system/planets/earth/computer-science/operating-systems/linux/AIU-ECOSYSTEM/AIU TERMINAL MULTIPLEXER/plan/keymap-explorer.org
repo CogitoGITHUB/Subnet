@@ -1,0 +1,89 @@
+#+TITLE: The keymap and the keymap explorer
+# One job: how the keys are one table, and how the explorer shows that table.
+# Status: landed in the multiplexer; the editor's half is the editor's own file.
+
+* The problem this answers
+# why the explorer is not a help screen.
+  - The owner must never have to remember a key to use a key. The old
+    answer was a help screen: a list of the commands, written by hand,
+    beside the code that ran them. The two lists drifted, and the help
+    screen lied as soon as a binding changed.
+  - The explorer's answer: one table of bindings. The dispatcher reads it
+    to know what a key means, and the explorer reads the same table to
+    draw it. A binding cannot be shown wrongly, because there is nothing
+    to show it wrongly from: there is only the table.
+
+* The table
+# what one binding is, in data.
+  - A binding is: the keys (what the owner presses), the bytes (what the
+    keyboard sends), one line about what it does, the action, and the
+    condition under which it can run now.
+  - The action is one of two kinds: run a command, or open a sub-map.
+    There is no third kind, so every binding is either a thing that
+    happens or a place to go.
+  - The maps are the root, the tabs, the panes, the commands and the
+    sessions. Each map has a prefix key: the key that opens it is the
+    first key of every sequence inside it. So "t" opens the tabs, and
+    "t a" adds a tab, and the explorer shows both the group and the
+    whole sequence.
+  - The condition is one of: always, another tab needed, another pane
+    needed. The explorer shows the bindings that cannot run now as not
+    now, instead of pretending.
+
+* The modes
+# whose keys these are.
+  - Visual is the multiplexer's own: the keys are commands.
+  - Insert is the pane's own: the keys are text. Space is a space
+    there, and the Escape leaves Insert without being sent on.
+  - Command is the command line: the keys are words.
+  - Explorer is the keymap explorer: the keys walk the table.
+
+* The explorer
+# what Space does in Visual mode, and what Escape does.
+  - Space opens it. The panel lies over the panes: it is a box drawn
+    over the drawing, not a new screen, so the owner's work stays
+    visible underneath it.
+  - The panel shows the keys of the map it is showing, with what each
+    one means, whether it runs a command or opens a group, and whether it
+    can run now.
+  - Pressing a key of the map does what that key does: a group key
+    opens that group in the panel, a command key runs the command and
+    the panel closes, and the owner is back where the command belongs.
+  - Escape goes back one level, and at the root level it closes the
+    explorer. Cancellation at any depth is the same key.
+  - Nothing about it needs a mouse, and nothing about it waits: it is
+    drawn from the table that is already in memory.
+
+* The rules the table obeys
+# the laws the keymap must not break.
+  - No modifier. No Control, no Alt, no Meta, no prefix chord. The
+    ordinary keys are the keys. A Control key the owner presses belongs
+    to the program in the pane, and Ctrl-C still interrupts it.
+  - One key does one thing, and the dispatcher never learns which key
+    asked: a command runs the same from a key, from the explorer and
+    from the command line.
+  - A wrong key cancels the sequence and does nothing. One wrong key
+    never runs a command by accident.
+
+* The other half: the editor
+# the same shape, its own bindings.
+  - The editor keeps its own mode names and its own keys, and uses the
+    same schema: a table of bindings, a command or a sub-map per
+    binding, the modes it belongs to, and the condition under which it
+    can run.
+  - The two programs do not share code: they share the model. The
+    command set is the editor's own; the discipline is the same.
+  - The editor's explorer opens on Space in its visual mode, shows the
+    editor's own registered commands, and the same Escape closes it at
+    any depth.
+
+* The proof
+# what shows it works.
+  - The multiplexer's table has unit tests: Space opens the explorer in
+    visual mode, Space is ordinary input in insert mode, the escape
+    cancels at any depth, a wrong key cancels the sequence, every
+    binding is reachable from its own map, and no binding holds a
+    modifier.
+  - The phone proof is =tools/screen-probe/probe.nu=: the drawing holds
+    the explorer's panel, the panel holds the keys and what they mean,
+    and the mode line says the mode.

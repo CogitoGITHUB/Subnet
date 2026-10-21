@@ -60,9 +60,26 @@ task.
   - The panes work (=b9541c94=): a layout file names the panes a session
     holds, each pane is a shell with a name, and every record the session
     writes carries the pane's name. A send is aimed at a pane by name. The
-    phone proof is =tools/panes-probe/probe.nu=. What is not there yet is
-    the DRAWING: the panes on one terminal, side by side, which is the next
-    slice of this item and the ground the key routing needs.
+    phone proof is =tools/panes-probe/probe.nu=. The DRAWING landed with
+    the screen: the panes are drawn on one terminal, side by side.
+  - The screen works: the tm is modal like the text editor. The modes are
+    visual, insert, command and the keymap explorer; =i= puts the
+    keyboard into the focused pane, the Escape leaves it without being
+    sent on, and the mode line says where the owner stands (the mode, the
+    tab, the focused pane, the size). The phone proof is
+    =tools/screen-probe/probe.nu=.
+  - The keymap is one table (=multiplexer/src/client/keymap.rs=): the
+    dispatcher reads it to know what a key means, and the keymap explorer
+    reads the same table to draw it, so the two cannot drift apart. There
+    is no modifier in it: no Control, no Alt, no Meta, and no prefix
+    chord. A Control key the owner presses belongs to the program in the
+    pane, and Ctrl-C still interrupts it.
+  - The keymap explorer works: Space opens it in visual mode, and it is a
+    panel over the panes, not a new screen. It shows the keys of the map
+    it is showing, what each one means, whether it runs a command or
+    opens a group, and whether it can run now. A group key opens that
+    group, a command key runs the command, and the Escape cancels at any
+    depth. The design is =plan/keymap-explorer.org=.
   - Every one of the ten modules really loads: each was required on
     its own and answered.
 
@@ -105,10 +122,12 @@ added.
 
 * What is not there yet
 
-  - The panes, the layouts, the key routing, the command records, the
-    Television channels, the dev loop, the control surface and the kit:
-    the build order in =plan/build-order.org= and the work list in
-    =TODO.org= say what is left, in order.
+  - The key routing between the multiplexer and the editor, the command
+    records, the Television channels, the dev loop, the control surface
+    and the kit: the build order in =plan/build-order.org= and the work
+    list in =TODO.org= say what is left, in order.
+  - The editor's keymap explorer: the same schema as the multiplexer's,
+    in the editor's own command table (TODO item 15).
   - The key that opens the agent with the context of the pane
     (=plan/agent-opens-here.org=): one key in the focused pane opens
     OpenCode beside it with that pane's output already attached, and

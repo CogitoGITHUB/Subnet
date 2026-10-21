@@ -64,6 +64,18 @@ pub fn set_window_size(fd: c_int, cols: u16, rows: u16) -> Result<(), String> {
     }
 }
 
+/// save_termios reads the settings of the terminal at fd, so a screen that
+/// changed them can put them back when it ends.
+pub fn save_termios(fd: c_int) -> Result<termios, String> {
+    termios_here(fd)
+}
+
+/// restore_termios writes settings back to the terminal at fd, and names the
+/// syscall that refused when it does.
+pub fn restore_termios(fd: c_int, settings: &termios) -> Result<(), String> {
+    set_termios(fd, settings)
+}
+
 /// escape_len answers how many bytes one escape sequence at `at` holds, and 0
 /// when no sequence starts there: CSI runs to its final byte, OSC to BEL or
 /// ST, and any other ESC form is two bytes.
