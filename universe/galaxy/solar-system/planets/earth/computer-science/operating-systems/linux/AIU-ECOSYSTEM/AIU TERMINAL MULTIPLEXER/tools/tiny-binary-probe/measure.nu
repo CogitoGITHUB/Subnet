@@ -10,14 +10,18 @@
 # ordinary child processes, and the script ends when they end.
 #
 # One place to change the compiler: MUX_RUSTC. The default is the
-# toolchain on this phone.
+# toolchain on this phone. One place to change the build directory:
+# MUX_BUILD_DIR. The binary is written OUTSIDE the tree: a built
+# binary is an artifact, not a source file, and it never lands in git.
 
 def now [] { (date now) }
 
 let rustc = ($env | get -o MUX_RUSTC? | default "/root/home/shape/.cargo/bin/rustc")
 const here = (path self | path dirname)
 let source = ($here | path join "probe.rs")
-let binary = ($here | path join "probe")
+let build_dir = ($env | get -o MUX_BUILD_DIR? | default "/tmp/opencode/mux-probe")
+do -i { ^mkdir $build_dir }
+let binary = ($build_dir | path join "probe")
 
 print $"[probe] rustc=($rustc)"
 print $"[probe] source=($source)"

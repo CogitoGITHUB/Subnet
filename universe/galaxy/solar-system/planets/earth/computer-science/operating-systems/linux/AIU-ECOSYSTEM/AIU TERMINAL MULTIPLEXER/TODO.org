@@ -18,8 +18,9 @@
   5. Key routing across layers (item 06, shared; primary here): focused program first, the reserved prefix (D-005); done when: the routing walk passes with the editor in a pane — no mouse anywhere; deps: 4, editor item 3.
   6. Dev mode (item 10, shared; the multiplexer's half): work mode from source, bake keeps last good; done when: a bake cycle plus the binary's printed start; deps: 3.
   7. Select and send (item 17, multiplexer side): done when: a command record and a pane selection send from the multiplexer to both agents with the context attached; deps: 5, editor item 9.
-  8. Kit conformance (item 19, shared with the editor): done when: the checklist runs green; deps: 7.
-  9. Done line (item 20, shared): every done-line clause holds; the shared checklist closes; deps: all above.
+  8. Television channels — the picker (item 17, multiplexer side): read-only channels over the multiplexer's own JSON — the live sessions, the panes, the command records — shipped per the PM pattern (D-039: the tool produces data, the picker browses it, a picker never executes); done when: a channel lists the live sessions from the holder's JSON and a selection comes back as a value; deps: 3, 7.
+  9. Kit conformance (item 19, shared with the editor): done when: the checklist runs green; deps: 7, 8.
+  10. Done line (item 20, shared): every done-line clause holds; the shared checklist closes; deps: all above.
 
 * After the done line
 # what continues on its own.

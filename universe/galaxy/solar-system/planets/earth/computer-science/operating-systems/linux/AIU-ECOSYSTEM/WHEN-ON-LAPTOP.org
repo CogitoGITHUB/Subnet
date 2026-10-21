@@ -17,6 +17,7 @@
   - Multi-hour uninterrupted work | the phone is a phone; long builds and long suites are planned around, not fought | standing
   - Rust dependency fetching | cargo here can only use the local registry cache: =libc= and =serde_json= are cached, and no other crate can be fetched, so a dependency that is not cached cannot be used on the phone | measured 2026-10-21, multiplexer tiny-binary probe
   - Background process survival | a process started from a shell dies with the session that started it; the holder's promise to outlive its client is therefore a promise about a DETACH, not about Android killing the phone's processes | measured 2026-10-21, multiplexer holder
+  - Television picker | the =tv= binary and the =television= Racket package are NOT on this phone (=~/.config/television/ holds only a config and 81 default cable channels); television arrives through pm's pinned spec, and pm's own CLI cannot run here because this Racket cannot read pm's package database, so multiplexer TV channels can only be written and checked at source level on the phone; installing and running the picker is a laptop item | measured 2026-10-21, multiplexer TODO item 8
 
 * How to add
 # Three rules, so the list stays useful.
