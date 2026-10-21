@@ -14,6 +14,7 @@
 #[path = "../tty/facade.rs"] mod facade;
 #[path = "../tty/measure.rs"] mod measure;
 #[path = "../tty/tty.rs"] mod tty;
+mod layout;
 mod log;
 mod shells;
 
@@ -35,7 +36,7 @@ struct Client {
     dead: bool,
 }
 
-/// Session is one held session: its shell, its log, its socket and its
+/// Session is one held session: its panes, its log, its socket and its
 /// clients.
 struct Session {
     run_id: String,
@@ -43,11 +44,19 @@ struct Session {
     log_path: PathBuf,
     socket_path: PathBuf,
     log: log::Log,
-    shell: shells::Shell,
+    panes: Vec<Pane>,
     seq: u64,
     started: Instant,
     listen_fd: c_int,
     clients: Vec<Client>,
+}
+
+/// Pane is one pane of the session: a name and the shell it holds. The name
+/// is how everything else talks about the pane.
+struct Pane {
+    name: String,
+    weight: u16,
+    shell: shells::Shell,
 }
 
 /// Fields are the story of one record: what happened, who did it, why, and
@@ -108,7 +117,22 @@ fn run(args: &[String]) -> Result<(), String> {
 
     let log = log::Log::open(&log_path)?;
     let listen_fd = bind(&socket_path)?;
-    let shell = shells::Shell::start(&options.shell, options.cols, options.rows)?;
+
+    // The panes of the session: the layout file names them, or the smallest
+    // layout there is holds one pane with one shell.
+    let wanted = match &options.layout {
+        Some(path) => layout::read(path)?,
+        None => layout::one("main", &options.shell, options.cols, options.rows),
+    };
+    let mut panes: Vec<Pane> = Vec::new();
+    for pane in wanted {
+        let shell = shells::Shell::start(&pane.program, pane.cols, pane.rows)?;
+        panes.push(Pane {
+            name: pane.name,
+            weight: pane.weight,
+            shell,
+        });
+    }
 
     let run_id = format!("mux-{}-{}", options.shell.replace('/', "-"), std::process::id());
     let mut session = Session {
@@ -117,7 +141,7 @@ fn run(args: &[String]) -> Result<(), String> {
         log_path,
         socket_path,
         log,
-        shell,
+        panes,
         seq: 0,
         started: Instant::now(),
         listen_fd,
@@ -133,24 +157,25 @@ fn run(args: &[String]) -> Result<(), String> {
     })?;
 
     let mut measured: serde_json::Map<String, Value> = serde_json::Map::new();
-    for (key, value) in measure::record(&session.shell.measured) {
+    for (key, value) in measure::record(&session.panes[0].shell.measured) {
         measured.insert(key.to_string(), value);
     }
     let start = session.record(Fields {
         kind: "start",
         who: "holder",
-        what: "the session holds one shell",
+        what: "the session holds its panes",
         why: "the holder was asked to hold a session",
-        how: "a pty was opened, the shell was started on it, the socket was bound",
+        how: "a pty was opened for every pane, the shell was started on it, the socket was bound",
         inputs: json!({
             "state-dir": options.state_dir.display().to_string(),
-            "shell": options.shell,
-            "cols": options.cols,
-            "rows": options.rows
+            "layout": match &options.layout {
+                Some(path) => path.display().to_string(),
+                None => "one pane".to_string(),
+            },
+            "panes": session.panes.iter().map(|pane| pane.name.clone()).collect::<Vec<String>>()
         }),
         outputs: json!({
             "session": session.run_id.clone(),
-            "shell-pid": session.shell.pid,
             "socket": session.socket_path.display().to_string(),
             "log": session.log_path.display().to_string(),
             "measured": Value::Object(measured)
@@ -213,23 +238,30 @@ impl Session {
         }
     }
 
-    /// state answers what the session holds: the shell, the log, the socket,
+    /// state answers what the session holds: its panes, the log, the socket,
     /// the clients, and the contracts a client must agree with.
     fn state(&mut self, why: &str) -> Value {
         let attached = self.clients.iter().filter(|c| c.attached).count();
-        let alive = self.shell.alive_now();
+        let mut panes: Vec<Value> = Vec::new();
+        for pane in &self.panes {
+            panes.push(json!({
+                "name": pane.name.clone(),
+                "pid": pane.shell.pid,
+                "alive": pane.shell.alive_now(),
+                "program": pane.shell.program.clone(),
+                "weight": pane.weight
+            }));
+        }
         self.record(Fields {
             kind: "info",
             who: "holder",
             what: "what this session holds",
             why: why,
-            how: "the holder read its own memory and asked the kernel about the shell",
+            how: "the holder read its own memory and asked the kernel about every pane",
             inputs: json!({}),
             outputs: json!({
                 "session": self.run_id.clone(),
-                "shell-pid": self.shell.pid,
-                "shell-alive": alive,
-                "shell-program": self.shell.program.clone(),
+                "panes": Value::Array(panes),
                 "log": self.log_path.display().to_string(),
                 "socket": self.socket_path.display().to_string(),
                 "state-dir": self.state_dir.display().to_string(),
@@ -244,15 +276,31 @@ impl Session {
     }
 }
 
-/// serve waits for events and answers them, until the shell ends.
+/// pane_at answers the pane of that name, or the first pane when the name is
+/// empty: the session's panes are addressed by name.
+fn pane_at(session: &Session, name: &str) -> Result<usize, String> {
+    if name.is_empty() {
+        return Ok(0);
+    }
+    session
+        .panes
+        .iter()
+        .position(|pane| pane.name == name)
+        .ok_or_else(|| format!("there is no pane named {}", name))
+}
+
+/// serve waits for events and answers them, until every pane has ended.
 fn serve(session: &mut Session) -> Result<(), String> {
     loop {
-        let mut fds: Vec<libc::pollfd> = Vec::with_capacity(2 + session.clients.len());
-        fds.push(libc::pollfd {
-            fd: session.shell.master,
-            events: libc::POLLIN,
-            revents: 0,
-        });
+        let mut fds: Vec<libc::pollfd> = Vec::with_capacity(2 + session.panes.len() + session.clients.len());
+        for pane in &session.panes {
+            fds.push(libc::pollfd {
+                fd: pane.shell.master,
+                events: libc::POLLIN,
+                revents: 0,
+            });
+        }
+        let pane_count = session.panes.len();
         fds.push(libc::pollfd {
             fd: session.listen_fd,
             events: libc::POLLIN,
@@ -273,13 +321,20 @@ fn serve(session: &mut Session) -> Result<(), String> {
             return Err("the holder cannot wait for events".to_string());
         }
 
-        if fds[0].revents & (libc::POLLIN | libc::POLLHUP) != 0 {
-            if !read_shell(session)? {
-                break;
+        let mut ended = false;
+        for pane_at in 0..pane_count {
+            if fds[pane_at].revents & (libc::POLLIN | libc::POLLHUP) == 0 {
+                continue;
+            }
+            if !read_shell(session, pane_at)? {
+                ended = true;
             }
         }
+        if ended {
+            break;
+        }
 
-        if fds[1].revents & libc::POLLIN != 0 {
+        if fds[pane_count].revents & libc::POLLIN != 0 {
             let fd = unsafe {
                 libc::accept(
                     session.listen_fd,
@@ -298,11 +353,11 @@ fn serve(session: &mut Session) -> Result<(), String> {
         }
 
         let mut finished: Vec<usize> = Vec::new();
-        for at in 2..fds.len() {
+        for at in (pane_count + 1)..fds.len() {
             if fds[at].revents & (libc::POLLIN | libc::POLLHUP) == 0 {
                 continue;
             }
-            let client_at = at - 2;
+            let client_at = at - (pane_count + 1);
             if !read_client(session, client_at)? {
                 finished.push(client_at);
             }
@@ -323,16 +378,19 @@ fn serve(session: &mut Session) -> Result<(), String> {
         }
     }
 
-    let status = session.shell.wait();
+    let mut statuses: Vec<String> = Vec::new();
+    for pane in &session.panes {
+        statuses.push(pane.shell.wait());
+    }
     let end = session.record(Fields {
         kind: "end",
         who: "holder",
-        what: "the shell ended, the session is over",
-        why: "the shell closed its terminal",
-        how: "the master read no bytes and the shell was waited for",
+        what: "the panes ended, the session is over",
+        why: "the shells closed their terminals",
+        how: "the masters read no bytes and every shell was waited for",
         inputs: json!({}),
         outputs: json!({}),
-        result: json!({ "status": status }),
+        result: json!({ "status": statuses.join(", ") }),
     });
     session.write(&end);
     close(session.listen_fd);
@@ -340,22 +398,23 @@ fn serve(session: &mut Session) -> Result<(), String> {
     Ok(())
 }
 
-/// read_shell takes what the shell wrote and records it. It answers whether
-/// the session continues.
-fn read_shell(session: &mut Session) -> Result<bool, String> {
+/// read_shell takes what one pane's shell wrote and records it, under that
+/// pane's name. It answers whether the session continues.
+fn read_shell(session: &mut Session, pane_at: usize) -> Result<bool, String> {
     let mut buffer = [0u8; 4096];
-    let got = session.shell.read(&mut buffer)?;
+    let got = session.panes[pane_at].shell.read(&mut buffer)?;
     if got == 0 {
         return Ok(false);
     }
     let text = tty::plain(&buffer[..got]);
+    let pane_name = session.panes[pane_at].name.clone();
     let record = session.record(Fields {
         kind: "progress",
-        who: "shell",
+        who: &pane_name,
         what: "the shell wrote",
         why: "the shell had something to say",
         how: "the master read the bytes and the escapes were left out",
-        inputs: json!({ "bytes": got }),
+        inputs: json!({ "bytes": got, "pane": pane_name }),
         outputs: json!({ "text": text }),
         result: json!({}),
     });
@@ -466,7 +525,30 @@ fn answer(session: &mut Session, at: usize, line: &str) -> Result<bool, String> 
         }
         "send" => {
             let data = request.get("data").and_then(|value| value.as_str()).unwrap_or("");
-            let sent = match session.shell.send(data.as_bytes()) {
+            let wanted_pane = request
+                .get("pane")
+                .and_then(|value| value.as_str())
+                .unwrap_or("");
+            let target = match pane_at(session, wanted_pane) {
+                Ok(found) => found,
+                Err(why) => {
+                    let record = session.record(Fields {
+                        kind: "fail",
+                        who: "holder",
+                        what: "the pane took no bytes",
+                        why: "there is no pane of that name",
+                        how: "the pane was looked for and refused by name",
+                        inputs: json!({ "pane": wanted_pane }),
+                        outputs: json!({}),
+                        result: json!({ "why": why }),
+                    });
+                    session.write(&record);
+                    answer_client(session, at, &record);
+                    return Ok(false);
+                }
+            };
+            let pane_name = session.panes[target].name.clone();
+            let sent = match session.panes[target].shell.send(data.as_bytes()) {
                 Ok(()) => true,
                 Err(why) => {
                     let record = session.record(Fields {
@@ -491,7 +573,7 @@ fn answer(session: &mut Session, at: usize, line: &str) -> Result<bool, String> 
                     what: "the data went to the shell",
                     why: "the client asked to send",
                     how: "the bytes were written to the terminal",
-                    inputs: json!({ "bytes": data.len(), "client": client_name(&request) }),
+                    inputs: json!({ "bytes": data.len(), "client": client_name(&request), "pane": pane_name }),
                     outputs: json!({}),
                     result: json!({}),
                 });
@@ -576,6 +658,7 @@ fn client_name(request: &Value) -> String {
 struct Options {
     state_dir: PathBuf,
     shell: String,
+    layout: Option<PathBuf>,
     cols: u16,
     rows: u16,
 }
@@ -584,6 +667,7 @@ impl Options {
     fn read(args: &[String]) -> Result<Options, String> {
         let mut state_dir: Option<PathBuf> = None;
         let mut shell = "/bin/sh".to_string();
+        let mut layout: Option<PathBuf> = None;
         let mut cols: u16 = 80;
         let mut rows: u16 = 24;
         let mut at = 0;
@@ -602,6 +686,10 @@ impl Options {
                     shell = value;
                     at += 2;
                 }
+                "--layout" => {
+                    layout = Some(PathBuf::from(value));
+                    at += 2;
+                }
                 "--cols" => {
                     cols = value
                         .parse()
@@ -616,7 +704,7 @@ impl Options {
                 }
                 "--help" => {
                     println!(
-                        "holder --state-dir DIR [--shell PROGRAM] [--cols N] [--rows N]"
+                        "holder --state-dir DIR [--shell PROGRAM] [--layout FILE] [--cols N] [--rows N]"
                     );
                     std::process::exit(0);
                 }
@@ -627,6 +715,7 @@ impl Options {
         Ok(Options {
             state_dir,
             shell,
+            layout,
             cols,
             rows,
         })

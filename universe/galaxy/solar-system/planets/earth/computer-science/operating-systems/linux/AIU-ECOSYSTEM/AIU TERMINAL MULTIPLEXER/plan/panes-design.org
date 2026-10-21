@@ -1,0 +1,46 @@
+#+TITLE: The panes and the layouts — the minimal design (build-order step 3)
+# One job: what a pane is here, what the layout file says, and what is proved
+# Status: written 2026-10-21 before the code, the way the holder's design was.
+
+* What a pane is
+# the smallest true statement: a pane is a shell, held by the session.
+  - A PANE is one shell the session holds, with a NAME. The name is how
+    everything else talks about it: the log records it, the client asks for
+    it, the agent's tools name it.
+  - The session holds every pane of its layout, the way it held the one
+    shell before. A pane outlives the screen that watched it, exactly like
+    the shell it holds.
+  - The pane is not a rectangle yet. The drawing (how a pane looks on the
+    terminal) is the next slice of this item, and the key routing needs it.
+
+* What the layout file says
+# one file, data only, and the holder reads it.
+  - A JSON file with a direction (=row= or =column=) and a list of panes.
+    Each pane has a name, a program, a weight, and the size it wants.
+  - The holder takes the file as an ARGUMENT (=--layout=). It reads no
+    config file and no environment variable for it (rule 03).
+  - A session with no layout file holds one pane named =main= running
+    =/bin/sh=: the smallest thing that is still a layout.
+
+* How the panes are told apart
+# the name travels with the record, not in a side channel.
+  - Every record the session writes carries the pane's name in its =who=
+    field. So the log is one stream of records, and a reader knows which
+    pane each record came from.
+  - The =state= answer names every pane: its name, its shell's pid, and
+    whether that shell is alive.
+
+* The proof
+# what must hold before this is called done.
+  1. A layout file with two panes opens two shells, and both are alive.
+  2. The client asks for the state and both panes are named in it.
+  3. Each pane's shell writes, and the log holds both outputs, each under
+     its own pane's name.
+  4. A send aimed at one pane reaches that pane and not the other.
+
+* What comes after this slice
+# named, so it is not forgotten, and not counted as done.
+  - The drawing: the panes on one terminal, split by the layout, with the
+    focused pane first (the key routing's order, =../contract/key-routing.org=).
+  - The layouts that are files: a work layout is restored from its file on
+    the phone (the item's done-when).

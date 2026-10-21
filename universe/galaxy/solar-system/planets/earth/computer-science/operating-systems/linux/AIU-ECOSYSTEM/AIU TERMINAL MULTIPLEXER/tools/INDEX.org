@@ -14,3 +14,6 @@
   - mcp-probe/probe.nu — the phone proof of the agent surface: an AI agent
     lists the sessions, sends to a session, and is refused without the
     human's token
+  - panes-probe/probe.nu — the phone proof of the panes: a layout opens its
+    panes, every pane's shell is alive, and each pane's output is recorded
+    under that pane's own name

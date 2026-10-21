@@ -159,6 +159,7 @@ struct Options {
     state_dir: PathBuf,
     op: String,
     data: String,
+    pane: String,
     since: u64,
     count: Option<u64>,
 }
@@ -168,6 +169,7 @@ impl Options {
         let mut state_dir: Option<PathBuf> = None;
         let mut op = "state".to_string();
         let mut data = String::new();
+        let mut pane = String::new();
         let mut since: u64 = 0;
         let mut count: Option<u64> = None;
         let mut at = 0;
@@ -188,6 +190,10 @@ impl Options {
                 }
                 "--data" => {
                     data = value;
+                    at += 2;
+                }
+                "--pane" => {
+                    pane = value;
                     at += 2;
                 }
                 "--since" => {
@@ -218,6 +224,7 @@ impl Options {
             state_dir,
             op,
             data,
+            pane,
             since,
             count,
         })
@@ -234,7 +241,13 @@ impl Options {
             }),
             "detach" => json!({ "op": "detach", "client": CLIENT_NAME }),
             "read" => json!({ "op": "read", "client": CLIENT_NAME, "since": self.since }),
-            "send" => json!({ "op": "send", "client": CLIENT_NAME, "data": self.data }),
+            "send" => {
+                let mut request = json!({ "op": "send", "client": CLIENT_NAME, "data": self.data });
+                if !self.pane.is_empty() {
+                    request["pane"] = Value::from(self.pane.clone());
+                }
+                request
+            }
             _ => json!({ "op": "state", "client": CLIENT_NAME }),
         }
     }

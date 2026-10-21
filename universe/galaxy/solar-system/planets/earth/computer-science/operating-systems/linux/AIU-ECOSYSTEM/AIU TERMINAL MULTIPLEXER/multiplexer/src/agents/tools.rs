@@ -89,6 +89,13 @@ pub fn schema(cap: &Capability) -> Value {
         }),
     );
     properties.insert(
+        "pane".to_string(),
+        json!({
+            "type": "string",
+            "description": "the pane of the session to act on"
+        }),
+    );
+    properties.insert(
         "confirm".to_string(),
         json!({
             "type": "string",
@@ -129,6 +136,10 @@ pub fn run(cap: &Capability, arguments: &Value, sessions_dir: &Path) -> Result<V
                 .unwrap_or("")
                 .to_string();
             let request = json!({ "op": "send", "client": "mux-mcp/1", "data": data });
+            let mut request = request;
+            if let Some(pane) = arguments.get("pane").and_then(|v| v.as_str()) {
+                request["pane"] = Value::from(pane);
+            }
             let held = ask_holder(&session, request)?;
             Ok(json!({ "session": session_name(arguments), "records": held }))
         }

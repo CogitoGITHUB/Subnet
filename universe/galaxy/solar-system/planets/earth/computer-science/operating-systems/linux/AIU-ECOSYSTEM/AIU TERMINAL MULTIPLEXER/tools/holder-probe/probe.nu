@@ -90,8 +90,9 @@ def main [
         return
     }
     let session_id = ($first_state | get outputs | get session)
-    let shell_pid = ($first_state | get outputs | get "shell-pid")
-    let alive_after_detach = ($first_state | get outputs | get "shell-alive")
+    let first_pane = ($first_state | get outputs | get panes | first)
+    let shell_pid = ($first_pane | get pid)
+    let alive_after_detach = ($first_pane | get alive)
     check "client-1 attaches and detaches" true $"session=($session_id) shell-pid=($shell_pid)"
 
     # 2. the shell is alive AFTER the client is gone: that is the promise
@@ -120,7 +121,7 @@ def main [
         return
     }
     let same_session = ($third_state | get outputs | get session) == $session_id
-    let same_shell = ($third_state | get outputs | get "shell-pid") == $shell_pid
+    let same_shell = ($third_state | get outputs | get panes | first | get pid) == $shell_pid
     check "client-2 finds the same session" $same_session $"session=($session_id)"
     check "client-2 finds the same shell" $same_shell $"shell-pid=($shell_pid)"
 
