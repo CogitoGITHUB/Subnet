@@ -8,6 +8,14 @@
 use crate::command::Comparison;
 use crate::model::{Hunk, HunkLine, HunkLineKind};
 
+/// FileDiff is the diff of one file: the hunks that changed it, and the
+/// name it has. A diff of a whole tree is a list of these.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct FileDiff {
+    pub path: String,
+    pub hunks: Vec<Hunk>,
+}
+
 /// parse reads a unified diff into its hunks.
 pub fn parse(output: &str) -> Vec<Hunk> {
     let mut hunks: Vec<Hunk> = Vec::new();
@@ -94,6 +102,102 @@ fn read_range(text: &str) -> (u64, u64) {
     }
 }
 
+/// parse_files reads a diff of a whole tree: the files it touched, and the
+/// hunks of each.
+///
+/// The name of the file is read from the header of its own diff, so a path
+/// with a space in it stays one path.
+pub fn parse_files(output: &str) -> Vec<FileDiff> {
+    let mut files: Vec<FileDiff> = Vec::new();
+    let mut path = String::new();
+    let mut hunks: Vec<Hunk> = Vec::new();
+    let mut current: Option<Hunk> = None;
+    let mut old_line: u64 = 0;
+    let mut new_line: u64 = 0;
+    for line in output.lines() {
+        if line.starts_with("diff --git ") {
+            // The file that was being read is closed, and the next one
+            // begins. The last hunk of the file belongs to that file.
+            if let Some(hunk) = current.take() {
+                hunks.push(hunk);
+            }
+            if !path.is_empty() {
+                files.push(FileDiff {
+                    path: path.clone(),
+                    hunks: std::mem::take(&mut hunks),
+                });
+            }
+            path = String::new();
+            continue;
+        }
+        if line.starts_with("+++ ") {
+            // The name the file has now.
+            path = line[4..].trim_start_matches("b/").to_string();
+            continue;
+        }
+        if line.starts_with("--- ") {
+            // A file that is gone has no new name; the old one is its name.
+            if path.is_empty() {
+                path = line[4..].trim_start_matches("a/").to_string();
+            }
+            continue;
+        }
+        if line.starts_with("@@") {
+            if let Some(hunk) = current.take() {
+                hunks.push(hunk);
+            }
+            let (old_start, old_lines, new_start, new_lines) = read_header(line);
+            old_line = old_start;
+            new_line = new_start;
+            current = Some(Hunk {
+                old_start,
+                old_lines,
+                new_start,
+                new_lines,
+                lines: Vec::new(),
+            });
+            continue;
+        }
+        let hunk = match current.as_mut() {
+            Some(hunk) => hunk,
+            None => continue,
+        };
+        if line.starts_with('+') {
+            hunk.lines.push(HunkLine {
+                kind: HunkLineKind::Added,
+                text: line[1..].to_string(),
+                old_line: None,
+                new_line: Some(new_line),
+            });
+            new_line += 1;
+        } else if line.starts_with('-') {
+            hunk.lines.push(HunkLine {
+                kind: HunkLineKind::Removed,
+                text: line[1..].to_string(),
+                old_line: Some(old_line),
+                new_line: None,
+            });
+            old_line += 1;
+        } else if line.starts_with(' ') {
+            hunk.lines.push(HunkLine {
+                kind: HunkLineKind::Context,
+                text: line[1..].to_string(),
+                old_line: Some(old_line),
+                new_line: Some(new_line),
+            });
+            old_line += 1;
+            new_line += 1;
+        }
+    }
+    if let Some(hunk) = current.take() {
+        hunks.push(hunk);
+    }
+    if !path.is_empty() {
+        files.push(FileDiff { path, hunks });
+    }
+    files
+}
+
 /// name answers the comparison as a person reads it.
 pub fn comparison_name(comparison: Comparison) -> &'static str {
     comparison.name()
@@ -141,5 +245,31 @@ mod tests {
     #[test]
     fn a_diff_with_no_hunks_has_no_hunks() {
         assert!(parse("diff --git a/x b/x\n").is_empty());
+    }
+
+    #[test]
+    fn a_diff_of_a_tree_is_a_list_of_files() {
+        let diff = "diff --git a/one.txt b/one.txt\n--- a/one.txt\n+++ b/one.txt\n@@ -1 +1 @@\n-a\n+b\ndiff --git a/two.txt b/two.txt\n--- a/two.txt\n+++ b/two.txt\n@@ -5 +5 @@\n-c\n+d\n";
+        let files = parse_files(diff);
+        assert_eq!(files.len(), 2);
+        assert_eq!(files[0].path, "one.txt");
+        assert_eq!(files[1].path, "two.txt");
+        assert_eq!(files[1].hunks[0].old_start, 5);
+    }
+
+    #[test]
+    fn a_path_with_spaces_stays_one_path() {
+        let diff = "diff --git a/a file.txt b/a file.txt\n--- a/a file.txt\n+++ b/a file.txt\n@@ -1 +1 @@\n-a\n+b\n";
+        let files = parse_files(diff);
+        assert_eq!(files.len(), 1);
+        assert_eq!(files[0].path, "a file.txt");
+    }
+
+    #[test]
+    fn a_file_that_is_gone_keeps_its_name() {
+        let diff = "diff --git a/old.txt b/old.txt\n--- a/old.txt\n@@ -1 +0,0 @@\n-a\n";
+        let files = parse_files(diff);
+        assert_eq!(files.len(), 1);
+        assert_eq!(files[0].path, "old.txt");
     }
 }

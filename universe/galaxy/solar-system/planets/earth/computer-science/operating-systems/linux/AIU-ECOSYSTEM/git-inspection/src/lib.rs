@@ -201,6 +201,26 @@ impl Git {
         Ok(diff::parse(&answer.out))
     }
 
+    /// diffs answers the diff of a whole tree: every file that changed, with
+    /// the hunks of each. The comparison is named by the caller and is
+    /// never mixed with another one.
+    pub fn diffs(
+        &self,
+        comparison: Comparison,
+    ) -> Result<Vec<diff::FileDiff>, Error> {
+        let answer = command::run(
+            &self.root,
+            GitCommand::Diff,
+            None,
+            comparison,
+            None,
+        )?;
+        if !answer.ok() {
+            return Err(answer.failed());
+        }
+        Ok(diff::parse_files(&answer.out))
+    }
+
     /// log answers the history, newest first, of a path or of everything.
     pub fn log(&self, path: Option<&str>) -> Result<Vec<model::Commit>, Error> {
         let answer = command::run(
