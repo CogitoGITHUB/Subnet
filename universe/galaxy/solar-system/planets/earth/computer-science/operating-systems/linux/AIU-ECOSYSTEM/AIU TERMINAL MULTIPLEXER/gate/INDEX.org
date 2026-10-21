@@ -15,6 +15,8 @@
   - security-gate-lint.nu — predicates called, writers audited
   - banned-words-lint.nu — the naming law, made mechanical
   - language-split-lint.nu — only join/ may cross Rust and Racket
+  - kit-check.nu — the kit conformance check: the six proofs the kit format
+    names, run here for the multiplexer
 
 * Later
 # The gate lives outside multiplexer/ on purpose: the gate checks the package,

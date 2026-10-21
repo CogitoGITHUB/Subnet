@@ -27,6 +27,7 @@ const STAGES = [
     {name: "one-way", script: "one-way-dependency-lint.nu", kind: "nu"}
     {name: "security-gate", script: "security-gate-lint.nu", kind: "nu"}
     {name: "language-split", script: "language-split-lint.nu", kind: "nu"}
+    {name: "kit-check", script: "kit-check.nu", kind: "nu"}
 ]
 
 # max_line is the line length the package and the gate keep to: 100 columns, so

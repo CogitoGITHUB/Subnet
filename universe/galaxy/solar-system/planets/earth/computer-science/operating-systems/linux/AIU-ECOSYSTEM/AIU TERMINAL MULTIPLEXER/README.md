@@ -61,7 +61,8 @@ that way.
 | The workspace engine inside the multiplexer | Implemented and verified: the key group, the panel, the holder's seam and the mode line (TODO item 16 is partly done) |
 | The Git inspection layer inside the multiplexer | Implemented and verified: the key group, the panel and the holder's seam |
 | The screen selection (the biomechanical model) | In progress: the multiplexer side landed; the editor's side and the wheel are owed |
-| The kit conformance and the done line | Planned (TODO items 11 and 12) |
+| The kit conformance | Implemented and verified: the six proofs run as a gate stage, and the gate is green at 8 stages |
+| The done line | Planned (TODO item 12) |
 
 The owner switched the priority to this program on 2026-10-21: it is the foundation under
 the complete workflow, so pm and the editor are paused until it works.
@@ -391,8 +392,7 @@ The phone proofs, each a Nu script that prints its evidence:
 | `tools/screen-probe/probe.nu` | the drawing, the modes, the keymap, the agent key | 22 |
 | `tools/tiny-binary-probe/` | the build and start times that decided the route | measured |
 
-What is not verified: the key routing with the editor in a pane, the dev mode, the
-Television channels, and the kit conformance.
+What is not verified: the key routing with the editor in a pane.
 
 ## Limitations
 
@@ -409,10 +409,8 @@ Television channels, and the kit conformance.
 ## Roadmap
 
 `TODO.org` is the one list, in build order. The next items are the key routing across
-layers with the editor in a pane, the dev mode, select and send to both agents, the
-Television channels, the kit conformance, the done line, and the workspace engine joining
-the multiplexer so that the mode line names the workspace and the project. The screen
-selection (the biomechanical model: the overlay, the visible text only, the second key as
+layers with the editor in a pane, select and send to both agents, and the done line. The
+screen selection (the biomechanical model: the overlay, the visible text only, the second key as
 the action) is designed in `plan/screen-selection.org` and not built.
 
 ## Related documentation

@@ -39,6 +39,26 @@ token itself: a change without it is refused by name.
 - `multiplexer_send` with a session's name, the text, and the human's
   token: the text goes to the session's shell as if it were typed there.
 
+## The examples
+
+These are runnable: they are the commands as they are typed, and each
+one answers on its own.
+
+```
+mux-mcp --help
+mux-mcp --sessions-dir /tmp/aiu-mux-skill <<< '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'
+```
+
+## The MCP calls
+
+A call is one JSON-RPC object on one line, and the answer is one line
+back. The calls are:
+
+- `tools/list` — the tools above, with their arguments.
+- `tools/call` with `name` and `arguments` — the work itself. The
+  arguments of `multiplexer_send` are `session`, `data` and `confirm`;
+  the arguments of `multiplexer_records` are `session` and `since`.
+
 ## What the phone cannot do
 
 The holder dies with the session that started it: a process on this phone
