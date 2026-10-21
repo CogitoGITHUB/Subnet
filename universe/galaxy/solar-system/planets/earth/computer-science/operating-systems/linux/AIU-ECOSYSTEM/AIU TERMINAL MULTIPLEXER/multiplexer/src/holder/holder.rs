@@ -296,7 +296,10 @@ impl Session {
                 "pid": pane.shell.pid,
                 "alive": pane.shell.alive_now(),
                 "program": pane.shell.program.clone(),
-                "weight": pane.weight
+                "weight": pane.weight,
+                // The pane's recent words: the log holds them, and the
+                // client that attaches sees the pane as it is.
+                "text": pane_log_tail(self, &pane.name, 50)
             }));
         }
         self.record(Fields {
@@ -730,6 +733,92 @@ fn answer(session: &mut Session, at: usize, line: &str) -> Result<bool, String> 
             // The client stays: a screen sends a key and then sends the next.
             Ok(true)
         }
+        "send-agent" => {
+            // The picked text goes to the agent that is open, in the
+            // bundle: the same shape every program sends. The bundle is
+            // built here, where the redaction seam is, and the text
+            // leaves the multiplexer through the agent's own terminal.
+            let selection = request
+                .get("selection")
+                .and_then(|value| value.as_str())
+                .unwrap_or("")
+                .to_string();
+            let target = request
+                .get("target")
+                .and_then(|value| value.as_str())
+                .unwrap_or("")
+                .to_string();
+            let why = request
+                .get("why")
+                .and_then(|value| value.as_str())
+                .unwrap_or("")
+                .to_string();
+            let agent = session
+                .panes
+                .iter()
+                .position(|pane| pane.name == "agent");
+            let agent = match agent {
+                Some(at) => at,
+                None => {
+                    let record = session.record(Fields {
+                        kind: "fail",
+                        who: "holder",
+                        what: "the picked text was not sent",
+                        why: "there is no agent pane open",
+                        how: "the panes were looked for and no agent was found",
+                        inputs: json!({ "target": target }),
+                        outputs: json!({}),
+                        result: json!({ "why": "there is no agent pane open" }),
+                    });
+                    session.write(&record);
+                    answer_client(session, at, &record);
+                    return Ok(false);
+                }
+            };
+            let made = bundle::Bundle::make(
+                "aiu-multiplexer",
+                "aiu-ecosystem",
+                &target,
+                &selection,
+                "",
+                "",
+                "",
+                &why,
+            );
+            let text = match made {
+                Some(bundle) => format!("{}\n", bundle.text()),
+                None => {
+                    let record = session.record(Fields {
+                        kind: "fail",
+                        who: "holder",
+                        what: "the picked text was not sent",
+                        why: "the bundle could not be made",
+                        how: "the redaction seam refused the text",
+                        inputs: json!({ "target": target }),
+                        outputs: json!({}),
+                        result: json!({ "why": "the bundle could not be made" }),
+                    });
+                    session.write(&record);
+                    answer_client(session, at, &record);
+                    return Ok(false);
+                }
+            };
+            let pane_name = session.panes[agent].name.clone();
+            let sent = session.panes[agent].shell.send(text.as_bytes());
+            let record = session.record(Fields {
+                kind: if sent.is_ok() { "info" } else { "fail" },
+                who: "holder",
+                what: "the picked text went to the agent",
+                why: "the owner sent the picked text",
+                how: "the bundle was written to the agent's terminal",
+                inputs: json!({ "bytes": text.len(), "pane": pane_name, "target": target }),
+                outputs: json!({}),
+                result: json!({}),
+            });
+            session.write(&record);
+            answer_client(session, at, &record);
+            Ok(true)
+        }
         "open" => {
             let wanted = request
                 .get("name")
@@ -790,7 +879,15 @@ fn answer(session: &mut Session, at: usize, line: &str) -> Result<bool, String> 
                     .and_then(|value| value.as_str())
                     .unwrap_or("")
                     .to_string();
-                let selection = pane_log_tail(session, &pane_of, 50);
+                // The selection is the text the owner picked on the
+                // screen, when the screen picked one. Without a pick the
+                // context is the tail of the pane's own log: the log
+                // belongs to the holder, and the screen never copies the
+                // text by hand.
+                let selection = match context.get("selection").and_then(|value| value.as_str()) {
+                    Some(picked) => picked.to_string(),
+                    None => pane_log_tail(session, &pane_of, 50),
+                };
                 let made = bundle::Bundle::make(
                     "aiu-multiplexer",
                     "aiu-ecosystem",

@@ -46,6 +46,7 @@ that way.
 | The panes and the layout file | Implemented and verified |
 | The drawing: the panes on one terminal, the tab bar, the frame | Implemented and verified |
 | The modes: visual, insert, command, explorer | Implemented and verified |
+| The selection: the point, the ring of marks, the copy, the send | Implemented and verified: the multiplexer side of the owner's screen-selection plan |
 | The tabs and the mode line | Implemented and verified |
 | One window size for every pane | Implemented and verified |
 | The keymap: one table for the dispatcher and the explorer | Implemented and verified |
@@ -58,7 +59,7 @@ that way.
 | The Television channels | Implemented and verified: three read-only channels, and television reads all three |
 | The workspace engine inside the multiplexer | Planned (TODO item 16) |
 | The Git inspection layer inside the multiplexer | Implemented and verified: the key group, the panel and the holder's seam |
-| The screen selection (the biomechanical model) | Planned: the design is in `plan/screen-selection.org` |
+| The screen selection (the biomechanical model) | In progress: the multiplexer side landed; the editor's side and the wheel are owed |
 | The kit conformance and the done line | Planned (TODO items 11 and 12) |
 
 The owner switched the priority to this program on 2026-10-21: it is the foundation under
@@ -130,6 +131,17 @@ prefix chord. A Control key the owner presses belongs to the program in the pane
 a new screen. It shows the keys of the map it is showing, what each one means, whether it
 runs a command or opens a group, and whether it can run now. A group key opens that group,
 a command key runs the command, and the Escape cancels at any depth.
+
+**The selection.** The key `v` opens the selection on the focused pane: the mode line says
+`SELECT`, and the keys are the keys of the owner's biomechanical input layer. The arrows
+move the point, `w b` and `w f` move it by word, `m` pushes a mark onto the ring of marks
+and `M` pops it, `y` copies the region into the multiplexer's own ring, `Y` copies the
+line the point stands on, `s` sends the region to the agent in the bundle that every
+program sends, and `p o` opens the agent beside the pane with the region in that bundle.
+The candidates are the visible text of the focused pane only: a line that has scrolled out
+of the pane cannot be picked, because it cannot be seen. The escape leaves the selection
+and does nothing else — no text is copied, no bundle is sent and no pane opens. The
+design, and what is still owed, are in `plan/screen-selection.org`.
 
 **The agent opens here.** One key in the focused pane opens OpenCode beside it, with that
 pane's context already attached: the tail of the pane's log, the shell, the place and the

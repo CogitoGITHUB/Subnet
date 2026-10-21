@@ -199,6 +199,25 @@ for a in "$@"; do echo "ARG $a"; done' | save --force $agent
     let wdrawn = ($worktreed.stdout | default "")
     check "the worktree browser draws the worktrees" ($wdrawn | str contains "the worktrees") $"drawn=($wdrawn | str length)"
 
+    # 10. the selection: the mode opens on the focused pane, the point
+    #    moves over the visible text, the mark is the anchor, the copy
+    #    puts the text in the multiplexer's own ring, and the escape
+    #    does nothing at all.
+    let picked = (do -i {
+        ^printf "v\u{1b}[Cm\u{1b}[C\u{1b}[Cy" | ^$client --state-dir $state_dir --op screen
+    } | complete)
+    let pdrawn = ($picked.stdout | default "")
+    check "the selection opens its own mode" ($pdrawn | str contains "SELECT") $"drawn=($pdrawn | str length)"
+    check "the selection copies the region" ($pdrawn | str contains "the region is copied") $"drawn=($pdrawn | str length)"
+    check "the selection marks the region" ($pdrawn | str contains "\u{1b}[7m") $"drawn=($pdrawn | str length)"
+
+    let escaped = (do -i {
+        ^printf "v\u{1b}[Cm\u{1b}[C\u{1b}[C\u{1b}" | ^$client --state-dir $state_dir --op screen
+    } | complete)
+    let edrawn = ($escaped.stdout | default "")
+    check "the escape leaves the selection and does nothing" ($edrawn | str contains "nothing was copied") $"drawn=($edrawn | str length)"
+    check "the escape leaves the mode" ($edrawn | str contains "VISUAL") $"drawn=($edrawn | str length)"
+
     # the holder goes away with the probe
     let pid_file = ($state_dir | path join "holder.pid")
     if ($pid_file | path exists) {

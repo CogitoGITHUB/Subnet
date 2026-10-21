@@ -15,6 +15,7 @@
 mod git;
 mod keymap;
 mod screen;
+mod select;
 
 use serde_json::{json, Value};
 use std::path::PathBuf;

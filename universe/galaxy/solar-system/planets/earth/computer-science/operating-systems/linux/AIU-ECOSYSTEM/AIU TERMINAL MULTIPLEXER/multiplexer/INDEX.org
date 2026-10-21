@@ -69,6 +69,8 @@
     shows it
   - src/client/keymap.rs — the keymap: the keys that mean what, as data; the
     commands and the keymap explorer read this one table
+  - src/client/select.rs — the selection: the point, the ring of marks and
+    the text between them
 
 * Later
 # the areas planned but not landed; plan/package-tree.org is the register for

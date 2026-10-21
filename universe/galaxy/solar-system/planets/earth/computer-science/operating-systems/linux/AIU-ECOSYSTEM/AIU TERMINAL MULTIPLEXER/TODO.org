@@ -29,6 +29,8 @@
 
   17. DONE (the git group, the holder's git seam and the panel landed; the proof is in the screen probe, 26 checks green) — The git panel: the key group =g= opens the git, and the overview, the changed files, the diff, the history, the branches and the worktree browser are read through the shared layer (=AIU-ECOSYSTEM/shared-layers/git-inspection/=), which only reads; done when: the panel shows the branch, the distance, the worktrees and the changed files, the worktree browser shows every worktree, and the inspection changes nothing; deps: the shared layer.
 
+  18. PARTLY DONE (the multiplexer side landed: the selection mode, the point, the ring of marks, the copy into the multiplexer's own ring, the send in the bundle and the escape that does nothing; the probe checks it in 31 checks) — The screen selection (=plan/screen-selection.org=): the owner picks the text on the screen the way the biomechanical input layer does it; done when: the tm picks the visible text and acts on the pick, and the editor picks its own text; still owed: the editor's side (the editor has no text view yet) and the wheel that scrolls the window while a pick runs (the tm has no mouse yet); deps: 8.
+
   16. TODO (owner addition, 2026-10-21) — The workspace engine joins the multiplexer: the multiplexer reads and writes the shared workspace through the engine (=AIU-ECOSYSTEM/shared-layers/workspace/=), its own tabs and panes stay its own, its mode line shows the workspace and the project, and it can ask the editor for what the editor owns; done when: a key opens the project context, the mode line names the workspace and the project, and closing the multiplexer leaves the workspace and the editor untouched; deps: 8, 9, the engine.
 
 * After the done line

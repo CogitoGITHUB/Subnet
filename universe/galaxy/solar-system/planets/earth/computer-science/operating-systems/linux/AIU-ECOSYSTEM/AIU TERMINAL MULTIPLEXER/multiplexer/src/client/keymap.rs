@@ -21,6 +21,8 @@ pub enum Mode {
     Command,
     /// Explorer is the keymap explorer: the keys walk the keymap.
     Explorer,
+    /// Select is the selection overlay: the keys pick the visible text.
+    Select,
 }
 
 /// Context is which map the keys are read against.
@@ -32,6 +34,7 @@ pub enum Context {
     Commands,
     Sessions,
     Git,
+    Select,
 }
 
 impl Context {
@@ -44,6 +47,7 @@ impl Context {
             Context::Commands => "the commands",
             Context::Sessions => "the sessions",
             Context::Git => "the git",
+            Context::Select => "the selection",
         }
     }
 
@@ -57,6 +61,7 @@ impl Context {
             Context::Commands => b"c",
             Context::Sessions => b"s",
             Context::Git => b"g",
+            Context::Select => b"",
         }
     }
 }
@@ -108,6 +113,34 @@ pub enum Command {
     GitBranches,
     /// GitWorktrees shows every worktree of the repository.
     GitWorktrees,
+    /// EnterSelect opens the selection on the focused pane.
+    EnterSelect,
+    /// SelectLeft moves the point one character to the left.
+    SelectLeft,
+    /// SelectRight moves the point one character to the right.
+    SelectRight,
+    /// SelectUp moves the point one line up.
+    SelectUp,
+    /// SelectDown moves the point one line down.
+    SelectDown,
+    /// SelectWordLeft moves the point to the start of the word before it.
+    SelectWordLeft,
+    /// SelectWordRight moves the point to the start of the next word.
+    SelectWordRight,
+    /// SelectMark pushes the mark where the point stands.
+    SelectMark,
+    /// SelectPopMark takes the newest mark off the ring.
+    SelectPopMark,
+    /// SelectCopy copies the region into the multiplexer's own ring.
+    SelectCopy,
+    /// SelectCopyLine copies the line the point stands on.
+    SelectCopyLine,
+    /// SelectSend sends the region to the agent in the bundle.
+    SelectSend,
+    /// SelectAgentHere opens the agent beside the pane, with the region.
+    SelectAgentHere,
+    /// LeaveSelect leaves the selection and does nothing else.
+    LeaveSelect,
 }
 
 /// Action is what a binding does: run a command, or open a sub-map.
@@ -274,6 +307,109 @@ pub static ROOT: &[Binding] = &[
         bytes: b"g",
         about: "the git: the repository, the worktrees, the changes",
         action: Action::Map(Context::Git),
+        need: Need::Always,
+    },
+    Binding {
+        keys: "v",
+        bytes: b"v",
+        about: "the selection: pick the text on the screen",
+        action: Action::Map(Context::Select),
+        need: Need::Always,
+    },
+];
+
+/// SELECT is the map of the selection. The keys move a point over the
+/// visible text of the focused pane, one key sets the mark, and the
+/// region is the text between the mark and the point.
+///
+/// The escape leaves the selection and does nothing else: no text is
+/// copied, no bundle is sent and no pane opens. The escape is not a
+/// binding here: the byte stream is what tells a lone escape from the
+/// escape that begins an arrow key, and the program reads the escape
+/// where the byte stream hands it over.
+pub static SELECT: &[Binding] = &[
+    Binding {
+        keys: "Left",
+        bytes: b"\x1b[D",
+        about: "the point one character to the left",
+        action: Action::Command(Command::SelectLeft),
+        need: Need::Always,
+    },
+    Binding {
+        keys: "Right",
+        bytes: b"\x1b[C",
+        about: "the point one character to the right",
+        action: Action::Command(Command::SelectRight),
+        need: Need::Always,
+    },
+    Binding {
+        keys: "Up",
+        bytes: b"\x1b[A",
+        about: "the point one line up",
+        action: Action::Command(Command::SelectUp),
+        need: Need::Always,
+    },
+    Binding {
+        keys: "Down",
+        bytes: b"\x1b[B",
+        about: "the point one line down",
+        action: Action::Command(Command::SelectDown),
+        need: Need::Always,
+    },
+    Binding {
+        keys: "w b",
+        bytes: b"wb",
+        about: "the point to the start of the word before it",
+        action: Action::Command(Command::SelectWordLeft),
+        need: Need::Always,
+    },
+    Binding {
+        keys: "w f",
+        bytes: b"wf",
+        about: "the point to the start of the next word",
+        action: Action::Command(Command::SelectWordRight),
+        need: Need::Always,
+    },
+    Binding {
+        keys: "m",
+        bytes: b"m",
+        about: "the mark: the anchor of the region",
+        action: Action::Command(Command::SelectMark),
+        need: Need::Always,
+    },
+    Binding {
+        keys: "M",
+        bytes: b"M",
+        about: "pop the newest mark; the anchor below it stands",
+        action: Action::Command(Command::SelectPopMark),
+        need: Need::Always,
+    },
+    Binding {
+        keys: "y",
+        bytes: b"y",
+        about: "copy the region into the multiplexer's own ring",
+        action: Action::Command(Command::SelectCopy),
+        need: Need::Always,
+    },
+    Binding {
+        keys: "Y",
+        bytes: b"Y",
+        about: "copy the line the point stands on",
+        action: Action::Command(Command::SelectCopyLine),
+        need: Need::Always,
+    },
+    Binding {
+        keys: "s",
+        bytes: b"s",
+        about: "send the region to the agent, in the bundle",
+        action: Action::Command(Command::SelectSend),
+        need: Need::Always,
+    },
+    Binding {
+        keys: "p o",
+        bytes: b"po",
+        about: "open the agent beside this pane, with the region",
+        action: Action::Command(Command::SelectAgentHere),
         need: Need::Always,
     },
 ];
@@ -465,6 +601,7 @@ pub fn bindings(context: Context) -> &'static [Binding] {
         Context::Commands => COMMANDS,
         Context::Sessions => SESSIONS,
         Context::Git => GIT,
+        Context::Select => SELECT,
     }
 }
 
@@ -560,6 +697,37 @@ impl Keymap {
             Mode::Command => Resolution::Pass,
             Mode::Visual => self.resolve_visual(key),
             Mode::Explorer => self.resolve_explorer(key),
+            Mode::Select => self.resolve_select(key),
+        }
+    }
+
+    /// resolve_select reads one key in the SELECTION against the select
+    /// map. The escape leaves the selection, and it is the one key that
+    /// is read here and not through the table.
+    fn resolve_select(&mut self, key: u8) -> Resolution {
+        // The escape is read like every other key: the arrow keys begin
+        // with an escape byte, and the sequence is only a sequence when
+        // its bytes are all there. The map itself holds the escape, so
+        // the leave is one fact and not a rule in the program.
+        let mut candidate = self.pending.clone();
+        candidate.push(key);
+        match self.hit(Context::Select, &candidate) {
+            Hit::Exact(Action::Command(command)) => {
+                self.cancel();
+                Resolution::Command(command)
+            }
+            Hit::Partial(_) => {
+                self.pending = candidate;
+                Resolution::Pending
+            }
+            Hit::None => {
+                self.cancel();
+                Resolution::Ignore
+            }
+            Hit::Exact(Action::Map(_)) => {
+                self.cancel();
+                Resolution::Ignore
+            }
         }
     }
 
@@ -575,6 +743,13 @@ impl Keymap {
                 Resolution::Command(command)
             }
             Hit::Exact(Action::Map(context)) => {
+                if context == Context::Select {
+                    // The selection is a mode and not a group: the mode
+                    // line says which mode stands, and the keys of the
+                    // selection are read against the select map.
+                    self.cancel();
+                    return Resolution::Command(Command::EnterSelect);
+                }
                 // The group is open: the next key is read against it.
                 self.group = Some(context);
                 self.pending = candidate;
@@ -793,6 +968,24 @@ mod tests {
     }
 
     #[test]
+    fn every_binding_of_the_selection_is_reachable() {
+        for binding in bindings(Context::Select) {
+            let mut keymap = Keymap::empty();
+            let last = *binding.bytes.last().unwrap();
+            for byte in &binding.bytes[..binding.bytes.len() - 1] {
+                keymap.resolve(Mode::Select, *byte);
+            }
+            let resolution = keymap.resolve(Mode::Select, last);
+            assert_eq!(
+                resolution,
+                Resolution::Command(binding.action_as_command().unwrap()),
+                "the binding {} does not run its command",
+                binding.keys
+            );
+        }
+    }
+
+    #[test]
     fn every_binding_is_reachable_from_its_own_map() {
         for context in [
             Context::Root,
@@ -816,6 +1009,16 @@ mod tests {
                         "the binding {} does not run its command",
                         binding.keys
                     ),
+                    // The selection is a mode and not a group: the key
+                    // enters it, and the mode line says which mode stands.
+                    None if binding.action == Action::Map(Context::Select) => {
+                        assert_eq!(
+                            resolution,
+                            Resolution::Command(Command::EnterSelect),
+                            "the binding {} does not enter the selection",
+                            binding.keys
+                        )
+                    }
                     // A group binding opens the group and waits for the next
                     // key of that group.
                     None => assert_eq!(

@@ -5,6 +5,29 @@
 # Status: written 2026-10-21 from the owner's request and from the owner's own
 # biomechanical input layer; the code lands with the items it names.
 
+* What landed on 2026-10-21
+# the multiplexer side of this plan, what differs from the biomechanical layer, and
+# what is still owed.
+  - The multiplexer has the selection. The key =v= opens it on the focused pane, the
+    mode line says =SELECT=, the arrows move the point, =w b= and =w f= move it by
+    word, =m= pushes a mark onto the ring of marks and =M= pops it, =y= copies the
+    region into the multiplexer's own ring, =Y= copies the line the point stands on,
+    =s= sends the region to the agent in the bundle that every program sends, =p o=
+    opens the agent beside the pane with the region in that bundle, and the escape
+    leaves the selection and does nothing else.
+  - The candidates are the visible text of the focused pane, and only that: the pane's
+    recent words come with the state, so a client that attaches sees the pane as it
+    is, and a line that has scrolled out of the pane cannot be picked.
+  - Two things differ from the biomechanical layer, and the reasons are written down
+    here. The tm's selection is a MODE and not an overlay over the visual mode: the
+    tm's mode line is where the owner reads what stands, and a selection that has no
+    marker would be a mode the owner cannot see. The mark is popped with =M= and not
+    with the mark key twice: the tm's keymap reads one key at a time and has no prefix
+    chord, so a second =m= would be a different key.
+  - Still owed: the editor's side of the pick — the editor has no text view yet, so
+    there is nothing to pick there — and the wheel that scrolls the window while a pick
+    runs, because the tm has no mouse yet.
+
 * What the owner asked
 # the owner's words, in one line, and the shape it takes here.
   - The selection must be on the tm and on the text editor, and it must be

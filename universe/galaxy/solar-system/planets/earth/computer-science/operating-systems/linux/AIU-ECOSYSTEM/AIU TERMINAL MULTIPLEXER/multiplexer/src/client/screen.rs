@@ -15,6 +15,7 @@ use serde_json::{json, Value};
 use std::io::Write;
 
 use super::keymap::{bindings, Command, Context, Keymap, Mode, Resolution, State};
+use super::select::Selection;
 use super::tty;
 use super::wire;
 
@@ -26,6 +27,10 @@ const ENTER: u8 = 0x0d;
 const BACKSPACE: u8 = 0x7f;
 /// KEPT is how many lines of a pane's output the screen remembers.
 const KEPT: usize = 400;
+
+/// RING_KEPT is how many copies the multiplexer's own ring holds. The
+/// ring is a small buffer: the newest copy is the first one.
+const RING_KEPT: usize = 20;
 
 /// Action is what the client does with the holder after a key.
 pub enum Action {
@@ -79,6 +84,10 @@ pub struct Screen {
     pub editor_program: String,
     pub message: String,
     pub events: Vec<String>,
+    /// select is the selection: the point, the mark and the region.
+    pub select: Selection,
+    /// ring is the multiplexer's own ring: what was copied, newest first.
+    pub ring: Vec<String>,
     keymap: Keymap,
     panel: Option<Panel>,
     /// git is what the shared layer answered, and git_want is which view
@@ -105,6 +114,8 @@ impl Screen {
             editor_program,
             message: String::new(),
             events: Vec::new(),
+            select: Selection::new(),
+            ring: Vec::new(),
             keymap: Keymap::empty(),
             panel: None,
             git: None,
@@ -163,12 +174,22 @@ impl Screen {
                     .get("weight")
                     .and_then(|value| value.as_u64())
                     .unwrap_or(1) as u16;
-                let lines = self
+                let mut lines = self
                     .panes
                     .iter()
                     .find(|held| held.name == name)
                     .map(|held| held.lines.clone())
                     .unwrap_or_default();
+                if lines.is_empty() {
+                    // The pane's recent words come with the state: a
+                    // client that attaches sees the panes as they are,
+                    // and not an empty frame.
+                    if let Some(text) = pane.get("text").and_then(|value| value.as_str()) {
+                        for line in text.lines() {
+                            lines.push(line.to_string());
+                        }
+                    }
+                }
                 panes.push(PaneView {
                     name,
                     tab,
@@ -388,7 +409,15 @@ impl Screen {
         lines.push(top);
         let pane = &self.panes[index];
         let start = pane.lines.len().saturating_sub(height);
-        for line in pane.lines[start..].iter() {
+        let visible: Vec<String> = pane.lines[start..].to_vec();
+        // In the selection the region is shown in reverse video: the text
+        // under the keys is the text that is selected.
+        let visible = if focused && self.mode == Mode::Select {
+            self.select.marked(&visible)
+        } else {
+            visible
+        };
+        for line in visible.iter() {
             lines.push(format!("|{}|", clip(line, inner)));
         }
         while lines.len() < height + 1 {
@@ -404,14 +433,21 @@ impl Screen {
         if self.mode == Mode::Command {
             return format!(":{}", self.command);
         }
-        let mut line = format!(
-            "-- {} -- tab {} -- pane {} -- {}x{} -- ",
-            self.mode_name(),
+        // The message the client answers with stands next to the mode:
+        // the line is cut at the end, so what the owner must read is at
+        // the front.
+        let mut line = format!("-- {} -- ", self.mode_name());
+        if !self.message.is_empty() {
+            line.push_str(&self.message);
+            line.push_str(" -- ");
+        }
+        line.push_str(&format!(
+            "tab {} -- pane {} -- {}x{} -- ",
             self.focused_tab(),
             self.focused_pane(),
             self.cols,
             self.rows
-        );
+        ));
         match self.mode {
             Mode::Visual => {
                 let pending = self.keymap.pending_keys();
@@ -424,10 +460,7 @@ impl Screen {
             Mode::Insert => line.push_str("esc:visual"),
             Mode::Command => line.push_str(""),
             Mode::Explorer => line.push_str("esc:back  any key of the map"),
-        }
-        if !self.message.is_empty() {
-            line.push_str("  ");
-            line.push_str(&self.message);
+            Mode::Select => line.push_str("m:mark  y:copy  s:send  p o:agent  esc:leave"),
         }
         line
     }
@@ -439,6 +472,7 @@ impl Screen {
             Mode::Insert => "INSERT",
             Mode::Command => "COMMAND",
             Mode::Explorer => "KEYS",
+            Mode::Select => "SELECT",
         }
     }
 
@@ -485,6 +519,32 @@ impl Screen {
                         actions.push(now);
                     }
                     at = bytes.len();
+                }
+                Mode::Select => {
+                    // The escape stands alone or it begins an arrow key:
+                    // the byte stream knows that, and the map does not.
+                    let arrow = bytes[at] == ESCAPE
+                        && at + 2 < bytes.len()
+                        && bytes[at + 1] == b'[';
+                    if bytes[at] == ESCAPE && !arrow {
+                        // The escape leaves the selection and does nothing
+                        // else: no text is copied, no bundle is sent and
+                        // no pane opens.
+                        self.mode = Mode::Visual;
+                        self.message =
+                            "the selection is closed: nothing was copied and nothing was sent"
+                                .to_string();
+                        at += 1;
+                        continue;
+                    }
+                    let end = if arrow { at + 3 } else { at + 1 };
+                    for byte in bytes[at..end].iter() {
+                        let now = self.select_key(*byte);
+                        if !matches!(now, Action::Nothing) {
+                            actions.push(now);
+                        }
+                    }
+                    at = end;
                 }
                 Mode::Visual | Mode::Explorer => {
                     let now = self.visual_key(bytes[at]);
@@ -534,6 +594,22 @@ impl Screen {
                 }
                 Action::Nothing
             }
+        }
+    }
+
+    /// select_key reads one key in the SELECTION and answers what the
+    /// client must do.
+    ///
+    /// The selection is an overlay on the visual mode: the mode line
+    /// says which mode stands, and the escape leaves the selection and
+    /// does nothing else.
+    fn select_key(&mut self, key: u8) -> Action {
+        match self.keymap.resolve(Mode::Select, key) {
+            Resolution::Command(command) => self.select_command(command),
+            Resolution::Map(_) => Action::Nothing,
+            Resolution::Pending => Action::Nothing,
+            Resolution::Pass => Action::Nothing,
+            Resolution::Ignore => Action::Nothing,
         }
     }
 
@@ -666,6 +742,25 @@ impl Screen {
             Command::GitHistory => self.show_git("history"),
             Command::GitBranches => self.show_git("branches"),
             Command::GitWorktrees => self.show_git("worktrees"),
+            Command::EnterSelect => {
+                self.mode = Mode::Select;
+                self.select = Selection::new();
+                self.message = "the selection is open on the focused pane".to_string();
+                Action::Nothing
+            }
+            Command::SelectLeft
+            | Command::SelectRight
+            | Command::SelectUp
+            | Command::SelectDown
+            | Command::SelectWordLeft
+            | Command::SelectWordRight
+            | Command::SelectMark
+            | Command::SelectPopMark
+            | Command::SelectCopy
+            | Command::SelectCopyLine
+            | Command::SelectSend
+            | Command::SelectAgentHere
+            | Command::LeaveSelect => self.select_command(command),
         }
     }
 
@@ -696,6 +791,141 @@ impl Screen {
             title: format!("the git — {}", self.git_want),
             lines,
         });
+    }
+
+    /// select_command runs one command of the selection: the point moves
+    /// over the visible text of the focused pane, the mark is the
+    /// anchor, and the region is the text between the mark and the
+    /// point.
+    fn select_command(&mut self, command: Command) -> Action {
+        let lines = self.select_lines();
+        match command {
+            Command::SelectLeft => self.select.left(&lines),
+            Command::SelectRight => self.select.right(&lines),
+            Command::SelectUp => self.select.up(&lines),
+            Command::SelectDown => self.select.down(&lines),
+            Command::SelectWordLeft => self.select.word_left(&lines),
+            Command::SelectWordRight => self.select.word_right(&lines),
+            Command::SelectMark => {
+                self.select.set_mark();
+                self.message = "the mark is set where the point stands".to_string();
+            }
+            Command::SelectPopMark => {
+                self.select.pop_mark();
+                self.message = "the mark is popped; the anchor below it stands".to_string();
+            }
+            Command::SelectCopy => return self.copy_region(&lines),
+            Command::SelectCopyLine => return self.copy_line(&lines),
+            Command::SelectSend => return self.send_region(&lines),
+            Command::SelectAgentHere => return self.agent_here(&lines),
+            Command::LeaveSelect => {
+                self.mode = Mode::Visual;
+                self.message =
+                    "the selection is closed: nothing was copied and nothing was sent".to_string();
+            }
+            _ => {}
+        }
+        Action::Nothing
+    }
+
+    /// select_lines answers the visible lines of the focused pane: the
+    /// lines the multiplexer draws, so a line that has scrolled out of
+    /// the pane cannot be picked, because it cannot be seen.
+    fn select_lines(&self) -> Vec<String> {
+        let cols = self.cols.max(20);
+        let rows = self.rows.max(6);
+        let area_rows = rows.saturating_sub(3);
+        let rects = self.rects(cols, area_rows);
+        let members = self.tab_panes();
+        let at = match members.iter().position(|index| *index == self.focused) {
+            Some(at) => at,
+            None => return Vec::new(),
+        };
+        let rect = match rects.get(at) {
+            Some(rect) => rect,
+            None => return Vec::new(),
+        };
+        let height = rect.rows.saturating_sub(2) as usize;
+        let pane = match self.panes.get(members[at]) {
+            Some(pane) => pane,
+            None => return Vec::new(),
+        };
+        let start = pane.lines.len().saturating_sub(height);
+        pane.lines[start..].to_vec()
+    }
+
+    /// copy_region puts the region into the multiplexer's own ring, and
+    /// answers the line it copied.
+    fn copy_region(&mut self, lines: &[String]) -> Action {
+        let text = self.select.region(lines);
+        if text.is_empty() {
+            self.message = "there is no region: the mark is not set".to_string();
+            return Action::Nothing;
+        }
+        self.ring.insert(0, text.clone());
+        if self.ring.len() > RING_KEPT {
+            self.ring.pop();
+        }
+        self.message = format!("the region is copied: {}", first_line(&text));
+        Action::Nothing
+    }
+
+    /// copy_line puts the line the point stands on into the
+    /// multiplexer's own ring.
+    fn copy_line(&mut self, lines: &[String]) -> Action {
+        let text = self.select.line_text(lines);
+        if text.is_empty() {
+            self.message = "the line is empty".to_string();
+            return Action::Nothing;
+        }
+        self.ring.insert(0, text.clone());
+        if self.ring.len() > RING_KEPT {
+            self.ring.pop();
+        }
+        self.message = format!("the line is copied: {}", first_line(&text));
+        Action::Nothing
+    }
+
+    /// send_region asks the holder to send the region to the agent. The
+    /// bundle is built by the holder, where the redaction seam is, and
+    /// the agent that is open is the one that receives it.
+    fn send_region(&mut self, lines: &[String]) -> Action {
+        let text = self.select.region(lines);
+        if text.is_empty() {
+            self.message = "there is no region: the mark is not set".to_string();
+            return Action::Nothing;
+        }
+        let program = self.agent_program.clone();
+        self.message = "the region is on its way to the agent".to_string();
+        Action::Request(json!({
+            "op": "send-agent",
+            "selection": text,
+            "target": agent_name(&program),
+            "why": "the owner sent the picked text to the agent",
+        }))
+    }
+
+    /// agent_here asks the holder for an agent beside the focused pane,
+    /// with the picked text in the bundle.
+    fn agent_here(&mut self, lines: &[String]) -> Action {
+        let program = self.agent_program.clone();
+        let target = agent_name(&program);
+        let pane = self.focused_pane();
+        let text = self.select.region(lines);
+        let why = format!("the owner opened the agent beside the pane {}", pane);
+        self.message = format!("the agent is opening with the picked text of {}", pane);
+        Action::Request(json!({
+            "op": "open",
+            "name": "agent",
+            "program": program,
+            "tab": self.focused_tab(),
+            "context": {
+                "pane": pane,
+                "target": target,
+                "why": why,
+                "selection": text,
+            }
+        }))
     }
 
     /// open_agent asks the holder for an agent pane beside the focused one,
@@ -806,7 +1036,11 @@ impl Screen {
             lines.push(line);
         }
         lines.push(String::new());
-        lines.push("  Escape goes back one level".to_string());
+        if map == Context::Select {
+            lines.push("  Escape leaves the selection and does nothing else".to_string());
+        } else {
+            lines.push("  Escape goes back one level".to_string());
+        }
         let pending = self.keymap.pending_keys();
         if !pending.is_empty() {
             lines.push(format!("  typing: {}", pending));
@@ -900,7 +1134,35 @@ fn agent_name(program: &str) -> String {
 /// clip answers the text with no more than width characters, and no more
 /// than one line.
 fn clip(text: &str, width: usize) -> String {
-    text.chars().take(width).collect()
+    // The escape sequences take no room on the screen, so they are not
+    // counted, and they are never cut in half.
+    let mut out = String::new();
+    let mut count = 0;
+    let mut characters = text.chars().peekable();
+    while let Some(character) = characters.next() {
+        if character == '\x1b' {
+            out.push(character);
+            for next in characters.by_ref() {
+                out.push(next);
+                if next.is_ascii_alphabetic() {
+                    break;
+                }
+            }
+            continue;
+        }
+        if count >= width {
+            break;
+        }
+        out.push(character);
+        count += 1;
+    }
+    out
+}
+
+/// first_line answers the first line of a text, for a message that names
+/// what was copied.
+fn first_line(text: &str) -> String {
+    text.lines().next().unwrap_or("").to_string()
 }
 
 /// put answers the escape sequence that puts one line of text at one place
