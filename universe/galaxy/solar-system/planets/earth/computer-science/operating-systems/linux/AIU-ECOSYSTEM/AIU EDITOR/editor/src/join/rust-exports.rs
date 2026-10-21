@@ -62,3 +62,7 @@ pub const OP_GIT: &str = "git";
 /// OP_GIT_DIFF answers the diff of a file: which comparison it is, and
 /// the hunks. The shared layer is asked, and it only reads.
 pub const OP_GIT_DIFF: &str = "git-diff";
+
+/// OP_GIT_HISTORY answers the commits of the repository a file is in.
+/// The shared layer is asked, and it only reads.
+pub const OP_GIT_HISTORY: &str = "git-history";

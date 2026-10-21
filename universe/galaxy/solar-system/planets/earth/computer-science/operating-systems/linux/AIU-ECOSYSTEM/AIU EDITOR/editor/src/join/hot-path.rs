@@ -70,6 +70,11 @@ fn answer_for(request: &wire_json::Request) -> (bool, Vec<(String, String)>) {
     let op = request.op.as_str();
 
     match op {
+        rust_exports::OP_GIT_HISTORY => {
+            // The commits of the repository the file is in.
+            let path = std::path::Path::new(&file);
+            (true, git_facts::history(path))
+        }
         rust_exports::OP_GIT_DIFF => {
             // The diff of one file, in the layer's own marks.
             let path = std::path::Path::new(&file);

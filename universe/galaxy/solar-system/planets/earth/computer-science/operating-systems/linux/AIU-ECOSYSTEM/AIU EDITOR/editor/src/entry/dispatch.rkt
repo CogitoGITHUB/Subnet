@@ -346,10 +346,7 @@
   (define path (path->complete-path (if (string=? file "") "untitled" file)))
   (define answer (ask-hot "git" (hasheq 'file (path->string path))))
   (define data (response-data answer))
-  (for ([key (in-list (sort (hash-keys data)
-                            (lambda (one other)
-                              (string<? (symbol->string one)
-                                        (symbol->string other)))))])
+  (for ([key (in-list (sort (hash-keys data) symbol<?))])
     (print-line (format "~a: ~a" (symbol->string key)
                               (hash-ref data key)))))
 
@@ -367,17 +364,41 @@
   (define data (response-data answer))
   (define text (hash-ref data 'git-diff-text ""))
   (if (string=? text "")
-      (for ([key (in-list (sort (hash-keys data)
-                                (lambda (one other)
-                                  (string<? (symbol->string one)
-                                            (symbol->string other)))))])
-        (print-line (format "~a: ~a" (symbol->string key)
-                                  (hash-ref data key))))
       (begin
         (print-line (format "the comparison: ~a"
-                            (hash-ref data 'git-diff-comparison "the working tree against the index")))
+                            (hash-ref data 'git-diff-comparison "")))
         (print-line (format "the file: ~a" (hash-ref data 'git-diff-file "")))
         (print-line (format "the hunks: ~a" (hash-ref data 'git-diff-hunks "0")))
+        (when (not (string=? (hash-ref data 'git-diff-state "") ""))
+          (print-line (format "the state: ~a" (hash-ref data 'git-diff-state "")))
+          (print-line (format "the why: ~a" (hash-ref data 'git-diff-why "")))))
+      (begin
+        (print-line (format "the comparison: ~a"
+                            (hash-ref data 'git-diff-comparison "")))
+        (print-line (format "the file: ~a" (hash-ref data 'git-diff-file "")))
+        (print-line (format "the hunks: ~a" (hash-ref data 'git-diff-hunks "0")))
+        (for-each print-line (string-split text "\n" #:trim? #f)))))
+
+;; git-history-verb asks what Git says happened in the repository, and
+;; prints the commits: the short id, the summary, the author and the
+;; date, and the files each commit touched.
+;;
+;; The layer reads the commits and gives them back; nothing here decides
+;; what a commit means, and nothing is changed.
+(define (git-history-verb args)
+  (define file (if (null? args) "" (car args)))
+  (define path (path->complete-path (if (string=? file "") "untitled" file)))
+  (define answer (ask-hot "git-history" (hasheq 'file (path->string path))))
+  (define data (response-data answer))
+  (define text (hash-ref data 'git-history-text ""))
+  (if (string=? text "")
+      (begin
+        (print-line (format "the commits: ~a" (hash-ref data 'git-history-count "0")))
+        (when (not (string=? (hash-ref data 'git-history-state "") ""))
+          (print-line (format "the state: ~a" (hash-ref data 'git-history-state "")))
+          (print-line (format "the why: ~a" (hash-ref data 'git-history-why "")))))
+      (begin
+        (print-line (format "the commits: ~a" (hash-ref data 'git-history-count "0")))
         (for-each print-line (string-split text "\n" #:trim? #f)))))
 
 ;; checkpoint-verb makes a checkpoint of a tree: the state the tree is put
@@ -430,6 +451,7 @@
         "dashboard" dashboard-verb
         "git" git-verb
         "git-diff" git-diff-verb
+        "git-history" git-history-verb
         "bake" bake-verb
         "send" send-verb
         "agent" agent-verb

@@ -133,6 +133,51 @@ pub fn diff(file: &Path) -> Vec<(String, String)> {
     ]
 }
 
+/// history answers the commits of the repository the file is in, newest
+/// first: the short id, the summary, the author and the date, and the
+/// files the commit touched.
+///
+/// The layer reads the commits and gives them back; nothing here decides
+/// what a commit means.
+pub fn history(file: &Path) -> Vec<(String, String)> {
+    let file = std::fs::canonicalize(file).unwrap_or_else(|_| file.to_path_buf());
+    let file = file.as_path();
+    let directory = match file.parent() {
+        Some(parent) if !parent.as_os_str().is_empty() => parent.to_path_buf(),
+        _ => PathBuf::from("."),
+    };
+    let git = match Git::open(&directory) {
+        Ok(git) => git,
+        Err(why) => {
+            return vec![
+                ("git-history-state".to_string(), "unknown".to_string()),
+                ("git-history-why".to_string(), why),
+            ]
+        }
+    };
+    let commits = match git.log(None) {
+        Ok(commits) => commits,
+        Err(why) => {
+            return vec![
+                ("git-history-state".to_string(), "unknown".to_string()),
+                ("git-history-why".to_string(), why),
+            ]
+        }
+    };
+    let mut text = String::new();
+    for commit in &commits {
+        text.push_str(&format!("{}  {}\n", commit.short, commit.summary));
+        text.push_str(&format!("     {}  {}\n", commit.author, commit.date));
+        for path in &commit.files {
+            text.push_str(&format!("     {}\n", path));
+        }
+    }
+    vec![
+        ("git-history-count".to_string(), commits.len().to_string()),
+        ("git-history-text".to_string(), text),
+    ]
+}
+
 /// relative_to answers a path as the repository names it: the paths of
 /// the status are relative to the root of the repository.
 fn relative_to(root: &Path, file: &Path) -> String {

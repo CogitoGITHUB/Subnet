@@ -58,7 +58,7 @@ the one-way lint and the language-split lint keep every other area clean.
 | The agent opens beside the editor | Planned (TODO item 18) |
 | The editor's own keymap explorer | Planned (TODO item 15) |
 | The workspace engine joins the editor | Planned (TODO item 20) |
-| The Git inspection layer inside the editor | Implemented and verified: the facts and the diff cross the join seam, and the layer only reads |
+| The Git inspection layer inside the editor | Implemented and verified: the facts, the diff and the history cross the join seam, and the layer only reads |
 | The kit conformance across both programs | In progress: the editor's clauses hold, the shared checklist does not close |
 | The done line | In progress: the editor's clauses hold, the rest is named and blocked |
 
@@ -255,6 +255,11 @@ git-unstaged: 6
 git-untracked: 1
 ```
 
+**The history of a repository.** The editor asks the same layer for the commits, and
+prints them newest first: the short id, the summary, the author and the date, and the
+files each commit touched. The layer reads the commits and gives them back; nothing in
+the editor decides what a commit means.
+
 **The diff of a file.** The editor asks the same layer for the diff, and the answer
 names the comparison, so the working tree against the index and the index against HEAD
 are never shown as one thing. The hunks say where they are on both sides, and the lines
@@ -288,6 +293,7 @@ racket editor/src/entry/cli.rkt keys LAYER HEX… # the name of each key
 racket editor/src/entry/cli.rkt dashboard FILE   # the dashboard, one line per row
 racket editor/src/entry/cli.rkt git FILE          # the Git facts of the file
 racket editor/src/entry/cli.rkt git-diff FILE     # the hunks of the file, and the comparison they are
+racket editor/src/entry/cli.rkt git-history FILE  # the commits of the repository
 racket editor/src/entry/cli.rkt tasks           # the task table
 racket editor/src/entry/cli.rkt task FILE NAME WORDS…
 racket editor/src/entry/cli.rkt task --dry-run FILE NAME WORDS...
