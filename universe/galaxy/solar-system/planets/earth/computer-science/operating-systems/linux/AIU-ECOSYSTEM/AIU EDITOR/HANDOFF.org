@@ -34,7 +34,7 @@
     the session opens, the feed opens, the bundle is delivered, the
     region's own text travels, the agent's text comes back and the turn
     ends (=43d0a04d=).
-  - The light gate is green at 14 stages, and the security stage checks
+  - The light gate is green at 15 stages, and the security stage checks
     8 predicates, every one of them called.
   - The decisions D-007..D-010 stand; the root D-number for the
     reserved prefix is still owed, because the root decision log is

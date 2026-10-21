@@ -417,6 +417,7 @@ The light gate is the only entry point, and it is green at fourteen stages:
 | `kit-check` | the six proofs: the envelope, the frozen codes, the gating, the skill examples, the read-only plugin, the flushed feed |
 | `plugin-check` | the plugin system: the registered plugin answers, the unknown one is refused by name, the editor runs with the plugin absent, and it never installs without the human's word |
 | `send-check` | the send: the session opens, the feed opens, the bundle is delivered, the region travels, the turn ends with the agent's text |
+| `git-check` | the shared Git layer: the facts, the diff and the refusal hold over the join seam, and the repository is untouched |
 
 The measured start, on this phone: the bare Racket start 7517 ms, the first question
 6572 ms, the second question 4224 ms, the build 0.28 s when the crate is already built, a

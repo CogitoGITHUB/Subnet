@@ -23,6 +23,7 @@
   - kit-check.rkt — the kit check: the six proofs of the kit format
   - plugin-check.rkt — the plugin check: the five proofs of the plugin system
   - send-check.rkt — the send check: the whole send against a stub agent
+  - git-check.rkt — the git check: the shared Git layer answers through the seam
 
 * Later
 # The gate lives outside editor/ on purpose: the gate checks the package, so

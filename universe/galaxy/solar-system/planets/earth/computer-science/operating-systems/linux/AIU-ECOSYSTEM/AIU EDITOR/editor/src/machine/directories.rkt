@@ -58,6 +58,21 @@
                 "the Racket program is not there"
                 "set AIU_RACKET_BIN to the racket program, or put Racket under the home directory")))
 
+;; git-bin answers the git program of this machine, and refuses when it is
+;; not there: a path that guesses is a path that fails later, in the middle
+;; of a run. The environment variable wins, so a machine that keeps git
+;; somewhere else is named in one place.
+(define (git-bin)
+  (define named (getenv "AIU_GIT_BIN"))
+  (define bin (if (and named (not (string=? named "")))
+                  (path->complete-path named)
+                  "/usr/bin/git"))
+  (if (file-exists? bin)
+      bin
+      (error-of 'err-no-git "the editor" (path->string bin)
+                "the git program is not there"
+                "set AIU_GIT_BIN to the git program, or put git where the editor looks")))
+
 ;; hot-path-bin answers the Rust hot path's program: the binary the
 ;; meaning side starts to do the state work. The environment variable
 ;; wins, so a build that lives somewhere else is named in one place. The
@@ -141,6 +156,7 @@
          state-dir
          cache-dir
          racket-bin
+         git-bin
          hot-path-bin
          crate-dir
          target-dir

@@ -24,7 +24,7 @@ away: the tree stays exactly as the gate last saw it.
   keeps running when the editor is detached. A long =pm= run started
   from the editor keeps running in its own session, and its event feed
   is read where the editor's own output is.
-- STATUS AT THE PAUSE: green. The light gate is green at 14 stages on
+- STATUS AT THE PAUSE: green. The light gate is green at 15 stages on
   =c8b06bca= (=stages that checked nothing: 0 of 14=), including
   =send-check=, which proves the whole send — session, feed, bundle,
   the region's own text, the agent's text, the end of the turn — against

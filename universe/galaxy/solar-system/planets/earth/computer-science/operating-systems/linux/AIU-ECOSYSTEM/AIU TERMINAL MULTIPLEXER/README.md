@@ -55,7 +55,7 @@ that way.
 | The key routing between the multiplexer and the editor | In progress: the routes are named, the walk with the editor in a pane is owed |
 | The dev mode: work mode, the bake, the last good | Planned (TODO item 7) |
 | Select and send to both agents, with the context | Planned (TODO item 8) |
-| The Television channels | Partly done: two read-only channels and the print-only install script; a television that reads a cable is needed to run them |
+| The Television channels | Implemented and verified: two read-only channels, and television reads both |
 | The workspace engine inside the multiplexer | Planned (TODO item 16) |
 | The Git inspection layer inside the multiplexer | Implemented and verified: the key group, the panel and the holder's seam |
 | The screen selection (the biomechanical model) | Planned: the design is in `plan/screen-selection.org` |
@@ -260,9 +260,10 @@ a different contract rather than guessing.
 - The editor is the other half of the key routing, and the multiplexer holds the reserved
   prefix (decision D-005).
 - Television is the picker for the channels. The `tv` binary is on this phone now
-  (television 0.4.21), but that version has five built-in channels and reads no cable;
-  the channels in `picker/` need television v0.15 or later, which this phone cannot
-  fetch and build yet.
+  (television 0.15.9, built from the source): it reads the cable directory, and both
+  channels in `picker/` are in it. The channels are read-only — the picker browses
+  data, it never executes — and `tools/install-tv-channels.nu` only prints the commands
+  that install them.
 
 ## Validation, invariants, and error handling
 
@@ -318,8 +319,8 @@ Television channels, and the kit conformance.
   language-split lint keeps it that way.
 - There is no configuration file, by rule 03; the layout file is the session's shape.
 - The screen draws plain text with escape codes: no true colour, no mouse, no sixel.
-- The Television picker is on the phone, but no version of it here reads a cable yet,
-  so the channels can only be written and
+- The Television picker is on the phone and reads the cable, so the channels can be
+  written and
   checked at source level here.
 - The multiplexer is Rust only; the meaning side of the editor is Racket, and the two meet
   in the editor's own `join/`.

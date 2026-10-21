@@ -42,7 +42,7 @@ def main [
     print "                                          $TM_STATE_DIR/layout.json"
     print ""
     print "Then list and launch:"
-    print "  tv cable list"
+    print "  tv list-channels"
     print "  tv tm-records"
     print "  tv tm-panes"
 }
