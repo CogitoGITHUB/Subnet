@@ -173,8 +173,12 @@
   (cond
     [(not given?)     "needs a confirmation token"]
     [(not correct?)   "wrong confirmation token"]
-    [spent?           "confirmation token already used"]
+    ;; The plan check comes before the spent one: a token issued for
+    ;; another plan is not a token for this call at all, so "already
+    ;; used" would name a fact the caller cannot act on. The test pins
+    ;; this order; the four refusals stay four distinct names.
     [(not same-plan?) "confirmation token is for a different plan"]
+    [spent?           "confirmation token already used"]
     [else             #f]))
 
 ;; ---------------------------------------------------------------------------

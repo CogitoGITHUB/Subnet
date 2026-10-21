@@ -24,8 +24,6 @@ Uncommitted, path-scoped, in this order; each commit removes its own
 - binary cache: =src/store/content-address.rkt=,
   =src/build/build-cache.rkt=, =tests/store/content-address-test.rkt=,
   =tests/build/build-cache-test.rkt=.
-- S-01: =security.rkt rule-by-id=, =errors/error-type.rkt#:rule=, five
-  choke points cite their rule, =tests/security/security-test.rkt= +81-109.
 - one-way law (D-044): 34 -> 15 crossings; =entry/version.rkt= moved to
   =spec/version.rkt=, =machine/file-lock.rkt= moved to
   =store/lockfile.rkt=, new =machine/events-dir.rkt= (=begin-run!= now
@@ -94,14 +92,6 @@ done when: each piece has its commit, its test, and its done-when from
   its design page.
 tests: the area each piece lives in (spec, install, store, build).
 deps: G-01, G-02 + G-07.
-
-** S-01 security policy mechanism
-what: the seven named rules enforced in the pure module; =file://=
-  refused by policy outside a test root, the escape hatch names itself
-  (D-060).
-done when: each rule has a choke point and a message.
-tests: =tests/security/security-test.rkt=.
-deps: none.
 
 ** S-02 choke points
 what: S-01 enforced at every choke point; the gate fails when an

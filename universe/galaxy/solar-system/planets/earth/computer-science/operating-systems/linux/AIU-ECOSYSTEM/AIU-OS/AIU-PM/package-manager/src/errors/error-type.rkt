@@ -70,13 +70,14 @@
 ;; security-rule -> its id string, or the value itself when it is already
 ;; one. WHY not security-rule-id: security.rkt requires THIS module, so
 ;; requiring it back would close a cycle, and the policy module stays the
-;; only one that names the struct. The id is field 0 of a transparent
-;; struct and struct->vector is Racket's generic field reader, so the rule
-;; travels whole from the choke point and only its name is written down.
+;; only one that names the struct. struct->vector's element 0 is the
+;; struct TYPE name ("struct:security-rule"), so the id -- the first
+;; FIELD -- is element 1; reading element 0 is what made every refusal
+;; print "rule: struct:security-rule" instead of the rule's name.
 (define (rule-id-of r)
   (define fields (and (struct? r) (struct->vector r)))
-  (if (and fields (positive? (vector-length fields)))
-      (vector-ref fields 0)
+  (if (and fields (> (vector-length fields) 1))
+      (vector-ref fields 1)
       r))
 
 ;; pm-kind symbol string -> never returns (E-4)
