@@ -1,0 +1,66 @@
+#+TITLE: The tiny binary on this phone — the route decision (D-002)
+#+AUTHOR: Shape
+
+One job: the measured answer to one question — can this phone BUILD the
+holder itself, or must the holder be adopted? The plan's build-order
+step 1 asks for exactly this probe, and the numbers are written down
+here so no session repeats the work or guesses at it.
+
+Date of the measurement: 2026-10-21. Phone: Termux under proot.
+
+* What was measured
+
+The probe is the smallest program that can be a real binary:
+=tools/tiny-binary-probe/probe.rs= prints one line and exits. It is
+built with =rustc -O= and run, by =tools/tiny-binary-probe/measure.nu=,
+which prints both times. Nothing waits: the two clock reads are
+measurement only (D-015, rule 04).
+
+The compiler: =/root/home/shape/.cargo/bin/rustc=, =rustc 1.99.0
+(b940084d7 2026-09-28)=.
+
+* The numbers
+
+| what | measured |
+|------|----------|
+| build (=rustc -O= of the tiny probe) | rc=0, 7853.9 ms |
+| start (the binary's own run, once spawned) | rc=0, 23.2 ms |
+| what it said | =probe: the binary starts= |
+
+A first, separate run of the same build from a shell measured 13416 ms
+for the build and 2117 ms for the start; the difference is the fork and
+exec of the proot environment, which the Nu script's own start does not
+pay twice. Both runs agree on the thing that matters: the build works
+here, and it takes seconds, not hours.
+
+* What the numbers decide
+
+The OWN route is open: this phone compiles Rust, and the compiler is
+fast enough that the holder can be built and rebuilt on the phone while
+the work happens. The ADOPT route (herdr, =/root/home/shape/.local/bin/herdr=,
+also installed) stays available behind the same written contract, as
+D-002 requires — the contract is the same either way, so the route can
+change without the rest of the program noticing.
+
+What the numbers do NOT decide: how long the REAL holder takes to
+build. The holder is larger than one file, and it links a pty. The
+first real build of =holder/= writes its own number down, the same way.
+
+* The proposed D-002 update
+
+The root decision log (=AIU-ECOSYSTEM/DECISIONS.org=) is read-only from
+this project, so the change is recorded here and carried to the root
+log by whoever owns it:
+
+  D-002 (proposed, 2026-10-21): the route is OWN. The phone builds
+  Rust: a tiny binary builds in 7.9 s and starts in 23 ms. The holder
+  is written and built here; the adopt route (herdr) stays as the
+  fallback behind the same contract, and the first real holder build
+  writes its own number down.
+
+* What comes next
+
+TODO.org item 3: the holder and the tty facade — a shell in a terminal
+that survives a detach, with the session log. The probe says the code
+can be written and built on this phone; the holder is where that is
+proved or refused.

@@ -1,0 +1,11 @@
+#+TITLE: INDEX — AIU TERMINAL MULTIPLEXER/tools/
+# One job: list every file in this directory and the single job of each.
+# Status: current; updated in the same commit as any change in this directory.
+
+* Files
+# one line per file: its name, then the single job it performs. This index is updated in the same commit as any change here.
+
+  - tiny-binary-probe/probe.rs — the tiny binary the route decision rests
+    on: it starts, and says so
+  - tiny-binary-probe/measure.nu — builds the probe on this phone and
+    prints the measured build and start times

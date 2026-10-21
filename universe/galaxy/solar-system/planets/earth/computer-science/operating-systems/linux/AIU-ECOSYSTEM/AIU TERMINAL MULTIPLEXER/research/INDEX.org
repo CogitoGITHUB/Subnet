@@ -5,7 +5,8 @@
 * Files
 # one line per file: its name, then the single job it performs. This index is updated in the same commit as any change here.
 
-  - none yet
+  - tiny-binary-probe.org — the measured build and start of a tiny Rust
+    binary on this phone: the evidence for the route decision (D-002)
 
 * Later
 # Program-specific findings only; shared research lives in AIU-ECOSYSTEM/research/.
