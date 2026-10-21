@@ -1,12 +1,46 @@
 # pm — generational package manager for the AIU ecosystem
 
-**Last updated:** 2026-10-18
+**Last updated:** 2026-10-21
 **Status:** core surface complete and gated — the full gate runs the whole test suite and
-every lint.
+every lint. **Implementation is PAUSED** (owner, 2026-10-21): the terminal multiplexer is
+built first, because the complete workflow needs it and it is the foundation under pm.
 
 **Working now:** the everyday commands except `pm backup`, the why/owner surface, profiles
 and generations, and the machine surface.
-**Still to land:** `pm backup`, the planned amplifications below, then acceptance.
+**Still to land:** `pm backup`, the planned amplifications below, then acceptance — all of
+it after the multiplexer works.
+
+## Paused: the terminal multiplexer comes first (2026-10-21)
+
+The owner switched the priority on 2026-10-21. pm's implementation stops here; the
+**terminal multiplexer** (`../AIU TERMINAL MULTIPLEXER/`) is built and verified first.
+
+**Why:** the complete workflow needs a process that outlives the program that started it.
+An OpenCode server, a `pm apply` that takes minutes, and an editor session all have to
+keep running while the human looks at something else, and all three have to be attachable
+again afterwards. The multiplexer is that: persistent sessions, a process lifecycle, and
+attach/detach. pm and the editor sit ON it.
+
+**How pm plugs in:**
+- every long pm command runs in its own multiplexer session, so a slow `pm apply` keeps
+  running after the terminal that started it is gone;
+- pm's narration (the event feed) is the session's output stream, so the feed is read in
+  the same place as the editor's own output;
+- a pm run that must be watched is attached, not restarted.
+
+**What is paused here:** every item in `TODO.org` that is not documentation. Nothing in
+this tree is being rewritten, redesigned, or thrown away; the tree stays exactly as the
+gate last saw it.
+
+**Resume conditions — all three, then work continues:**
+1. the multiplexer builds, its own gate is green, and persistent sessions plus
+   attach/detach are proved on the phone;
+2. `TODO.org` names the multiplexer work as done and lists what pm still owes;
+3. this README says what the integration is, with the paths.
+
+**Verified at the pause:** full gate green on `28384b5f` — 111 test files, 1586 checks,
+0 failed; `one-way-dependency-lint` 0 new violations; `wait-door-lint` 0 violations.
+See `TODO.org` for the exact next task.
 
 `pm` treats disk mutation as irreversible entropy and therefore refuses to perform it without an
 explicit human `--confirm`. Read paths are free. Activation is atomic and fail-closed. The vault is

@@ -1,0 +1,112 @@
+#+TITLE: ONE-WAY-LAW-PLAN — closing the 7 known unpaid area-pairs (D-044)
+#+AUTHOR: Shape
+
+One job: the plan that closes the one-way law's remaining debt, so a
+session that resumes pm can execute it without rediscovery. The plan was
+worked out against the tree on 2026-10-21; every file and line below was
+read, not guessed.
+
+The work is PAUSED (owner, 2026-10-21) until the terminal multiplexer
+works. This file is the handoff, not the start.
+
+* The law
+
+Every directory under =package-manager/src= is an AREA. An area may
+depend only on the areas BELOW it. The table lives in
+=gate/one-way-dependency-lint.nu= and is mirrored in =plan/ARCHITECTURE.org=:
+
+| area | may use |
+|------+---------|
+| errors | (nothing — it is the floor) |
+| narration | errors |
+| machine | errors narration |
+| security | errors |
+| spec | errors security |
+| process | errors narration machine |
+| git | errors narration process machine |
+| build | process errors narration spec |
+| store | spec git errors narration |
+| queue | errors narration machine store |
+| backup | git spec errors narration |
+| install, entry | anything below them |
+
+* The debt
+
+=one-way-dependency-lint= reports 15 edges in 7 area-pairs, listed in the
+lint as =KNOWN_PAIRS= so the debt is visible on every run:
+
+| pair | who reaches up | what crosses |
+|------+----------------+---------------|
+| git → security | =git/vault.rkt:17=, =git/git-env.rkt:9=, =git/git-repo.rkt:10= | =origin-allowed?=, =credential-safe?= |
+| git → spec | =git/vault.rkt:20= | =package-name?= |
+| queue → git | =queue/jobs.rkt:18,19,22= | =git-id?=, =check-git-url=, the vault operations |
+| queue → spec | =queue/jobs.rkt:20= | =package-name?= |
+| security → git | =security/security.rkt:18= | =git-id?= |
+| spec → git | =spec/spec.rkt:9=, =spec/spec-fields.rkt:19=, =spec/plan-actions.rkt:8= | =git-id?=, =check-git-url= |
+| store → install | =store/update.rkt:19,20=, =store/query.rkt:14= | =profile-held?=, =current-generation=, =read-holds=, =apply-plan= |
+
+* The steps, least risky first
+
+Each step is one commit and keeps its tests green.
+
+1. Move =git-commit.rkt= (which holds =git-id?=) down to
+   =errors/git-id.rkt=. Every area that needs a commit id names
+   =errors/= instead of =git/=. Fixes security → git and spec → git.
+   Green: security, spec, plan-actions, queue and git suites.
+2. Move =package-name?= down to =errors/= (it is a shape predicate).
+   Fixes git → spec and queue → spec. Green: spec, git, queue suites.
+3. Move =check-git-url= into =security/security.rkt= — it already uses
+   =origin-allowed?= and =credential-safe?=, so it is policy, and
+   policy lives in one place. Fixes the rest of spec → git and part of
+   queue → git. Green: security, spec-fields, queue, git-env suites.
+   Watch: =security-gate-lint= must not lose its writer coverage.
+4. Add =security= to =MAY_USE[git]= in the lint. git already ranks
+   ABOVE security, so the law permits the edge; the table simply never
+   said so. Fixes git → security with no code moved.
+   Green: the lint itself.
+5. Move the read-only profile queries (=profile-held?=,
+   =current-generation=, =read-holds=) from =install/activate.rkt= into
+   =store/query.rkt= — store already answers queries. Fixes part of
+   store → install. Green: store, install, query suites.
+6. Invert =queue/jobs.rkt=: the vault operations arrive as parameters
+   from the worker that already knows git, so the queue never requires
+   git. Fixes queue → git. Green: the queue suite.
+7. Invert =store/update.rkt=: =apply-plan= arrives as a parameter
+   (=#:applier=). Fixes the rest of store → install. Green: store and
+   install suites.
+
+After the seven steps: =one-way-dependency-lint= reports zero known
+unpaid edges, the =KNOWN_PAIRS= list is empty, and =plan/ARCHITECTURE.org=
+describes the tree as it now is.
+
+* The decision
+
+** 2026-10-21 D-074: close the one-way gap by module moves, not by changing the ranking
+Touches =gate/one-way-dependency-lint.nu=, =package-manager/src/errors/=,
+=package-manager/src/security/=, =package-manager/src/spec/=,
+=package-manager/src/git/=, =package-manager/src/queue/=,
+=package-manager/src/store/=, =package-manager/src/install/=,
+=plan/ARCHITECTURE.org=, =plan/NAMING-REGISTER.org=.
+1. WHAT: remove all seven =KNOWN_PAIRS= by moving pure predicates down to
+   =errors/=, moving =check-git-url= into the policy module, letting git
+   use security (the ranking already allows it), and inverting the two
+   effectful dependencies (the queue's vault work and the store's apply).
+2. WHY: the ranking in =ARCHITECTURE.org= is sound; the debt is in module
+   placement and in an incomplete =MAY_USE= table. The lint's own note
+   said the git↔security cycle "cannot be moved without changing the
+   ranking itself" — that is true only if the table is read as fixed, and
+   the table is policy. Changing the ranking is the larger risk.
+3. COST: seven commits; about forty require-path edits across =src/= and
+   =tests/=; one new name (=errors/git-id.rkt=) in the naming register;
+   the area descriptions in =ARCHITECTURE.org= updated.
+DEFAULT: the seven steps above, in that order.
+
+* Risks
+
+1. Public API paths change: =git-id?=, =package-name?=,
+   =check-git-url=, =profile-held?=, =current-generation= and
+   =read-holds= move. Grep every =require= before each step.
+2. Gate stages: the lint's table (step 4), =security-gate-lint= (step 3),
+   and the naming register (step 1) all need a line each.
+3. =ARCHITECTURE.org= must match the tree at the end, or the register
+   lies and the reader pays.
