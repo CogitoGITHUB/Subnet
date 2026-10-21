@@ -1,0 +1,12 @@
+#+TITLE: INDEX — AIU TERMINAL MULTIPLEXER/multiplexer/src/tty/
+# One job: list every file in this directory and the single job of each.
+# Status: current; updated in the same commit as any change in this directory.
+
+* Files
+# one line per file: its name, then the single job it performs.
+
+  - INDEX.org — the tty area: the terminal itself and the one way to open one
+  - tty.rs — the terminal: raw mode, window size, escape handling
+  - facade.rs — the one way shells and panes touch a terminal: open a pty,
+    size it, read and write bytes
+  - measure.rs — what works under proot is measured, never assumed

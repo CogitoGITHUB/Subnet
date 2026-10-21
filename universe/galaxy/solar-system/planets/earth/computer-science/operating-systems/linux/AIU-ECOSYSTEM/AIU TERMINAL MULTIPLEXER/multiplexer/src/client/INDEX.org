@@ -1,0 +1,10 @@
+#+TITLE: INDEX — AIU TERMINAL MULTIPLEXER/multiplexer/src/client/
+# One job: list every file in this directory and the single job of each.
+# Status: current; updated in the same commit as any change in this directory.
+
+* Files
+# one line per file: its name, then the single job it performs.
+
+  - INDEX.org — the client area: the thin screen that attaches to a holder
+  - client.rs — the client: attaches, asks, reads and detaches; it holds
+    nothing of its own

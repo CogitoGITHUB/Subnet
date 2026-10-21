@@ -9,7 +9,11 @@
 # one line per file and directory: its name, then the single job it performs.
 
   - INDEX.org — this index: every file and directory of the package, with its job
-  - src/ — the package's Racket source, one area per directory
+  - Cargo.toml — what the package is: the holder and the client, and the two
+    crates this phone can fetch
+  - Cargo.lock — the exact versions of those two crates, pinned
+  - src/ — the package's source, one area per directory: Racket areas and Rust
+    areas
   - src/errors/ — the error type and how it renders (the floor of the area table)
   - src/errors/INDEX.org — the error area: the record, the raise, the render
   - src/errors/err.rkt — the error record: what happened, who, where
@@ -26,10 +30,27 @@
   - src/machine/directories.rkt — the one place HOME / XDG is read
   - src/machine/locks.rkt — one-writer locks: wait and retry, never force
   - src/machine/cancel.rkt — the cancellation door every blocking call passes
+  - src/tty/ — the terminal and the one way to open one
+  - src/tty/INDEX.org — the tty area: the terminal, the facade, the measurement
+  - src/tty/tty.rs — the terminal: raw mode, window size, escape handling
+  - src/tty/facade.rs — the one way shells and panes touch a terminal: open a
+    pty, size it, read and write bytes
+  - src/tty/measure.rs — what works under proot is measured, never assumed
+  - src/holder/ — the session that outlives every client
+  - src/holder/INDEX.org — the holder area: the session, the shells, the log
+  - src/holder/holder.rs — the session: outlives every client, and serves the
+    socket
+  - src/holder/shells.rs — the shells of one session: started on a terminal and
+    tracked
+  - src/holder/log.rs — one append-only log file per session, flushed per record
+  - src/client/ — the thin screen that attaches to a holder
+  - src/client/INDEX.org — the client area: one program, one job
+  - src/client/client.rs — the client: attaches, asks, reads and detaches; it
+    holds nothing of its own
 
 * Later
 # the areas planned but not landed; plan/package-tree.org is the register for
 # them, and no empty directory is created before the item that needs it.
-  - security, join, devloop, tty, holder, panes, routing, layouts, records,
-    client, agents, control and entry land with the items that need them.
+  - security, join, devloop, panes, routing, layouts, records, agents, control
+    and entry land with the items that need them.
   - tests and test-doubles open when tests open (root DECISIONS.org D-001).
