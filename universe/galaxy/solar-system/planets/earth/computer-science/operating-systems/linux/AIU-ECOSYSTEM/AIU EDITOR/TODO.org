@@ -9,6 +9,46 @@
   - Build order here follows checklist/tier-1 items (01, 05–16, 19–20) with the tree first; the package tree and every name are in plan/package-tree.org.
   - No tests for now: the light gate only (root DECISIONS.org D-001); the full gate arrives with the first test item.
 
+* PAUSED 2026-10-21 -- the TERMINAL MULTIPLEXER is built first.
+The owner switched the priority on 2026-10-21. The editor's
+implementation stops here until the multiplexer works; =README.org= says
+the same thing at the top. Nothing in this tree is rewritten or thrown
+away: the tree stays exactly as the gate last saw it.
+
+- WHAT IS PAUSED: every item below that is not documentation. The items
+  keep their order and their deps — they are the backlog.
+- THE DEPENDENCY: =../AIU TERMINAL MULTIPLEXER/= — persistent sessions, a
+  process lifecycle, and attach/detach. The editor's own session runs in
+  a multiplexer session (so it can be detached and re-attached), the
+  agent's pane is a multiplexer pane beside the editor's, and the agent
+  keeps running when the editor is detached. A long =pm= run started
+  from the editor keeps running in its own session, and its event feed
+  is read where the editor's own output is.
+- STATUS AT THE PAUSE: green. The light gate is green at 14 stages on
+  =c8b06bca= (=stages that checked nothing: 0 of 14=), including
+  =send-check=, which proves the whole send — session, feed, bundle,
+  the region's own text, the agent's text, the end of the turn — against
+  a local stub agent that speaks the agent's own wire (=43d0a04d=).
+  The plugin system works (=f7770df4=): the editor asks pm, loads a
+  plugin across the seam, and runs with no plugin at all.
+- RESUME CONDITIONS (all three, then the work continues): (1) the
+  multiplexer builds, its gate is green, and persistent sessions plus
+  attach/detach are proved on the phone; (2) this file names the
+  multiplexer work as done and lists what the editor still owes;
+  (3) =README.org= says what the integration is, with the paths.
+- THE EXACT NEXT TASK for the editor, after the multiplexer works:
+  item 18 — the agent opens beside the editor, with the context already
+  in it. It is a multiplexer pane beside the editor's pane, with the
+  bundle's context already attached, and the agent's replies streaming
+  into that pane. The owner's question (a dashboard panel, a second
+  terminal pane, a new buffer, a separate terminal window) was answered
+  on 2026-10-21 by the priority switch itself: the multiplexer owns the
+  pane, so the answer is the multiplexer pane.
+- AFTER ITEM 18: item 4's last half (the routing walk with the editor
+  in a pane), then item 15's checklist in the multiplexer, then the
+  notation's own side (the NOTATION project's item 11), then the root
+  =checklist/=, which is read-only from here.
+
 * Items
 # in build order.
   1. DONE (the tree landed in =c93db7e3=; the light gate green at 6 stages in =5d6414ec=) — The tree lands — create =editor/= per plan/package-tree.org: INDEX.org, the floor areas and gate/ with its first stages; done when: the light gate is green; deps: none.

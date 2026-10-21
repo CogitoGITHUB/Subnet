@@ -3,6 +3,43 @@
 # Every line here is proved by a command that was run; the proof is in
 # the tree: the gate, the feature table and the decisions.
 
+* Paused: the terminal multiplexer comes first (2026-10-21)
+
+The owner switched the priority on 2026-10-21. The editor's
+implementation stops here; the =../AIU TERMINAL MULTIPLEXER/= is built
+and verified first, because the complete workflow needs it and it is the
+foundation under the editor.
+
+Why: the editor is the program a human looks at, and the work it starts
+must outlive it. An OpenCode server, a pm install that takes minutes and
+an editor session all have to keep running while the human does
+something else, and all three have to be attachable again afterwards.
+The multiplexer is that: persistent sessions, a process lifecycle, and
+attach/detach.
+
+How the editor plugs in:
+- the editor's own session runs in a multiplexer session, so the editor
+  can be detached and re-attached without losing the session;
+- the agent's pane is a multiplexer pane beside the editor's, and the
+  agent keeps running when the editor is detached (TODO item 18);
+- a long =pm= run started from the editor keeps running in its own
+  session, and its event feed is read where the editor's own output is.
+
+What is paused here: every item in =TODO.org= that is not documentation.
+Nothing in this tree is rewritten, redesigned, or thrown away; the tree
+stays exactly as the gate last saw it.
+
+Resume conditions — all three, then the work continues:
+1. the multiplexer builds, its own gate is green, and persistent sessions
+   plus attach/detach are proved on the phone;
+2. =TODO.org= names the multiplexer work as done and lists what the
+   editor still owes (item 18 first: the agent's pane);
+3. this README says what the integration is, with the paths.
+
+Verified at the pause: the light gate green at 14 stages on =c8b06bca=,
+including =send-check=, the send's whole turn against a stub agent that
+speaks the agent's own wire.
+
 * What it is
 
 AIU EDITOR is a general editor first: plain text, keyboard driven, no
@@ -571,7 +608,8 @@ the human answers. The approval is never inferred.
   - The multiplexer has no code, so the editor's half of the routing is
     all that can be built here. The walk that runs with the editor in a
     pane is still owed, and so is the pane that would hold the agent
-    (TODO item 17).
+    (TODO item 18 — the agent opens beside the editor). The multiplexer
+    is being built first (see the section at the top).
   - The notation's own side is not built: the seam, the manifest and
     the loader are here, but the notation engine that answers them is
     another project (its item 11).
