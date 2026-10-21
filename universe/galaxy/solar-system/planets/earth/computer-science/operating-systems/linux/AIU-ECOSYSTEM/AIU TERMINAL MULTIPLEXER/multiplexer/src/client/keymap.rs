@@ -116,6 +116,10 @@ pub enum Command {
     GitBranches,
     /// GitWorktrees shows every worktree of the repository.
     GitWorktrees,
+    /// LevelHide hides one level of the screen's own rows.
+    LevelHide,
+    /// LevelShow shows one level more of the screen's own rows.
+    LevelShow,
     /// WorkspaceList shows the workspaces and their projects.
     WorkspaceList,
     /// WorkspaceContext shows the project context as it stands.
@@ -330,6 +334,20 @@ pub static ROOT: &[Binding] = &[
         bytes: b"w",
         about: "the workspace: the shared work of this program and the editor",
         action: Action::Map(Context::Workspace),
+        need: Need::Always,
+    },
+    Binding {
+        keys: "l",
+        bytes: b"l",
+        about: "hide one level of the screen's own rows",
+        action: Action::Command(Command::LevelHide),
+        need: Need::Always,
+    },
+    Binding {
+        keys: "L",
+        bytes: b"L",
+        about: "show one level more of the screen's own rows",
+        action: Action::Command(Command::LevelShow),
         need: Need::Always,
     },
 ];

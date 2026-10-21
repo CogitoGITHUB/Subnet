@@ -57,6 +57,7 @@ that way.
 | The dev mode: work mode, the bake, the last good | Planned (TODO item 7) |
 | Select and send to both agents, with the context | Planned (TODO item 8) |
 | The Television channels | Implemented and verified: three read-only channels, and television reads all three |
+| The screen's own rows and the levels (`l` and `L`) | Implemented and verified: the mode row, the specifics, the events, the hints, and level 0 |
 | The workspace engine inside the multiplexer | Implemented and verified: the key group, the panel, the holder's seam and the mode line (TODO item 16 is partly done) |
 | The Git inspection layer inside the multiplexer | Implemented and verified: the key group, the panel and the holder's seam |
 | The screen selection (the biomechanical model) | In progress: the multiplexer side landed; the editor's side and the wheel are owed |
@@ -127,11 +128,21 @@ prefix chord. A Control key the owner presses belongs to the program in the pane
 | `p o` | open the agent beside the focused pane, with that pane's context |
 | `g` | the git: the overview, the changed files, the diff, the history, the branches, the worktrees |
 | `w` | the workspace: the workspaces and their projects, the project context, the opening of a project |
+| `l` `L` | hide or show one level of the screen's own rows |
 
 **The keymap explorer.** Space opens it in visual mode. It is a panel over the panes, not
 a new screen. It shows the keys of the map it is showing, what each one means, whether it
 runs a command or opens a group, and whether it can run now. A group key opens that group,
 a command key runs the command, and the Escape cancels at any depth.
+
+**The screen's own rows, and the levels.** The mode line is not one clipped
+line: the screen's own furniture is rows, and the owner says how much of it there
+is. Level 1 is the mode row and the tab bar; level 2 adds the specifics (the tab,
+the focused pane, the window size) and the events; level 3 adds the hints (what the
+keys do in this mode). Level 0 draws no furniture at all: the panes take the whole
+screen, which is what a compact view needs. The key `l` hides one level and `L`
+shows one more, and the mode row says which level stands. The panes get the rows the
+furniture does not take, so nothing is cut and nothing is hidden but on purpose.
 
 **The workspace.** The workspace is the one thing this program and the editor share
 (D-018), and the shared engine owns it. The multiplexer asks the engine through its own

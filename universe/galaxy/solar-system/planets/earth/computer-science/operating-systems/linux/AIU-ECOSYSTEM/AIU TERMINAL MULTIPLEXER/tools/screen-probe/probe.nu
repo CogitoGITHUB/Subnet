@@ -27,6 +27,12 @@ def records [client: string, state_dir: string] {
     ($read.stdout | split row (char newline) | where {|line| ($line | str trim) != "" } | each {|line| $line | from json })
 }
 
+# last-drawing answers the last drawing of a screen: the screen draws
+# again after every event, and the last one is the state it stands in.
+def last-drawing [out: string] {
+    ($out | split row "\u{1b}[?25l" | last)
+}
+
 def main [
     --bin-dir: string
     --state-dir: string
@@ -239,6 +245,30 @@ for a in "$@"; do echo "ARG $a"; done' | save --force $agent
 
     let wproject = ($wdata | get -o workspaces | default [] | get -o 0 | default {} | get -o projects | default [] | get -o 0 | default {} | get -o name | default "")
     check "the workspace names the project" ($wproject == "the-first") $"project=($wproject)"
+
+    # 12. the levels: the screen's own furniture is rows, and the owner
+    #     hides them. Level 2 is the default: the mode row, the
+    #     specifics and the events. One key less leaves the mode row
+    #     alone; one key more hides everything, the tab bar with it.
+    let less = (do -i {
+        ^printf "l" | ^$client --state-dir $state_dir --op screen
+    } | complete)
+    let ldrawn = (last-drawing ($less.stdout | default ""))
+    check "one level less keeps the mode row" ($ldrawn | str contains "VISUAL") $"drawn=($ldrawn | str length)"
+    check "one level less hides the specifics" (not ($ldrawn | str contains "pane work --")) $"drawn=($ldrawn | str length)"
+
+    let least = (do -i {
+        ^printf "ll" | ^$client --state-dir $state_dir --op screen
+    } | complete)
+    let mdrawn = (last-drawing ($least.stdout | default ""))
+    check "level zero hides the mode row" (not ($mdrawn | str contains "VISUAL")) $"drawn=($mdrawn | str length)"
+    check "level zero hides the tab bar" (not ($mdrawn | str contains "[main]")) $"drawn=($mdrawn | str length)"
+
+    let more = (do -i {
+        ^printf "L" | ^$client --state-dir $state_dir --op screen
+    } | complete)
+    let odrawn = (last-drawing ($more.stdout | default ""))
+    check "one level more shows the hints" ($odrawn | str contains "l:less") $"drawn=($odrawn | str length)"
 
     # the holder goes away with the probe
     let pid_file = ($state_dir | path join "holder.pid")

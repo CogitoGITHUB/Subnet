@@ -103,6 +103,12 @@ pub struct Screen {
     /// names both.
     workspace_name: String,
     project_name: String,
+    /// level is how much of the screen's own furniture is drawn. Level 1
+    /// is the mode row and the tab bar; level 2 adds the specifics and
+    /// the events; level 3 adds the hints. Level 0 draws no furniture at
+    /// all: the panes take the whole screen, and the owner asked for
+    /// that.
+    level: u8,
 }
 
 impl Screen {
@@ -133,6 +139,7 @@ impl Screen {
             workspace_view: String::new(),
             workspace_name: String::new(),
             project_name: String::new(),
+            level: 2,
         }
     }
 
@@ -272,7 +279,7 @@ impl Screen {
     }
 
     /// rects answers where each pane of the current tab sits on the terminal.
-    fn rects(&self, cols: u16, rows: u16) -> Vec<Rect> {
+    fn rects(&self, cols: u16, rows: u16, top: u16) -> Vec<Rect> {
         let members = self.tab_panes();
         let total: u32 = members
             .iter()
@@ -281,7 +288,7 @@ impl Screen {
         let total = total.max(1);
         let mut rects: Vec<Rect> = Vec::new();
         if self.direction == "column" {
-            let mut top: u16 = 1;
+            let mut top: u16 = top;
             let mut used: u32 = 0;
             for (at, index) in members.iter().enumerate() {
                 let weight = self.panes[*index].weight.max(1) as u32;
@@ -311,7 +318,7 @@ impl Screen {
                 };
                 used += width;
                 rects.push(Rect {
-                    top: 1,
+                    top,
                     left,
                     rows,
                     cols: width.max(6) as u16,
@@ -326,11 +333,18 @@ impl Screen {
     pub fn draw(&self) -> String {
         let cols = self.cols.max(20) as usize;
         let rows = self.rows.max(6) as usize;
-        let area_rows = rows.saturating_sub(3) as u16;
+        // The screen's own furniture takes rows from the programs: the
+        // level says how much of it there is, and level 0 leaves the
+        // whole screen to the panes.
+        let (top, area_rows) = self.area();
+        let status = self.status_rows();
+        let bar = self.level >= 1;
         let mut out = String::new();
         out.push_str("\x1b[?25l");
-        put(&mut out, 1, 1, &clip(&self.tab_bar(), cols));
-        let rects = self.rects(self.cols.max(20), area_rows);
+        if bar {
+            put(&mut out, 1, 1, &clip(&self.tab_bar(), cols));
+        }
+        let rects = self.rects(self.cols.max(20), area_rows, top);
         let members = self.tab_panes();
         for (at, rect) in rects.iter().enumerate() {
             let index = members[at];
@@ -340,8 +354,12 @@ impl Screen {
                 put(&mut out, rect.top + row as u16, rect.left, text);
             }
         }
-        put(&mut out, rows as u16 - 1, 1, &clip(&self.events_line(), cols));
-        put(&mut out, rows as u16, 1, &clip(&self.mode_line(), cols));
+        // The rows of the screen's own furniture sit at the bottom, and
+        // the mode row is the last of them.
+        let first = rows.saturating_sub(status.len()) as u16 + 1;
+        for (at, line) in status.iter().enumerate() {
+            put(&mut out, first + at as u16, 1, &clip(line, cols));
+        }
         if let Some(panel) = &self.panel {
             self.draw_panel(&mut out, panel, rows);
         }
@@ -452,9 +470,9 @@ impl Screen {
             return format!(":{}", self.command);
         }
         // The message the client answers with stands next to the mode:
-        // the line is cut at the end, so what the owner must read is at
+        // the row is cut at the end, so what the owner must read is at
         // the front.
-        let mut line = format!("-- {} -- ", self.mode_name());
+        let mut line = format!("-- {} L{} -- ", self.mode_name(), self.level);
         if !self.workspace_name.is_empty() {
             line.push_str(&format!("ws:{} ", self.workspace_name));
             if !self.project_name.is_empty() {
@@ -466,28 +484,67 @@ impl Screen {
             line.push_str(&self.message);
             line.push_str(" -- ");
         }
-        line.push_str(&format!(
-            "tab {} -- pane {} -- {}x{} -- ",
+        line.trim_end().to_string()
+    }
+
+    /// specifics_line answers the row that says where the owner stands in
+    /// the session: the tab, the focused pane and the window size.
+    fn specifics_line(&self) -> String {
+        format!(
+            "tab {} -- pane {} -- {}x{}",
             self.focused_tab(),
             self.focused_pane(),
             self.cols,
             self.rows
-        ));
+        )
+    }
+
+    /// hints_line answers the row that says what the keys do in this mode.
+    fn hints_line(&self) -> String {
         match self.mode {
             Mode::Visual => {
                 let pending = self.keymap.pending_keys();
                 if pending.is_empty() {
-                    line.push_str("Space:keys  i:type  ::command  q:leave");
+                    "Space:keys  i:type  ::command  l:less  L:more  q:leave".to_string()
                 } else {
-                    line.push_str(&format!("{} …", pending));
+                    format!("{} …", pending)
                 }
             }
-            Mode::Insert => line.push_str("esc:visual"),
-            Mode::Command => line.push_str(""),
-            Mode::Explorer => line.push_str("esc:back  any key of the map"),
-            Mode::Select => line.push_str("m:mark  y:copy  s:send  p o:agent  esc:leave"),
+            Mode::Insert => "esc:visual".to_string(),
+            Mode::Command => String::new(),
+            Mode::Explorer => "esc:back  any key of the map".to_string(),
+            Mode::Select => "m:mark  y:copy  s:send  p o:agent  esc:leave".to_string(),
         }
-        line
+    }
+
+    /// area answers where the panes stand: the row they start at, and how
+    /// many rows they have. The screen's own furniture takes the rest, and
+    /// the level says how much furniture that is.
+    fn area(&self) -> (u16, u16) {
+        let rows = self.rows.max(6);
+        let bar = self.level >= 1;
+        let top = if bar { 2 } else { 1 };
+        let furniture = self.status_rows().len() + if bar { 1 } else { 0 };
+        (top, rows.saturating_sub(furniture as u16))
+    }
+
+    /// status_rows answers the screen's own rows at the bottom, from the
+    /// top of the block down: the events, the specifics, the hints and the
+    /// mode row. The level says which of them are there, and the mode row
+    /// is the last one, so it is the row nearest the owner's hands.
+    fn status_rows(&self) -> Vec<String> {
+        let mut rows: Vec<String> = Vec::new();
+        if self.level >= 2 {
+            rows.push(self.events_line());
+            rows.push(self.specifics_line());
+        }
+        if self.level >= 3 {
+            rows.push(self.hints_line());
+        }
+        if self.level >= 1 {
+            rows.push(self.mode_line());
+        }
+        rows
     }
 
     /// mode_name answers the name of the mode, the way the mode line shows it.
@@ -771,6 +828,18 @@ impl Screen {
             Command::GitHistory => self.show_git("history"),
             Command::GitBranches => self.show_git("branches"),
             Command::GitWorktrees => self.show_git("worktrees"),
+            Command::LevelHide => {
+                // One level less: at level 1 the mode row and the tab bar
+                // go too, and the panes take the whole screen.
+                self.level = self.level.saturating_sub(1);
+                self.message = format!("the level: {}", self.level);
+                Action::Nothing
+            }
+            Command::LevelShow => {
+                self.level = (self.level + 1).min(3);
+                self.message = format!("the level: {}", self.level);
+                Action::Nothing
+            }
             Command::WorkspaceList => self.show_workspace("list"),
             Command::WorkspaceContext => self.show_workspace("context"),
             Command::WorkspaceOpen => {
@@ -934,9 +1003,8 @@ impl Screen {
     /// the pane cannot be picked, because it cannot be seen.
     fn select_lines(&self) -> Vec<String> {
         let cols = self.cols.max(20);
-        let rows = self.rows.max(6);
-        let area_rows = rows.saturating_sub(3);
-        let rects = self.rects(cols, area_rows);
+        let (top, area_rows) = self.area();
+        let rects = self.rects(cols, area_rows, top);
         let members = self.tab_panes();
         let at = match members.iter().position(|index| *index == self.focused) {
             Some(at) => at,

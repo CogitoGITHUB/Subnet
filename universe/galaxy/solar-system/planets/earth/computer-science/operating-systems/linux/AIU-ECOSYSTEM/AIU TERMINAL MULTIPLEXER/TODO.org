@@ -33,6 +33,8 @@
 
   16. PARTLY DONE (the engine join landed: the holder's seam, the key group =w=, the panel, the command line and the mode line that names the workspace and the project; the proof is in the screen probe, 36 checks green) — The workspace engine joins the multiplexer: the multiplexer reads and writes the shared workspace through the engine (=AIU-ECOSYSTEM/shared-layers/workspace/=), its own tabs and panes stay its own, its mode line shows the workspace and the project, and it can ask the editor for what the editor owns; done when: a key opens the project context, the mode line names the workspace and the project, and closing the multiplexer leaves the workspace and the editor untouched; deps: 8, 9, the engine; still owed: the multiplexer asking the editor for what the editor owns, which needs the routing walk (items 6 and 8).
 
+  22. DONE (the rows, the levels and the keys landed with the screen; the proof is in the screen probe, 40 checks green) — The mode line is rows, and the levels say how much of the screen's own furniture there is (owner addition, 2026-10-21): the mode row, the specifics, the events and the hints are four rows, level 1 is the mode row and the tab bar, level 0 is nothing at all and the panes take the whole screen; done when: a key hides one level and a key shows one more, the mode row says the level, and the panes get every row the furniture does not take; deps: 13.
+
 * After the done line
 # what continues on its own.
   - The program's own checklist from checklist/tier-2/ content; tier 3 stays plan only until the owner opens it.
