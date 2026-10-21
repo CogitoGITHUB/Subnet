@@ -66,6 +66,7 @@
          racket/string
          openssl/sha1
          "../errors/error-type.rkt"
+         "../process/run.rkt"
          "../spec/spec.rkt"
          "../spec/plan-hash.rkt"
          "../narration/narration.rkt")
@@ -79,8 +80,9 @@
   ;; whose lines are listed in this file's header. #:tree-hash is the
   ;; digest tree-hash already returned: hashing once is the point.
   [build-input-address
-   (->* (#:tree-hash string? #:steps (listof build-step?) #:prefix string?)
-        (#:env (listof (cons/c string? string?)) #:tools (listof string?))
+   (->* (#:tree-hash string? #:steps (listof build-step?) #:prefix string?
+         #:env (listof (cons/c string? string?)) #:tools (listof string?))
+        ()
         string?)]))
 
 ;; ---------------------------------------------------------------------------
@@ -99,9 +101,11 @@
    (lambda () (bytes->hex-string (sha1-bytes in)))
    (lambda () (close-input-port in))))
 
-;; path -> string, the mode bits, as text (stable across runs)
+;; path -> string, the mode bits, as text (stable across runs). 'bits
+;; asks for the integer mode; the bare call answers a list of symbols
+;; ('read 'write), which number->string refuses.
 (define (mode-of p)
-  (number->string (file-or-directory-permissions p)))
+  (number->string (file-or-directory-permissions p 'bits)))
 
 ;; ---------------------------------------------------------------------------
 ;; The tree hash: per-file digests combined, sorted, one value out.
@@ -115,6 +119,29 @@
 (define (entry-line path kind mode fact)
   (format "~s ~s ~a ~a" path kind mode fact))
 
+;; path -> string, the target text of a symlink, read WITHOUT following
+;; it. This Racket exports no read-symlink, and the two alternatives are
+;; both wrong: resolve-path follows the link (so a dangling link cannot
+;; be hashed at all) and file bytes would hash the link as if it were a
+;; regular file. So the read is one readlink through the one spawn path;
+;; a link is a rare entry, and a tree whose link targets are not read is
+;; a tree the address pretends to cover.
+(define (link-target p)
+  (define exe
+    (or (find-executable-path "readlink")
+        (raise-pm-error 'config 'tree-hash "readlink is not on PATH"
+                        #:fields `(("path" . ,(path->string p)))
+                        #:hint "the address cannot be computed without it, so the build must run")))
+  (define res
+    (spawn-and-wait exe (list (path->string p))
+                    #:cwd (path->string (path-only p))
+                    #:kind 'config #:operation "read-link"))
+  (unless (zero? (result-exit res))
+    (raise-pm-error 'config 'tree-hash "tree entry is unreadable"
+                    #:fields `(("path" . ,(path->string p)))
+                    #:hint "the address cannot be computed, so the build must run"))
+  (string-trim (string-join (result-stdout-lines res) "\n")))
+
 ;; path -> (listof (cons string string)), relative path and its line.
 ;; A symlink is hashed AS a link (its target, no mode bits, never
 ;; followed), so a link pointing back up the tree cannot make the walk
@@ -122,7 +149,8 @@
 (define (tree-entries root)
   (define (walk dir rel)
     (append*
-     (for/list ([name (in-list (sort (directory-list dir) string<?))]
+     (for/list ([name (in-list (sort (map path->string (directory-list dir))
+                                    string<?))]
                 #:unless (member name '("." "..")))
        (define full (build-path dir name))
        (define here
@@ -130,8 +158,7 @@
        (cond
          [(link-exists? full)
           (list (cons here
-                      (entry-line here "l" "-"
-                                  (path->string (read-symlink full)))))]
+                      (entry-line here "l" "-" (link-target full))))]
          [(directory-exists? full)
           (cons (cons here (entry-line here "d" (mode-of full) ""))
                 (walk full here))]
@@ -142,8 +169,8 @@
           (raise-pm-error 'config 'tree-hash "tree entry is unreadable"
                           #:fields `(("path" . ,(path->string full))
                                      ("tree" . ,(path->string root)))
-                          #:hint "the address cannot be computed, so the build must run")])))
-  (walk root "")))
+                          #:hint "the address cannot be computed, so the build must run")]))))
+  (walk root ""))
 
 ;; path-string -> string, sha1 hex over every entry's path, mode and
 ;; bytes. Sorted by path, so two machines that list one directory in

@@ -3,10 +3,10 @@
 ;; src/build/build-cache.rkt. Step 14 of TODO.org phase A: inline tests
 ;; live under package-manager/tests/, mirroring package-manager/src/ one
 ;; area to one area. The require list below is the module's OWN list,
-;; redirected at src/, plus the module itself -- and ONE addition:
-;; ../../src/store/content-address.rkt, because a cache test has to put
-;; a REAL tree-hash on the table as HASH-OF. That is what the injection
-;; buys: build/ may not require store/ under gate/
+;; redirected at src/, plus TWO additions: ../../src/store/content-address.rkt,
+;; because a cache test has to put a REAL tree-hash on the table as HASH-OF,
+;; and ../../src/spec/spec.rkt for build-step, the recipe the address
+;; covers. That is what the injection buys: build/ may not require store/ under gate/
 ;; one-way-dependency-lint.nu, so the caller that may see both areas
 ;; passes the hash in.
 ;;
@@ -23,6 +23,7 @@
          racket/string
          "../../src/errors/error-type.rkt"
          "../../src/narration/narration.rkt"
+         "../../src/spec/spec.rkt"
          "../../src/store/content-address.rkt"
          "../../src/build/build-cache.rkt")
 
@@ -32,6 +33,12 @@
   (define root (make-temporary-directory "pm-buildcache~a"))
   (define cache-root (build-path root "cache"))
   (define src (build-path root "src"))
+
+  ;; Racket has no chmod; file-or-directory-permissions IS the call, and
+  ;; the fixture needs one fixed mode so the address never depends on the
+  ;; umask the test process ran under.
+  (define (chmod path mode)
+    (file-or-directory-permissions path mode))
 
   ;; The source tree, written so its content is fixed and its mtimes are
   ;; whatever the build happened to do.
@@ -111,7 +118,8 @@
   ;; (b1) A TOUCH with identical bytes: the address does not move, so the
   ;; cache is asked for the one it already holds and serves it. This is
   ;; the check a mtime key fails.
-  (file-or-directory-mtouch (build-path src "main.c"))
+  (define (touch p) (file-or-directory-modify-seconds p (current-seconds)))
+  (touch (build-path src "main.c"))
   (define address-touched (address-of src))
   (check-equal? address-touched address-1)
   (check-pred path? (cache-lookup cache-root address-touched tree-hash))
@@ -190,8 +198,14 @@
   ;; root's aiu-pm/, and never into the source tree.
   (define entries-root
     (build-path (path->string cache-root) "aiu-pm" "build-cache" "entries"))
-  (check-equal? (path->string (simplify-path (build-path entry-1 'up)))
-                (path->string (simplify-path entries-root)))
+  ;; simplify-path answers a PARENT path with a trailing separator
+  ;; (".../entries/") while a plain build-path carries none, so the two
+  ;; spellings are compared without it; the point of the check is the
+  ;; directory, not its punctuation.
+  (define (as-dir-text p)
+    (string-trim (path->string (simplify-path p)) "/"))
+  (check-equal? (as-dir-text (build-path entry-1 'up))
+                (as-dir-text entries-root))
   (check-false (string-contains? (path->string entry-1) (path->string src)))
   (check-false (directory-exists? (build-path src "aiu-pm")))
 

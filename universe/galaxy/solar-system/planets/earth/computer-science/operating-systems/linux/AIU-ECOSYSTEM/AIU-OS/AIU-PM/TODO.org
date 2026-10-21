@@ -245,13 +245,6 @@ done when: an export -> import round trip holds in a test.
 tests: =tests/store/= + =tests/install/=.
 deps: none.
 
-** binary cache
-what: build once, reuse by content hash (step 25):
-  =store/content-address.rkt=, =build/build-cache.rkt=.
-done when: a second build of the same inputs hits the cache.
-tests: =tests/store/= + =tests/build/=.
-deps: none.
-
 ** search and info
 what: ask the store without reading it (step 26):
   =entry/search-report.rkt=, =entry/info-report.rkt=.

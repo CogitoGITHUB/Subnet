@@ -64,7 +64,8 @@
   ;; miss. Never raises on a damaged entry: that is a narrated miss.
   [cache-lookup
    (->* (path-string? string? (-> path-string? string?))
-        ((or/c path? #f)))]
+        ()
+        (or/c path? #f))]
   ;; cache-root address produce hash-of -> (values cached? tree). The
   ;; decision, with the build inside it: PRODUCE is handed a staging tree
   ;; to build into on a miss and is never called on a hit -- that is what
@@ -73,7 +74,8 @@
   ;; miss; either way it is the artifact this build would have produced.
   [cache-with-build
    (->* (path-string? string? (-> path? path?) (-> path-string? string?))
-        ((values boolean? path?)))]))
+        ()
+        (values boolean? path?))]))
 
 ;; ---------------------------------------------------------------------------
 ;; Where entries live: <cache-root>/aiu-pm/build-cache/{entries,staging},
@@ -81,7 +83,7 @@
 ;; aiu-pm/events and aiu-pm/vault.
 
 (define (cache-dir cache-root)
-  (build-path (path-string cache-root) "aiu-pm" "build-cache"))
+  (build-path cache-root "aiu-pm" "build-cache"))
 
 (define (entries-dir cache-root)
   (build-path (cache-dir cache-root) "entries"))

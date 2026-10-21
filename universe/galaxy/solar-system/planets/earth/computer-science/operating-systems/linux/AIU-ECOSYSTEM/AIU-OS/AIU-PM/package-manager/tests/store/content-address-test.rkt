@@ -32,12 +32,22 @@
   (define tree-a (build-path root "tree-a"))
   (define tree-b (build-path root "tree-b"))
 
+  ;; Racket has no chmod; file-or-directory-permissions IS the call, and
+  ;; the fixture needs one fixed mode so a digest never depends on the
+  ;; umask the test process happened to run under.
+  (define (chmod path mode)
+    (file-or-directory-permissions path mode))
+
   ;; A tree written the same way every time, so a difference in a digest
   ;; is about the CONTENT and never about the umask that created it.
   (define (write-tree into files)
     (for ([f (in-list files)])
       (define full (build-path into (car f)))
-      (make-directory* (build-path full 'up))
+      ;; path-only, not (build-path full 'up): 'up appends a ".." element
+      ;; and make-directory* then CREATES the file's own name as a
+      ;; directory, so the write below found a directory where the file
+      ;; belonged.
+      (make-directory* (path-only full))
       (call-with-output-file full
         (lambda (out) (write-bytes (cdr f) out))
         #:exists 'truncate/replace)
@@ -46,7 +56,10 @@
   (define main-bytes #"int main(void) { return 0; }\n")
   (define util-bytes #"int util(void) { return 1; }\n")
   (define files
-    '(("main.c" . ,main-bytes)
+    ;; quasiquote, not quote: the two byte strings are the variables
+    ;; above, and a plain quote handed write-bytes the SYMBOL
+    ;; ',main-bytes.
+    `(("main.c" . ,main-bytes)
       ("src/util.c" . ,util-bytes)))
 
   (write-tree tree-a files)
@@ -62,9 +75,10 @@
 
   ;; (b1) A TOUCH with identical bytes does not move the address: mtime
   ;; is not an input, and a key that read it would miss on every build.
-  (file-or-directory-mtouch (build-path tree-a "main.c"))
+  (define (touch p) (file-or-directory-modify-seconds p (current-seconds)))
+  (touch (build-path tree-a "main.c"))
   (check-equal? (tree-hash tree-a) digest-a-1)
-  (file-or-directory-mtouch (build-path tree-a "src/util.c"))
+  (touch (build-path tree-a "src/util.c"))
   (check-equal? (tree-hash tree-a) digest-a-1)
 
   ;; (b2) A CHANGED BYTE does move it. Same length, one byte different,
@@ -80,7 +94,7 @@
   (check-equal? digest-a-changed
                (tree-hash
                 (begin
-                  (write-tree tree-b '(("main.c" . #"int main(void) { return 1; }\n")
+                  (write-tree tree-b `(("main.c" . #"int main(void) { return 1; }\n")
                                        ("src/util.c" . ,util-bytes)))
                   tree-b)))
 
@@ -102,7 +116,7 @@
   ;; An ADDED file moves it too, and nothing is skipped for being a
   ;; dotfile: an entry left out of the walk is an input the address
   ;; pretends to cover.
-  (write-tree tree-b '(("main.c" . #"int main(void) { return 1; }\n")
+  (write-tree tree-b `(("main.c" . #"int main(void) { return 1; }\n")
                        ("src/util.c" . ,util-bytes)
                        (".hidden" . #"x")))
   (check-not-equal? (tree-hash tree-b) digest-a-changed)
@@ -115,12 +129,12 @@
   (write-tree linked files)
   (write-tree plain files)
   (check-equal? (tree-hash linked) (tree-hash plain))
-  (make-symlink "nowhere/at/all" (build-path linked "dangling"))
+  (make-file-or-directory-link "nowhere/at/all" (build-path linked "dangling"))
   (check-not-equal? (tree-hash linked) (tree-hash plain))
   ;; Change the TARGET, not the bytes, and the address moves: what a link
   ;; says is an input too.
   (delete-file (build-path linked "dangling"))
-  (make-symlink "somewhere/else" (build-path linked "dangling"))
+  (make-file-or-directory-link "somewhere/else" (build-path linked "dangling"))
   (check-not-equal? (tree-hash linked) (tree-hash plain))
 
   ;; A tree that is not there cannot be addressed, and the refusal names
