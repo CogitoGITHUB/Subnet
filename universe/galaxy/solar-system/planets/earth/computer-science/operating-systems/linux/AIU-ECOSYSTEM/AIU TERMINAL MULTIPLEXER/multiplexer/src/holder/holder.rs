@@ -14,6 +14,7 @@
 #[path = "../tty/facade.rs"] mod facade;
 #[path = "../tty/measure.rs"] mod measure;
 #[path = "../tty/tty.rs"] mod tty;
+mod git;
 mod layout;
 mod log;
 
@@ -608,6 +609,31 @@ fn answer(session: &mut Session, at: usize, line: &str) -> Result<bool, String> 
             answer_client(session, at, &record);
             // The client stays: a screen asks for the state and then keeps
             // asking things of the same connection.
+            Ok(true)
+        }
+        "git" => {
+            // The client asks what Git says here, and the shared layer
+            // answers. The layer only reads: it cannot change a
+            // repository, an index, a branch or a worktree.
+            let what = request
+                .get("what")
+                .and_then(|value| value.as_str())
+                .unwrap_or("overview")
+                .to_string();
+            let directory = std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
+            let answer = git::read(&directory, &what);
+            let record = session.record(Fields {
+                kind: if answer.ok { "info" } else { "fail" },
+                who: "holder",
+                what: "the git state was read",
+                why: "the client asked what git says",
+                how: "the shared git layer was asked, and it only reads",
+                inputs: json!({ "what": what, "path": directory.display().to_string() }),
+                outputs: json!({ "git": answer.data }),
+                result: json!({}),
+            });
+            session.write(&record);
+            answer_client(session, at, &record);
             Ok(true)
         }
         "read" => {

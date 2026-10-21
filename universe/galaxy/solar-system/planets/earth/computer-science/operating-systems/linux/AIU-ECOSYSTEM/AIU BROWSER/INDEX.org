@@ -5,7 +5,7 @@
 * Files
 # one line per file: its name, then the single job it performs.
 
-  - ReadMe.md — what the program is and what it does today
+  - README.md — what the program is and what it does today
   - AGENT.md — the session rules: scope, the light gate, building, git
   - HANDOFF.org — everything a fresh conversation needs to start here
   - TODO.org — the single list of what is left, in build order

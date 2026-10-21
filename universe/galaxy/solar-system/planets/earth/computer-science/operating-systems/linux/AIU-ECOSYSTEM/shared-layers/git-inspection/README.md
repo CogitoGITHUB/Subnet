@@ -71,7 +71,7 @@ The boundary is kept by construction, not by discipline:
 | The freshness and the failure states | Implemented and verified |
 | The one-shot program over a pair of files | Implemented and verified |
 | The editor reads the layer | Planned: the layer is built, the editor does not read it yet |
-| The multiplexer reads the layer | Planned: the layer is built, the multiplexer does not read it yet |
+| The multiplexer reads the layer | Implemented and verified: the holder asks it and the panel shows the answer |
 | The in-file indicators in the editor | Planned |
 | The worktree overview in the multiplexer | Planned |
 | Any mutating operation | Deliberately out of scope: a future workflow layer, with declared permissions |
@@ -264,8 +264,9 @@ proof that the inspection changes nothing.
 
 ## Limitations
 
-- Nothing reads the layer yet: the editor's indicators and the multiplexer's worktree
-  overview are the next steps on their sides.
+- The multiplexer reads the layer now: the holder asks it and the panel shows the
+  answer. The editor's indicators, the editor's diff views and the multiplexer's own
+  worktree overview are the next steps on their sides.
 - The diff of a whole tree is parsed from the unified format, so the paths of the files
   come from the diff's own headers.
 - The layer does not run `git fetch`, so a branch whose upstream ref is not here stays

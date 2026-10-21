@@ -57,7 +57,7 @@ that way.
 | Select and send to both agents, with the context | Planned (TODO item 8) |
 | The Television channels | Deferred: the `tv` binary is not on the phone |
 | The workspace engine inside the multiplexer | Planned (TODO item 16) |
-| The Git inspection layer inside the multiplexer | Planned: the layer is built and verified, the multiplexer does not read it yet |
+| The Git inspection layer inside the multiplexer | Implemented and verified: the key group, the panel and the holder's seam |
 | The screen selection (the biomechanical model) | Planned: the design is in `plan/screen-selection.org` |
 | The kit conformance and the done line | Planned (TODO items 11 and 12) |
 
@@ -124,6 +124,7 @@ prefix chord. A Control key the owner presses belongs to the program in the pane
 | arrows | move the focus between the panes |
 | `t` `p` `c` `s` | the tabs, the panes, the commands, the sessions |
 | `p o` | open the agent beside the focused pane, with that pane's context |
+| `g` | the git: the overview, the changed files, the diff, the history, the branches |
 
 **The keymap explorer.** Space opens it in visual mode. It is a panel over the panes, not
 a new screen. It shows the keys of the map it is showing, what each one means, whether it
@@ -136,6 +137,14 @@ why. The bundle is built by the holder from the holder's own log, so nothing is 
 hand and the screen never scrapes the drawing. The bundle passes the redaction seam: a
 line that names a credential keeps its name and loses its value. The send is a record, and
 it is written before the pane opens. The design is in `plan/agent-opens-here.org`.
+
+**The git panel.** The key group `g` opens the git, and the panel shows what the
+shared layer read: the repository, the branch and its distance from the upstream, the
+worktrees with their counts, the changed files with the marks of the layer, the diff of
+the working tree against the index, the history, and the branches. The holder asks the
+layer and the layer only reads: no command it can run changes a repository, an index, a
+branch or a worktree. The panel says which comparison it shows, and an unknown upstream
+is never shown as "up to date".
 
 **The agent surface.** The MCP server over stdio talks to a holder's socket, so an AI
 agent can list the sessions, read a session's records and send to a session's shell.
@@ -243,8 +252,9 @@ a different contract rather than guessing.
 - `libc` and `serde_json`, and nothing else: the phone's cargo registry cache holds no
   other crate, so no other dependency may be added.
 - The tty is the Linux pty (`/dev/pts/N`), measured working on this phone.
-- The shared `../shared-layers/workspace` package and the shared `../shared-layers/git-inspection` package are the two
-  integrations that are planned and not yet made.
+- The shared `../shared-layers/git-inspection` package is used: the holder asks the
+  layer and the panel shows the answer. The shared `../shared-layers/workspace` package
+  is not read yet (TODO item 16).
 - The editor is the other half of the key routing, and the multiplexer holds the reserved
   prefix (decision D-005).
 - Television is the picker for the planned channels; it is not a hard dependency, and the

@@ -168,6 +168,29 @@ for a in "$@"; do echo "ARG $a"; done' | save --force $agent
     }
     check "the context reached the agent program" ($agent_hits > 0) $"hits=($agent_hits)"
 
+    # 8. the git: the panel shows what the shared layer read, and the
+    #    layer only reads. The holder's own directory is the repository
+    #    that is asked about, so the answer is a real one.
+    let gitted = (do -i {
+        ^printf "go" | ^$client --state-dir $state_dir --op screen
+    } | complete)
+
+    let after_git = (records $client $state_dir)
+    let gits = ($after_git | where {|r| ($r | get -o what | default "") == "the git state was read" })
+    check "the git is read as a record" (($gits | length) > 0) $"records=($gits | length)"
+
+    let gdata = ($gits | last | get -o outputs | default {} | get -o git | default {})
+    let gstatus = ($gdata | get -o status | default {})
+    let ghead = ($gstatus | get -o head | default "")
+    check "the git names the branch it stands on" ($ghead != "") $"head=($ghead)"
+
+    let gworktrees = ($gdata | get -o repository | default {} | get -o worktrees | default [] | length)
+    check "the git names the worktrees" ($gworktrees > 0) $"worktrees=($gworktrees)"
+
+    # The panel drew it: the drawing holds the git's own words.
+    let gdrawn = ($gitted.stdout | default "")
+    check "the panel shows the git" ($gdrawn | str contains "the git") $"drawn=($gdrawn | str length)"
+
     # the holder goes away with the probe
     let pid_file = ($state_dir | path join "holder.pid")
     if ($pid_file | path exists) {

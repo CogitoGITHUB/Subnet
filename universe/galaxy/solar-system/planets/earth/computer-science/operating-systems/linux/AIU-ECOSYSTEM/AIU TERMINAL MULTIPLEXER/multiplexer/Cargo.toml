@@ -25,3 +25,6 @@ path = "src/agents/mcp.rs"
 # nothing else (see AIU-ECOSYSTEM/WHEN-ON-LAPTOP.org).
 libc = "0.2"
 serde_json = "1.0"
+# The shared read-only Git layer, by path: one Git model for this program
+# and for the editor, so the two cannot disagree about what Git says.
+git-inspection = { path = "../../shared-layers/git-inspection" }

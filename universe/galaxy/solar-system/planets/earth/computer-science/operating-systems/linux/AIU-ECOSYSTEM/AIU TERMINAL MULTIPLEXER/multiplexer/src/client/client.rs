@@ -12,6 +12,7 @@
 #[allow(dead_code)]
 #[path = "../tty/tty.rs"] mod tty;
 
+mod git;
 mod keymap;
 mod screen;
 

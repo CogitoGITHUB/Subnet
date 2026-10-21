@@ -31,6 +31,7 @@ pub enum Context {
     Panes,
     Commands,
     Sessions,
+    Git,
 }
 
 impl Context {
@@ -42,6 +43,7 @@ impl Context {
             Context::Panes => "the panes",
             Context::Commands => "the commands",
             Context::Sessions => "the sessions",
+            Context::Git => "the git",
         }
     }
 
@@ -54,6 +56,7 @@ impl Context {
             Context::Panes => b"p",
             Context::Commands => b"c",
             Context::Sessions => b"s",
+            Context::Git => b"g",
         }
     }
 }
@@ -93,6 +96,16 @@ pub enum Command {
     ShowRecords,
     /// ShowSessions opens the panel with the sessions.
     ShowSessions,
+    /// GitOverview shows the repository, its worktrees and its distance.
+    GitOverview,
+    /// GitChanged shows the changed files.
+    GitChanged,
+    /// GitDiff shows the diff of the working tree against the index.
+    GitDiff,
+    /// GitHistory shows the commits.
+    GitHistory,
+    /// GitBranches shows the branches and their distance.
+    GitBranches,
 }
 
 /// Action is what a binding does: run a command, or open a sub-map.
@@ -254,6 +267,54 @@ pub static ROOT: &[Binding] = &[
         action: Action::Map(Context::Sessions),
         need: Need::Always,
     },
+    Binding {
+        keys: "g",
+        bytes: b"g",
+        about: "the git: the repository, the worktrees, the changes",
+        action: Action::Map(Context::Git),
+        need: Need::Always,
+    },
+];
+
+/// GIT is the map of the git commands. Every sequence starts with the key
+/// that opens the map. Every one of them reads: the layer behind them
+/// cannot change a repository.
+pub static GIT: &[Binding] = &[
+    Binding {
+        keys: "g o",
+        bytes: b"go",
+        about: "the repository: the branch, the distance, the worktrees",
+        action: Action::Command(Command::GitOverview),
+        need: Need::Always,
+    },
+    Binding {
+        keys: "g c",
+        bytes: b"gc",
+        about: "the changed files: staged, unstaged, untracked, conflicts",
+        action: Action::Command(Command::GitChanged),
+        need: Need::Always,
+    },
+    Binding {
+        keys: "g d",
+        bytes: b"gd",
+        about: "the diff: the working tree against the index",
+        action: Action::Command(Command::GitDiff),
+        need: Need::Always,
+    },
+    Binding {
+        keys: "g h",
+        bytes: b"gh",
+        about: "the history: the commits, newest first",
+        action: Action::Command(Command::GitHistory),
+        need: Need::Always,
+    },
+    Binding {
+        keys: "g b",
+        bytes: b"gb",
+        about: "the branches, and how far they are from their upstream",
+        action: Action::Command(Command::GitBranches),
+        need: Need::Always,
+    },
 ];
 
 /// TABS is the map of the tab commands. Every sequence starts with the key
@@ -394,6 +455,7 @@ pub fn bindings(context: Context) -> &'static [Binding] {
         Context::Panes => PANES,
         Context::Commands => COMMANDS,
         Context::Sessions => SESSIONS,
+        Context::Git => GIT,
     }
 }
 

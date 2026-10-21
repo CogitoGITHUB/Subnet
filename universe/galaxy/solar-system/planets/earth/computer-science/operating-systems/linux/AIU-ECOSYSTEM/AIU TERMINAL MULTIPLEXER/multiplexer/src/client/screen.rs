@@ -81,6 +81,10 @@ pub struct Screen {
     pub events: Vec<String>,
     keymap: Keymap,
     panel: Option<Panel>,
+    /// git is what the shared layer answered, and git_want is which view
+    /// was asked for.
+    git: Option<Value>,
+    git_want: String,
 }
 
 impl Screen {
@@ -103,6 +107,8 @@ impl Screen {
             events: Vec::new(),
             keymap: Keymap::empty(),
             panel: None,
+            git: None,
+            git_want: String::new(),
         }
     }
 
@@ -654,7 +660,41 @@ impl Screen {
                 self.show_sessions();
                 Action::Nothing
             }
+            Command::GitOverview => self.show_git("overview"),
+            Command::GitChanged => self.show_git("changed"),
+            Command::GitDiff => self.show_git("diff"),
+            Command::GitHistory => self.show_git("history"),
+            Command::GitBranches => self.show_git("branches"),
         }
+    }
+
+    /// show_git asks the holder what Git says, and the answer fills the
+    /// panel. The holder asks the shared layer, and the layer only reads:
+    /// nothing here can change a repository.
+    fn show_git(&mut self, want: &str) -> Action {
+        self.git_want = want.to_string();
+        self.message = format!("the git is being read: {}", want);
+        Action::Request(json!({
+            "op": "git",
+            "what": want
+        }))
+    }
+
+    /// take_git reads the layer's answer and fills the panel with it.
+    fn take_git(&mut self, record: &Value) {
+        let data = match record
+            .get("outputs")
+            .and_then(|outputs| outputs.get("git"))
+        {
+            Some(data) => data.clone(),
+            None => return,
+        };
+        self.git = Some(data.clone());
+        let lines = crate::git::lines(&self.git_want, &data);
+        self.panel = Some(Panel {
+            title: format!("the git — {}", self.git_want),
+            lines,
+        });
     }
 
     /// open_agent asks the holder for an agent pane beside the focused one,
@@ -1044,6 +1084,10 @@ fn take_record(screen: &mut Screen, line: &str) {
             .and_then(|value| value.as_str())
             .unwrap_or("");
         screen.push_text(who, text);
+        return;
+    }
+    if what == "the git state was read" {
+        screen.take_git(&record);
         return;
     }
     if who == "holder" {
