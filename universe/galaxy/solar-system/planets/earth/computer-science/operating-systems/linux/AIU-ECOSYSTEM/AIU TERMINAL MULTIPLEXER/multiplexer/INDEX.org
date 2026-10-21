@@ -49,6 +49,15 @@
   - src/holder/wire.rs — the session's wire: one JSON object per line, both ways
   - src/holder/workspace.rs — the workspace seam of the holder: the shared
     engine asked, and the facts given back
+  - src/devloop/ — the dev mode area: the config, the bake and the last good
+  - src/devloop/INDEX.org — the devloop area: the config, the bake, the last good
+  - src/devloop/config.rs — the config: the values the client honors, where
+    the file is read from, and whether it changed
+  - src/devloop/bake.rs — the bake: the config in force becomes the baked
+    defaults, kept only when it reads back
+  - src/devloop/bake_command.rs — the bake from the command line: run it
+    once, and say what it did
+  - src/devloop/last_good.rs — the last good bake: the path of the last build that was good
   - src/agents/ — the door an AI agent comes in by
   - src/agents/INDEX.org — the agents area: the server, the tools, the envelope
   - src/agents/mcp.rs — the MCP server over stdio: one request per line, one
@@ -79,6 +88,6 @@
 * Later
 # the areas planned but not landed; plan/package-tree.org is the register for
 # them, and no empty directory is created before the item that needs it.
-  - security, join, devloop, panes, routing, layouts, records, agents, control
-    and entry land with the items that need them.
+  - security, join, panes, routing, layouts, records, control and entry land
+    with the items that need them.
   - tests and test-doubles open when tests open (root DECISIONS.org D-001).

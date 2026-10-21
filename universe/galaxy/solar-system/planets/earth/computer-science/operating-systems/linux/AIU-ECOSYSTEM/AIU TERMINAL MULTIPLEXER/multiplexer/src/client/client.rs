@@ -12,6 +12,11 @@
 #[allow(dead_code)]
 #[path = "../tty/tty.rs"] mod tty;
 
+// The work mode's config: the devloop area sits below the client, so this is a
+// downward edge and the only one the client takes.
+#[path = "../devloop/config.rs"]
+mod config;
+
 mod git;
 mod workspace;
 mod keymap;
@@ -51,12 +56,21 @@ fn run(args: &[String]) -> Result<i32, String> {
 
     if options.op == "screen" {
         // The screen is its own life: it attaches, draws the panes, and
-        // answers the keys until the owner leaves.
+        // answers the keys until the owner leaves. It carries the config: the
+        // file the environment names, else the last good bake in this state
+        // directory, else the built-in defaults, and the line says which one
+        // answered — the way the editor's start says it.
+        let in_force = config::ConfigFile::start(&options.state_dir);
+        eprintln!(
+            "client: work mode, the config from {}",
+            in_force.origin()
+        );
         let answer = screen::session(
             fd,
             CLIENT_NAME,
             options.agent_program.clone(),
             options.editor_program.clone(),
+            in_force,
         );
         wire::close(fd);
         answer?;

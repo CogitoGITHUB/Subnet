@@ -18,6 +18,7 @@ use super::keymap::{bindings, Command, Context, Keymap, Mode, Resolution, State}
 use super::select::Selection;
 use super::tty;
 use super::wire;
+use super::config::{ConfigFile, Reload};
 
 /// ESCAPE leaves Insert, and cancels a sequence or the explorer.
 const ESCAPE: u8 = 0x1b;
@@ -109,6 +110,10 @@ pub struct Screen {
     /// all: the panes take the whole screen, and the owner asked for
     /// that.
     level: u8,
+    /// shows_tab_bar says whether the tab bar is drawn at level 1 and
+    /// above. The config asks for it; level 0 hides it whatever the
+    /// config says.
+    shows_tab_bar: bool,
 }
 
 impl Screen {
@@ -140,7 +145,30 @@ impl Screen {
             workspace_name: String::new(),
             project_name: String::new(),
             level: 2,
+            shows_tab_bar: true,
         }
+    }
+
+    /// set_level is the level the config asks for: how much of the screen's
+    /// own furniture is drawn. A value above 3 is not a level, so it is taken
+    /// as 3 rather than refused.
+    pub fn set_level(&mut self, level: u8) {
+        self.level = level.min(3);
+    }
+
+    /// level answers how much furniture the screen draws now.
+    pub fn level(&self) -> u8 {
+        self.level
+    }
+
+    /// set_tab_bar says whether the tab bar is drawn at level 1 and above.
+    pub fn set_tab_bar(&mut self, on: bool) {
+        self.shows_tab_bar = on;
+    }
+
+    /// tab_bar_on answers whether the tab bar is drawn at level 1 and above.
+    pub fn tab_bar_on(&self) -> bool {
+        self.shows_tab_bar
     }
 
     /// state answers what the multiplexer holds right now, so a binding can
@@ -338,7 +366,7 @@ impl Screen {
         // whole screen to the panes.
         let (top, area_rows) = self.area();
         let status = self.status_rows();
-        let bar = self.level >= 1;
+        let bar = self.level >= 1 && self.shows_tab_bar;
         let mut out = String::new();
         out.push_str("\x1b[?25l");
         if bar {
@@ -522,7 +550,7 @@ impl Screen {
     /// the level says how much furniture that is.
     fn area(&self) -> (u16, u16) {
         let rows = self.rows.max(6);
-        let bar = self.level >= 1;
+        let bar = self.level >= 1 && self.shows_tab_bar;
         let top = if bar { 2 } else { 1 };
         let furniture = self.status_rows().len() + if bar { 1 } else { 0 };
         (top, rows.saturating_sub(furniture as u16))
@@ -1361,15 +1389,28 @@ fn put(out: &mut String, row: u16, left: u16, text: &str) {
 
 /// session is the screen's own life: it attaches to the holder, draws the
 /// panes, and answers the keys until the owner leaves.
+///
+/// The config comes in with the screen: it is applied before the first draw,
+/// and it is looked at again before every other draw, so a change to the file
+/// is in force without a restart. The check is the loop's, not a watcher's:
+/// the loop turns on an event, and that is when the file is read.
 pub fn session(
     fd: libc::c_int,
     client_name: &str,
     agent_program: String,
     editor_program: String,
+    mut config: ConfigFile,
 ) -> Result<(), String> {
     let saved = tty::save_termios(libc::STDIN_FILENO).ok();
     let _ = tty::make_raw(libc::STDIN_FILENO);
     let mut screen = Screen::empty(agent_program, editor_program);
+    screen.set_level(config.config().level);
+    screen.set_tab_bar(config.config().tab_bar);
+    // A config file that is there and was not used says so where the owner
+    // reads it, and the screen runs on what the last good one said.
+    if let Some(why) = config.problem() {
+        screen.message = why.to_string();
+    }
     wire::ask(fd, &json!({ "op": "state", "client": client_name }))?;
     wire::ask(
         fd,
@@ -1494,6 +1535,23 @@ pub fn session(
             }
         }
 
+        // The config is looked at once per turn of the loop, before the
+        // drawing: a file that changed is in force at this draw, and a file
+        // that does not parse leaves the values in force and says why in the
+        // message line. No timer and no thread: the loop turns on an event.
+        match config.reload_if_changed() {
+            Reload::Unchanged => {}
+            Reload::Changed(now) => {
+                screen.set_level(now.level);
+                screen.set_tab_bar(now.tab_bar);
+                let from = config.path().display();
+                screen.message = format!("the config was reloaded from {}", from);
+            }
+            Reload::Broken(why) => {
+                screen.message = format!("the config is not used: {}", why);
+            }
+        }
+
         let drawing = screen.draw();
         let _ = out.write_all(drawing.as_bytes());
         let _ = out.flush();
@@ -1544,5 +1602,55 @@ fn take_record(screen: &mut Screen, line: &str) {
     }
     if who == "holder" {
         screen.take_state(&record);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// a_screen is a screen on a window big enough to draw one pane, so the
+    /// drawing can be read for what it holds.
+    fn a_screen() -> Screen {
+        let mut screen = Screen::empty("opencode".to_string(), "editor".to_string());
+        screen.cols = 60;
+        screen.rows = 12;
+        screen.tabs = vec!["main".to_string()];
+        screen.panes = vec![PaneView {
+            name: "work".to_string(),
+            tab: "main".to_string(),
+            weight: 1,
+            lines: Vec::new(),
+        }];
+        screen
+    }
+
+    #[test]
+    fn the_config_sets_the_level_and_the_tab_bar() {
+        let mut screen = a_screen();
+        screen.set_level(0);
+        screen.set_tab_bar(false);
+        assert_eq!(screen.level(), 0);
+        assert_eq!(screen.tab_bar_on(), false);
+        let drawing = screen.draw();
+        assert!(drawing.contains("VISUAL") == false, "no mode row: {:?}", drawing);
+        assert!(drawing.contains("[main]") == false, "no tab bar: {:?}", drawing);
+    }
+
+    #[test]
+    fn a_level_above_three_is_taken_as_three() {
+        let mut screen = a_screen();
+        screen.set_level(9);
+        assert_eq!(screen.level(), 3);
+    }
+
+    #[test]
+    fn the_tab_bar_can_be_off_while_the_mode_row_stays() {
+        let mut screen = a_screen();
+        screen.set_level(2);
+        screen.set_tab_bar(false);
+        let drawing = screen.draw();
+        assert!(drawing.contains("VISUAL"), "the mode row stays: {:?}", drawing);
+        assert!(drawing.contains("[main]") == false, "the tab bar is gone: {:?}", drawing);
     }
 }

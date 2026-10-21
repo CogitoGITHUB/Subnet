@@ -54,7 +54,7 @@ that way.
 | The agent opens here, with the pane's context attached | Implemented and verified |
 | The MCP surface: sessions, records, send | Implemented and verified |
 | The key routing between the multiplexer and the editor | In progress: the routes are named, the walk with the editor in a pane is owed |
-| The dev mode: work mode, the bake, the last good | Planned (TODO item 7) |
+| The dev mode: work mode, the bake, the last good | Implemented and verified: the config is reloaded live, and the bake keeps the last good |
 | Select and send to both agents, with the context | Planned (TODO item 8) |
 | The Television channels | Implemented and verified: three read-only channels, and television reads all three |
 | The screen's own rows and the levels (`l` and `L`) | Implemented and verified: the mode row, the specifics, the events, the hints, and level 0 |
@@ -284,6 +284,50 @@ and `../contract/structured-records.org`.
 The client and the holder are versioned together by the two contract constants they
 report: the event contract and the holder contract. A client refuses a holder that speaks
 a different contract rather than guessing.
+
+## The dev mode
+
+The multiplexer works from source, and its config is read live. The config file is JSON
+and it holds the values the client honors today:
+
+```json
+{ "level": 2, "tab-bar": true }
+```
+
+`level` is how much of the screen's own furniture is drawn (0 draws none of it, 3 is the
+most) and `tab-bar` says whether the tab bar is drawn with the rest.
+
+Where the file comes from, in order: the file named by `AIU_MULTIPLEXER_CONFIG`, then
+`$XDG_CONFIG_HOME/aiu-multiplexer/config.json`, then `$HOME/.config/aiu-multiplexer/config.json`,
+then the baked defaults in the state directory, then the built-in defaults. The client
+prints its start with the config it runs with:
+
+```
+client: work mode, the config from /root/.config/aiu-multiplexer/config.json
+```
+
+A change to the file is in force WITHOUT a restart: the client looks at the file on every
+turn of its own loop (the file's write time and its length), and a file that does not
+parse leaves the values in force and says why in the message line. There is no timer and
+no watcher anywhere in here — the loop turns on an event, and that is when the file is
+read.
+
+The bake makes the config into first-class defaults in a generated file, so a program
+that reads no user file at startup still carries them:
+
+```bash
+cd "AIU TERMINAL MULTIPLEXER/multiplexer"
+CARGO_TARGET_DIR=/tmp/opencode/mux-target cargo build --offline
+/tmp/opencode/mux-target/debug/mux-bake --state-dir /tmp/aiu-session
+```
+
+The bake reads the file back and compares it with what was written: a bake that does not
+read back is not good, and the last good bake stays the last good. The bake is manual —
+the owner runs it when they decide, and it says what it did.
+
+The proof on the phone is `tools/devmode-probe/probe.nu`: one running client takes a
+change in force without a restart, and a broken config does not take the last good's
+place.
 
 ## Dependencies and integration
 

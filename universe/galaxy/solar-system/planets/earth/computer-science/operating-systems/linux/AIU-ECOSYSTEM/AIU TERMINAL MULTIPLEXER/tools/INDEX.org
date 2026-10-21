@@ -17,6 +17,9 @@
   - panes-probe/probe.nu — the phone proof of the panes: a layout opens its
     panes, every pane's shell is alive, and each pane's output is recorded
     under that pane's own name
+  - devmode-probe/probe.nu — the phone proof of the dev mode: one running
+    client takes a change to the config in force without a restart, and the
+    bake keeps the last good
   - screen-probe/probe.nu — the phone proof of the screen: the panes are
     drawn on one terminal, the mode line says the mode, the keymap explorer
     opens on Space and shows the keys, and a key in insert mode reaches the

@@ -20,6 +20,12 @@ path = "src/client/client.rs"
 name = "mux-mcp"
 path = "src/agents/mcp.rs"
 
+# The bake, run by hand: the devloop area is below the client and the holder,
+# and the command is its only surface.
+[[bin]]
+name = "mux-bake"
+path = "src/devloop/bake_command.rs"
+
 [dependencies]
 # The only two crates this phone can fetch: the offline registry cache holds
 # nothing else (see AIU-ECOSYSTEM/WHEN-ON-LAPTOP.org).

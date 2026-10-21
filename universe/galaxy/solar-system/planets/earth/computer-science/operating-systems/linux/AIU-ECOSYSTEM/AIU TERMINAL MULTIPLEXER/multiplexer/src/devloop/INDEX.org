@@ -1,0 +1,31 @@
+#+TITLE: INDEX — AIU TERMINAL MULTIPLEXER/multiplexer/src/devloop/
+# One job: list every file in this area and the single job of each.
+# Status: current; updated in the same commit as any change in this area.
+
+* Files
+# one line per file: its name, then the single job it performs.
+
+  - INDEX.org — this index: every file of the devloop area and its one job
+  - config.rs — the config: the values the client honors, where the file is
+    read from, and whether it changed since the screen last looked
+  - bake.rs — the bake: the config in force becomes the baked defaults, and
+    the last good is kept only when the bake reads back
+  - bake_command.rs — the bake from the command line: run it once, and say
+    what it did
+  - last_good.rs — the last good bake: the path of the last build that was
+    good, and the answer whether a candidate may take its place
+
+* The area
+# what the area is and what it owes.
+# The work mode loads the config live from the source: the file is read
+# at the start and looked at again on every turn of the client's own
+# loop, so an edit to the file is seen without a restart. The bake makes
+# the config into first-class defaults in a generated file, so a baked
+# program carries them inside it and needs no user file at startup.
+#
+# There is NO timer and NO watcher in here: the client asks when its own
+# loop turns, and the rebuild is manual — the owner runs the bake when
+# they decide, and it says what it did when it is done.
+#
+# The area is BELOW the client, so it may not require it: the config is
+# read from a path and the bake takes a state directory as an argument.
