@@ -8,7 +8,9 @@
 // There is no modifier in here: no Control, no Alt, no Meta, and no prefix
 // chord. The keys are the ordinary keys of the keyboard, and the sequences
 // are ordinary keys one after another. A Control key that the owner presses
-// belongs to the program in the pane, not to the multiplexer.
+// belongs to the program in the pane, not to the multiplexer — the one
+// exception is the reserved prefix, and that one is the client's, not this
+// table's (D-027).
 
 /// Mode is whose keys these are.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]

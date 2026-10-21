@@ -28,3 +28,6 @@
     selection, the command record and the why travel in one bundle to the
     multiplexer's own agent and to the editor's agent, and the seam holds a
     secret out
+  - routing-probe/probe.nu — the phone proof of the routing walk: a key
+    reaches the program in the focused pane first, the reserved prefix stays
+    the multiplexer's in every mode, and the walk needs no mouse

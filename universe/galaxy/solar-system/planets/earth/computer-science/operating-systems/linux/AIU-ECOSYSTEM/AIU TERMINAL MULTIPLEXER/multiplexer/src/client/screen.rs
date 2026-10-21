@@ -26,6 +26,11 @@ const ESCAPE: u8 = 0x1b;
 const ENTER: u8 = 0x0d;
 /// BACKSPACE takes the last character off the command line.
 const BACKSPACE: u8 = 0x7f;
+/// RESERVED_PREFIX is the escape hatch: the multiplexer keeps it in every
+/// mode, so the owner can reach the multiplexer's own keys while a program
+/// in the focused pane has the keyboard. Every other key in Insert belongs
+/// to that program (rule 06).
+const RESERVED_PREFIX: u8 = 0x02;
 /// KEPT is how many lines of a pane's output the screen remembers.
 const KEPT: usize = 400;
 
@@ -114,6 +119,9 @@ pub struct Screen {
     /// above. The config asks for it; level 0 hides it whatever the
     /// config says.
     shows_tab_bar: bool,
+    /// reserved says that the owner pressed the reserved prefix: the next
+    /// key is the multiplexer's own, whatever mode stands.
+    reserved: bool,
 }
 
 impl Screen {
@@ -134,6 +142,7 @@ impl Screen {
             editor_program,
             message: String::new(),
             events: Vec::new(),
+            reserved: false,
             select: Selection::new(),
             ring: Vec::new(),
             keymap: Keymap::empty(),
@@ -597,8 +606,24 @@ impl Screen {
         let mut actions: Vec<Action> = Vec::new();
         let mut at = 0;
         while at < bytes.len() {
+            // The reserved prefix is the multiplexer's own in every mode:
+            // the next key is read in the root map, whatever stands.
+            if self.reserved {
+                self.reserved = false;
+                let now = self.reserved_key(bytes[at]);
+                if !matches!(now, Action::Nothing) {
+                    actions.push(now);
+                }
+                at += 1;
+                continue;
+            }
             match self.mode {
                 Mode::Insert => {
+                    if bytes[at] == RESERVED_PREFIX {
+                        self.reserved = true;
+                        at += 1;
+                        continue;
+                    }
                     // The keys belong to the program in the pane: the whole
                     // run of them goes as it was typed. A lone Escape leaves
                     // Insert, and it is not sent on.
@@ -610,6 +635,9 @@ impl Screen {
                                 end += 3;
                                 continue;
                             }
+                            break;
+                        }
+                        if bytes[end] == RESERVED_PREFIX {
                             break;
                         }
                         end += 1;
@@ -707,6 +735,24 @@ impl Screen {
                 }
                 Action::Nothing
             }
+        }
+    }
+
+    /// reserved_key reads one key that came after the reserved prefix: it is
+    /// the multiplexer's own, read in the root map whatever mode stands, so
+    /// the owner reaches the multiplexer from inside a program that has the
+    /// keyboard.
+    fn reserved_key(&mut self, key: u8) -> Action {
+        match self.keymap.resolve(Mode::Visual, key) {
+            Resolution::Command(command) => self.run(command),
+            Resolution::Map(context) => {
+                self.keymap.open_map(context);
+                self.show_explorer();
+                Action::Nothing
+            }
+            Resolution::Pending => Action::Nothing,
+            Resolution::Pass => Action::Nothing,
+            Resolution::Ignore => Action::Nothing,
         }
     }
 

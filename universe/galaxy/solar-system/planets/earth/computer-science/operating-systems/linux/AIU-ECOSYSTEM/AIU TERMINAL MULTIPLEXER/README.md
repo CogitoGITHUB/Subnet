@@ -53,7 +53,7 @@ that way.
 | The keymap explorer (Space opens it) | Implemented and verified |
 | The agent opens here, with the pane's context attached | Implemented and verified |
 | The MCP surface: sessions, records, send | Implemented and verified |
-| The key routing between the multiplexer and the editor | In progress: the routes are named, the walk with the editor in a pane is owed |
+| The key routing between the multiplexer and the editor | Implemented and verified: a key reaches the focused pane's program first, and the reserved prefix stays the multiplexer's in every mode |
 | The dev mode: work mode, the bake, the last good | Implemented and verified: the config is reloaded live, and the bake keeps the last good |
 | Select and send to both agents, with the context | Implemented and verified: the selection, the command record and the why travel in one bundle to every agent pane that is open |
 | The Television channels | Implemented and verified: three read-only channels, and television reads all three |
