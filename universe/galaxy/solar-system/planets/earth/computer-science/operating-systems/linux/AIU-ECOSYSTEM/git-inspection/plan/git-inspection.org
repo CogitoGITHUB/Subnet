@@ -1,0 +1,94 @@
+#+TITLE: The Git inspection layer
+# One job: the one read-only Git model that the text editor and the terminal
+# multiplexer both read, and the boundary that keeps it read-only.
+# Status: written 2026-10-21 from the owner's request; the code lands with
+# the items it names.
+
+* The assessment
+# what the two trees already have, and what they do not.
+  - The editor is Racket with a Rust hot path beside it: the join area
+    carries one line of JSON each way over files, and the Racket side
+    reaches the Rust side through it (=editor/src/join/=). The editor owns
+    buffers, tabs, a point and a selection (=editor/src/commands/commands.rkt=),
+    and its keys are data (=editor/src/routes/keymaps.rkt=).
+  - The multiplexer is Rust: the holder owns the session, its panes and its
+    log; the client is a thin screen with its keys in one table
+    (=multiplexer/src/client/keymap.rs=).
+  - The workspace engine (=AIU-ECOSYSTEM/workspace=) is the one model both
+    programs read, and it is Rust with the same two crates.
+  - Nothing in either tree reads Git. There is no second parser to keep in
+    step, so there is nothing to reuse and nothing to break.
+
+* Where the layer lives, and why
+# the one place the model and the parser are.
+  - The layer is a Rust package of its own: =AIU-ECOSYSTEM/git-inspection/=.
+  - The multiplexer uses it as a library inside its own process, the way it
+    will use the workspace engine.
+  - The editor uses it through the join seam it already has: its Rust hot
+    path links the layer and answers over the file wire, so the Racket side
+    never runs Git and never keeps a second copy of the rules.
+  - The layer is Rust because the multiplexer is Rust and frozen to two
+    crates, and because the editor's seam is already the place where the
+    two languages meet. One implementation, two consumers, one meaning.
+
+* The read-only boundary
+# what the layer may do, and how the boundary is kept.
+  - The layer may only run the commands it names itself. The command is a
+    typed choice, never a string the caller passes through, so a mutating
+    Git command cannot even be spelled.
+  - Every command runs with a structured argument list and an explicit
+    working directory. A path is never interpolated into a command line,
+    and no shell is ever involved.
+  - The commands are: =rev-parse=, =status --porcelain=v2 -z=,
+    =worktree list --porcelain -z=, =for-each-ref=, =log=, =show=,
+    =diff=, =blame=, =cat-file=. Every one of them reads.
+  - No command reaches a remote. The counts of ahead and behind come from
+    the local refs, so a branch whose upstream ref is not here is UNKNOWN
+    and never "up to date".
+  - A change of state is a different program: a future workflow layer with
+    declared permissions, not a call into this one.
+
+* The model
+# the states, and what each one is derived from.
+  - The working tree of a file: clean, modified, added, deleted, renamed,
+    copied, untracked, a type change, conflicted, unknown.
+  - The index of a file: unchanged, added, modified, deleted, renamed,
+    copied, unmerged, unknown.
+  - The buffer of the editor: the same as the file, unsaved changes,
+    unsaved changes that overlap a Git change, or a comparison that is not
+    available. A buffer is never saved to find out.
+  - The branch: on a branch, detached, the upstream there or not, ahead,
+    behind, diverged, together, or unknown.
+  - The freshness: fresh, refresh pending, stale, failed, unsupported.
+  - These are separate fields and they are never collapsed: a changed file
+    is not an unpushed commit, and a clean file on a branch with unpushed
+    commits is clean.
+
+* The worktrees
+# what a worktree is, and what it is not.
+  - A repository and its linked worktrees share one object database. The
+    model says so: the repository holds the common directory, and every
+    worktree names the branch or the commit it stands on.
+  - A worktree is not a terminal, a tab, a buffer or a project. The
+    multiplexer keeps those apart, and the Git layer never mixes them.
+
+* The plan
+# the stages, in the order they must land.
+  1. The layer: the command seam, the model, the discovery, the status, the
+     branch and the divergence, the diff and the hunks, the history, the
+     blame, the worktrees, and the tests against real repositories.
+  2. The editor: the layer over the join seam, the status of the file and
+     the repository, the line indicators, the diff views, the history, and
+     the keymap group.
+  3. The multiplexer: the layer in the client, the worktree overview, the
+     changed files, the diffs, the branch and the commits, and the keymap
+     group.
+  4. The consistency: the two programs read the same states, the tabs keep
+     their own meaning, the read-only boundary is proved, and the gates run.
+
+* What the phone can do
+# what is measured here and what waits.
+  - Git 2.53.0 is on this phone, and it has the porcelain v2 status and the
+    porcelain worktree list. The layer asks for nothing newer.
+  - The tests build real repositories in a temporary directory and check
+    the states against what Git says.

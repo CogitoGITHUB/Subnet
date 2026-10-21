@@ -1,0 +1,26 @@
+[package]
+name = "git-inspection"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+# The Git inspection layer: the one read-only model of a repository that the
+# text editor and the terminal multiplexer both read.
+#
+# It is a library first, so the multiplexer uses it inside its own process,
+# and a program second, so the editor reaches it over the join seam that
+# already carries the two languages (D-008).
+
+[lib]
+name = "git_inspection"
+path = "src/lib.rs"
+
+[[bin]]
+name = "git-inspection"
+path = "src/bin/git-inspection.rs"
+
+[dependencies]
+# The same two crates the multiplexer already fetches: the phone's offline
+# registry holds nothing else (see AIU-ECOSYSTEM/WHEN-ON-LAPTOP.org).
+libc = "0.2"
+serde_json = "1.0"

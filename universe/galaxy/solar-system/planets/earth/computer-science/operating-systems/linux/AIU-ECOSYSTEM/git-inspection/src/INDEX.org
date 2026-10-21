@@ -1,0 +1,27 @@
+#+TITLE: INDEX — AIU-ECOSYSTEM/git-inspection/src/
+# One job: list every file in this directory and the single job of each.
+# Status: current; updated in the same commit as any change in this directory.
+
+* Files
+# one line per file: its name, then the single job it performs.
+  - INDEX.org — the file register of the layer's code
+  - lib.rs — the layer's face: the repository, the status, the branches, the
+    worktrees, the diffs, the history and the blame
+  - command.rs — the process seam: the only Git commands this layer may run,
+    and the guard that stops one that overruns
+  - model.rs — the states: the working tree, the index, the buffer, the head,
+    the divergence and the freshness, and the marks both programs show
+  - status.rs — the porcelain v2 status of a worktree, read as the model
+  - branch.rs — the local branches, their upstream, and how far they are from
+    it
+  - worktrees.rs — the working trees of one repository, and the branch or
+    commit each stands on
+  - diff.rs — the hunks of one comparison, and the lines that changed
+  - history.rs — the commits, what they said, and the files they touched
+  - repositories.rs — the real repositories the tests are built on
+
+* Subdirectories
+# one line per subdirectory and what it holds; each has its own index.
+  - bin/ — the one-shot program of the layer
+  - bin/git-inspection.rs — the program the editor reaches over the join
+    seam: one request in a file, one answer in a file

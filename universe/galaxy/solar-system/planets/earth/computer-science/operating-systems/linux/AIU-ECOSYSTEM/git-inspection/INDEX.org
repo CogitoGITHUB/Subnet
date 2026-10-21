@@ -1,0 +1,31 @@
+#+TITLE: INDEX — AIU-ECOSYSTEM/git-inspection/
+# One job: list every file and directory in this package and the single job
+# of each.
+# Status: current; updated in the same commit as any change in the package.
+
+* What this package is
+# one paragraph: what it is for, and what it is not.
+  The Git inspection layer: the one read-only model of a repository that the
+  text editor and the terminal multiplexer both read. It owns the
+  discovery, the commands, the parsing, the states and the freshness. It
+  changes nothing: it never stages, commits, checks out, merges, stashes,
+  fetches, pushes or touches a worktree, and no command it can run would
+  do any of those. A change of state is a different program, with declared
+  permissions.
+
+  The design it follows is in =plan/git-inspection.org=.
+
+* Files
+# one line per file: its name, then the single job it performs.
+  - INDEX.org — the file register of the Git inspection layer
+  - Cargo.toml — the crate manifest: the library, the one-shot program, and
+    the two crates the phone's registry holds
+  - plan/ — the design of the layer, written before the code
+  - plan/git-inspection.org — the assessment of the two trees, the read-only
+    boundary, the model, the worktrees, and the order the stages land in
+  - src/ — the code of the layer, one module per job
+
+* Subdirectories
+# one line per subdirectory and what it holds; each has its own index.
+  - src/ — the layer's own modules, and the program the editor reaches
+  - plan/ — the design, and the reasons behind it
