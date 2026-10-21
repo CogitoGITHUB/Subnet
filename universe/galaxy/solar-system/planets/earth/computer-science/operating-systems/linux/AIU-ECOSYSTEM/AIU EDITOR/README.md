@@ -58,7 +58,7 @@ the one-way lint and the language-split lint keep every other area clean.
 | The agent opens beside the editor | Planned (TODO item 18) |
 | The editor's own keymap explorer | Planned (TODO item 15) |
 | The workspace engine joins the editor | Planned (TODO item 20) |
-| The Git inspection layer inside the editor | Implemented and verified: the facts cross the join seam, and the layer only reads |
+| The Git inspection layer inside the editor | Implemented and verified: the facts and the diff cross the join seam, and the layer only reads |
 | The kit conformance across both programs | In progress: the editor's clauses hold, the shared checklist does not close |
 | The done line | In progress: the editor's clauses hold, the rest is named and blocked |
 
@@ -255,6 +255,23 @@ git-unstaged: 6
 git-untracked: 1
 ```
 
+**The diff of a file.** The editor asks the same layer for the diff, and the answer
+names the comparison, so the working tree against the index and the index against HEAD
+are never shown as one thing. The hunks say where they are on both sides, and the lines
+that changed carry the layer's marks: `+` for an added line, `-` for a removed one, and a
+space for a context line.
+
+```
+$ racket editor/src/entry/cli.rkt git-diff editor/src/entry/dispatch.rkt
+the comparison: working tree against index
+the file: universe/.../AIU EDITOR/editor/src/entry/dispatch.rkt
+the hunks: 2
+@@ -356,1 +356,27 @@
+-;; edit-file opens the file the user named and runs the editing session.
++;; git-diff-verb asks what Git says differs in the file, and prints the
+...
+```
+
 **The plugin system.** A plugin is a package with a manifest. pm owns the package; the
 editor owns how it talks to it, and the editor **never installs anything by itself**: it
 asks pm, and pm's rule is the editor's rule. The verbs are `plugin`, `plugin-register`,
@@ -270,6 +287,7 @@ racket editor/src/entry/cli.rkt routes          # the routing walk
 racket editor/src/entry/cli.rkt keys LAYER HEX… # the name of each key
 racket editor/src/entry/cli.rkt dashboard FILE   # the dashboard, one line per row
 racket editor/src/entry/cli.rkt git FILE          # the Git facts of the file
+racket editor/src/entry/cli.rkt git-diff FILE     # the hunks of the file, and the comparison they are
 racket editor/src/entry/cli.rkt tasks           # the task table
 racket editor/src/entry/cli.rkt task FILE NAME WORDS…
 racket editor/src/entry/cli.rkt task --dry-run FILE NAME WORDS...

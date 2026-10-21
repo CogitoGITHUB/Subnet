@@ -28,7 +28,7 @@
 ;; usage says how the program is called, and stops.
 (define (usage why)
   (print-line (format "the editor: ~a" why))
-  (print-line "usage: racket cli.rkt edit FILE | routes | tasks | task | keys | dashboard | git | bake | send | agent | permit")
+  (print-line "usage: racket cli.rkt edit FILE | routes | tasks | task | keys | dashboard | git | git-diff | bake | send | agent | permit")
   ;; the refusal code is frozen: the program refused, and it said why
   (exit exit-refusal))
 

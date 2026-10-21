@@ -353,7 +353,33 @@
     (print-line (format "~a: ~a" (symbol->string key)
                               (hash-ref data key)))))
 
-;; edit-file opens the file the user named and runs the editing session.
+;; git-diff-verb asks what Git says differs in the file, and prints the
+;; hunks: the place of each hunk on both sides, and the lines that
+;; changed with the layer's own marks.
+;;
+;; The comparison is named in the answer, so the working tree against the
+;; index and the index against HEAD are never shown as one thing. The
+;; buffer is never saved to find out, and nothing is changed.
+(define (git-diff-verb args)
+  (define file (if (null? args) "" (car args)))
+  (define path (path->complete-path (if (string=? file "") "untitled" file)))
+  (define answer (ask-hot "git-diff" (hasheq 'file (path->string path))))
+  (define data (response-data answer))
+  (define text (hash-ref data 'git-diff-text ""))
+  (if (string=? text "")
+      (for ([key (in-list (sort (hash-keys data)
+                                (lambda (one other)
+                                  (string<? (symbol->string one)
+                                            (symbol->string other)))))])
+        (print-line (format "~a: ~a" (symbol->string key)
+                                  (hash-ref data key))))
+      (begin
+        (print-line (format "the comparison: ~a"
+                            (hash-ref data 'git-diff-comparison "the working tree against the index")))
+        (print-line (format "the file: ~a" (hash-ref data 'git-diff-file "")))
+        (print-line (format "the hunks: ~a" (hash-ref data 'git-diff-hunks "0")))
+        (for-each print-line (string-split text "\n" #:trim? #f)))))
+
 ;; checkpoint-verb makes a checkpoint of a tree: the state the tree is put
 ;; back to when an agent does something the human did not want. The first
 ;; word is the tree, the rest is the why.
@@ -403,6 +429,7 @@
         "keys" keys-verb
         "dashboard" dashboard-verb
         "git" git-verb
+        "git-diff" git-diff-verb
         "bake" bake-verb
         "send" send-verb
         "agent" agent-verb

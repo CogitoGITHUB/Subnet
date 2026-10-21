@@ -58,3 +58,7 @@ pub const OP_SELECT: &str = "select";
 /// the distance, the counts, and the file's own state. The shared layer
 /// is asked, and it only reads.
 pub const OP_GIT: &str = "git";
+
+/// OP_GIT_DIFF answers the diff of a file: which comparison it is, and
+/// the hunks. The shared layer is asked, and it only reads.
+pub const OP_GIT_DIFF: &str = "git-diff";

@@ -12,6 +12,7 @@
 
 use std::path::{Path, PathBuf};
 
+use git_inspection::command::Comparison;
 use git_inspection::Git;
 
 /// facts answers the Git facts of a file: the repository it is in, the
@@ -74,6 +75,62 @@ pub fn facts(file: &Path) -> Vec<(String, String)> {
         }
     }
     out
+}
+
+/// diff answers the diff of one file: which comparison it is, how many
+/// hunks it holds, and the hunks themselves as text.
+///
+/// The comparison is named, so the working tree against the index and the
+/// index against HEAD are never shown as one thing. The marks are the
+/// layer's marks, so the editor and the multiplexer say the same thing
+/// about the same line.
+pub fn diff(file: &Path) -> Vec<(String, String)> {
+    let file = std::fs::canonicalize(file).unwrap_or_else(|_| file.to_path_buf());
+    let file = file.as_path();
+    let directory = match file.parent() {
+        Some(parent) if !parent.as_os_str().is_empty() => parent.to_path_buf(),
+        _ => PathBuf::from("."),
+    };
+    let git = match Git::open(&directory) {
+        Ok(git) => git,
+        Err(why) => {
+            return vec![
+                ("git-diff-state".to_string(), "unknown".to_string()),
+                ("git-diff-why".to_string(), why),
+            ]
+        }
+    };
+    let wanted = relative_to(git.root(), file);
+    let hunks = match git.diff(Some(&wanted), Comparison::WorkingVsIndex) {
+        Ok(hunks) => hunks,
+        Err(why) => {
+            return vec![
+                ("git-diff-state".to_string(), "unknown".to_string()),
+                ("git-diff-why".to_string(), why),
+            ]
+        }
+    };
+    let mut text = String::new();
+    for hunk in &hunks {
+        text.push_str(&format!(
+            "@@ -{},{} +{},{} @@\n",
+            hunk.old_start, hunk.old_lines, hunk.new_start, hunk.new_lines
+        ));
+        for line in &hunk.lines {
+            text.push_str(line.kind.mark());
+            text.push_str(&line.text);
+            text.push('\n');
+        }
+    }
+    vec![
+        (
+            "git-diff-comparison".to_string(),
+            Comparison::WorkingVsIndex.name().to_string(),
+        ),
+        ("git-diff-file".to_string(), wanted),
+        ("git-diff-hunks".to_string(), hunks.len().to_string()),
+        ("git-diff-text".to_string(), text),
+    ]
 }
 
 /// relative_to answers a path as the repository names it: the paths of

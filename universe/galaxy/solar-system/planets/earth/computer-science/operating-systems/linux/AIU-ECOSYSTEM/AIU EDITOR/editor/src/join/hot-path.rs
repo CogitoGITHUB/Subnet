@@ -70,6 +70,11 @@ fn answer_for(request: &wire_json::Request) -> (bool, Vec<(String, String)>) {
     let op = request.op.as_str();
 
     match op {
+        rust_exports::OP_GIT_DIFF => {
+            // The diff of one file, in the layer's own marks.
+            let path = std::path::Path::new(&file);
+            (true, git_facts::diff(path))
+        }
         rust_exports::OP_GIT => {
             // The Git facts of the file's own directory. The shared layer
             // is asked, and it only reads.
