@@ -1,0 +1,26 @@
+# tm-records: the records of one multiplexer session, read-only.
+#
+# The holder writes one JSON object per line in its event log, and that
+# log is the multiplexer's own data. This channel browses it and does
+# nothing else: no record is written, no session is touched, and there is
+# no action here, because a picker selects and never executes.
+#
+# TM_STATE_DIR is required: it names the holder's state directory, and
+# without it the channel lists nothing.
+
+[metadata]
+name = "tm-records"
+description = "The records of a multiplexer session: what happened, and who did it"
+requirements = ["nu"]
+
+[source]
+command = "open --raw ($env.TM_STATE_DIR | path join 'events.log') | from json --objects | select seq what who | to tsv --noheaders"
+shell = "nu"
+
+[preview]
+command = "open --raw ($env.TM_STATE_DIR | path join 'events.log') | from json --objects | where ($it.seq | into string) == '{split:\\t:0}' | to json --raw"
+shell = "nu"
+
+[ui.preview_panel]
+size = 55
+header = "{}"

@@ -1,0 +1,29 @@
+# tm-panes: the panes of one multiplexer session, read-only.
+#
+# The layout file is the multiplexer's own data: it names every pane of a
+# session, the tab it sits in, the program it runs and the size it asks
+# for. This channel browses it and does nothing else: no pane is started,
+# no layout is written, and there is no action here, because a picker
+# selects and never executes.
+#
+# TM_STATE_DIR is required: it names the holder's state directory, and
+# the layout is looked for in it under the name layout.json. TM_LAYOUT is
+# optional: it names the layout file directly, for the sessions whose
+# layout lives somewhere else.
+
+[metadata]
+name = "tm-panes"
+description = "The panes of a multiplexer session: the name, the tab, the program"
+requirements = ["nu"]
+
+[source]
+command = "open --raw (($env | get -o TM_LAYOUT) | default (($env.TM_STATE_DIR | path join 'layout.json'))) | from json | get panes | select name tab program cols rows | to tsv --noheaders"
+shell = "nu"
+
+[preview]
+command = "open --raw (($env | get -o TM_LAYOUT) | default (($env.TM_STATE_DIR | path join 'layout.json'))) | from json | get panes | where name == '{split:\\t:0}' | to json --raw"
+shell = "nu"
+
+[ui.preview_panel]
+size = 55
+header = "{}"
