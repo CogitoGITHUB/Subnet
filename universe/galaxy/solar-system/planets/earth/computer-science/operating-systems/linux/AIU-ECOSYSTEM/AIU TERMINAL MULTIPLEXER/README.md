@@ -61,7 +61,7 @@ that way.
 | The workspace engine inside the multiplexer | Implemented and verified: the key group, the panel, the holder's seam and the mode line |
 | Asking the editor for what the editor owns | Implemented and verified: the ask goes over the editor's own server and the answer is the editor's own words |
 | The Git inspection layer inside the multiplexer | Implemented and verified: the key group, the panel and the holder's seam |
-| The screen selection (the biomechanical model) | In progress: the multiplexer side landed; the editor's side and the wheel are owed |
+| The screen selection (the biomechanical model) | Implemented and verified: the multiplexer side, the view that scrolls with the page keys, and the pick that restarts over the fresh text; the editor's side is owed |
 | The kit conformance | Implemented and verified: the six proofs run as a gate stage, and the gate is green at 8 stages |
 | The done line | Planned (TODO item 12) |
 
@@ -131,6 +131,7 @@ prefix chord. A Control key the owner presses belongs to the program in the pane
 | `g` | the git: the overview, the changed files, the diff, the history, the branches, the worktrees |
 | `w` | the workspace: the workspaces and their projects, the project context, the opening of a project, the editor's own answer |
 | `l` `L` | hide or show one level of the screen's own rows |
+| `PageUp` `PageDown` | scroll the focused pane's view: one page is the height of that pane |
 
 **The keymap explorer.** Space opens it in visual mode. It is a panel over the panes, not
 a new screen. It shows the keys of the map it is showing, what each one means, whether it
@@ -181,7 +182,11 @@ program sends, and `p o` opens the agent beside the pane with the region in that
 The candidates are the visible text of the focused pane only: a line that has scrolled out
 of the pane cannot be picked, because it cannot be seen. The escape leaves the selection
 and does nothing else — no text is copied, no bundle is sent and no pane opens. The
-design, and what is still owed, are in `plan/screen-selection.org`.
+page keys scroll the focused pane's view while the pick runs, and the pick restarts over
+the fresh text: the point stands at the first line of the new window and the marks are
+gone, because a mark named a line of the old window. There is no wheel here: there is no
+mouse in this program, so the scroll is a key. The design, and what is still owed, are in
+`plan/screen-selection.org`.
 
 **The agent opens here.** One key in the focused pane opens OpenCode beside it, with that
 pane's context already attached: the tail of the pane's log, the shell, the place and the

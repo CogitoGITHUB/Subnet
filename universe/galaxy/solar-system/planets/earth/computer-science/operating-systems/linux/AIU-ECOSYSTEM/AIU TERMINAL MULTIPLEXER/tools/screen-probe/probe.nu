@@ -270,6 +270,45 @@ for a in "$@"; do echo "ARG $a"; done' | save --force $agent
     let odrawn = (last-drawing ($more.stdout | default ""))
     check "one level more shows the hints" ($odrawn | str contains "l:less") $"drawn=($odrawn | str length)"
 
+    # 13. the scroll: the wheel is refused, so the page keys scroll, and
+    #     the pick restarts over the fresh text. The pane says a hundred
+    #     numbered lines first, so a page is a page.
+    let many = (do -i {
+        ^printf 'i i=1; while [ $i -le 100 ]; do echo scroll-line-$i; i=$((i+1)); done\n' | ^$client --state-dir $state_dir --op screen
+    } | complete)
+    # The shell answers in its own time: the records are read again until
+    # the lines are there. Every wait ends on an event.
+    mut said = 0
+    mut tries = 0
+    while $said == 0 and $tries < 30 {
+        let again = (records $client $state_dir)
+        $said = ($again | where {|r| ($r | get -o outputs | default {} | get -o text | default "") | str contains "scroll-line-100" } | length)
+        $tries = $tries + 1
+    }
+    check "the pane said a hundred lines" ($said > 0) $"hits=($said)"
+
+    let paged = (do -i {
+        ^printf "\u{1b}[5~" | ^$client --state-dir $state_dir --op screen
+    } | complete)
+    let pgdrawn = (last-drawing ($paged.stdout | default ""))
+    check "the page key scrolls the view" ($pgdrawn | str contains "one page up") $"drawn=($pgdrawn | str length)"
+    check "the view shows the older words" (not ($pgdrawn | str contains "scroll-line-100")) $"drawn=($pgdrawn | str length)"
+    check "the view still shows the pane" ($pgdrawn | str contains "scroll-line-") $"drawn=($pgdrawn | str length)"
+
+    # the pick restarts over the fresh text: the mark named a line of the
+    # old window, and that line is not there any more
+    let marked = (do -i {
+        ^printf "vm\u{1b}[By" | ^$client --state-dir $state_dir --op screen
+    } | complete)
+    let mkdrawn = (last-drawing ($marked.stdout | default ""))
+    check "the pick copies a region over the visible text" ($mkdrawn | str contains "the region is copied") $"drawn=($mkdrawn | str length)"
+
+    let restarted = (do -i {
+        ^printf "vm\u{1b}[5~\u{1b}[By" | ^$client --state-dir $state_dir --op screen
+    } | complete)
+    let rsdrawn = (last-drawing ($restarted.stdout | default ""))
+    check "the pick restarts over the fresh text" ($rsdrawn | str contains "there is no region") $"drawn=($rsdrawn | str length)"
+
     # the holder goes away with the probe
     let pid_file = ($state_dir | path join "holder.pid")
     if ($pid_file | path exists) {

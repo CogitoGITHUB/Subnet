@@ -122,6 +122,11 @@ pub enum Command {
     LevelHide,
     /// LevelShow shows one level more of the screen's own rows.
     LevelShow,
+    /// PageUp scrolls the focused pane's view one page up: the older words.
+    PageUp,
+    /// PageDown scrolls the focused pane's view one page down: the newer
+    /// words.
+    PageDown,
     /// WorkspaceList shows the workspaces and their projects.
     WorkspaceList,
     /// WorkspaceContext shows the project context as it stands.
@@ -349,6 +354,20 @@ pub static ROOT: &[Binding] = &[
         need: Need::Always,
     },
     Binding {
+        keys: "PageUp",
+        bytes: b"\x1b[5~",
+        about: "the view one page up: the older words of the focused pane",
+        action: Action::Command(Command::PageUp),
+        need: Need::Always,
+    },
+    Binding {
+        keys: "PageDown",
+        bytes: b"\x1b[6~",
+        about: "the view one page down: the newer words of the focused pane",
+        action: Action::Command(Command::PageDown),
+        need: Need::Always,
+    },
+    Binding {
         keys: "L",
         bytes: b"L",
         about: "show one level more of the screen's own rows",
@@ -484,6 +503,20 @@ pub static SELECT: &[Binding] = &[
         bytes: b"po",
         about: "open the agent beside this pane, with the region",
         action: Action::Command(Command::SelectAgentHere),
+        need: Need::Always,
+    },
+    Binding {
+        keys: "PageUp",
+        bytes: b"\x1b[5~",
+        about: "the view one page up; the pick starts again over the fresh text",
+        action: Action::Command(Command::PageUp),
+        need: Need::Always,
+    },
+    Binding {
+        keys: "PageDown",
+        bytes: b"\x1b[6~",
+        about: "the view one page down; the pick starts again over the fresh text",
+        action: Action::Command(Command::PageDown),
         need: Need::Always,
     },
 ];

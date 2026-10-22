@@ -121,6 +121,17 @@ impl Selection {
         self.marks.pop();
     }
 
+    /// restart answers a selection that starts again over fresh text: the
+    /// point stands at the first line and the marks are gone.
+    ///
+    /// The text under the point changed, so the old mark names a line that
+    /// is not there any more: keeping it would name a region that cannot be
+    /// seen. The pick restarts over what the owner sees now.
+    pub fn restart(&mut self) {
+        self.point = (0, 0);
+        self.marks.clear();
+    }
+
     /// mark answers the anchor of the region: the newest mark, when there
     /// is one.
     pub fn mark(&self) -> Option<(usize, usize)> {

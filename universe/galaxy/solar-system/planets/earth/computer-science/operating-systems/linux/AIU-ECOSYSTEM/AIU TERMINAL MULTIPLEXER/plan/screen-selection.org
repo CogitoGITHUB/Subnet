@@ -25,8 +25,29 @@
     with the mark key twice: the tm's keymap reads one key at a time and has no prefix
     chord, so a second =m= would be a different key.
   - Still owed: the editor's side of the pick — the editor has no text view yet, so
-    there is nothing to pick there — and the wheel that scrolls the window while a pick
-    runs, because the tm has no mouse yet.
+    there is nothing to pick there. The wheel is not owed and never will be: it is
+    refused, and the scroll it did is a key (see "What landed on 2026-10-22").
+
+* What landed on 2026-10-22
+# the scroll the wheel did, and what it is here: a key.
+  - The tm's pane has a view that moves. The page keys (PageUp and PageDown) scroll it:
+    one page is the height of the focused pane, the view stops at the oldest page there
+    is, and the mode line says how far the view is from the tail of the pane's words.
+  - The scroll is the wheel's own work, and it is a key here: there is no mouse in this
+    program (rule 13), and the biomechanical layer's wheel is refused for that reason.
+    What the wheel did — scroll the window while a pick runs — is done by the key.
+  - The pick restarts over the fresh text, exactly as the biomechanical layer does it:
+    when the view moves, the text under the point is new text, so the point stands at
+    the first line of the fresh window and the marks are gone. A mark named a line of
+    the old window, and that line is not on the screen any more: a region that cannot
+    be seen is not a region.
+  - The window the pick sees and the window the tm draws are ONE window: the same
+    lines, read the same way. A line that is on the screen can be picked, and a line
+    that is not on the screen cannot.
+  - The proof is in the screen probe: the page key scrolls the view and the older words
+    come into sight, the pick copies a region over the visible text, and the same pick
+    with the page key in it finds no region — the mark is gone with the window it
+    named.
 
 * What the owner asked
 # the owner's words, in one line, and the shape it takes here.

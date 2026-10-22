@@ -59,6 +59,10 @@ pub struct PaneView {
     pub tab: String,
     pub weight: u16,
     pub lines: Vec<String>,
+    /// scroll is how many lines the view is back from the tail of the
+    /// pane's lines. Zero is the tail: the newest words. The page keys
+    /// move it, and the view shows the page the owner scrolled to.
+    pub scroll: usize,
 }
 
 /// Rect is one pane's place on the terminal: where it starts and how big it
@@ -259,11 +263,21 @@ impl Screen {
                         }
                     }
                 }
+                // The view of a pane keeps its place: the state arrives
+                // again and again, and a pane that jumped back to the tail
+                // every time would lose the page the owner scrolled to.
+                let scroll = self
+                    .panes
+                    .iter()
+                    .find(|held| held.name == name)
+                    .map(|held| held.scroll)
+                    .unwrap_or(0);
                 panes.push(PaneView {
                     name,
                     tab,
                     weight,
                     lines,
+                    scroll,
                 });
             }
         }
@@ -478,6 +492,77 @@ impl Screen {
         line
     }
 
+    /// window answers the lines of one pane that the screen shows: the tail
+    /// of the pane's words, or the page the owner scrolled to.
+    ///
+    /// The drawing and the pick read this one window, so a line that is on
+    /// the screen is a line that can be picked, and a line that is not on
+    /// the screen cannot be picked: it cannot be seen.
+    fn window(&self, index: usize, height: usize) -> Vec<String> {
+        let pane = match self.panes.get(index) {
+            Some(pane) => pane,
+            None => return Vec::new(),
+        };
+        let end = pane.lines.len().saturating_sub(pane.scroll);
+        let start = end.saturating_sub(height);
+        pane.lines[start..end].to_vec()
+    }
+
+    /// focus_height answers how many lines the focused pane shows.
+    fn focus_height(&self) -> usize {
+        let cols = self.cols.max(20);
+        let (top, area_rows) = self.area();
+        let rects = self.rects(cols, area_rows, top);
+        let members = self.tab_panes();
+        let at = match members.iter().position(|index| *index == self.focused) {
+            Some(at) => at,
+            None => return 0,
+        };
+        match rects.get(at) {
+            Some(rect) => rect.rows.saturating_sub(2) as usize,
+            None => 0,
+        }
+    }
+
+    /// scroll_view moves the view of the focused pane by one page: a page is
+    /// the height of that pane, and the view stops at the oldest page there
+    /// is.
+    ///
+    /// The wheel is refused (rule 13): there is no mouse in this program,
+    /// so the scroll is a key too, and the page keys are that key. The
+    /// answer says whether the view moved: a scroll that could not happen
+    /// is said, and not hidden.
+    fn scroll_view(&mut self, up: bool) -> bool {
+        let height = self.focus_height();
+        if height == 0 {
+            return false;
+        }
+        let index = self.focused;
+        let (total, current) = match self.panes.get(index) {
+            Some(pane) => (pane.lines.len(), pane.scroll),
+            None => return false,
+        };
+        let most = total.saturating_sub(height);
+        let next = if up {
+            current.saturating_add(height).min(most)
+        } else {
+            current.saturating_sub(height)
+        };
+        if let Some(pane) = self.panes.get_mut(index) {
+            pane.scroll = next;
+        }
+        next != current
+    }
+
+    /// scroll_distance answers how far the focused pane's view is from the
+    /// tail of its words.
+    fn scroll_distance(&self) -> usize {
+        self.panes
+            .get(self.focused)
+            .map(|pane| pane.scroll)
+            .unwrap_or(0)
+    }
+
     /// pane_lines answers the lines of one pane: its frame, its name, and
     /// what its program said.
     fn pane_lines(&self, index: usize, rect: &Rect, focused: bool) -> Vec<String> {
@@ -492,9 +577,7 @@ impl Screen {
         }
         top.push('+');
         lines.push(top);
-        let pane = &self.panes[index];
-        let start = pane.lines.len().saturating_sub(height);
-        let visible: Vec<String> = pane.lines[start..].to_vec();
+        let visible = self.window(index, height);
         // In the selection the region is shown in reverse video: the text
         // under the keys is the text that is selected.
         let visible = if focused && self.mode == Mode::Select {
@@ -554,7 +637,7 @@ impl Screen {
             Mode::Visual => {
                 let pending = self.keymap.pending_keys();
                 if pending.is_empty() {
-                    "Space:keys  i:type  ::command  l:less  L:more  q:leave".to_string()
+                    "Space:keys  i:type  ::command  l:less  L:more  pg:page  q:leave".to_string()
                 } else {
                     format!("{} …", pending)
                 }
@@ -562,7 +645,7 @@ impl Screen {
             Mode::Insert => "esc:visual".to_string(),
             Mode::Command => String::new(),
             Mode::Explorer => "esc:back  any key of the map".to_string(),
-            Mode::Select => "m:mark  y:copy  s:send  p o:agent  esc:leave".to_string(),
+            Mode::Select => "m:mark  y:copy  s:send  p o:agent  pg:page  esc:leave".to_string(),
         }
     }
 
@@ -926,13 +1009,39 @@ impl Screen {
                 self.message = format!("the level: {}", self.level);
                 Action::Nothing
             }
+            Command::PageUp => {
+                // The wheel is refused: there is no mouse here, so the
+                // scroll is a key, and this is that key.
+                if self.scroll_view(true) {
+                    self.message = format!(
+                        "the view is one page up: {} lines from the tail",
+                        self.scroll_distance()
+                    );
+                } else {
+                    self.message = "the view is at the oldest page: it did not move".to_string();
+                }
+                Action::Nothing
+            }
+            Command::PageDown => {
+                if self.scroll_view(false) {
+                    self.message = format!(
+                        "the view is one page down: {} lines from the tail",
+                        self.scroll_distance()
+                    );
+                } else {
+                    self.message = "the view is at the newest words: it did not move".to_string();
+                }
+                Action::Nothing
+            }
             Command::WorkspaceList => self.show_workspace("list"),
             Command::WorkspaceContext => self.show_workspace("context"),
             Command::AskEditor => {
                 // The editor is asked through its own server, and the ask
                 // takes as long as the editor takes to start. The owner is
                 // told that before the wait, never after it.
-                self.message = "the editor is being asked: its own server starts first, and that takes a while on this phone".to_string();
+                self.message =
+                    "the editor is being asked: its own server starts first, and that takes a while"
+                        .to_string();
                 Action::AskEditor
             }
             Command::WorkspaceOpen => {
@@ -1099,6 +1208,22 @@ impl Screen {
             Command::SelectCopyLine => return self.copy_line(&lines),
             Command::SelectSend => return self.send_region(&lines),
             Command::SelectAgentHere => return self.agent_here(&lines),
+            Command::PageUp | Command::PageDown => {
+                // The view scrolled, so the text under the point is fresh
+                // text: the pick starts again over it, and the mark that
+                // named a line of the old window is gone with it.
+                let up = command == Command::PageUp;
+                if self.scroll_view(up) {
+                    self.select.restart();
+                    self.message = format!(
+                        "the view scrolled; the pick starts again over the fresh text ({} back)",
+                        self.scroll_distance()
+                    );
+                } else {
+                    self.message =
+                        "the view did not move, so the pick stands where it stands".to_string();
+                }
+            }
             Command::LeaveSelect => {
                 self.mode = Mode::Visual;
                 self.message =
@@ -1126,12 +1251,7 @@ impl Screen {
             None => return Vec::new(),
         };
         let height = rect.rows.saturating_sub(2) as usize;
-        let pane = match self.panes.get(members[at]) {
-            Some(pane) => pane,
-            None => return Vec::new(),
-        };
-        let start = pane.lines.len().saturating_sub(height);
-        pane.lines[start..].to_vec()
+        self.window(members[at], height)
     }
 
     /// copy_region puts the region into the multiplexer's own ring, and
@@ -1729,6 +1849,7 @@ mod tests {
             tab: "main".to_string(),
             weight: 1,
             lines: Vec::new(),
+            scroll: 0,
         }];
         screen
     }
@@ -1760,5 +1881,55 @@ mod tests {
         let drawing = screen.draw();
         assert!(drawing.contains("VISUAL"), "the mode row stays: {:?}", drawing);
         assert!(drawing.contains("[main]") == false, "the tab bar is gone: {:?}", drawing);
+    }
+
+    /// a_screen_with_words is a screen whose focused pane said forty
+    /// numbered lines, so a page is a page and there is something to
+    /// scroll to.
+    fn a_screen_with_words() -> Screen {
+        let mut screen = a_screen();
+        screen.panes[0].lines = (1..=40).map(|at| format!("line {}", at)).collect();
+        screen
+    }
+
+    #[test]
+    fn the_page_key_scrolls_the_view_to_the_older_words() {
+        let mut screen = a_screen_with_words();
+        let before = screen.window(0, 6);
+        assert_eq!(before.first(), Some(&"line 35".to_string()));
+        assert!(screen.scroll_view(true), "the view moved");
+        let after = screen.window(0, 6);
+        assert_eq!(after.first(), Some(&"line 29".to_string()));
+        assert_eq!(after.last(), Some(&"line 34".to_string()));
+    }
+
+    #[test]
+    fn the_view_stops_at_the_oldest_page() {
+        let mut screen = a_screen_with_words();
+        let mut moved = true;
+        let mut pages = 0;
+        while moved {
+            moved = screen.scroll_view(true);
+            if moved {
+                pages = pages + 1;
+            }
+        }
+        assert!(pages > 0, "the view moved at least once");
+        assert_eq!(screen.scroll_distance(), 34);
+        let oldest = screen.window(0, 6);
+        assert_eq!(oldest.first(), Some(&"line 1".to_string()));
+    }
+
+    #[test]
+    fn the_pick_restarts_over_the_fresh_text() {
+        let mut screen = a_screen_with_words();
+        screen.mode = Mode::Select;
+        screen.select.right(&screen.select_lines());
+        screen.select.set_mark();
+        assert!(screen.select.mark().is_some(), "the mark stands");
+        assert!(screen.scroll_view(true), "the view moved");
+        screen.select.restart();
+        assert_eq!(screen.select.point, (0, 0));
+        assert!(screen.select.mark().is_none(), "the mark is gone");
     }
 }
