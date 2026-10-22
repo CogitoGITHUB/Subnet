@@ -128,6 +128,9 @@ pub enum Command {
     WorkspaceContext,
     /// WorkspaceOpen asks for the name of the project to open.
     WorkspaceOpen,
+    /// AskEditor asks the editor what it owns, through the editor's own
+    /// server.
+    AskEditor,
     /// EnterSelect opens the selection on the focused pane.
     EnterSelect,
     /// SelectLeft moves the point one character to the left.
@@ -378,6 +381,13 @@ pub static WORKSPACE: &[Binding] = &[
         bytes: b"wo",
         about: "open the project context: the name of the project follows",
         action: Action::Command(Command::WorkspaceOpen),
+        need: Need::Always,
+    },
+    Binding {
+        keys: "w e",
+        bytes: b"we",
+        about: "ask the editor what it owns, through the editor's own server",
+        action: Action::Command(Command::AskEditor),
         need: Need::Always,
     },
 ];

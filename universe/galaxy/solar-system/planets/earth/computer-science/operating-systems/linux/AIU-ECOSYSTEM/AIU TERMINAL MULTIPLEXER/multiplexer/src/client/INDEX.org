@@ -8,3 +8,5 @@
   - INDEX.org — the client area: the thin screen that attaches to a holder
   - client.rs — the client: attaches, asks, reads and detaches; it holds
     nothing of its own
+  - editor.rs — the editor's panel: the editor's own words as the
+    multiplexer shows them

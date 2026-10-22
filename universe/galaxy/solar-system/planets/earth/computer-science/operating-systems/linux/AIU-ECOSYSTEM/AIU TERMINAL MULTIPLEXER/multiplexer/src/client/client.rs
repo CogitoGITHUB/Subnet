@@ -19,6 +19,7 @@ mod config;
 
 mod git;
 mod workspace;
+mod editor;
 mod keymap;
 mod screen;
 mod select;
@@ -70,6 +71,7 @@ fn run(args: &[String]) -> Result<i32, String> {
             CLIENT_NAME,
             options.agent_program.clone(),
             options.editor_program.clone(),
+            options.editor_mcp.clone(),
             in_force,
         );
         wire::close(fd);
@@ -221,6 +223,7 @@ struct Options {
     pane: String,
     agent_program: String,
     editor_program: String,
+    editor_mcp: Vec<String>,
     since: u64,
     count: Option<u64>,
 }
@@ -233,6 +236,7 @@ impl Options {
         let mut pane = String::new();
         let mut agent_program = "opencode".to_string();
         let mut editor_program = "editor".to_string();
+        let mut editor_mcp: Vec<String> = Vec::new();
         let mut since: u64 = 0;
         let mut count: Option<u64> = None;
         let mut at = 0;
@@ -267,6 +271,14 @@ impl Options {
                     editor_program = value;
                     at += 2;
                 }
+                "--editor-mcp-arg" => {
+                    // The command that starts the editor's own server: the
+                    // program first, and then what it runs. It is given one
+                    // word at a time, so a path with a space in it is still
+                    // one path.
+                    editor_mcp.push(value);
+                    at += 2;
+                }
                 "--since" => {
                     since = value
                         .parse()
@@ -283,7 +295,7 @@ impl Options {
                 }
                 "--help" => {
                     println!(
-                        "client --state-dir DIR [--op state|attach|detach|read|send|send-agent|screen] [--data TEXT] [--pane NAME] [--agent-program PROGRAM] [--since N] [--count N]"
+                        "client --state-dir DIR [--op state|attach|detach|read|send|send-agent|editor|screen] [--data TEXT] [--pane NAME] [--agent-program PROGRAM] [--editor-mcp-arg WORD] [--since N] [--count N]"
                     );
                     std::process::exit(0);
                 }
@@ -298,6 +310,7 @@ impl Options {
             pane,
             agent_program,
             editor_program,
+            editor_mcp,
             since,
             count,
         })
@@ -334,6 +347,12 @@ impl Options {
                 }
                 request
             }
+            "editor" => json!({
+                "op": "editor",
+                "client": CLIENT_NAME,
+                "command": self.editor_mcp,
+                "capability": "dashboard"
+            }),
             _ => json!({ "op": "state", "client": CLIENT_NAME }),
         }
     }

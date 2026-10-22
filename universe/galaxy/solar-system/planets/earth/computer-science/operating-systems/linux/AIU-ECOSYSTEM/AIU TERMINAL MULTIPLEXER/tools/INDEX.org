@@ -31,3 +31,6 @@
   - routing-probe/probe.nu — the phone proof of the routing walk: a key
     reaches the program in the focused pane first, the reserved prefix stays
     the multiplexer's in every mode, and the walk needs no mouse
+  - editor-probe/probe.nu — the phone proof of asking the editor: the
+    multiplexer asks the editor's own server for what the editor owns, and
+    the answer is the editor's own words

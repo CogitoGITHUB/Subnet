@@ -15,3 +15,5 @@
   - wire.rs — the session's wire: one JSON object per line, both ways
   - workspace.rs — the workspace seam of the holder: the shared engine asked,
     and the facts given back
+  - editor.rs — the editor's own answer: the editor's own server asked over
+    its own wire, and its words given back

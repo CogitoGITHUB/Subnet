@@ -134,7 +134,11 @@ pub struct Screen {
 impl Screen {
     /// empty is a screen with nothing on it yet: the holder's state fills it
     /// in as soon as the state arrives.
-    pub fn empty(agent_program: String, editor_program: String) -> Screen {
+    pub fn empty(
+        agent_program: String,
+        editor_program: String,
+        editor_mcp: Vec<String>,
+    ) -> Screen {
         Screen {
             direction: "row".to_string(),
             tabs: Vec::new(),
@@ -162,6 +166,7 @@ impl Screen {
             project_name: String::new(),
             level: 2,
             shows_tab_bar: true,
+            editor_mcp,
         }
     }
 
@@ -923,6 +928,13 @@ impl Screen {
             }
             Command::WorkspaceList => self.show_workspace("list"),
             Command::WorkspaceContext => self.show_workspace("context"),
+            Command::AskEditor => {
+                // The editor is asked through its own server, and the ask
+                // takes as long as the editor takes to start. The owner is
+                // told that before the wait, never after it.
+                self.message = "the editor is being asked: its own server starts first, and that takes a while on this phone".to_string();
+                Action::AskEditor
+            }
             Command::WorkspaceOpen => {
                 // The owner names the project, and the name follows in the
                 // command line.
@@ -1025,6 +1037,24 @@ impl Screen {
             .and_then(|value| value.as_str())
             .unwrap_or("")
             .to_string();
+    }
+
+    /// take_editor reads the editor's own answer and fills the panel with
+    /// it. The words are the editor's own: the multiplexer shows them and
+    /// does not explain them.
+    fn take_editor(&mut self, record: &Value) {
+        let data = match record
+            .get("outputs")
+            .and_then(|outputs| outputs.get("editor"))
+        {
+            Some(data) => data.clone(),
+            None => return,
+        };
+        let lines = crate::editor::lines(&data);
+        self.panel = Some(Panel {
+            title: "the editor — what it owns".to_string(),
+            lines,
+        });
     }
 
     /// take_git reads the layer's answer and fills the panel with it.
@@ -1456,11 +1486,12 @@ pub fn session(
     client_name: &str,
     agent_program: String,
     editor_program: String,
+    editor_mcp: Vec<String>,
     mut config: ConfigFile,
 ) -> Result<(), String> {
     let saved = tty::save_termios(libc::STDIN_FILENO).ok();
     let _ = tty::make_raw(libc::STDIN_FILENO);
-    let mut screen = Screen::empty(agent_program, editor_program);
+    let mut screen = Screen::empty(agent_program, editor_program, editor_mcp);
     screen.set_level(config.config().level);
     screen.set_tab_bar(config.config().tab_bar);
     // A config file that is there and was not used says so where the owner
@@ -1583,6 +1614,22 @@ pub fn session(
                         request["client"] = Value::from(client_name);
                         wire::ask(fd, &request)?;
                     }
+                    Action::AskEditor => {
+                        // The holder asks the editor, not the client: the
+                        // client holds no child process, and the command
+                        // that starts the editor's server is only a word
+                        // here.
+                        let command = screen.editor_mcp.clone();
+                        wire::ask(
+                            fd,
+                            &json!({
+                                "op": "editor",
+                                "client": client_name,
+                                "command": command,
+                                "capability": "dashboard"
+                            }),
+                        )?;
+                    }
                     Action::Quit => {
                         leave = true;
                         keys_done = true;
@@ -1657,6 +1704,10 @@ fn take_record(screen: &mut Screen, line: &str) {
         screen.take_git(&record);
         return;
     }
+    if what == "the editor was asked" {
+        screen.take_editor(&record);
+        return;
+    }
     if who == "holder" {
         screen.take_state(&record);
     }
@@ -1669,7 +1720,7 @@ mod tests {
     /// a_screen is a screen on a window big enough to draw one pane, so the
     /// drawing can be read for what it holds.
     fn a_screen() -> Screen {
-        let mut screen = Screen::empty("opencode".to_string(), "editor".to_string());
+        let mut screen = Screen::empty("opencode".to_string(), "editor".to_string(), Vec::new());
         screen.cols = 60;
         screen.rows = 12;
         screen.tabs = vec!["main".to_string()];

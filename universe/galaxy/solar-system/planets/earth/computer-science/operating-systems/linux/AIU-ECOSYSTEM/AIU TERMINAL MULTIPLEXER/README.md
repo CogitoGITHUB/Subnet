@@ -58,7 +58,8 @@ that way.
 | Select and send to both agents, with the context | Implemented and verified: the selection, the command record and the why travel in one bundle to every agent pane that is open |
 | The Television channels | Implemented and verified: three read-only channels, and television reads all three |
 | The screen's own rows and the levels (`l` and `L`) | Implemented and verified: the mode row, the specifics, the events, the hints, and level 0 |
-| The workspace engine inside the multiplexer | Implemented and verified: the key group, the panel, the holder's seam and the mode line (TODO item 16 is partly done) |
+| The workspace engine inside the multiplexer | Implemented and verified: the key group, the panel, the holder's seam and the mode line |
+| Asking the editor for what the editor owns | Implemented and verified: the ask goes over the editor's own server and the answer is the editor's own words |
 | The Git inspection layer inside the multiplexer | Implemented and verified: the key group, the panel and the holder's seam |
 | The screen selection (the biomechanical model) | In progress: the multiplexer side landed; the editor's side and the wheel are owed |
 | The kit conformance | Implemented and verified: the six proofs run as a gate stage, and the gate is green at 8 stages |
@@ -128,7 +129,7 @@ prefix chord. A Control key the owner presses belongs to the program in the pane
 | `t` `p` `c` `s` | the tabs, the panes, the commands, the sessions |
 | `p o` | open the agent beside the focused pane, with that pane's context |
 | `g` | the git: the overview, the changed files, the diff, the history, the branches, the worktrees |
-| `w` | the workspace: the workspaces and their projects, the project context, the opening of a project |
+| `w` | the workspace: the workspaces and their projects, the project context, the opening of a project, the editor's own answer |
 | `l` `L` | hide or show one level of the screen's own rows |
 
 **The keymap explorer.** Space opens it in visual mode. It is a panel over the panes, not
@@ -156,6 +157,20 @@ the workspace and the project (`ws:` and `pr:`), and the holder's state carries 
 a client that attaches sees them at once. The tabs and the panes stay the multiplexer's
 own, and the multiplexer writes the workspace only when the owner asks for a change:
 closing it leaves the workspace and the editor untouched.
+
+**Asking the editor.** The key `w e` asks the editor for what the editor owns, and the
+ask goes over the editor's OWN surface: the MCP server the editor ships, on the
+editor's own wire, for a read-only capability — the dashboard, which is the editor's own
+state as the editor draws it. The answer is the editor's own words: the panel shows them
+as they are, and a refusal is shown as a refusal with the reason the editor gave. The
+holder asks and not the client, because the client holds nothing and must hold no child
+process. The command that starts the editor's server is given at run time
+(`--editor-mcp-arg PROGRAM --editor-mcp-arg WHAT-IT-RUNS`, one word at a time, so a path
+with a space in it is still one path), so no file of the multiplexer names a program of
+the editor; without that command the ask is refused by name and nothing is guessed. The
+editor's server takes about ten seconds to start on this phone, and the mode line says so
+before the wait, so a wait is never a silence. The design is in
+`plan/asking-the-editor.org`.
 
 **The selection.** The key `v` opens the selection on the focused pane: the mode line says
 `SELECT`, and the keys are the keys of the owner's biomechanical input layer. The arrows
@@ -213,6 +228,7 @@ The client's own options:
 
 ```bash
 client --state-dir DIR --op screen [--agent-program PATH] [--editor-program PATH]
+client --state-dir DIR --op screen|editor [--editor-mcp-arg WORD]...
 client --state-dir DIR --op state|read|send|open|resize|rename|close ...
 ```
 

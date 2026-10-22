@@ -49,6 +49,8 @@
   - src/holder/wire.rs — the session's wire: one JSON object per line, both ways
   - src/holder/workspace.rs — the workspace seam of the holder: the shared
     engine asked, and the facts given back
+  - src/holder/editor.rs — the editor's own answer: the editor's own server
+    asked over its own wire, and its words given back
   - src/devloop/ — the dev mode area: the config, the bake and the last good
   - src/devloop/INDEX.org — the devloop area: the config, the bake, the last good
   - src/devloop/config.rs — the config: the values the client honors, where
@@ -84,6 +86,8 @@
     the text between them
   - src/client/workspace.rs — the workspace panel: the shared workspace as the
     multiplexer shows it
+  - src/client/editor.rs — the editor's panel: the editor's own words as the
+    multiplexer shows them
 
 * Later
 # the areas planned but not landed; plan/package-tree.org is the register for
