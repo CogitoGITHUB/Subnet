@@ -68,6 +68,10 @@ that way.
 The owner switched the priority to this program on 2026-10-21: it is the foundation under
 the complete workflow, so pm and the editor are paused until it works.
 
+This program's own list is done as of 2026-10-22: every item of TODO.org is DONE, except the
+shared done line, which waits on the editor's own halves and on the owner's deletion of the
+shared checklist. The next program is the editor's.
+
 ## Architecture
 
 ```mermaid

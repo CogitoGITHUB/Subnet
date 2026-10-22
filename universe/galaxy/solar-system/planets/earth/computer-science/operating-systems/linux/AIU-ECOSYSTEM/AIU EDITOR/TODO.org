@@ -149,6 +149,8 @@ away: the tree stays exactly as the gate last saw it.
 
   25. DONE (the rows, the levels and the keys landed with the dashboard; the proof is the editor's gate stage =dashboard-check=) — The mode line is rows, and the levels say how much of the editor's own furniture there is (owner addition, 2026-10-21): the mode line, the buffer bar, the sidebar and the status come at the level they belong to, level 1 is the mode line and the status, and level 0 is nothing at all; done when: the dashboard draws at every level, the mode line says the level, and two keys hide one level and show one more; deps: 7, 8.
 
+  26. TODO (owner addition, 2026-10-22) — The agent's hands on the editor: the same surface the multiplexer gets in its item 23 — the agent drives the editor the way the owner does: the buffers, the splits, the scroll and the copy are commands on the editor's own wire, and the editor's MCP server carries them, so the owner can say "open a buffer", "split", "scroll", "copy that part and paste it over there" and the agent does it; done when: an agent opens and closes a buffer, splits and closes a window, scrolls the view, copies a part into the editor's own ring and pastes it into another buffer or into the agent, and every one of those runs the same code the owner's key runs; deps: 6, 14, 18, multiplexer item 23.
+
 * After the done line
 # what continues on its own.
   - The program's own checklist from checklist/tier-2/ content; tier 3 stays plan only until the owner opens it.
