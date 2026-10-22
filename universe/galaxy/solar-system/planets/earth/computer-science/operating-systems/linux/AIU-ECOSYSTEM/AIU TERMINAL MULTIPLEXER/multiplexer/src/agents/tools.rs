@@ -96,6 +96,13 @@ pub fn schema(cap: &Capability) -> Value {
         }),
     );
     properties.insert(
+        "words".to_string(),
+        json!({
+            "type": "array",
+            "description": "the words of the command, in order: tab new, pane new, scroll up, copy PANE FIRST LAST, paste PANE"
+        }),
+    );
+    properties.insert(
         "confirm".to_string(),
         json!({
             "type": "string",
@@ -143,8 +150,74 @@ pub fn run(cap: &Capability, arguments: &Value, sessions_dir: &Path) -> Result<V
             let held = ask_holder(&session, request)?;
             Ok(json!({ "session": session_name(arguments), "records": held }))
         }
+        "multiplexer_control" => {
+            // The agent drives the multiplexer as the owner does: the words
+            // of the command line run on the owner's own screen. The holder
+            // asks the screen and answers the agent with what the screen
+            // said.
+            let session = named_session(arguments, sessions_dir)?;
+            let words: Vec<String> = arguments
+                .get("words")
+                .and_then(|value| value.as_array())
+                .map(|list| {
+                    list.iter()
+                        .filter_map(|one| one.as_str().map(|text| text.to_string()))
+                        .collect()
+                })
+                .unwrap_or_default();
+            if words.is_empty() {
+                return Err("a control needs the words of the command".to_string());
+            }
+            let mut request = json!({
+                "op": "control",
+                "client": "mux-mcp/1",
+                "id": next_id(),
+                "words": words
+            });
+            if let Some(token) = arguments.get("confirm").and_then(|value| value.as_str()) {
+                request["confirm"] = Value::from(token);
+            }
+            let held = ask_holder(&session, request)?;
+            Ok(answered(session_name(arguments), held))
+        }
+        "multiplexer_view" => {
+            // The agent's read of the owner's screen: the tabs, the panes,
+            // the scroll and the ring. A read is free.
+            let session = named_session(arguments, sessions_dir)?;
+            let request = json!({
+                "op": "view",
+                "client": "mux-mcp/1",
+                "id": next_id()
+            });
+            let held = ask_holder(&session, request)?;
+            Ok(answered(session_name(arguments), held))
+        }
         other => Err(format!("there is no tool named {}", other)),
     }
+}
+
+/// answered answers what the holder said: the session, the records, and the
+/// data of the last one — the view, when the request was the agent's read.
+fn answered(session: String, held: Vec<Value>) -> Value {
+    let mut said = json!({ "session": session, "records": held });
+    if let Some(last) = held.last() {
+        if let Some(data) = last
+            .get("outputs")
+            .and_then(|outputs| outputs.get("data"))
+        {
+            said["data"] = data.clone();
+        }
+    }
+    said
+}
+
+/// next_id answers the id of one request: the process and a counter, so two
+/// requests never share an id and the holder knows which answer belongs to
+/// which request.
+fn next_id() -> String {
+    static COUNTER: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+    let count = COUNTER.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+    format!("c-{}-{}", std::process::id(), count)
 }
 
 /// sessions answers every session under the sessions directory, with what

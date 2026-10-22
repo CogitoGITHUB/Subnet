@@ -40,6 +40,17 @@ struct Client {
     pending: String,
     attached: bool,
     dead: bool,
+    /// role says what this client is: the screen is the owner's own view of
+    /// the session, and the agent's words run there. A client with no role
+    /// is a reader.
+    role: String,
+}
+
+/// Pending is one agent's request that waits for the screen's answer: the
+/// id of the request and the descriptor of the client that asked.
+struct Pending {
+    id: String,
+    requester_fd: c_int,
 }
 
 /// Session is one held session: its panes, its log, its socket and its
@@ -64,6 +75,8 @@ struct Session {
     started: Instant,
     listen_fd: c_int,
     clients: Vec<Client>,
+    /// pending are the agent's requests that wait for the screen's answer.
+    pending: Vec<Pending>,
 }
 
 /// Pane is one pane of the session: a name and the shell it holds. The name
@@ -258,6 +271,7 @@ fn run(args: &[String]) -> Result<(), String> {
         started: Instant::now(),
         listen_fd,
         clients: Vec::new(),
+        pending: Vec::new(),
     };
 
     std::fs::write(&pid_path, format!("{}", std::process::id())).map_err(|why| {
@@ -300,6 +314,52 @@ fn run(args: &[String]) -> Result<(), String> {
 }
 
 impl Session {
+    /// screen_client answers the descriptor of the screen: the client that
+    /// attached as the screen. The agent's words run there, because the
+    /// screen is the owner's own view of the session.
+    fn screen_client(&self) -> Option<c_int> {
+        self.clients
+            .iter()
+            .find(|client| client.role == "screen" && !client.dead)
+            .map(|client| client.fd)
+    }
+
+    /// token answers the human's token: the environment first, then the file
+    /// in the session's own directory, then the file in the sessions
+    /// directory above it. The empty text means there is no token, and a
+    /// change is refused.
+    fn token(&self) -> String {
+        if let Ok(from_env) = std::env::var("AIU_MULTIPLEXER_TOKEN") {
+            if !from_env.is_empty() {
+                return from_env;
+            }
+        }
+        let mut files = vec![self.state_dir.join("token")];
+        if let Some(above) = self.state_dir.parent() {
+            files.push(above.join("token"));
+        }
+        for file in files {
+            if let Ok(body) = std::fs::read_to_string(&file) {
+                let said = body.trim().to_string();
+                if !said.is_empty() {
+                    return said;
+                }
+            }
+        }
+        String::new()
+    }
+
+    /// token_matches answers whether the given token is the session's own.
+    /// The holder compares it itself: the caller's word is not taken for
+    /// what it does (rule 07).
+    fn token_matches(&self, given: &str) -> bool {
+        if given.is_empty() {
+            return false;
+        }
+        let own = self.token();
+        !own.is_empty() && given == own
+    }
+
     /// record builds one event record: the identity and the timing of the
     /// session, plus the story of what happened. The key set is fixed.
     fn record(&mut self, fields: Fields) -> Value {
@@ -480,6 +540,7 @@ fn serve(session: &mut Session) -> Result<(), String> {
                     pending: String::new(),
                     attached: false,
                     dead: false,
+                    role: String::new(),
                 });
             }
         }
@@ -784,6 +845,9 @@ fn answer(session: &mut Session, at: usize, line: &str) -> Result<bool, String> 
             answer_client(session, at, &record);
             Ok(true)
         }
+        "control" => control(session, at, &request),
+        "view" => view(session, at, &request),
+        "control-result" => control_result(session, at, &request),
         "read" => {
             let since = request.get("since").and_then(|value| value.as_u64()).unwrap_or(0);
             let held = log::Log::records(&session.log_path)?;
@@ -1407,13 +1471,184 @@ fn answer(session: &mut Session, at: usize, line: &str) -> Result<bool, String> 
                 inputs: json!({ "op": other }),
                 outputs: json!({}),
                 result: json!({
-                    "ops": ["attach", "detach", "read", "state", "send", "open"]
+                    "ops": [
+                        "attach",
+                        "detach",
+                        "read",
+                        "state",
+                        "send",
+                        "open",
+                        "control",
+                        "view",
+                        "control-result"
+                    ]
                 }),
             });
             answer_client(session, at, &record);
             Ok(false)
         }
     }
+}
+
+/// control is the agent's door into the screen: the words the agent sent,
+/// and the screen's answer. A change needs the human's token, and the holder
+/// checks it itself (rule 07): the caller's word is not taken for what it
+/// does.
+///
+/// The holder holds no screen of its own. The words run on the owner's own
+/// screen, so the agent and the owner drive the same code.
+fn control(session: &mut Session, at: usize, request: &Value) -> Result<bool, String> {
+    let id = request
+        .get("id")
+        .and_then(|value| value.as_str())
+        .unwrap_or("")
+        .to_string();
+    let words: Vec<String> = request
+        .get("words")
+        .and_then(|value| value.as_array())
+        .map(|list| {
+            list.iter()
+                .filter_map(|one| one.as_str().map(|text| text.to_string()))
+                .collect()
+        })
+        .unwrap_or_default();
+    let given = request
+        .get("confirm")
+        .and_then(|value| value.as_str())
+        .unwrap_or("")
+        .to_string();
+    if !session.token_matches(&given) {
+        let record = session.record(Fields {
+            kind: "fail",
+            who: "holder",
+            what: "the agent's change was refused",
+            why: "a change needs the human's token, and it was refused",
+            how: "the token was compared with the session's own token",
+            inputs: json!({ "id": id, "words": words }),
+            outputs: json!({}),
+            result: json!({
+                "rule": "rule 07: read is free, a change needs the human's token"
+            }),
+        });
+        session.write(&record);
+        answer_client(session, at, &record);
+        return Ok(true);
+    }
+    ask_screen(session, at, &id, &words, "control")
+}
+
+/// view is the agent's read of the screen: what the owner sees. A read is
+/// free, so it needs no token.
+fn view(session: &mut Session, at: usize, request: &Value) -> Result<bool, String> {
+    let id = request
+        .get("id")
+        .and_then(|value| value.as_str())
+        .unwrap_or("")
+        .to_string();
+    ask_screen(session, at, &id, &[], "view")
+}
+
+/// ask_screen hands the agent's request to the screen and waits for the
+/// screen's answer: the request is remembered by its id, and the answer
+/// goes back to the client that asked.
+fn ask_screen(
+    session: &mut Session,
+    at: usize,
+    id: &str,
+    words: &[String],
+    kind: &str,
+) -> Result<bool, String> {
+    let screen = match session.screen_client() {
+        Some(fd) => fd,
+        None => {
+            let record = session.record(Fields {
+                kind: "fail",
+                who: "holder",
+                what: "the agent's request was refused",
+                why: "no screen is attached to this session, so there is nothing to drive",
+                how: "the clients of the session were looked at, and none of them is a screen",
+                inputs: json!({ "id": id, "words": words }),
+                outputs: json!({}),
+                result: json!({
+                    "rule": "the agent drives the owner's own screen; without one there is nothing to drive"
+                }),
+            });
+            session.write(&record);
+            answer_client(session, at, &record);
+            return Ok(true);
+        }
+    };
+    let requester_fd = session.clients[at].fd;
+    session.pending.push(Pending {
+        id: id.to_string(),
+        requester_fd,
+    });
+    let asked = json!({
+        "kind": kind,
+        "who": "agent",
+        "inputs": { "id": id, "words": words },
+        "outputs": {},
+        "result": {}
+    });
+    let mut line = asked.to_string();
+    line.push('\n');
+    if let Err(why) = write_to(screen, line.as_bytes()) {
+        // The screen did not take the request: it comes off the list and the
+        // agent is told, rather than left waiting for an answer that will
+        // never come.
+        session.pending.pop();
+        let record = session.record(Fields {
+            kind: "fail",
+            who: "holder",
+            what: "the agent's request was refused",
+            why: "the screen did not take the request",
+            how: "the request was written to the screen's wire, and the write failed",
+            inputs: json!({ "id": id, "words": words }),
+            outputs: json!({}),
+            result: json!({ "why": why }),
+        });
+        session.write(&record);
+        answer_client(session, at, &record);
+    }
+    Ok(true)
+}
+
+/// control_result is the screen's answer to the agent's request: the id of
+/// the request and what the screen did. The answer goes to the client that
+/// asked, and the request is off the list.
+fn control_result(session: &mut Session, _at: usize, request: &Value) -> Result<bool, String> {
+    let id = request
+        .get("id")
+        .and_then(|value| value.as_str())
+        .unwrap_or("")
+        .to_string();
+    let data = request.get("data").cloned().unwrap_or(json!({}));
+    let found = match session.pending.iter().position(|pending| pending.id == id) {
+        Some(at) => at,
+        None => return Ok(true),
+    };
+    let pending = session.pending.remove(found);
+    let requester = match session
+        .clients
+        .iter()
+        .position(|client| client.fd == pending.requester_fd)
+    {
+        Some(at) => at,
+        None => return Ok(true),
+    };
+    let record = session.record(Fields {
+        kind: "info",
+        who: "holder",
+        what: "the agent's request was answered",
+        why: "the screen ran the words the agent sent",
+        how: "the words ran on the owner's own screen, and the screen's answer came back",
+        inputs: json!({ "id": id }),
+        outputs: json!({ "data": data }),
+        result: json!({}),
+    });
+    session.write(&record);
+    answer_client(session, requester, &record);
+    Ok(true)
 }
 
 /// attach answers a client that wants to watch the session. The contracts are
@@ -1453,6 +1688,14 @@ fn attach(session: &mut Session, at: usize, request: &Value) -> Result<bool, Str
     }
 
     session.clients[at].attached = true;
+    // The screen says what it is: the agent's words run on the owner's own
+    // screen, and nowhere else.
+    let role = request
+        .get("role")
+        .and_then(|value| value.as_str())
+        .unwrap_or("")
+        .to_string();
+    session.clients[at].role = role;
     let record = session.state("the client attached and the contracts agree");
     session.write(&record);
     // The answer is not the last one: the client stays and watches what the

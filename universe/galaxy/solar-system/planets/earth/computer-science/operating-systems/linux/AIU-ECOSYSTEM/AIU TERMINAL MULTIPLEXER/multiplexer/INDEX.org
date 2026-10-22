@@ -88,10 +88,12 @@
     multiplexer shows it
   - src/client/editor.rs — the editor's panel: the editor's own words as the
     multiplexer shows them
+  - src/client/control.rs — the agent's hands: the agent's words on the
+    wire, run on the owner's own screen, and the answer that goes back
 
 * Later
-# the areas planned but not landed; plan/package-tree.org is the register for
-# them, and no empty directory is created before the item that needs it.
+# the areas planned but not landed; this index is the register for them, and
+# no empty directory is created before the item that needs it.
   - security, join, panes, routing, layouts, records, control and entry land
     with the items that need them.
   - tests and test-doubles open when tests open (root DECISIONS.org D-001).

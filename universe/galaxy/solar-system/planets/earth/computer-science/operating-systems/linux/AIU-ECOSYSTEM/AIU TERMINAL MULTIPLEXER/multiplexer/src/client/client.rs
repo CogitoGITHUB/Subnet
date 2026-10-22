@@ -23,6 +23,7 @@ mod editor;
 mod keymap;
 mod screen;
 mod select;
+mod control;
 
 use serde_json::{json, Value};
 use std::path::PathBuf;

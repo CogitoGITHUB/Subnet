@@ -137,6 +137,12 @@ prefix chord. A Control key the owner presses belongs to the program in the pane
 | `l` `L` | hide or show one level of the screen's own rows |
 | `PageUp` `PageDown` | scroll the focused pane's view: one page is the height of that pane |
 
+**The command line.** `:` opens it, and the words are the commands: `tab new`,
+`tab close`, `tab next`, `pane new`, `pane close`, `pane next`, `scroll up`,
+`scroll down`, `copy PANE FIRST LAST`, `paste PANE`, `paste agent`, `focus PANE`,
+`workspace`, `agent`, `editor`, `records`, `sessions`. The same words are what the agent
+sends, so the owner and the agent drive the same code.
+
 **The keymap explorer.** Space opens it in visual mode. It is a panel over the panes, not
 a new screen. It shows the keys of the map it is showing, what each one means, whether it
 runs a command or opens a group, and whether it can run now. A group key opens that group,
@@ -174,8 +180,7 @@ process. The command that starts the editor's server is given at run time
 with a space in it is still one path), so no file of the multiplexer names a program of
 the editor; without that command the ask is refused by name and nothing is guessed. The
 editor's server takes about ten seconds to start on this phone, and the mode line says so
-before the wait, so a wait is never a silence. The design is in
-`plan/asking-the-editor.org`.
+before the wait, so a wait is never a silence.
 
 **The selection.** The key `v` opens the selection on the focused pane: the mode line says
 `SELECT`, and the keys are the keys of the owner's biomechanical input layer. The arrows
@@ -189,15 +194,15 @@ and does nothing else — no text is copied, no bundle is sent and no pane opens
 page keys scroll the focused pane's view while the pick runs, and the pick restarts over
 the fresh text: the point stands at the first line of the new window and the marks are
 gone, because a mark named a line of the old window. There is no wheel here: there is no
-mouse in this program, so the scroll is a key. The design, and what is still owed, are in
-`plan/screen-selection.org`.
+mouse in this program, so the scroll is a key. What is still owed is the editor's own
+pick: the editor picks its own text the same way.
 
 **The agent opens here.** One key in the focused pane opens OpenCode beside it, with that
 pane's context already attached: the tail of the pane's log, the shell, the place and the
 why. The bundle is built by the holder from the holder's own log, so nothing is copied by
 hand and the screen never scrapes the drawing. The bundle passes the redaction seam: a
 line that names a credential keeps its name and loses its value. The send is a record, and
-it is written before the pane opens. The design is in `plan/agent-opens-here.org`.
+it is written before the pane opens.
 
 **The git panel.** The key group `g` opens the git, and the panel shows what the
 shared layer read: the repository, the branch and its distance from the upstream, the
@@ -213,9 +218,25 @@ is never shown as "up to date".
 agent can list the sessions, read a session's records and send to a session's shell.
 Reading is free; a send changes what a session does, so it needs the human's token and the
 server checks the token itself. The tools are `multiplexer_sessions`,
-`multiplexer_records` and `multiplexer_send`. The server and the skill are registered in
+`multiplexer_records`, `multiplexer_send`, `multiplexer_control` and `multiplexer_view`.
+The server and the skill are registered in
 OpenCode on this phone, so a true OpenCode session can drive the multiplexer without the
 owner touching the terminal.
+
+**The agent's hands.** The agent drives the multiplexer the way the owner does. There is
+no second set of commands: the agent sends the words the owner types on the command line
+(`tab new`, `tab close`, `pane new`, `pane close`, `scroll up`, `scroll down`,
+`copy PANE FIRST LAST`, `paste PANE`, `paste agent`, `focus PANE`), and the screen runs
+them through the owner's own code. The words travel over the holder's wire to the owner's
+own screen — the screen is where the tabs, the panes, the scroll and the ring of copies
+live — so what the agent does is what the owner does, on the same screen, at the same
+time. The agent reads the screen with `multiplexer_view`: the tabs, the panes with their
+text and their scroll, the focus and the ring. A read is free. A change needs the human's
+token, and the holder checks it itself, not the server: a caller cannot grant itself the
+right to change what the session does. The answer the agent gets is the state as it
+stands: the screen asks the holder for the state before it answers, so the agent is never
+told an old picture. Without a screen attached there is nothing to drive, and the holder
+says so by name.
 
 ## Public interface
 
@@ -232,6 +253,9 @@ The holder's socket, one JSON object per line, both ways:
 | `resize` | the window size for every pane |
 | `rename` | a pane or a tab gets a new name |
 | `close` | a pane or a tab goes away |
+| `control` | the agent's words, run on the owner's own screen; a change needs the human's token |
+| `view` | the agent's read of the screen: the tabs, the panes, the scroll and the ring |
+| `control-result` | the screen's answer to the agent's request |
 
 The client's own options:
 
@@ -435,20 +459,15 @@ What is not verified: the key routing with the editor in a pane.
 
 `TODO.org` is the one list, in build order. The next items are the key routing across
 layers with the editor in a pane, select and send to both agents, and the done line. The
-screen selection (the biomechanical model: the overlay, the visible text only, the second key as
-the action) is designed in `plan/screen-selection.org` and not built.
+screen selection (the biomechanical model: the overlay, the visible text only, the second key
+as the action) is built in the multiplexer, and what is still owed is the editor's own pick:
+the editor picks its own text the same way.
 
 ## Related documentation
 
 - `TODO.org` — the one list of what is left, in build order.
 - `HANDOFF.org` — what a fresh conversation needs to start here.
 - `INDEX.org` — every file in this directory, with its job.
-- `plan/package-tree.org` — the register: a name that is not there does not exist yet.
-- `plan/architecture.org`, `plan/holder-design.org`, `plan/panes-design.org` — the design.
-- `plan/agent-opens-here.org`, `plan/keymap-explorer.org`, `plan/modes-tabs-and-the-window.org`,
-  `plan/screen-selection.org` — the designs that landed, and the one that did not.
-- `plan/build-order.org`, `plan/risks.org`, `plan/phone-first-tests.org` — the order and
-  the risks.
 - `rules/` — the hard rules, one file each.
 - `research/` — what was measured on this phone.
 - `../contract/` — the one written contract between the programs.
@@ -465,7 +484,7 @@ cd ..
 ```
 
 Nothing is written inside the tree: the build writes its target directory outside, and
-the state directory is an argument. Register a name in `plan/package-tree.org` and in
-`multiplexer/INDEX.org` before you use it; one file, one job; a dependency points
+the state directory is an argument. Register a name in `multiplexer/INDEX.org` before you
+use it; one file, one job; a dependency points
 downward only; commit with explicit relative paths; never `git add -A`; a commit leaves
 the gate green.

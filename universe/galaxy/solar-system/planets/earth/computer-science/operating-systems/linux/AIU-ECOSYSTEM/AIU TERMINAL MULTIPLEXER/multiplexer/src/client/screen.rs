@@ -19,6 +19,7 @@ use super::select::Selection;
 use super::tty;
 use super::wire;
 use super::config::{ConfigFile, Reload};
+use super::control;
 
 /// ESCAPE leaves Insert, and cancels a sequence or the explorer.
 const ESCAPE: u8 = 0x1b;
@@ -37,6 +38,10 @@ const KEPT: usize = 400;
 /// RING_KEPT is how many copies the multiplexer's own ring holds. The
 /// ring is a small buffer: the newest copy is the first one.
 const RING_KEPT: usize = 20;
+
+/// VIEW_LINES is how many lines of a pane the agent's view carries: the
+/// newest ones, each with the number the agent names it by.
+const VIEW_LINES: usize = 40;
 
 /// Action is what the client does with the holder after a key.
 pub enum Action {
@@ -133,6 +138,11 @@ pub struct Screen {
     /// the program and what it runs. It is the seam the multiplexer asks
     /// the editor through.
     editor_mcp: Vec<String>,
+    /// pending is the agent's request that waits for the state: the answer
+    /// the agent gets is the state as it stands, not the state as it was.
+    pending: Option<String>,
+    /// fresh says the state arrived: the pending request may be answered.
+    fresh: bool,
 }
 
 impl Screen {
@@ -171,6 +181,8 @@ impl Screen {
             level: 2,
             shows_tab_bar: true,
             editor_mcp,
+            pending: None,
+            fresh: false,
         }
     }
 
@@ -216,6 +228,8 @@ impl Screen {
         if outputs.get("session").is_none() || outputs.get("panes").is_none() {
             return;
         }
+        // The state arrived: a request that waits for it may be answered.
+        self.fresh = true;
         if let Some(direction) = outputs.get("direction").and_then(|value| value.as_str()) {
             self.direction = direction.to_string();
         }
@@ -326,7 +340,7 @@ impl Screen {
     }
 
     /// focused_pane answers the name of the pane that has the focus.
-    fn focused_pane(&self) -> String {
+    pub fn focused_pane(&self) -> String {
         self.panes
             .get(self.focused)
             .map(|pane| pane.name.clone())
@@ -1432,9 +1446,204 @@ impl Screen {
             ["editor"] => self.run(Command::OpenEditor),
             ["records"] => self.run(Command::ShowRecords),
             ["sessions"] => self.run(Command::ShowSessions),
+            ["scroll", "up"] => self.run(Command::PageUp),
+            ["scroll", "down"] => self.run(Command::PageDown),
+            ["copy", pane, first, last] => {
+                // The lines of a pane, counted from one: the view shows the
+                // count, so the owner and the agent name the same line.
+                self.copy_lines(pane, first, last);
+                Action::Nothing
+            }
+            ["paste", pane] => self.paste_into(pane),
+            ["paste", "agent"] => self.paste_to_agent(),
+            ["focus", pane] => {
+                self.focus_pane(pane);
+                Action::Nothing
+            }
+            ["view"] => Action::Nothing,
             other => {
                 self.message = format!("{} is not a command", other.join(" "));
                 Action::Nothing
+            }
+        }
+    }
+
+    /// control_words runs the words an agent sent, the way the owner runs
+    /// them: the words are the words of the command line, and the command
+    /// line is the owner's own path. It is public because the agent's door
+    /// is this screen, and the agent must not get a second set of commands.
+    pub fn control_words(&mut self, said: &str) -> Action {
+        self.run_command(said)
+    }
+
+    /// wait_for_state says the agent's request waits for the state: the
+    /// answer the agent gets is the state as it stands.
+    pub fn wait_for_state(&mut self, id: String) {
+        self.pending = Some(id);
+        self.fresh = false;
+    }
+
+    /// take_pending answers the agent's request when the state has arrived,
+    /// and nothing before: an answer that carries an old picture is a lie
+    /// the agent would act on.
+    pub fn take_pending(&mut self) -> Option<String> {
+        if !self.fresh {
+            return None;
+        }
+        self.fresh = false;
+        self.pending.take()
+    }
+
+    /// view answers what the screen holds right now: the tabs, the panes
+    /// with their text and their scroll, the focus, and the ring of copies.
+    /// The agent cannot see the screen, so the screen says what is on it.
+    pub fn view(&self) -> Value {
+        let mut panes: Vec<Value> = Vec::new();
+        for pane in &self.panes {
+            let first = pane.lines.len().saturating_sub(VIEW_LINES);
+            let mut text: Vec<String> = Vec::new();
+            for (at, line) in pane.lines.iter().enumerate().skip(first) {
+                text.push(format!("{}: {}", at + 1, line));
+            }
+            panes.push(json!({
+                "name": pane.name.clone(),
+                "tab": pane.tab.clone(),
+                "scroll": pane.scroll,
+                "lines": pane.lines.len(),
+                "text": text
+            }));
+        }
+        json!({
+            "tabs": self.tabs.clone(),
+            "tab": self.tab,
+            "focused": self.focused_pane(),
+            "panes": panes,
+            "ring": self.ring.clone(),
+            "message": self.message.clone()
+        })
+    }
+
+    /// copy_lines copies the lines of a pane into the multiplexer's own ring,
+    /// the ring the owner's own copy fills. The lines are the pane's own
+    /// lines, counted from one, and the view shows that count, so the owner
+    /// and the agent name the same line.
+    fn copy_lines(&mut self, name: &str, first: &str, last: &str) -> bool {
+        let first_at: usize = match first.parse() {
+            Ok(value) => value,
+            Err(_) => {
+                self.message = format!("{} is not a line number", first);
+                return false;
+            }
+        };
+        let last_at: usize = match last.parse() {
+            Ok(value) => value,
+            Err(_) => {
+                self.message = format!("{} is not a line number", last);
+                return false;
+            }
+        };
+        let copied = {
+            let mut error = String::new();
+            let text = match self.panes.iter().find(|pane| pane.name == name) {
+                Some(pane) => {
+                    if pane.lines.is_empty() {
+                        error = format!("the pane {} has said nothing yet", name);
+                        String::new()
+                    } else if first_at > pane.lines.len() {
+                        error = format!("the pane {} holds {} lines", name, pane.lines.len());
+                        String::new()
+                    } else {
+                        let from = first_at.max(1);
+                        let to = last_at.max(from).min(pane.lines.len());
+                        pane.lines[from - 1..to].join("\n")
+                    }
+                }
+                None => {
+                    error = format!("there is no pane named {}", name);
+                    String::new()
+                }
+            };
+            (text, error)
+        };
+        if !copied.1.is_empty() {
+            self.message = copied.1;
+            return false;
+        }
+        let text = copied.0;
+        if text.is_empty() {
+            self.message = "there is nothing to copy".to_string();
+            return false;
+        }
+        self.ring.insert(0, text.clone());
+        if self.ring.len() > RING_KEPT {
+            self.ring.pop();
+        }
+        self.message = format!(
+            "the lines {} to {} of {} are copied: {}",
+            first_at,
+            last_at.max(first_at),
+            name,
+            first_line(&text)
+        );
+        true
+    }
+
+    /// paste_into puts the newest copy into a pane, the way the owner's own
+    /// paste does: the text goes to the pane's own program.
+    fn paste_into(&mut self, name: &str) -> Action {
+        let text = match self.ring.first() {
+            Some(found) => found.clone(),
+            None => {
+                self.message = "the ring is empty: nothing was copied".to_string();
+                return Action::Nothing;
+            }
+        };
+        if !self.panes.iter().any(|pane| pane.name == name) {
+            self.message = format!("there is no pane named {}", name);
+            return Action::Nothing;
+        }
+        self.message = format!("the copy is on its way to {}", name);
+        Action::Request(json!({
+            "op": "send",
+            "pane": name,
+            "data": text
+        }))
+    }
+
+    /// paste_to_agent sends the newest copy to the agents, the way the
+    /// owner's own send does: the bundle carries the text and the why.
+    fn paste_to_agent(&mut self) -> Action {
+        let text = match self.ring.first() {
+            Some(found) => found.clone(),
+            None => {
+                self.message = "the ring is empty: nothing was copied".to_string();
+                return Action::Nothing;
+            }
+        };
+        let program = self.agent_program.clone();
+        let target = agent_name(&program);
+        let pane = self.focused_pane();
+        self.message = "the copy is on its way to the agents".to_string();
+        Action::Request(json!({
+            "op": "send-agent",
+            "selection": text,
+            "target": target,
+            "from": pane,
+            "why": "the agent sent the copied text to the agents"
+        }))
+    }
+
+    /// focus_pane gives the focus to the pane with that name.
+    fn focus_pane(&mut self, name: &str) -> bool {
+        match self.panes.iter().position(|pane| pane.name == name) {
+            Some(at) => {
+                self.focused = at;
+                self.message = format!("the focus is on {}", name);
+                true
+            }
+            None => {
+                self.message = format!("there is no pane named {}", name);
+                false
             }
         }
     }
@@ -1625,6 +1834,7 @@ pub fn session(
         &json!({
             "op": "attach",
             "client": client_name,
+            "role": "screen",
             "event-contract": crate::EVENT_CONTRACT,
             "holder-contract": crate::HOLDER_CONTRACT
         }),
@@ -1692,7 +1902,31 @@ pub fn session(
                 if line.is_empty() {
                     continue;
                 }
+                // The agent's request is not a record of the session: it is
+                // the agent's words, and the screen runs them the way the
+                // owner's own keys run them.
+                let asked: Value = match serde_json::from_str(&line) {
+                    Ok(found) => found,
+                    Err(_) => Value::Null,
+                };
+                if control::is_request(&asked) {
+                    let (id, words) = control::request_of(&asked);
+                    let outcome = control::run(&mut screen, &words);
+                    if let Some(mut ask) = outcome.ask {
+                        ask["client"] = Value::from(client_name);
+                        wire::ask(fd, &ask)?;
+                    }
+                    // The state is asked for, so the answer the agent gets is
+                    // the state as it stands and not the state as it was.
+                    screen.wait_for_state(id);
+                    wire::ask(fd, &json!({ "op": "state", "client": client_name }))?;
+                    continue;
+                }
                 take_record(&mut screen, &line);
+                if let Some(id) = screen.take_pending() {
+                    let data = screen.view();
+                    wire::ask(fd, &control::answer(&id, &data))?;
+                }
                 if line_holds(&line, "the client detached") {
                     detached = true;
                 }

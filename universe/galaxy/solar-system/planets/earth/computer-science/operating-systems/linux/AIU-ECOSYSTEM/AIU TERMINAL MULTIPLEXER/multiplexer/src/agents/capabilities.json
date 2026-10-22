@@ -13,5 +13,15 @@
     "name": "multiplexer_send",
     "mutates": true,
     "description": "send text to the shell of one session; it changes what the session does, so it needs the human's token"
+  },
+  {
+    "name": "multiplexer_control",
+    "mutates": true,
+    "description": "drive the multiplexer as the owner does: the words of the command line — tab new, pane new, scroll up, copy PANE FIRST LAST, paste PANE — run on the owner's own screen; it changes what the session does, so it needs the human's token"
+  },
+  {
+    "name": "multiplexer_view",
+    "mutates": false,
+    "description": "what the owner's screen shows right now: the tabs, the panes with their text and their scroll, the focus and the ring of copies; a read is free"
   }
 ]

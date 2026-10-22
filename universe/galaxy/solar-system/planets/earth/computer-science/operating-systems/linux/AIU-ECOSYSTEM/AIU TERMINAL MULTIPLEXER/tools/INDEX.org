@@ -34,3 +34,7 @@
   - editor-probe/probe.nu — the phone proof of asking the editor: the
     multiplexer asks the editor's own server for what the editor owns, and
     the answer is the editor's own words
+  - control-probe/probe.nu — the phone proof of the agent's hands: an agent
+    drives the multiplexer the way the owner does — a tab, a split, a
+    scroll, a copy and a paste — and a change without the human's token is
+    refused by name

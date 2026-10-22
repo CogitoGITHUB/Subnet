@@ -10,3 +10,5 @@
     nothing of its own
   - editor.rs — the editor's panel: the editor's own words as the
     multiplexer shows them
+  - control.rs — the agent's hands: the request the agent sent, the words it
+    carries, and the answer that goes back to it
