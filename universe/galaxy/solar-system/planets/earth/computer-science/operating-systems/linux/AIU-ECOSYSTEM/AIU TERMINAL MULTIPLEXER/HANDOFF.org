@@ -1,43 +1,44 @@
 #+TITLE: HANDOFF — AIU TERMINAL MULTIPLEXER
 # One job: everything a fresh conversation needs to start on the multiplexer.
-# Status: current 2026-10-21; the tree, the gate and the holder are landed; the agent surface is next.
+# Status: current 2026-10-22; the program's own list is done, the gate is green, and the text editor is next.
 
 * What this program is
-# Shells, panes, a layout tree, and a session holder with detach and reattach.
+# Shells, panes, tabs, a layout tree, and a session holder with detach and reattach.
   - The holder owns the shells and the screen is a thin client; Nushell command records are first class.
   - Terminals are a facade over tty; what the phone cannot promise is written down, never assumed.
+  - The agent drives it with the owner's own words, on the owner's own screen.
 
 * What binds it
 # the rules are binding; read them before designing anything.
   - rules/ — the owner's hard rules, one file each; rule 12 is not here, it is notation only.
-  - ../contract/ — the shared contract; the key routing and the placement model live there (step 9).
+  - ../contract/ — the shared contract; the key routing and the placement model live there.
   - ../agents/ — the agent design; either agent opens in its own pane beside the work.
   - multiplexer/INDEX.org — the register of the package: =multiplexer/= and every file, one job each.
 
 * Current state
 # what is true right now.
-  - Base complete; the ready-up closed the decisions: the route (D-002), herdr as the tested candidate (D-003), the control surface (D-004), the shared key-routing handover (D-005) and the log shape (D-006).
-  - The TREE LANDED (=5a8908e7=): the package is =multiplexer/= with the floor areas =errors/=, =narration/= and =machine/=, and the gate is green at 7 stages (the security gate prints NOTHING-TO-CHECK until that area exists). Every module really loads.
-  - The ROUTE IS DECIDED (=937a2c9e=): this phone builds Rust — a tiny binary builds in 7.9 s, starts in 23 ms, and a pty works here (=/dev/pts/N=). The numbers are in =research/tiny-binary-probe.org=; the holder is therefore written and built on this phone, with herdr kept behind the same contract as the fallback.
-  - THE HOLDER WORKS (=abab3340=): a shell on a pty in a session that outlives every client, an append-only log flushed per record, and a unix socket in the session's state directory. The client is a thin screen. The phone proof is =tools/holder-probe/probe.nu=: after the detach the shell was still alive and still writing to the log, and a second client found the same session and the same shell. What the phone cannot do is recorded, not promised: the holder dies with the session that started it, so the promise is about the DETACH.
-  - THE AGENT SURFACE WORKS (=88ce654c=): the MCP server over stdio talks to a holder's socket, so an OpenCode agent can list the sessions, read a session's records and send to a session's shell. Reading is free; a send needs the human's token and the server checks the token itself. The proof is =tools/mcp-probe/probe.nu=. On this phone both this program's server and the editor's are registered in OpenCode (=opencode mcp list= shows them connected) and both skills are installed, so an OpenCode session drives the multiplexer and the editor without the owner touching the terminal.
-  - THE PANES LANDED (=b9541c94=): a layout file names the panes a session holds, each pane is a shell with a name, and every record carries the pane's name. A send is aimed at a pane by name. The proof is =tools/panes-probe/probe.nu=. The DRAWING landed with the screen: the panes are drawn on one terminal, side by side.
-  - THE SCREEN LANDED: the tm is modal like the text editor. The modes are visual, insert, command and the keymap explorer. =i= puts the keyboard into the focused pane; the Escape leaves insert without being sent on; the mode line says the mode, the tab, the focused pane and the size; one resize reaches every pane. The proof is =tools/screen-probe/probe.nu= (16 checks).
-  - THE KEYMAP AND THE KEYMAP EXPLORER LANDED: =multiplexer/src/client/keymap.rs= holds one table of bindings, and the dispatcher and the explorer both read it, so what the keys do and what the explorer shows are the same facts. Space opens the explorer in visual mode (it is a panel over the panes, not a new screen); a group key opens that group; a command key runs the command; the Escape cancels at any depth. No modifier anywhere in the table: no Control, no Alt, no Meta, no prefix chord — a Control key belongs to the program in the pane. The table has 14 unit tests.
-  - The owner's third addition of 2026-10-21: in the tm, one key opens OpenCode with the context of the pane the owner is in — the shell output, the shell, the place and the why — and nothing is copied by hand. It waits on the panes, the key routing and select-and-send.
-  - The owner's priority of 2026-10-21: the keymap explorer, in BOTH the multiplexer and the text editor. The multiplexer's half is done; the editor's half is TODO item 15 and uses the same schema with the editor's own mode names and its own command table.
-  - The owner switched the priority on 2026-10-21: this program is built FIRST, and the AIU-PM and the AIU EDITOR implementation are paused until it works. Both say so in their own README and TODO.
-  - README.md now says what this program is and what works today.
+  - The program's own list is DONE: every item of TODO.org is DONE, except the shared done line, which waits on the editor's own halves and on the owner's deletion of the shared checklist.
+  - The gate is green at eight stages, and the Rust tests run: =cargo test --offline= is green at 46 + 17 + 18 tests.
+  - The proofs are the probes in =tools/=: the holder, the MCP surface, the panes, the dev mode, the screen, the send, the routing, the editor's own answer, and the agent's hands. The agent's hands proof is =tools/control-probe/probe.nu= (sixteen checks).
+  - The route is decided (D-002): this phone builds Rust, and herdr stays behind the same contract as the fallback. The numbers are in =research/tiny-binary-probe.org=.
+  - The holder works: a shell on a pty in a session that outlives every client, an append-only log flushed per record, and a unix socket in the session's state directory. The client is a thin screen.
+  - The screen is modal like the text editor: visual, insert, command, the keymap explorer and the selection. One keymap table holds every binding, and the explorer reads that same table.
+  - The agent surface works: the MCP server over stdio talks to a holder's socket, so an OpenCode agent can list the sessions, read the records, send to a shell, drive the screen (=multiplexer_control=) and read it (=multiplexer_view=). A change needs the human's token and the HOLDER checks it itself.
+  - The finished plan files are gone (the owner's order of 2026-10-22); the register that holds every name is =multiplexer/INDEX.org=.
 
 * Next step
 # one line, so a fresh conversation starts in the right place.
-  - TODO.org, top to bottom: item 15 — the editor's keymap explorer, the same schema in the AIU EDITOR against its own command table (item 14, the multiplexer's half, is done). Then item 6 (the key routing with the reserved prefix), item 8 (select and send) and item 9 (the key that opens the agent here). Items 3, 4, 5, 13 and 14 are landed.
+  - The text editor, in its own session: its item 26 (the agent's hands on the editor — the same surface the multiplexer got in item 23), its item 18 (the agent opens beside the editor), its item 20 (the workspace join) and its item 24 (the config reloaded live).
 
 * The phone traps this session found
 # the ones that cost time, so nobody pays for them twice.
   - A pipe that is at its end says POLLHUP, not POLLIN. Checking only POLLIN makes the client spin forever on an empty stdin; check =POLLIN | POLLHUP= in both clients.
   - In Nushell, =print "x" | ^cmd= does NOT feed the external command: the string leaks to the terminal and the command gets an empty stdin. Use =^printf "x" | ^cmd=.
   - Nu 0.116 has no =let mut=; write =mut x = 0= when a variable is changed inside a loop.
+  - Nu 0.116's =to json= prints several lines, so a JSON string built in a Nu script is broken; build the list by hand (=$words | each {|w| $"\"($w)\"" } | str join ","=).
+  - In a Nu string only =$(...)= interpolates. A bare =$name= stays literal and makes the JSON wrong.
+  - A screen that must stay attached needs a pipe that is never closed: a fifo that nothing writes to holds it open (the screen then waits on the holder, not on the keys).
+  - =pkill -f "pattern"= kills the shell that runs it when the pattern is in the shell's own command line. Use =pkill -x holder=.
   - One client's socket breaking used to kill the whole holder; now the client is let go and the session goes on. The holder is the thing that must outlive every client.
 
 * The phone facts, measured 2026-10-21
@@ -48,6 +49,6 @@
 
 * How to work here
 # house rules.
-  - AGENT.md governs the session; no tests for now, the light gate only (root DECISIONS.org D-001).
-  - Small commits, explicit paths, never a blanket add, no pushes.
+  - AGENT.md governs the session; the tests are on for this package (=cargo test --offline=), and the light gate is the eight stages in =gate/check.nu=.
+  - Small commits, explicit paths, never a blanket add, one item one commit, and a push after it.
   - Phone limits are recorded in ../WHEN-ON-LAPTOP.org the moment they appear.
