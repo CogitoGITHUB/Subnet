@@ -6,6 +6,8 @@
 # one line per file: its name, then the single job it performs.
 
   - INDEX.org — the holder area: the session, its shells and its log
+  - geometry.rs — the geometry: where each pane sits, read the same way by
+    the drawing and by the sizes the programs get
   - holder.rs — the session: outlives every client, and serves the socket
   - shells.rs — the shells of one session: started on a terminal and tracked
   - log.rs — one append-only log file per session, flushed per record

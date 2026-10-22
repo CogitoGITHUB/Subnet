@@ -37,7 +37,9 @@
     pty, size it, read and write bytes
   - src/tty/measure.rs — what works under proot is measured, never assumed
   - src/holder/ — the session that outlives every client
-  - src/holder/INDEX.org — the holder area: the session, the shells, the log
+  - src/holder/INDEX.org — the holder area: the session, its shells and its log
+  - src/holder/geometry.rs — the geometry: where each pane sits, read the
+    same way by the drawing and by the sizes the programs get
   - src/holder/holder.rs — the session: outlives every client, and serves the
     socket
   - src/holder/shells.rs — the shells of one session: started on a terminal and

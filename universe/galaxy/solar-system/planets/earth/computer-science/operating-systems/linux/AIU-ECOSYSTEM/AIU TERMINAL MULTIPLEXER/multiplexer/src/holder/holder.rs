@@ -16,6 +16,7 @@
 #[path = "../tty/tty.rs"] mod tty;
 mod editor;
 mod git;
+mod geometry;
 mod layout;
 mod log;
 mod workspace;
@@ -71,6 +72,12 @@ struct Session {
     direction: String,
     cols: u16,
     rows: u16,
+    /// area_rows are the rows the panes get: the window minus the screen's
+    /// own furniture. The client says how many it draws with.
+    area_rows: u16,
+    /// layout_path is the file the layout was read from: the session's
+    /// shape is written back where it was read.
+    layout_path: Option<PathBuf>,
     seq: u64,
     started: Instant,
     listen_fd: c_int,
@@ -267,6 +274,8 @@ fn run(args: &[String]) -> Result<(), String> {
         direction,
         cols: options.cols,
         rows: options.rows,
+        area_rows: options.rows,
+        layout_path: options.layout.clone(),
         seq: 0,
         started: Instant::now(),
         listen_fd,
@@ -358,6 +367,76 @@ impl Session {
         }
         let own = self.token();
         !own.is_empty() && given == own
+    }
+
+    /// tab_names answers the tabs of the session, in the order they stand.
+    fn tab_names(&self) -> Vec<String> {
+        if self.tabs.is_empty() {
+            return vec![String::new()];
+        }
+        self.tabs.clone()
+    }
+
+    /// sizes answers the size every pane gets, by the pane's name: the panes
+    /// of a tab share the space between them, and every tab has the whole
+    /// space for itself. It is the same geometry the screen draws with, so a
+    /// program is given the size of the place it is drawn in.
+    fn sizes(&self) -> Vec<(String, u16, u16)> {
+        let mut held: Vec<(String, u16, u16)> = Vec::new();
+        for tab in self.tab_names() {
+            let members: Vec<&Pane> = self
+                .panes
+                .iter()
+                .filter(|pane| pane.tab == tab)
+                .collect();
+            if members.is_empty() {
+                continue;
+            }
+            let weights: Vec<u16> = members.iter().map(|pane| pane.weight).collect();
+            let rects = geometry::rects(&self.direction, &weights, self.cols, self.area_rows, 1);
+            for (pane, rect) in members.iter().zip(rects.iter()) {
+                held.push((pane.name.clone(), rect.cols, rect.rows));
+            }
+        }
+        held
+    }
+
+    /// tell_sizes gives every pane the size of its own place and tells its
+    /// program to redraw.
+    fn tell_sizes(&mut self) -> Vec<String> {
+        let sizes = self.sizes();
+        let mut told: Vec<String> = Vec::new();
+        for (name, cols, rows) in sizes {
+            let at = match self.panes.iter().position(|pane| pane.name == name) {
+                Some(at) => at,
+                None => continue,
+            };
+            let master = self.panes[at].shell.master;
+            let pid = self.panes[at].shell.pid;
+            if tty::set_window_size(master, cols, rows).is_ok() {
+                unsafe {
+                    libc::kill(-pid, libc::SIGWINCH);
+                }
+                told.push(name);
+            }
+        }
+        told
+    }
+
+    /// shape answers the layout as it stands, so it can be written back to
+    /// the file the shape was read from.
+    fn shape(&self) -> Vec<layout::Pane> {
+        self.panes
+            .iter()
+            .map(|pane| layout::Pane {
+                name: pane.name.clone(),
+                tab: pane.tab.clone(),
+                program: pane.shell.program.clone(),
+                weight: pane.weight,
+                cols: self.cols,
+                rows: self.area_rows,
+            })
+            .collect()
     }
 
     /// record builds one event record: the identity and the timing of the
@@ -1297,32 +1376,100 @@ fn answer(session: &mut Session, at: usize, line: &str) -> Result<bool, String> 
                 answer_client(session, at, &record);
                 return Ok(false);
             }
-            // One window for the whole session: every pane — a shell or an
-            // editor — is told the same size, so what the owner sees in one
-            // pane is what the other pane draws.
-            let mut told: Vec<String> = Vec::new();
-            for pane in &session.panes {
-                let set = tty::set_window_size(pane.shell.master, cols, rows);
-                if set.is_ok() {
-                    unsafe {
-                        libc::kill(-pane.shell.pid, libc::SIGWINCH);
-                    }
-                    told.push(pane.name.clone());
-                }
-            }
+            // One window for the whole session, and every pane gets the size
+            // of its OWN place in it: a shell or an editor is told the size
+            // of the frame it is drawn in, so what the owner sees in one
+            // pane is what that pane draws.
+            let area = request
+                .get("area-rows")
+                .and_then(|value| value.as_u64())
+                .unwrap_or(rows as u64) as u16;
             session.cols = cols;
             session.rows = rows;
+            session.area_rows = area;
+            let told = session.tell_sizes();
             let record = session.record(Fields {
                 kind: "info",
                 who: "holder",
                 what: "the window changed",
                 why: "the client told the session the size of the terminal",
-                how: "every pane's terminal was resized and every program was told to redraw",
-                inputs: json!({ "cols": cols, "rows": rows, "client": client_name(&request) }),
+                how: "every pane's terminal was resized to its own place and every program was told to redraw",
+                inputs: json!({ "cols": cols, "rows": rows, "area-rows": area, "client": client_name(&request) }),
                 outputs: json!({ "panes": Value::Array(
                     told.iter().map(|name| Value::from(name.clone())).collect::<Vec<Value>>()
                 ) }),
                 result: json!({}),
+            });
+            session.write(&record);
+            answer_client(session, at, &record);
+            Ok(true)
+        }
+        "weight" => {
+            // A pane wants more of the space, or less of it: the weight is
+            // the pane's share, and the layout file keeps it.
+            let name = request
+                .get("pane")
+                .and_then(|value| value.as_str())
+                .unwrap_or("")
+                .to_string();
+            let weight = request
+                .get("weight")
+                .and_then(|value| value.as_u64())
+                .unwrap_or(0) as u16;
+            let found = session.panes.iter().position(|pane| pane.name == name);
+            let at = match found {
+                Some(at) => at,
+                None => {
+                    let record = session.record(Fields {
+                        kind: "fail",
+                        who: "holder",
+                        what: "the pane did not grow",
+                        why: "there is no pane of that name",
+                        how: "the name was looked for among the open panes and refused",
+                        inputs: json!({ "pane": name }),
+                        outputs: json!({}),
+                        result: json!({ "why": format!("there is no pane named {}", name) }),
+                    });
+                    session.write(&record);
+                    answer_client(session, at, &record);
+                    return Ok(true);
+                }
+            };
+            if weight == 0 {
+                let record = session.record(Fields {
+                    kind: "fail",
+                    who: "holder",
+                    what: "the pane did not grow",
+                    why: "a pane wants at least one part of the space",
+                    how: "the weight was read and refused",
+                    inputs: json!({ "pane": name, "weight": weight }),
+                    outputs: json!({}),
+                    result: json!({ "why": "a pane wants at least one part of the space" }),
+                });
+                session.write(&record);
+                answer_client(session, at, &record);
+                return Ok(true);
+            }
+            let before = session.panes[at].weight;
+            session.panes[at].weight = weight;
+            let told = session.tell_sizes();
+            // The shape is written back where it was read: the layout file
+            // IS the session's shape.
+            let written = match session.layout_path.clone() {
+                Some(path) => layout::write(&path, &session.direction, &session.shape()),
+                None => Ok(()),
+            };
+            let record = session.record(Fields {
+                kind: "info",
+                who: "holder",
+                what: "the pane changed its size",
+                why: "the client asked for a different share of the space",
+                how: "the weight was kept, every pane was given the size of its own place, and the layout file was written back",
+                inputs: json!({ "pane": name, "weight": weight, "before": before }),
+                outputs: json!({ "panes": Value::Array(
+                    told.iter().map(|one| Value::from(one.clone())).collect::<Vec<Value>>()
+                ) }),
+                result: json!({ "written": written.is_ok() }),
             });
             session.write(&record);
             answer_client(session, at, &record);

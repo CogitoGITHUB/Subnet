@@ -20,6 +20,7 @@ use super::tty;
 use super::wire;
 use super::config::{ConfigFile, Reload};
 use super::control;
+use super::geometry;
 
 /// ESCAPE leaves Insert, and cancels a sequence or the explorer.
 const ESCAPE: u8 = 0x1b;
@@ -68,15 +69,6 @@ pub struct PaneView {
     /// pane's lines. Zero is the tail: the newest words. The page keys
     /// move it, and the view shows the page the owner scrolled to.
     pub scroll: usize,
-}
-
-/// Rect is one pane's place on the terminal: where it starts and how big it
-/// is. The rows and the columns are 1-based, the way the terminal counts.
-struct Rect {
-    top: u16,
-    left: u16,
-    rows: u16,
-    cols: u16,
 }
 
 /// Panel is the box that lies over the panes: the keymap explorer, the
@@ -355,55 +347,16 @@ impl Screen {
             .unwrap_or_else(|| "main".to_string())
     }
 
-    /// rects answers where each pane of the current tab sits on the terminal.
-    fn rects(&self, cols: u16, rows: u16, top: u16) -> Vec<Rect> {
+    /// rects answers where each pane of the current tab sits on the
+    /// terminal. It is the holder's own geometry, so the drawing here and
+    /// the sizes the programs get cannot drift apart.
+    fn rects(&self, cols: u16, rows: u16, top: u16) -> Vec<geometry::Rect> {
         let members = self.tab_panes();
-        let total: u32 = members
+        let weights: Vec<u16> = members
             .iter()
-            .map(|at| self.panes[*at].weight.max(1) as u32)
-            .sum();
-        let total = total.max(1);
-        let mut rects: Vec<Rect> = Vec::new();
-        if self.direction == "column" {
-            let mut top: u16 = top;
-            let mut used: u32 = 0;
-            for (at, index) in members.iter().enumerate() {
-                let weight = self.panes[*index].weight.max(1) as u32;
-                let height = if at + 1 == members.len() {
-                    (rows as u32).saturating_sub(used)
-                } else {
-                    (rows as u32 * weight) / total
-                };
-                used += height;
-                rects.push(Rect {
-                    top,
-                    left: 1,
-                    rows: height.max(3) as u16,
-                    cols,
-                });
-                top += height.max(3) as u16;
-            }
-        } else {
-            let mut left: u16 = 1;
-            let mut used: u32 = 0;
-            for (at, index) in members.iter().enumerate() {
-                let weight = self.panes[*index].weight.max(1) as u32;
-                let width = if at + 1 == members.len() {
-                    (cols as u32).saturating_sub(used)
-                } else {
-                    (cols as u32 * weight) / total
-                };
-                used += width;
-                rects.push(Rect {
-                    top,
-                    left,
-                    rows,
-                    cols: width.max(6) as u16,
-                });
-                left += width as u16;
-            }
-        }
-        rects
+            .map(|at| self.panes[*at].weight.max(1))
+            .collect();
+        geometry::rects(&self.direction, &weights, cols, rows, top)
     }
 
     /// draw answers the whole screen as the escape sequences that draw it.
@@ -579,7 +532,7 @@ impl Screen {
 
     /// pane_lines answers the lines of one pane: its frame, its name, and
     /// what its program said.
-    fn pane_lines(&self, index: usize, rect: &Rect, focused: bool) -> Vec<String> {
+    fn pane_lines(&self, index: usize, rect: &geometry::Rect, focused: bool) -> Vec<String> {
         let inner = rect.cols.saturating_sub(2) as usize;
         let height = rect.rows.saturating_sub(2) as usize;
         let mut lines: Vec<String> = Vec::new();
@@ -992,6 +945,8 @@ impl Screen {
                 self.move_focus(-1);
                 Action::Nothing
             }
+            Command::PaneGrow => self.change_weight(1),
+            Command::PaneShrink => self.change_weight(-1),
             Command::OpenAgent => self.open_agent(),
             Command::OpenEditor => {
                 let program = self.editor_program.clone();
@@ -1425,6 +1380,8 @@ impl Screen {
             })),
             ["pane", "next"] => self.run(Command::PaneNext),
             ["pane", "previous"] => self.run(Command::PanePrevious),
+            ["pane", "grow"] => self.run(Command::PaneGrow),
+            ["pane", "shrink"] => self.run(Command::PaneShrink),
             ["workspace"] => self.run(Command::WorkspaceList),
             ["workspace", "context"] => self.run(Command::WorkspaceContext),
             ["workspace", "open", name] => Action::Request(json!({
@@ -1633,9 +1590,36 @@ impl Screen {
         }))
     }
 
+    /// change_weight asks the holder for more of the space, or less of it,
+    /// for the focused pane: the pane's share is its weight, and the layout
+    /// file keeps it.
+    fn change_weight(&mut self, by: i32) -> Action {
+        let pane = self.focused_pane();
+        if pane.is_empty() {
+            self.message = "there is no pane to change".to_string();
+            return Action::Nothing;
+        }
+        let weight = self
+            .panes
+            .iter()
+            .find(|held| held.name == pane)
+            .map(|held| held.weight)
+            .unwrap_or(1) as i32;
+        let next = (weight + by).max(1) as u16;
+        if next as i32 == weight {
+            self.message = "the pane already has the smallest share".to_string();
+            return Action::Nothing;
+        }
+        self.message = format!("the pane {} takes {} of the space", pane, next);
+        Action::Request(json!({
+            "op": "weight",
+            "pane": pane,
+            "weight": next
+        }))
+    }
+
     /// focus_pane gives the focus to the pane with that name.
-    fn focus_pane(&mut self, name: &str) -> bool {
-        match self.panes.iter().position(|pane| pane.name == name) {
+    fn focus_pane(&mut self, name: &str) -> bool {        match self.panes.iter().position(|pane| pane.name == name) {
             Some(at) => {
                 self.focused = at;
                 self.message = format!("the focus is on {}", name);
@@ -1855,13 +1839,18 @@ pub fn session(
         if size.0 != screen.cols || size.1 != screen.rows {
             screen.cols = size.0;
             screen.rows = size.1;
+            // The rows the panes get: the window minus the screen's own
+            // furniture. The holder gives every program the size of the
+            // place it is drawn in, so the two cannot drift apart.
+            let (_, area_rows) = screen.area();
             wire::ask(
                 fd,
                 &json!({
                     "op": "resize",
                     "client": client_name,
                     "cols": size.0,
-                    "rows": size.1
+                    "rows": size.1,
+                    "area-rows": area_rows
                 }),
             )?;
         }

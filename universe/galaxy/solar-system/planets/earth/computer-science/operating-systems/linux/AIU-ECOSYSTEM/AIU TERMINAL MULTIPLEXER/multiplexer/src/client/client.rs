@@ -9,6 +9,7 @@
 // it, never on a clock.
 
 #[path = "../holder/wire.rs"] mod wire;
+#[path = "../holder/geometry.rs"] mod geometry;
 #[allow(dead_code)]
 #[path = "../tty/tty.rs"] mod tty;
 

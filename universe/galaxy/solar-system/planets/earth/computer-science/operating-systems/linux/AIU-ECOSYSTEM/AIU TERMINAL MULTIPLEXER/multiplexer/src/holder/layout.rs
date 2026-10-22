@@ -3,7 +3,7 @@
 // The file is data and it is read once, at the start, as an argument. The
 // holder reads no config file and no environment variable for it (rule 03).
 
-use serde_json::Value;
+use serde_json::{json, Value};
 use std::path::Path;
 
 /// Pane is one pane of a layout: a name, the program it runs, how much of
@@ -102,4 +102,26 @@ pub fn one(name: &str, program: &str, cols: u16, rows: u16) -> Layout {
             rows,
         }],
     }
+}
+
+/// write answers the layout as it stands, written back to the layout file:
+/// the file IS the session's shape, and a change of the shape is written
+/// where the shape was read from. The file is written whole, so a reader
+/// never sees half a shape.
+pub fn write(path: &Path, direction: &str, panes: &[Pane]) -> Result<(), String> {
+    let mut list: Vec<Value> = Vec::new();
+    for pane in panes {
+        list.push(json!({
+            "name": pane.name,
+            "tab": pane.tab,
+            "program": pane.program,
+            "weight": pane.weight
+        }));
+    }
+    let shape = json!({ "direction": direction, "panes": list });
+    let mut text = shape.to_string();
+    text.push('\n');
+    std::fs::write(path, text).map_err(|why| {
+        format!("the layout {} cannot be written: {}", path.display(), why)
+    })
 }

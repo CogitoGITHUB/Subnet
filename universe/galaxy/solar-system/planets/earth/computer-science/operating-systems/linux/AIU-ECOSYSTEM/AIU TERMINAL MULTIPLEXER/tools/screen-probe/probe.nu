@@ -309,6 +309,21 @@ for a in "$@"; do echo "ARG $a"; done' | save --force $agent
     let rsdrawn = (last-drawing ($restarted.stdout | default ""))
     check "the pick restarts over the fresh text" ($rsdrawn | str contains "there is no region") $"drawn=($rsdrawn | str length)"
 
+    # the pane grows: the share of the space is the weight, and every
+    # program is given the size of the place it is drawn in. The escape
+    # leaves the selection first: the pick above left it open, and the
+    # pane keys are the owner's, not the selection's. The layout gave
+    # the pane two parts of the space, so the grow makes it three.
+    let grown = (do -i {
+        ^printf "\u{1b}p+" | ^$client --state-dir $state_dir --op screen
+    } | complete)
+    let gdrawn = (last-drawing ($grown.stdout | default ""))
+    check "the pane grows" ($gdrawn | str contains "takes 3 of the space") $"drawn=($gdrawn | str length)"
+
+    let log = (records $client $state_dir)
+    let resized = ($log | where {|r| $r | get -o what | default "" | str contains "the pane changed its size" } | length)
+    check "the holder kept the new size" ($resized > 0) $"records=($resized)"
+
     # the holder goes away with the probe
     let pid_file = ($state_dir | path join "holder.pid")
     if ($pid_file | path exists) {

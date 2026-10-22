@@ -97,6 +97,10 @@ pub enum Command {
     PaneRename,
     PaneNext,
     PanePrevious,
+    /// PaneGrow gives the focused pane more of the space.
+    PaneGrow,
+    /// PaneShrink gives the focused pane less of the space.
+    PaneShrink,
     /// OpenAgent opens the agent beside the focused pane, with the pane's
     /// context attached.
     OpenAgent,
@@ -658,6 +662,20 @@ pub static PANES: &[Binding] = &[
         bytes: b"pe",
         about: "open the editor beside this pane",
         action: Action::Command(Command::OpenEditor),
+        need: Need::Always,
+    },
+    Binding {
+        keys: "p +",
+        bytes: b"p+",
+        about: "this pane takes more of the space",
+        action: Action::Command(Command::PaneGrow),
+        need: Need::Always,
+    },
+    Binding {
+        keys: "p -",
+        bytes: b"p-",
+        about: "this pane takes less of the space",
+        action: Action::Command(Command::PaneShrink),
         need: Need::Always,
     },
 ];
