@@ -1,6 +1,6 @@
 #+TITLE: 04 — Panes and layouts
 # One job: one small checklist item of the shared build up to the done line.
-# Status: TODO; added 2026-10-16, in chronological order.
+# Status: DONE; added 2026-10-16; the panes are in b9541c94.
 
 * What
 # the work, in a line or two.
@@ -17,4 +17,6 @@
 
 * State
 # TODO; DONE records its commit hash; BLOCKED names its blocker.
-  TODO.
+  DONE (b9541c94) — a real work layout is restored from its file on the
+  phone, every pane's shell is alive, and each pane's output is
+  recorded under that pane's own name.

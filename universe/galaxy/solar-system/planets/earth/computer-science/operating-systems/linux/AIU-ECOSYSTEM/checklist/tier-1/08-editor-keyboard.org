@@ -1,6 +1,6 @@
 #+TITLE: 08 — Editor keyboard
 # One job: one small checklist item of the shared build up to the done line.
-# Status: TODO; added 2026-10-16, in chronological order.
+# Status: PARTLY DONE; added 2026-10-16; the keys are in f2bd7ac5 and b4f1f75b.
 
 * What
 # the work, in a line or two.
@@ -17,4 +17,8 @@
 
 * State
 # TODO; DONE records its commit hash; BLOCKED names its blocker.
-  TODO.
+  PARTLY DONE (f2bd7ac5, b4f1f75b) — the keys are decoded in Rust and
+  the keymaps and the commands live in Racket, the live session reads
+  the terminal, and the selection and the send have their keys. What is
+  left is the routing walk inside a live editing session, with the keys
+  read from the terminal.

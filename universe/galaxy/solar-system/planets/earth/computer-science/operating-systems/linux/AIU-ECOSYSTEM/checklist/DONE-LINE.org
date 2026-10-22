@@ -8,6 +8,21 @@
 * Why it is a line and not a date
 # it is a state, proven by the checklist items above it; never a schedule.
 
+* Where the line stands on 2026-10-22
+# the open items, named; the line is a state, and it is not crossed while any
+# of them stands.
+  - Every item of the shared checklist that is the multiplexer's is DONE, and
+    the state of every item is written down in =tier-1/= with the commit that
+    did the work.
+  - The editor's own halves are open: the routing walk with the editor inside
+    a pane (06), the walk inside a live editing session (08), the live config
+    reload (10), the agent's own writes coming back through the audit (14),
+    and the notation hosted in the editor (18).
+  - The second adapter is skipped by the owner (12, Hermes, 2026-10-20), so
+    the clause that names Hermes cannot hold as written.
+  - The deletion of this shared checklist is the owner's to make, and it comes
+    after the line is crossed, not before.
+
 * What crossing it triggers
 # the shared checklist is deleted and each program starts its own checklist in its own directory.
 

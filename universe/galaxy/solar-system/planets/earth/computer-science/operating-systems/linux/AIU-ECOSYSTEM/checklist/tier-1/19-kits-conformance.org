@@ -1,6 +1,6 @@
 #+TITLE: 19 — Kits conformance
 # One job: one small checklist item of the shared build up to the done line.
-# Status: TODO; added 2026-10-16, in chronological order.
+# Status: DONE; added 2026-10-16; the kits are in 35f2202c and 1c3b645a.
 
 * What
 # the work, in a line or two.
@@ -19,4 +19,7 @@
 
 * State
 # TODO; DONE records its commit hash; BLOCKED names its blocker.
-  TODO.
+  DONE (35f2202c, 1c3b645a) — the checklist runs green for both
+  programs: the editor's six proofs are its own gate stage and the
+  multiplexer's six are the gate stage kit-check, and a proof that
+  would check nothing is never a pass.

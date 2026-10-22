@@ -1,6 +1,6 @@
 #+TITLE: 12 — AI link, second adapter
 # One job: one small checklist item of the shared build up to the done line.
-# Status: TODO; added 2026-10-16, in chronological order.
+# Status: SKIPPED BY THE OWNER; added 2026-10-16; Hermes was skipped on 2026-10-20.
 
 * What
 # the work, in a line or two.
@@ -17,4 +17,7 @@
 
 * State
 # TODO; DONE records its commit hash; BLOCKED names its blocker.
-  TODO.
+  SKIPPED BY THE OWNER (2026-10-20) — the owner skipped the Hermes
+  integration, so no second adapter is written. The boundary is one
+  way, and the second adapter would be one more file beside the first;
+  nothing else in the program changes when it is wanted.

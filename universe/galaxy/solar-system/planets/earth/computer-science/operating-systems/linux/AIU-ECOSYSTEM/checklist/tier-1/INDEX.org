@@ -11,27 +11,26 @@
 * Files
 # one line per file: its name, then the single job it performs. This index is updated in the same commit as any change here.
 
-  - 01-racket-in-binary.org — probe: the minimal Racket build inside a baked binary on this phone; TODO
-  - 02-tiny-rust-binary.org — probe: one tiny Rust binary builds and starts under proot; TODO
-  - 03-holder-and-tty-facade.org — the holder holds a shell; detach, reattach, the log; TODO
-  - 04-panes-and-layouts.org — panes split; a layout opens from its file; pane status; TODO
-  - 05-editor-plain-text-slice.org — open, type, save plain text with keys; the JSON surface; TODO
-  - 06-key-routing-across-layers.org — first-receiver routing; the reserved prefix; the editor in a pane; TODO
-  - 07-editor-journal-and-replay.org — every edit journaled; replay after a kill; TODO
-  - 08-editor-keyboard.org — keymaps live from source; the editor's routes; selection and send keys; TODO
-  - 09-dashboard-and-placement.org — the dashboard display and free UI placement; TODO
-  - 10-dev-mode-in-both.org — work mode live from source; bake keeps last good; measured start; both programs; TODO
-  - 11-ai-link-first-adapter.org — the AI-link boundary and the first adapter; bundles out, events back; gating; TODO
-  - 12-ai-link-second-adapter.org — the second adapter on the same boundary and skill; TODO
-  - 13-live-agent-audit.org — file-change events; agent or external marks; accept and undo; TODO
-  - 14-git-checkpoints.org — a checkpoint before agent actions; rollback; the stop switch; TODO
-  - 15-secrets-package.org — the redaction seam and the injection wrapper; no secret reaches an agent; TODO
-  - 16-select-and-send-editor.org — one key sends with the full bundle from the editor; TODO
-  - 17-select-and-send-multiplexer.org — the same from the multiplexer; command records included; TODO
-  - 18-notation-core-hosted.org — the engine loads through its boundary; the loader stays independent; TODO
-  - 19-kits-conformance.org — the kit checklist green for the editor and the multiplexer; TODO
-  - 20-done-line-crossing.org — the done-line state; the shared checklist closes; TODO
+  - 01-racket-in-binary.org — probe: the minimal Racket build inside a baked binary on this phone; DONE
+  - 02-tiny-rust-binary.org — probe: one tiny Rust binary builds and starts under proot; DONE
+  - 03-holder-and-tty-facade.org — the holder holds a shell; detach, reattach, the log; DONE
+  - 04-panes-and-layouts.org — panes split; a layout opens from its file; pane status; DONE
+  - 05-editor-plain-text-slice.org — open, type, save plain text with keys; the JSON surface; DONE
+  - 06-key-routing-across-layers.org — first-receiver routing; the reserved prefix; the editor in a pane; PARTLY DONE
+  - 07-editor-journal-and-replay.org — every edit journaled; replay after a kill; DONE
+  - 08-editor-keyboard.org — keymaps live from source; the editor's routes; selection and send keys; PARTLY DONE
+  - 09-dashboard-and-placement.org — the dashboard display and free UI placement; DONE
+  - 10-dev-mode-in-both.org — work mode live from source; bake keeps last good; measured start; both programs; PARTLY DONE
+  - 11-ai-link-first-adapter.org — the AI-link boundary and the first adapter; bundles out, events back; gating; DONE
+  - 12-ai-link-second-adapter.org — the second adapter on the same boundary and skill; SKIPPED BY THE OWNER
+  - 13-live-agent-audit.org — file-change events; agent or external marks; accept and undo; DONE
+  - 14-git-checkpoints.org — a checkpoint before agent actions; rollback; the stop switch; PARTLY DONE
+  - 15-secrets-package.org — the redaction seam and the injection wrapper; no secret reaches an agent; DONE
+  - 16-select-and-send-editor.org — one key sends with the full bundle from the editor; DONE
+  - 17-select-and-send-multiplexer.org — the same from the multiplexer; command records included; DONE
+  - 18-notation-core-hosted.org — the engine loads through its boundary; the loader stays independent; PARTLY DONE
+  - 19-kits-conformance.org — the kit checklist green for the editor and the multiplexer; DONE
+  - 20-done-line-crossing.org — the done-line state; the shared checklist closes; PARTLY DONE
 
 * Later
-# Filled in step 10, one small file per commit; all TODO until the build runs.
-
+# Filled in step 10, one small file per commit; the state of every item is in the item itself, with the commit that did the work.

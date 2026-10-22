@@ -63,7 +63,7 @@ that way.
 | The Git inspection layer inside the multiplexer | Implemented and verified: the key group, the panel and the holder's seam |
 | The screen selection (the biomechanical model) | Implemented and verified: the multiplexer side, the view that scrolls with the page keys, and the pick that restarts over the fresh text; the editor's side is owed |
 | The kit conformance | Implemented and verified: the six proofs run as a gate stage, and the gate is green at 8 stages |
-| The done line | Planned (TODO item 12) |
+| The done line | In progress: the shared checklist records every item's state honestly; the editor's own halves and the owner's deletion of the checklist are owed |
 
 The owner switched the priority to this program on 2026-10-21: it is the foundation under
 the complete workflow, so pm and the editor are paused until it works.

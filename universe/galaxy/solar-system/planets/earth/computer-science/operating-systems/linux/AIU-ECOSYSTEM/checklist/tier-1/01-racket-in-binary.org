@@ -1,6 +1,6 @@
 #+TITLE: 01 — Racket in a baked binary
 # One job: one small checklist item of the shared build up to the done line.
-# Status: TODO; added 2026-10-16, in chronological order.
+# Status: DONE; added 2026-10-16; the probe landed in 903947bb.
 
 * What
 # the work, in a line or two.
@@ -18,4 +18,8 @@
 
 * State
 # TODO; DONE records its commit hash; BLOCKED names its blocker.
-  TODO.
+  DONE (903947bb) — the minimal Racket build starts inside a baked
+  binary: this phone cannot bake it, so the external-process fallback
+  was forced (D-008) and it works. The bare Racket start costs 7517 ms,
+  the wire is one line of JSON each way, and it travels through a pair
+  of files.

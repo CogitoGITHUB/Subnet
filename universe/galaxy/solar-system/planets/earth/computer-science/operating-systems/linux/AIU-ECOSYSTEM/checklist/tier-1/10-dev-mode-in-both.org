@@ -1,6 +1,6 @@
 #+TITLE: 10 — Dev mode in both
 # One job: one small checklist item of the shared build up to the done line.
-# Status: TODO; added 2026-10-16, in chronological order.
+# Status: PARTLY DONE; added 2026-10-16; the mux half is in ff0497ea.
 
 * What
 # the work, in a line or two.
@@ -20,4 +20,7 @@
 
 * State
 # TODO; DONE records its commit hash; BLOCKED names its blocker.
-  TODO.
+  PARTLY DONE (ff0497ea, 4e48b58f, 8f5f7800) — the multiplexer reloads
+  its config live and its bake keeps the last good; the editor reads
+  its tables from the source and bakes them, but the editor does not
+  take a new config in without a restart. That is the editor's item 24.

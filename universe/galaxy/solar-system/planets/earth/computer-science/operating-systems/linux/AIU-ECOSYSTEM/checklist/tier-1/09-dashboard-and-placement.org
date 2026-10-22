@@ -1,6 +1,6 @@
 #+TITLE: 09 — Dashboard and placement
 # One job: one small checklist item of the shared build up to the done line.
-# Status: TODO; added 2026-10-16, in chronological order.
+# Status: DONE; added 2026-10-16; the dashboard landed in 075c2017.
 
 * What
 # the work, in a line or two.
@@ -19,4 +19,6 @@
 
 * State
 # TODO; DONE records its commit hash; BLOCKED names its blocker.
-  TODO.
+  DONE (075c2017) — the dashboard draws on the phone, a piece is placed
+  by data on any of the five edges, and the gate stage dashboard-check
+  proves that every piece of the placeable list is really drawn.

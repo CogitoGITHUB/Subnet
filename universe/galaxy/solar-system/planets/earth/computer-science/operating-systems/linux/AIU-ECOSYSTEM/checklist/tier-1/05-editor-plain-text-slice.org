@@ -1,6 +1,6 @@
 #+TITLE: 05 — Editor plain-text slice
 # One job: one small checklist item of the shared build up to the done line.
-# Status: TODO; added 2026-10-16, in chronological order.
+# Status: DONE; added 2026-10-16; the slice landed in 4006be2e.
 
 * What
 # the work, in a line or two.
@@ -18,4 +18,5 @@
 
 * State
 # TODO; DONE records its commit hash; BLOCKED names its blocker.
-  TODO.
+  DONE (4006be2e) — a real file is opened, edited and saved through the
+  journal on the phone, and a kill loses nothing that was saved.

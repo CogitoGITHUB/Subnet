@@ -1,6 +1,6 @@
 #+TITLE: 03 — Holder and tty facade
 # One job: one small checklist item of the shared build up to the done line.
-# Status: TODO; added 2026-10-16, in chronological order.
+# Status: DONE; added 2026-10-16; the holder is in abab3340.
 
 * What
 # the work, in a line or two.
@@ -18,4 +18,6 @@
 
 * State
 # TODO; DONE records its commit hash; BLOCKED names its blocker.
-  TODO.
+  DONE (abab3340) — the holder keeps a shell alive past the detach of
+  its client, the log is flushed per record, and a second client finds
+  the same session and the same shell.

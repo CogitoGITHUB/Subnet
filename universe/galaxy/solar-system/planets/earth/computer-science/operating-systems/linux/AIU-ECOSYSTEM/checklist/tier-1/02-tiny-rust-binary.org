@@ -1,6 +1,6 @@
 #+TITLE: 02 — Tiny Rust binary
 # One job: one small checklist item of the shared build up to the done line.
-# Status: TODO; added 2026-10-16, in chronological order.
+# Status: DONE; added 2026-10-16; the probe is in 937a2c9e.
 
 * What
 # the work, in a line or two.
@@ -18,4 +18,6 @@
 
 * State
 # TODO; DONE records its commit hash; BLOCKED names its blocker.
-  TODO.
+  DONE (937a2c9e) — one tiny Rust binary builds and starts under proot,
+  and the numbers are written down in the research file. The route is
+  decided: ours is built behind the same contract (D-002).
