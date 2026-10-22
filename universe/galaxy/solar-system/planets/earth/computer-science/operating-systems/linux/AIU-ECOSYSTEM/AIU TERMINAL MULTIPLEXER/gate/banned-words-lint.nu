@@ -1,13 +1,13 @@
 #!/usr/bin/env nu
 # One job: the naming law, made mechanical — no path in the package may carry
-# a banned word. Registered in plan/package-tree.org.
+# a banned word. Registered in multiplexer/INDEX.org.
 #
 # A stage with nothing to check prints NOTHING-TO-CHECK and never PASS.
 
 use ./env.nu *
 
 # The banned words are the ecosystem law's: no core/, engine/, utils/,
-# manager/, handler/, tmp/ (plan/package-tree.org, "The law").
+# manager/, handler/, tmp/ (the ecosystem law's banned words).
 const BANNED = ["core" "engine" "utils" "manager" "handler" "tmp"]
 
 # main scans every path under multiplexer/ for a banned segment and prints each

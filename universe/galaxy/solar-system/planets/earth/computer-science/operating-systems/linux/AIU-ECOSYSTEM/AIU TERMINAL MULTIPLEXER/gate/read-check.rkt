@@ -1,6 +1,6 @@
 #lang racket/base
 ;; One job: the paren check — READ-BAD file:line, the bad form named.
-;; Registered in plan/package-tree.org; lands with TODO item 1.
+;; Registered in multiplexer/INDEX.org; lands with TODO item 1.
 ;;
 ;; Usage:
 ;;   /root/home/shape/opt/racket-full/bin/racket gate/read-check.rkt <files...>

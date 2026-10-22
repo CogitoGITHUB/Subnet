@@ -1,6 +1,6 @@
 #!/usr/bin/env nu
 # One job: the dispatcher — named stages, one table, --list.
-# Registered in plan/package-tree.org. check.nu is the only gate entry point;
+# Registered in multiplexer/INDEX.org. check.nu is the only gate entry point;
 # no other script may be the thing someone runs "by hand" instead.
 #
 # Three rules this file keeps:

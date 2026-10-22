@@ -1,5 +1,5 @@
 #!/usr/bin/env nu
-# One job: pinned Nu or exit 3; never fetches. Registered in plan/package-tree.org.
+# One job: pinned Nu or exit 3; never fetches. Registered in multiplexer/INDEX.org.
 #
 # The gate needs one Nushell version, so this script states which one and
 # refuses anything else. It never downloads, never installs and never writes

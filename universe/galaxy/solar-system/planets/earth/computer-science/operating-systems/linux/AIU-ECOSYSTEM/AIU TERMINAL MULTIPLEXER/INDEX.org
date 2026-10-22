@@ -18,7 +18,6 @@
   - decisions/ — choices already made, newest first
   - dev-mode/ — what work mode loads live and what a bake bakes in
   - picker/ — the television channels: the picker over the multiplexer's own records
-  - plan/ — one topic per file, the general build plan
   - research/ — program-specific findings only
   - rules/ — the hard rules, one file each
   - tools/ — the probes that prove the program, and the print-only install scripts

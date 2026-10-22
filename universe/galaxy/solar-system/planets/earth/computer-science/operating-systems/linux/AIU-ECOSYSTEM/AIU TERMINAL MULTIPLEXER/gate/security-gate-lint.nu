@@ -1,6 +1,6 @@
 #!/usr/bin/env nu
 # One job: the security gate — the predicates are called, the writers are audited.
-# Registered in plan/package-tree.org.
+# Registered in multiplexer/INDEX.org.
 #
 # The multiplexer's security area does not exist yet, so this stage has nothing
 # to check: it prints NOTHING-TO-CHECK and never PASS. A stage that checked

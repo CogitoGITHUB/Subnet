@@ -1,7 +1,7 @@
 #!/usr/bin/env nu
 # One job: the area table above, enforced — a require may point downward only.
-# Registered in plan/package-tree.org; the area order is transcribed from
-# plan/package-tree.org, "The law", and that file stays the source for it.
+# Registered in multiplexer/INDEX.org; the area order is declared below, in
+# AREAS, and that declared list is the source for it.
 #
 # errors is the floor and entry is the ceiling; a reference from a lower area
 # to a higher one is a failure. This lint starts checking for real by itself as
@@ -20,7 +20,7 @@
 
 use ./env.nu *
 
-# The areas, lowest first, transcribed from plan/package-tree.org: a require
+# The areas, lowest first, as AREAS declares them: a require
 # may only point downward through this order.
 const AREAS = [
     "errors" "narration" "machine" "security" "join" "devloop" "tty" "holder"

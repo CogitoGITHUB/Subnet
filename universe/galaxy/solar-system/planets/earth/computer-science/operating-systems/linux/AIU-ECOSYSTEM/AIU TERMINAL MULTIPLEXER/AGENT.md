@@ -12,7 +12,7 @@
 - The root hold D-001 ("no tests for now") named the three new projects; the notation's own list records the owner lifting it on 2026-10-19, and this package's tests came with that work. The root log has no separate entry for the multiplexer, so the facts are written here and the log is the owner's to amend.
 
 ## Building
-- The package lives in its own subdir (multiplexer/); the whole tree and every name are registered in plan/package-tree.org and, for the package itself, in multiplexer/INDEX.org — the register the gate reads. Register first: a name that is not there does not exist yet.
+- The package lives in its own subdir (multiplexer/); the whole tree and every name are registered in multiplexer/INDEX.org — the register the gate reads. Register first: a name that is not there does not exist yet.
 - Comment everything. One file, one job; one topic per directory; an index per directory, updated in the same commit as any change in it.
 - Nothing is "done" without real output.
 

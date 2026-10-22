@@ -1,6 +1,6 @@
 #!/usr/bin/env nu
 # One job: the Nushell mirror of the one HOME seam — where HOME, the project
-# tree and Racket live. Registered in plan/package-tree.org.
+# tree and Racket live. Registered in multiplexer/INDEX.org.
 #
 # No other gate script reads HOME or spells a path; everything starts here, so
 # there is one place to change. machine/directories.rkt is the same seam for
