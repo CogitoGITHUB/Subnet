@@ -21,5 +21,5 @@
 - If git reports a lock, wait and retry; never force.
 
 ## Rules that win
-- The root HARD-RULES.org, this project's rules/, and the contract before anything that crosses projects.
+- The root HARD-RULES.org, this project's README.md, and the contract before anything that crosses projects. (The project's `rules/` directory was removed by the owner on 2026-10-23; the root rules and the README keep the binding parts.)
 - The contract changes only through the root decision log (DECISIONS.org).

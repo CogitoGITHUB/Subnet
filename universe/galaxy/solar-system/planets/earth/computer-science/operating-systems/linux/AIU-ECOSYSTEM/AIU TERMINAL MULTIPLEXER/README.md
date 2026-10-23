@@ -457,19 +457,50 @@ What is not verified: the key routing with the editor in a pane.
 
 ## Roadmap
 
-`TODO.org` is the one list, in build order. The next items are the key routing across
-layers with the editor in a pane, select and send to both agents, and the done line. The
-screen selection (the biomechanical model: the overlay, the visible text only, the second key
-as the action) is built in the multiplexer, and what is still owed is the editor's own pick:
-the editor picks its own text the same way.
+`TODO.org` is the one list, in build order; a finished item is deleted from it in the same
+commit that does the work. The next items are the clipboard bridge, then the owner's group G
+(no token and no attached screen, the goal mode, the git checkpoints, undo, the wake lock),
+then group D, then group A.
+
+### Later plans
+
+- **Android notifications, from the phone and not the terminal.** Five events should raise a
+  notification: the agent blocked, the agent done, the agent failed, a goal finished, and a
+  command finished in a background pane; each kind can be turned on and off on its own, and a
+  tap opens the session at that pane. The route is `termux-notification` — the `termux-api`
+  scripts ARE installed (measured 2026-10-23) — but every one of those scripts answers through
+  the **Termux:API add-on app** (`com.termux.api`), and that app is NOT on this phone:
+  `pm list packages` names only `com.termux` and `com.termux.x11`, `termux-clipboard-get` waits
+  for ever (exit 124 under a 5 s bound), and `termux-notification --help` prints only because
+  the help text never reaches the add-on. So the plan waits for that install, and until then
+  every such call must be bounded and must say by name what is missing. The same missing app
+  blocks the clipboard's paste-in direction.
+
+## The Android clipboard on this phone
+
+Measured 2026-10-23, inside the proot, with the phone's own output:
+
+- **OSC 52 is the one route that works**, and it is write-only. Termux's terminal emulator
+  hands the base64 payload to `ClipboardManager.setPrimaryClip`, so the text lands in the
+  ANDROID clipboard, not only in the terminal's buffer. Three limits: one OSC string of at
+  most 8192 characters (so about 6 KB of text, and a longer copy is dropped silently), the
+  write only happens while the Termux terminal is in the foreground, and the emulator does
+  NOT answer the `?` read query — so the clipboard cannot be read back this way.
+- **The `termux-clipboard-set` / `-get` scripts FAIL.** They are installed, but each one
+  answers through the Termux:API add-on app (`com.termux.api`), which is not on this phone,
+  so the call waits for ever: exit 124 under a 15 s bound then a 5 s bound, with no output.
+  `am` itself is fine (0.8.0; a direct broadcast exits 0 and says it was sent) — the answer
+  just never comes. Any code that calls these scripts MUST name the missing add-on instead
+  of calling them, or it hangs.
+- Ruled out: `cmd clipboard` (not implemented), `service call clipboard` (undocumented,
+  drifts per Android version), Termux:X11's clipboard sharing (server not running, no
+  `xclip`/`xsel`).
 
 ## Related documentation
 
 - `TODO.org` — the one list of what is left, in build order.
-- `HANDOFF.org` — what a fresh conversation needs to start here.
 - `INDEX.org` — every file in this directory, with its job.
-- `rules/` — the hard rules, one file each.
-- `research/` — what was measured on this phone.
+- `ai/` — the agent side: the skill and the OpenCode plugin.
 - `../contract/` — the one written contract between the programs.
 - `../DECISIONS.org` — the decisions that cross programs.
 

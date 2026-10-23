@@ -6,7 +6,6 @@
 # one line per file: its name, then the single job it performs. This index is updated in the same commit as any change here.
 
   - README.md — what this program is and what it does today
-  - HANDOFF.org — everything a fresh conversation needs to start on this program
   - AGENT.md — the session rules: scope, the light gate, building, git
   - TODO.org — the single list of what is left, in build order
   - .gitignore — what never lands in the repository: the reference clones
@@ -18,10 +17,8 @@
   - gate/ — the light gate: the eight stages that check this program
   - multiplexer/ — the package: the holder, the client and the MCP server
   - picker/ — the television channels: the picker over the multiplexer's own records
-  - research/ — program-specific findings only
-  - rules/ — the hard rules, one file each
   - tools/ — the probes that prove the program, and the print-only install scripts
 
 * Later
-# Start at HANDOFF.org. The rules are binding; the contract it points to is shared with the other programs.
+# Start at README.md and AGENT.md. The contract between the programs is shared, and it is binding.
 
