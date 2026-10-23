@@ -499,7 +499,6 @@ Measured 2026-10-23, inside the proot, with the phone's own output:
 ## Related documentation
 
 - `TODO.org` — the one list of what is left, in build order.
-- `INDEX.org` — every file in this directory, with its job.
 - `ai/` — the agent side: the skill and the OpenCode plugin.
 - `../contract/` — the one written contract between the programs.
 - `../DECISIONS.org` — the decisions that cross programs.
@@ -507,7 +506,7 @@ Measured 2026-10-23, inside the proot, with the phone's own output:
 ## Development
 
 ```bash
-cd "AIU TERMINAL MULTIPLEXER/multiplexer"
+cd "AIU TERMINAL MULTIPLEXER/terminal-multiplexer/multiplexer"
 CARGO_TARGET_DIR=/tmp/opencode/mux-target cargo build --offline
 CARGO_TARGET_DIR=/tmp/opencode/mux-target cargo test --offline
 cd ..
