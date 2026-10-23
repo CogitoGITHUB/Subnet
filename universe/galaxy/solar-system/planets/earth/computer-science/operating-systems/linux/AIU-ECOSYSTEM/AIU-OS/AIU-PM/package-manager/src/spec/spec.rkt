@@ -4,9 +4,10 @@
 ;; promises so an invalid value cannot exist (M-10).
 
 (require racket/contract/base
-         "../errors/error-type.rkt"
-         "./version.rkt"
-         "../git/git-commit.rkt")
+          "../errors/error-type.rkt"
+          "./version.rkt"
+          "../errors/git-id.rkt"
+          "../errors/package-name.rkt")
 
 (provide
  (struct-out source)

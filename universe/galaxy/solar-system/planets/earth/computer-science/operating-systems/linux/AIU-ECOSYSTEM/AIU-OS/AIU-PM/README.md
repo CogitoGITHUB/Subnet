@@ -11,9 +11,9 @@ The vault is real Git clones. Profiles are immutable generations. Rollback is a 
 move. Everything important is narrated. Agents receive the same verbs and the same
 refusals.
 
-**Last updated:** 2026-10-21
-**Status:** the core surface is complete and gated; the implementation is **paused** by the
-owner (2026-10-21), because the terminal multiplexer is built first.
+**Last updated:** 2026-10-22
+**Status:** the core surface is complete and gated; the implementation is **paused** by
+the owner (2026-10-22), because the terminal multiplexer is built first.
 
 **Working now:** the everyday commands except `pm backup`, the why/owner surface, the
 profiles and generations, and the machine surface.

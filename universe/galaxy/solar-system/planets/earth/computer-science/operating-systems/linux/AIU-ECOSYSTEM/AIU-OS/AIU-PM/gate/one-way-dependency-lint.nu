@@ -23,7 +23,7 @@ const MAY_USE = {
     security: [errors]
     spec: [errors security]
     process: [errors narration machine]
-    git: [errors narration process machine]
+    git: [errors narration process machine security]
     build: [process errors narration spec]
     store: [spec git errors narration]
     queue: [errors narration machine store]

@@ -4,10 +4,11 @@
 ;; hash or derive anything.
 
 (require
- "../errors/error-type.rkt"
- "../git/git-commit.rkt"
- "spec.rkt"
- "./version.rkt")
+  "../errors/error-type.rkt"
+  "../errors/git-id.rkt"
+  "../errors/package-name.rkt"
+  "spec.rkt"
+  "./version.rkt")
 
 (provide
  ;; The twelve actions (A-3: values first, effects at the edge)

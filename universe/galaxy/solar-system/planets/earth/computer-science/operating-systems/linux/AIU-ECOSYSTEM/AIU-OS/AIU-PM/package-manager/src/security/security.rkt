@@ -13,51 +13,51 @@
 ;; can look the name up and two copies of one policy cannot drift.
 
 (require racket/contract/base
-         racket/string
-         "../errors/error-type.rkt"
-         "../git/git-commit.rkt")
+          racket/string
+          "../errors/error-type.rkt"
+          "../errors/git-id.rkt")
 
 (provide
- (contract-out
-  ;; any -> boolean, an exact pinned commit, never a ref that can move
-  [commit-pinned? (-> any/c boolean?)]
-  ;; any -> boolean, nothing requested means nothing pinned
-  [source-pinned? (-> any/c boolean?)]
-  ;; string boolean -> boolean, file:// only with the test escape
-  [origin-allowed? (-> string? boolean? boolean?)]
-  ;; path-string path-string -> boolean, target stays under prefix
-  [path-contained? (-> path-string? path-string? boolean?)]
-  ;; string string boolean -> boolean, resolved target inside and exists
-  [symlink-target-ok? (-> string? string? boolean? boolean?)]
-  ;; any -> boolean, only 755 and 644 are ever written
-  [install-mode-allowed? (-> any/c boolean?)]
-  ;; string -> boolean, no password in the URL
-  [credential-safe? (-> string? boolean?)]
-  ;; any -> boolean, the commands that change the machine
-  [state-changing? (-> any/c boolean?)]
+  (contract-out
+   ;; any -> boolean, an exact pinned commit, never a ref that can move
+   [commit-pinned? (-> any/c boolean?)]
+   ;; any -> boolean, nothing requested means nothing pinned
+   [source-pinned? (-> any/c boolean?)]
+   ;; string boolean -> boolean, file:// only with the test escape
+   [origin-allowed? (-> string? boolean? boolean?)]
+   ;; path-string path-string -> boolean, target stays under prefix
+   [path-contained? (-> path-string? path-string? boolean?)]
+   ;; string string boolean -> boolean, resolved target inside and exists
+   [symlink-target-ok? (-> string? string? boolean? boolean?)]
+   ;; any -> boolean, only 755 and 644 are ever written
+   [install-mode-allowed? (-> any/c boolean?)]
+   ;; string -> boolean, no password in the URL
+   [credential-safe? (-> string? boolean?)]
+   ;; any -> boolean, the commands that change the machine
+   [state-changing? (-> any/c boolean?)]
 
-  ;; the four confirmation refusals, in one total predicate
-  [confirmation-refusal (-> boolean? boolean? boolean? boolean?
-                            (or/c string? #f))])
+   ;; the four confirmation refusals, in one total predicate
+   [confirmation-refusal (-> boolean? boolean? boolean? boolean?
+                             (or/c string? #f))])
 
-   ;; section 9: the rule as data. struct-out brings the three accessors,
-  ;; so a reader (a test, a doc, the MCP server) can ask a rule what it
-  ;; stands for; rule-set is the whole list, in predicate order. The nine
-  ;; constants are DATA, not predicates, so they are provided plain: a
-  ;; raise site cites one and nothing has to call it.
- (struct-out security-rule)
- rule-set
- ;; string -> (or/c security-rule? #f). Total, so provided plain.
- rule-by-id
- rule-commit-pinned
- rule-source-trust
- rule-origin
- rule-path-escape
- rule-symlink-target
- rule-install-mode
- rule-credential-safe
- rule-state-changing
- rule-readable-declaration)
+    ;; section 9: the rule as data. struct-out brings the three accessors,
+   ;; so a reader (a test, a doc, the MCP server) can ask a rule what it
+   ;; stands for; rule-set is the whole list, in predicate order. The nine
+   ;; constants are DATA, not predicates, so they are provided plain: a
+   ;; raise site cites one and nothing has to call it.
+  (struct-out security-rule)
+  rule-set
+  ;; string -> (or/c security-rule? #f). Total, so provided plain.
+  rule-by-id
+  rule-commit-pinned
+  rule-source-trust
+  rule-origin
+  rule-path-escape
+  rule-symlink-target
+  rule-install-mode
+  rule-credential-safe
+  rule-state-changing
+  rule-readable-declaration)
 
 ;; ---------------------------------------------------------------------------
 ;; 1. Source trust. A git source is pinned to an exact commit id,

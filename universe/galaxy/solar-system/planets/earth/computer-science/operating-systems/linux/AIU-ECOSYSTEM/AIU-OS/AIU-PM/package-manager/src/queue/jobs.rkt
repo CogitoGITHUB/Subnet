@@ -9,18 +9,14 @@
 ;; the documented fallback. One-shot setsid worker, strictly serial.
 
 (require racket/contract/base
-         racket/string
-         racket/port
-         racket/file
-         racket/system
-         racket/runtime-path
-         "../errors/error-type.rkt"
-         "../git/git-commit.rkt"
-         "../git/git-env.rkt"
-         "../spec/spec.rkt"
-         "../machine/cancel.rkt"
-         "../git/vault.rkt"
-         "../store/manifest.rkt")
+          racket/string
+          racket/port
+          racket/file
+          racket/system
+          racket/runtime-path
+          "../errors/error-type.rkt"
+          "../machine/cancel.rkt"
+          "../store/manifest.rkt")
 
 (provide
  (struct-out op-add)
@@ -542,41 +538,43 @@
         [else #f]))
 
 ;; path-string job (-> fetch-progress? any/c) evt? -> void, one op
-(define (worker-run-op state-dir j sink cancel-evt)
+(define (worker-run-op state-dir j sink cancel-evt
+                  vault-add-func vault-fetch-namespace-func
+                  vault-verify-func vault-gc-func)
   (define id (job-id j))
   (define op (job-op j))
   (define vault-root (worker-vault-root state-dir))
   (define holder (format "job ~a" id))
   (cond [(op-add? op)
-         (define r (vault-add vault-root (op-add-package op)
-                              (op-add-url op)
-                              #:pin (op-add-pin op)
-                              #:fsck-allow (op-add-fsck-allow op)
-                              #:cancel cancel-evt
-                              #:on-progress sink
-                              #:holder holder))
+         (define r (vault-add-func vault-root (op-add-package op)
+                                      (op-add-url op)
+                                      #:pin (op-add-pin op)
+                                      #:fsck-allow (op-add-fsck-allow op)
+                                      #:cancel cancel-evt
+                                      #:on-progress sink
+                                      #:holder holder))
          (worker-manifest-touch state-dir op)
          (void)]
         [(op-fetch? op)
-         (define r (vault-fetch-namespace vault-root
-                                          (op-fetch-package op)
-                                          (op-fetch-url op)
-                                          #:fsck-allow (op-fetch-fsck-allow op)
-                                          #:cancel cancel-evt
-                                          #:on-progress sink
-                                          #:holder holder))
+         (define r (vault-fetch-namespace-func vault-root
+                                           (op-fetch-package op)
+                                           (op-fetch-url op)
+                                           #:fsck-allow (op-fetch-fsck-allow op)
+                                           #:cancel cancel-evt
+                                           #:on-progress sink
+                                           #:holder holder))
          (worker-manifest-touch state-dir op)
          (void)]
         [(op-verify? op)
-         (vault-verify vault-root #:full (op-verify-full op))
+         (vault-verify-func vault-root #:full (op-verify-full op))
          (void)]
         [(op-gc? op)
-         (vault-gc vault-root #:cancel cancel-evt
+         (vault-gc-func vault-root #:cancel cancel-evt
                     #:on-progress sink #:holder holder)
          (void)]
         [else
          (raise-pm-error 'config 'worker-run-op "op not in this stage"
-                          #:fields (list (cons "op" (format "~s" op))))]))
+                       #:fields (list (cons "op" (format "~s" op))))]))
 
 ;; path-string job-op -> void, inventory upsert after add/fetch
 (define (worker-manifest-touch state-dir op)
@@ -606,7 +604,9 @@
 ;; path-string string -> void, fifo first so waiters pair up.
 ;; The fifo opens before the lock: whenever the lock is held, a write
 ;; end already exists and job-wait never strands on open.
-(define (worker-run-one state-dir id)
+(define (worker-run-one state-dir id
+                  vault-add-func vault-fetch-namespace-func
+                  vault-verify-func vault-gc-func)
   (define j (job-read state-dir id))
   (when (eq? (job-state j) 'queued)
     (job-make-fifo state-dir id)
@@ -617,7 +617,11 @@
     (fifo-drain! io)
     (call-with-file-lock/timeout (job-lock-path state-dir id)
                                  'exclusive
-                                 (lambda () (worker-run-held state-dir id io))
+                                 (lambda () (worker-run-held state-dir id io
+                                                             vault-add-func
+                                                             vault-fetch-namespace-func
+                                                             vault-verify-func
+                                                             vault-gc-func))
                                  void
                                  #:max-delay 0)
     (close-output-port io)))
@@ -625,7 +629,9 @@
 ;; path-string string input-port -> void, body with the job lock held.
 ;; The watcher dies before any final line, so "done" can only reach
 ;; job-wait; a close with no line reads EOF and derives the state.
-(define (worker-run-held state-dir id io)
+(define (worker-run-held state-dir id io
+                  vault-add-func vault-fetch-namespace-func
+                  vault-verify-func vault-gc-func)
   (job-write state-dir id
              (struct-copy job (job-read state-dir id)
                           [state 'running]
@@ -657,7 +663,7 @@
     (queue-write state-dir
                  (for/list ([q (in-list (queue-read state-dir))]
                             #:unless (equal? q id))
-                   q)))
+                  q)))
   (with-handlers ([exn:fail:pm?
                    (lambda (e)
                      (if (eq? (exn:fail:pm-kind e) 'cancelled)
@@ -669,7 +675,11 @@
                   [exn:fail?
                    (lambda (e)
                      (finish 'failed "failed" (exn-message e) 'failed))])
-    (worker-run-op state-dir j (job-progress-sink state-dir id) cancel-evt)
+    (worker-run-op state-dir j (job-progress-sink state-dir id) cancel-evt
+                  vault-add-func
+                  vault-fetch-namespace-func
+                  vault-verify-func
+                  vault-gc-func)
     (finish 'done "done" #f 'done)))
 
 ;; job-op string -> string, static ssh hint on ssh failures
@@ -681,15 +691,36 @@
                      " connect once manually to accept the host key)")
       message))
 
+;; Worker-side vault operation providers for Step 6
+(define (vault-add-default vault-root package url #:pin #:fsck-allow #:cancel #:on-progress #:holder)
+  (raise-pm-error 'config 'vault-add "vault-add function not provided by worker"))
+
+(define (vault-fetch-namespace-default vault-root package url #:fsck-allow #:cancel #:on-progress #:holder)
+  (raise-pm-error 'config 'vault-fetch-namespace "vault-fetch-namespace function not provided by worker"))
+
+(define (vault-verify-default vault-root #:full)
+  (raise-pm-error 'config 'vault-verify "vault-verify function not provided by worker"))
+
+(define (vault-gc-default vault-root #:cancel #:on-progress #:holder)
+  (raise-pm-error 'config 'vault-gc "vault-gc function not provided by worker"))
+
 ;; path-string -> void, serial pass over the queue
-(define (worker-pass state-dir)
+(define (worker-pass state-dir
+                   vault-add-func vault-fetch-namespace-func
+                   vault-verify-func vault-gc-func)
   (for ([id (in-list (queue-read state-dir))])
     (with-handlers ([exn:fail?
                      (lambda (e) (void))])
-      (worker-run-one state-dir id))))
+      (worker-run-one state-dir id
+                     vault-add-func
+                     vault-fetch-namespace-func
+                     vault-verify-func
+                     vault-gc-func))))
 
 ;; path-string -> void, one-shot worker entry for the child
-(define (worker-entry state-dir)
+(define (worker-entry state-dir
+                  vault-add-func vault-fetch-namespace-func
+                  vault-verify-func vault-gc-func)
   ;; Any raise in here used to kill the worker in silence, leaving the
   ;; job 'queued' forever with nothing to show why. Record a terminal
   ;; state carrying the error text instead, then exit non-zero in the
@@ -705,14 +736,24 @@
                 (job-write state-dir id
                            (struct-copy job j [state 'failed])))))
           (exit 1))])
-    (worker-pass-all state-dir)))
+    (worker-pass-all state-dir
+                     vault-add-func
+                     vault-fetch-namespace-func
+                     vault-verify-func
+                     vault-gc-func)))
 
-(define (worker-pass-all state-dir)
+(define (worker-pass-all state-dir
+                     vault-add-func vault-fetch-namespace-func
+                     vault-verify-func vault-gc-func)
   (ensure-jobs-dir state-dir)
   (call-with-file-lock/timeout (worker-lock-path state-dir)
                                'exclusive
                                (lambda ()
-                                 (worker-pass state-dir)
+                                 (worker-pass state-dir
+                                           vault-add-func
+                                           vault-fetch-namespace-func
+                                           vault-verify-func
+                                           vault-gc-func)
                                  (queue-resume state-dir)
                                  (void))
                                void
@@ -721,7 +762,11 @@
   (unless (null? (queue-read state-dir))
     (call-with-file-lock/timeout (worker-lock-path state-dir)
                                  'exclusive
-                                 (lambda () (worker-pass state-dir))
+                                 (lambda () (worker-pass state-dir
+                                                                vault-add-func
+                                                                vault-fetch-namespace-func
+                                                                vault-verify-func
+                                                                vault-gc-func))
                                  void
                                  #:max-delay 0))
   (void))
