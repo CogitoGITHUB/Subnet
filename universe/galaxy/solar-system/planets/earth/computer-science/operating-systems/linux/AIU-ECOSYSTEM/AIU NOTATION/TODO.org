@@ -64,3 +64,9 @@
 * After the done line
 
   - The program's own checklist from checklist/tier-2/ content: references and numbering, tables and data, variants and versioning, engine services, kit entries and conformance. Tier 3 stays plan only until the owner opens it.
+
+* Small defects found by hand 2026-10-24
+- check wraps the error as 'parser-recovery: the parser recovered from stray-text' and says 'column unknown'. It should name the kind directly and give the real column.
+- render drops marker-looking lines inside a code block (see the BUG above).
+- tools/aiu.nu parses the machine document twice (false stray-text and missing-title) and does not set the locale or the binary path itself. The aiu command in the Nushell config is the working route for now.
+- The project folder name contains a non-ASCII character, which broke path handling once.

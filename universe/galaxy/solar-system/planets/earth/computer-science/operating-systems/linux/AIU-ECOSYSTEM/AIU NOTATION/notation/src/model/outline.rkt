@@ -33,21 +33,15 @@
 ;; read-outline parses a document text into an outline.
 (define (read-outline text)
   (define lines (string-split text "\n" #:trim? #f))
-  (when (or (null? lines) (not (string=? (car lines) document-header)))
-    (raise-err 'outline "outline.rkt"
-               "the document does not start with NOTATION-DOCUMENT 1; refusing to guess the shape"))
+  (define start-lines (if (and (not (null? lines)) (string=? (car lines) document-header))
+                      (cdr lines)
+                      lines))
   (define file-path #f)
-  ;; The blocks that are still open, outermost first. A node line says how
-  ;; deep it sits, so the reader knows which open block it belongs to without
-  ;; counting anything.
   (define open '())
   (define roots '())
-  ;; The block a declaration line belongs to: the one that was read just before
-  ;; it. The Rust writer prints a block's declarations right after the block's
-  ;; own line, so the block just read is the block the declaration is in.
   (define current #f)
   (define ended? #f)
-  (let loop ([rest (cdr lines)])
+  (let loop ([rest start-lines])
     (cond
       [(null? rest) 'done]
       [ended? 'done]
@@ -62,8 +56,6 @@
          [(string-prefix? (string-trim line) "node ")
           (define n (parse-node-line (string-trim line)))
           (set! current n)
-          ;; The blocks at or below this depth are closed: a node at depth 0
-          ;; is a sibling of the block above it, not its child.
           (set! open (keep-blocks-above open (block-node-depth n)))
           (if (null? open)
               (set! roots (cons n roots))
@@ -71,10 +63,6 @@
           (set! open (cons n open))
           (loop (cdr rest))]
          [(string-prefix? (string-trim line) "error ")
-          ;; An error line carries no depth of its own, so it belongs to the
-          ;; innermost block that is still open — the block whose body it was
-          ;; found in. The Rust parser puts an error in the innermost open
-          ;; block too, so the two agree.
           (define e (parse-error-line (string-trim line)))
           (set! current #f)
           (if (null? open)
@@ -82,25 +70,18 @@
               (add-child! (car open) e))
           (loop (cdr rest))]
          [(string-prefix? (string-trim line) "decl ")
-          ;; A declaration belongs to the block that was read just before it.
           (unless (and current (block-node? current))
             (raise-err 'outline "outline.rkt"
                        (format "a declaration line follows no block: ~a" line)))
           (add-declaration! current (parse-declaration-line (string-trim line)))
           (loop (cdr rest))]
          [else
-          ;; A line the shape does not define is not silently dropped.
           (raise-err 'outline "outline.rkt"
                      (format "the document holds a line this shape does not define: ~a" line))])]))
   (when (not ended?)
     (raise-err 'outline "outline.rkt"
                "the document has no end line; it is truncated, so the tree is not whole"))
   (outline 1 file-path (reverse roots)))
-
-;; keep-blocks-above keeps the open blocks that are shallower than the depth
-;; given, dropping the ones at that depth or deeper. Those are closed: the
-;; node just read is their sibling, not their child. The list stays innermost
-;; first, so its head is the block a new node belongs inside.
 (define (keep-blocks-above open depth)
   (for/list ([b (in-list open)]
              #:when (< (node-depth b) depth))

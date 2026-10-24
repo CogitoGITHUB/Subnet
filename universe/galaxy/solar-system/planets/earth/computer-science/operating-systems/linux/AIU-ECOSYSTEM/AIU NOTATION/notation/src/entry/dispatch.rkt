@@ -85,11 +85,15 @@
      (unless (file-exists? path)
        (print-line (format "check: no such file: ~a" path))
        (exit 2))
-     ;; Read the file as text. file->string returns a string even with
-     ;; #:mode 'binary on this build, so the mode keyword is kept and the result
-     ;; is used as the string it is; no bytes->string/utf-8 conversion is
-     ;; applied, because there are no bytes to convert.
-     (define text (file->string path #:mode 'binary))
+     ;; Read the file as text.
+     (define bin (or (getenv "AIU_NOTATION_BIN") ""))
+     (if (string=? bin "")
+         (begin
+           (print-line "check: the notation binary is not named")
+           (print-line "set AIU_NOTATION_BIN to the notation binary, or use tools/aiu.nu")
+           (exit 2))
+         #f)
+     (define text (if (string=? bin "") "" (run-notation bin path)))
      (define o (read-outline text))
      (define file-name (or (outline-file o) path))
      ;; The tree is walked by diagnostics/collect.rkt and rendered by

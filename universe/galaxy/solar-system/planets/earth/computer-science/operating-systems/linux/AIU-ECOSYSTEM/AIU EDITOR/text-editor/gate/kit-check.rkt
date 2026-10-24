@@ -50,11 +50,11 @@
 
 ;; skill-path is the skill file: the examples come from it.
 (define skill-path
-  (build-path project-dir "agent" "skills" "editor" "SKILL.md"))
+  (build-path (build-path project-dir "..") "agent" "skills" "editor" "SKILL.md"))
 
 ;; plugin-path is the read-only watcher.
 (define plugin-path
-  (build-path project-dir "agent" "opencode-plugin" "editor-watch.js"))
+  (build-path (build-path project-dir "..") "agent" "opencode-plugin" "editor-watch.js"))
 
 ;; scratch-dir is where the proofs that need a file put theirs.
 (define scratch-dir
